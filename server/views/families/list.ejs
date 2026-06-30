@@ -17,7 +17,7 @@
       <option value="בן פתחיה" <%= branch === 'בן פתחיה' ? 'selected' : '' %>>בן פתחיה</option>
     </select>
     <select name="status">
-      <option value="">כל הסטטוסים</option>
+      <option value="" <%- status === '' ? 'selected' : '' %>>הצג הכל</option>
       <option value="פעיל" <%= status === 'פעיל' ? 'selected' : '' %>>פעיל</option>
       <option value="לא פעיל" <%= status === 'לא פעיל' ? 'selected' : '' %>>לא פעיל</option>
       <option value="ארכיון" <%= status === 'ארכיון' ? 'selected' : '' %>>ארכיון</option>

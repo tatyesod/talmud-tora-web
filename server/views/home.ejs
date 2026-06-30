@@ -21,8 +21,9 @@
     <a href="/year" class="year-pill">שנת לימודים: <strong><%= currentYear %></strong></a>
     <a href="/messages" class="year-pill">💬 הודעות<% if (unreadCount > 0) { %> <span class="unread-badge"><%= unreadCount %></span><% } %></a>
     <% if (isAdmin) { %><a href="/users" class="year-pill">👥 משתמשים</a><% } %>
+    <a href="/profile" class="year-pill">👤 <%= user %></a>
     <form action="/logout" method="POST">
-      <button type="submit" class="btn-logout"><%= user %> · יציאה</button>
+      <button type="submit" class="btn-logout">יציאה</button>
     </form>
   </div>
 
@@ -34,6 +35,7 @@
 
     <h1 class="home-title">תלמוד תורה החדש</h1>
     <p class="home-subtitle">מערכת ניהול דיגיטלית</p>
+    <p class="home-greeting"><span class="greeting-word"><%= greeting %>,</span> <strong><%= fullName %></strong></p>
 
     <div class="stats-row">
       <div class="stat-pill"><span class="stat-num"><%= stats.students %></span><span class="stat-label">תלמידים פעילים</span></div>
@@ -54,32 +56,44 @@
 
     <div class="nav-grid">
       <a href="/students" class="nav-card" style="--d:0">
-        <div class="nav-icon">🧒</div>
+        <div class="nav-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        </div>
         <div class="nav-text">תלמידים</div>
         <div class="nav-sub">רשימה, חיפוש, כרטיסים</div>
       </a>
       <a href="/classes" class="nav-card" style="--d:1">
-        <div class="nav-icon">🏫</div>
+        <div class="nav-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        </div>
         <div class="nav-text">כיתות ומחזורים</div>
         <div class="nav-sub">שיבוצים וניהול כיתות</div>
       </a>
       <a href="/teachers" class="nav-card" style="--d:2">
-        <div class="nav-icon">🧑‍🏫</div>
+        <div class="nav-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/><path d="M18 14l2 2 4-4" stroke-width="1.8"/></svg>
+        </div>
         <div class="nav-text">מלמדים ועובדים</div>
         <div class="nav-sub">סגל הוראה וניהול</div>
       </a>
       <a href="/families" class="nav-card" style="--d:3">
-        <div class="nav-icon">👨‍👩‍👧‍👦</div>
+        <div class="nav-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/><circle cx="6" cy="10" r="2.5"/><circle cx="18" cy="10" r="2.5"/></svg>
+        </div>
         <div class="nav-text">משפחות</div>
         <div class="nav-sub">הורים, כתובות וקשר</div>
       </a>
       <a href="/tuition" class="nav-card" style="--d:4">
-        <div class="nav-icon">💳</div>
+        <div class="nav-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/><line x1="6" y1="15" x2="8" y2="15"/><line x1="10" y1="15" x2="14" y2="15"/></svg>
+        </div>
         <div class="nav-text">שכר לימוד</div>
         <div class="nav-sub">תעריפים, הנחות וחישוב</div>
       </a>
       <a href="/students/new" class="nav-card" style="--d:5">
-        <div class="nav-icon">➕</div>
+        <div class="nav-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="16" y1="11" x2="22" y2="11"/></svg>
+        </div>
         <div class="nav-text">קליטת תלמיד חדש</div>
         <div class="nav-sub">הוספה מהירה</div>
       </a>
@@ -90,31 +104,41 @@
       </div>
 
       <a href="/suppliers" class="nav-card" style="--d:7">
-        <div class="nav-icon">📦</div>
+        <div class="nav-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+        </div>
         <div class="nav-text">ספקים</div>
         <div class="nav-sub">פרטי קשר והזמנות</div>
       </a>
 
       <a href="/expenses" class="nav-card" style="--d:8">
-        <div class="nav-icon">🧾</div>
+        <div class="nav-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="12" y2="17"/><line x1="12" y1="10" x2="16" y2="10"/></svg>
+        </div>
         <div class="nav-text">הוצאות</div>
         <div class="nav-sub">מעקב מול ספקים</div>
       </a>
 
       <a href="/events" class="nav-card" style="--d:9">
-        <div class="nav-icon">📅</div>
+        <div class="nav-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><circle cx="8" cy="15" r="1" fill="currentColor"/><circle cx="12" cy="15" r="1" fill="currentColor"/><circle cx="16" cy="15" r="1" fill="currentColor"/></svg>
+        </div>
         <div class="nav-text">אירועים</div>
         <div class="nav-sub">לוח שנה והרשמות</div>
       </a>
 
       <a href="/inventory" class="nav-card" style="--d:10">
-        <div class="nav-icon">🗄️</div>
+        <div class="nav-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+        </div>
         <div class="nav-text">מלאי ותחזוקה</div>
         <div class="nav-sub">ציוד ובקשות תיקון</div>
       </a>
 
       <a href="/parent-comm" class="nav-card" style="--d:11">
-        <div class="nav-icon">📧</div>
+        <div class="nav-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+        </div>
         <div class="nav-text">תקשורת הורים</div>
         <div class="nav-sub">מייל קבוצתי ופניות</div>
       </a>

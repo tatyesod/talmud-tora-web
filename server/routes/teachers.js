@@ -15,7 +15,8 @@ function withDates(t) {
 }
 
 router.get("/", (req, res) => {
-  const { q, status } = req.query;
+  const { q } = req.query;
+  const status = req.query.status !== undefined ? req.query.status : "פעיל";
   let sql = `
     SELECT t.*, ch.name AS chassidut_name FROM teachers t
     LEFT JOIN chassidut ch ON t.chassidut_id = ch.id WHERE 1=1

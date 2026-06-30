@@ -28,11 +28,12 @@ app.use(
 app.use((req, res, next) => {
   if (req.session.userId) {
     const db = require("./db");
-    const u = db.prepare("SELECT id, username, display_name, is_admin FROM users WHERE id = ?").get(req.session.userId);
+    const u = db.prepare("SELECT id, username, display_name, full_name, role_title, is_admin FROM users WHERE id = ?").get(req.session.userId);
     if (u) {
       req.currentUser = u;
       res.locals.user = u.display_name || u.username;
       res.locals.currentUserId = u.id;
+      res.locals.currentUserFullName = u.full_name || u.display_name || u.username;
       res.locals.isAdmin = !!u.is_admin;
       db.prepare(
         "INSERT INTO user_presence (user_id, last_seen) VALUES (?, ?) ON CONFLICT(user_id) DO UPDATE SET last_seen = excluded.last_seen"
@@ -133,6 +134,15 @@ app.get("/", (req, res) => {
   const hebrewDateToday = hd.serialToHebrewString(hd.todayAccessSerial());
   const dayNames = ["ראשון", "שני", "שלישי", "רביעי", "חמישי", "שישי", "שבת"];
   const dayName = dayNames[new Date().getDay()];
+  const hour = new Date().getHours();
+  let greeting;
+  if (hour >= 5 && hour < 12) greeting = "בוקר טוב";
+  else if (hour >= 12 && hour < 17) greeting = "צהריים טובים";
+  else if (hour >= 17 && hour < 22) greeting = "ערב טוב";
+  else greeting = "לילה טוב";
+  const fullName = req.currentUser
+    ? (req.currentUser.full_name || req.currentUser.display_name || req.currentUser.username)
+    : "";
 
   const myTasks = db
     .prepare("SELECT * FROM tasks WHERE user_id = ? ORDER BY done ASC, due_date IS NULL, due_date ASC, id DESC")
@@ -145,7 +155,7 @@ app.get("/", (req, res) => {
 
   res.render("home", {
     stats, branchStats, monthlyTotal, currentYear, hebrewDateToday, dayName,
-    myTasks, unreadCount,
+    myTasks, unreadCount, greeting, fullName,
   });
 });
 
@@ -160,6 +170,31 @@ app.use("/tasks", require("./routes/tasks"));
 app.use("/messages", require("./routes/messages"));
 app.use("/presence", require("./routes/presence"));
 app.use("/users", requireAdmin, require("./routes/users"));
+app.get("/profile", requireLogin, (req, res) => {
+  const db = require("./db");
+  const { hashPassword } = require("./auth");
+  const profileUser = db.prepare("SELECT * FROM users WHERE id = ?").get(req.currentUser.id);
+  res.render("users/profile", { profileUser, success: req.query.saved });
+});
+app.post("/profile", requireLogin, (req, res) => {
+  const db = require("./db");
+  const body = req.body;
+  const PROFILE_FIELDS = ["display_name", "full_name", "role_title", "phone", "email"];
+  const cols = PROFILE_FIELDS.filter((c) => c in body);
+  const values = cols.map((c) => (body[c] === "" ? null : body[c]));
+  if (body.new_password && body.new_password.trim()) {
+    const { hashPassword } = require("./auth");
+    const allCols = [...cols, "password_hash"];
+    const allVals = [...values, hashPassword(body.new_password.trim()), req.currentUser.id];
+    db.prepare(`UPDATE users SET ${allCols.map((c) => `${c} = ?`).join(", ")} WHERE id = ?`).run(...allVals);
+  } else {
+    values.push(req.currentUser.id);
+    if (cols.length > 0) {
+      db.prepare(`UPDATE users SET ${cols.map((c) => `${c} = ?`).join(", ")} WHERE id = ?`).run(...values);
+    }
+  }
+  res.redirect("/profile?saved=1");
+});
 app.use("/suppliers", require("./routes/suppliers"));
 app.use("/parent-comm", require("./routes/parent-comm"));
 app.use("/events", require("./routes/events"));

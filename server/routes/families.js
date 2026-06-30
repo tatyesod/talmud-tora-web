@@ -5,7 +5,8 @@ const { calcFamilyTuition } = require("../tuitionCalc");
 const { buildOrderBy } = require("../sortHelper");
 
 router.get("/", (req, res) => {
-  const { q, sector, branch, status } = req.query;
+  const { q, sector, branch } = req.query;
+  const status = req.query.status !== undefined ? req.query.status : "פעיל";
   let sql = "SELECT DISTINCT f.* FROM families f WHERE 1=1";
   const params = [];
   if (q) {

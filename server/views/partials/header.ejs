@@ -28,9 +28,11 @@
       <a href="/year">ניהול שנה</a>
       <a href="/messages">הודעות</a>
       <% if (isAdmin) { %><a href="/users">משתמשים</a><% } %>
+      <a href="/profile">הפרופיל שלי</a>
       <% if (user) { %>
+        <a href="/profile" style="margin-inline-start:16px; font-size:0.9em; color:var(--text);">👤 <%= user %></a>
         <form action="/logout" method="POST" style="display:inline">
-          <button type="submit" class="btn small secondary" style="margin-inline-start:16px;"><%= user %> · יציאה</button>
+          <button type="submit" class="btn small secondary" style="margin-inline-start:8px;">יציאה</button>
         </form>
       <% } %>
     </nav>

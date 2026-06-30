@@ -123,6 +123,10 @@ CREATE TABLE users (
     username TEXT UNIQUE,
     password_hash TEXT,
     display_name TEXT,
+    full_name TEXT,
+    role_title TEXT,
+    phone TEXT,
+    email TEXT,
     is_admin INTEGER DEFAULT 0,
     created_at TEXT
 );

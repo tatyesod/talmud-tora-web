@@ -57,7 +57,8 @@ function getClassTeachers(classId) {
 router.get("/", (req, res) => res.redirect("/students"));
 
 router.get("/students", (req, res) => {
-  const { q, class_id, status, cohort_id, sector, branch } = req.query;
+  const { q, class_id, cohort_id, sector, branch } = req.query;
+  const status = req.query.status !== undefined ? req.query.status : "פעיל";
   let sql = STUDENT_SELECT + " WHERE 1=1";
   const params = [];
 

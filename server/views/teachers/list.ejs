@@ -9,7 +9,7 @@
   <form class="searchbar auto-filter" method="GET" action="/teachers">
     <input type="text" name="q" placeholder="חיפוש לפי שם, ת.ז, נייד..." value="<%= q %>" />
     <select name="status">
-      <option value="">כל הסטטוסים</option>
+      <option value="" <%- status === '' ? 'selected' : '' %>>הצג הכל</option>
       <% statuses.forEach(s => { %>
         <option value="<%= s.status %>" <%= status === s.status ? 'selected' : '' %>><%= s.status %></option>
       <% }) %>

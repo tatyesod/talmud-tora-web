@@ -14,7 +14,7 @@
       <% }) %>
     </select>
     <select name="status">
-      <option value="">כל הסטטוסים</option>
+      <option value="" <%- status === '' ? 'selected' : '' %>>הצג הכל</option>
       <option value="פעיל" <%= status === 'פעיל' ? 'selected' : '' %>>פעיל</option>
       <option value="לא פעיל" <%= status === 'לא פעיל' ? 'selected' : '' %>>לא פעיל</option>
     </select>
