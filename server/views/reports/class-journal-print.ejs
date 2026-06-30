@@ -13,7 +13,10 @@
 </head>
 <body onload="window.print()">
   <div class="print-doc" style="max-width:100%;">
-    <h2>יומן כיתה: <%= classRow ? classRow.name + (classRow.parallel ? ' ('+classRow.parallel+')' : '') : '' %></h2>
+    <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #2c5f7c; padding-bottom:8px; margin-bottom:10px;">
+      <h2 style="margin:0; border:none; padding:0;">יומן כיתה: <%= classRow ? classRow.name + (classRow.parallel ? ' ('+classRow.parallel+')' : '') : '' %></h2>
+      <img src="/images/logo-reports.jpg" alt="לוגו" style="height:60px;" />
+    </div>
     <table class="journal">
       <thead>
         <tr>

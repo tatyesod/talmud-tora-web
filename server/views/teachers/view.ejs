@@ -17,6 +17,7 @@
   <h3>פרטים</h3>
   <table>
     <tr><th>ת.ז</th><td><%= teacher.id_number || '' %></td><th>תאריך לידה</th><td><%= teacher.birth_date_civil_str || '' %></td></tr>
+    <tr><th>מספר ילדים בבית</th><td><%= teacher.children_count != null ? teacher.children_count : '' %></td><th></th><td></td></tr>
     <tr><th>חסידות</th><td><%= teacher.chassidut_name || '' %></td><th>נייד</th><td><%- phoneLink(teacher.mobile) %></td></tr>
     <tr><th>טלפון בית</th><td><%- phoneLink(teacher.home_phone) %></td>
         <th>כתובת</th><td><%= [teacher.street, teacher.house_number, teacher.apartment?'דירה '+teacher.apartment:'', teacher.city].filter(Boolean).join(', ') %></td></tr>
@@ -36,6 +37,80 @@
       <% }) %>
     </table>
   <% } %>
+</div>
+
+<div class="card">
+  <h3>נוכחות וחיסורים</h3>
+  <% if (attendanceSummary.length > 0) { %>
+    <p style="color:var(--muted); font-size:0.9em;">
+      <% attendanceSummary.forEach(s => { %><strong><%= s.status %>:</strong> <%= s.c %> &nbsp;&nbsp; <% }) %>
+    </p>
+  <% } %>
+  <% if (attendance.length === 0) { %>
+    <p class="empty-state">אין רישומי נוכחות</p>
+  <% } else { %>
+    <table>
+      <thead><tr><th>תאריך</th><th>סטטוס</th><th>הערות</th><th></th></tr></thead>
+      <tbody>
+        <% attendance.forEach(a => { %>
+          <tr>
+            <td><%= a.att_date_str %></td>
+            <td><%= a.status %></td>
+            <td><%= a.notes || '' %></td>
+            <td>
+              <form method="POST" action="/teachers/<%= teacher.id %>/attendance/<%= a.id %>?_method=DELETE" style="display:inline">
+                <button type="submit" class="btn small danger">מחק</button>
+              </form>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  <% } %>
+  <form method="POST" action="/teachers/<%= teacher.id %>/attendance" class="form-grid" style="margin-top:14px;">
+    <div class="form-group"><label>תאריך</label><input type="date" name="att_date" /></div>
+    <div class="form-group">
+      <label>סטטוס</label>
+      <select name="status" required>
+        <option value="נוכח">נוכח</option>
+        <option value="נעדר">נעדר</option>
+        <option value="חופשה">חופשה</option>
+        <option value="מחלה">מחלה</option>
+      </select>
+    </div>
+    <div class="form-group full"><label>הערות</label><input type="text" name="notes" /></div>
+    <div class="form-group full"><button type="submit" class="btn small">+ הוסף רישום</button></div>
+  </form>
+</div>
+
+<div class="card">
+  <h3>תיק עובד</h3>
+  <% if (file.length === 0) { %>
+    <p class="empty-state">אין רשומות בתיק העובד</p>
+  <% } else { %>
+    <table>
+      <thead><tr><th>תאריך</th><th>קטגוריה</th><th>פירוט</th></tr></thead>
+      <tbody>
+        <% file.forEach(f => { %>
+          <tr><td><%= f.entry_date_str %></td><td><%= f.category || '' %></td><td><%= f.notes || '' %></td></tr>
+        <% }) %>
+      </tbody>
+    </table>
+  <% } %>
+  <form method="POST" action="/teachers/<%= teacher.id %>/file" class="form-grid" style="margin-top:14px;">
+    <div class="form-group"><label>תאריך</label><input type="date" name="entry_date" /></div>
+    <div class="form-group">
+      <label>קטגוריה</label>
+      <select name="category">
+        <option value="חוזה">חוזה</option>
+        <option value="תעודה">תעודה</option>
+        <option value="הערכה">הערכה</option>
+        <option value="אחר">אחר</option>
+      </select>
+    </div>
+    <div class="form-group full"><label>פירוט</label><textarea name="notes" required></textarea></div>
+    <div class="form-group full"><button type="submit" class="btn small">+ הוסף לתיק</button></div>
+  </form>
 </div>
 
 <%- include('../partials/footer') %>

@@ -1,4 +1,4 @@
-<%- include('../partials/header', {title: 'רשימת תלמידים'}) %>
+<%- include('../partials/header', {title: 'רשימת תלמידים', wide: true}) %>
 
 <div class="card">
   <h1>תלמידים</h1>
@@ -51,7 +51,14 @@
           <th><a href="<%= sortUrl('nickname') %>">כינוי<%= sortIndicator('nickname') %></a></th>
           <th><a href="<%= sortUrl('class_name') %>">כיתה<%= sortIndicator('class_name') %></a></th>
           <th><a href="<%= sortUrl('id_number') %>">ת.ז<%= sortIndicator('id_number') %></a></th>
+          <th>מגזר</th>
+          <th>סניף</th>
+          <th>שם האב</th>
+          <th>נייד אב</th>
+          <th>שם האם</th>
+          <th>נייד אם</th>
           <th><a href="<%= sortUrl('home_phone') %>">טלפון בית<%= sortIndicator('home_phone') %></a></th>
+          <th>עיר</th>
           <th><a href="<%= sortUrl('status') %>">סטטוס<%= sortIndicator('status') %></a></th>
           <th></th>
         </tr>
@@ -64,7 +71,14 @@
             <td><%= s.nickname || '' %></td>
             <td><%= s.class_name || '' %></td>
             <td><%= s.id_number || '' %></td>
+            <td><%= s.sector || '' %></td>
+            <td><%= s.branch || '' %></td>
+            <td><%= s.father_name || '' %></td>
+            <td><%- phoneLink(s.father_mobile) %></td>
+            <td><%= s.mother_name || '' %></td>
+            <td><%- phoneLink(s.mother_mobile) %></td>
             <td><%- phoneLink(s.home_phone) %></td>
+            <td><%= s.city || '' %></td>
             <td>
               <span class="badge <%= s.status === 'ארכיון' ? 'archive' : (s.status === 'לא פעיל' ? 'archive' : '') %>"><%= s.status || '' %></span>
             </td>

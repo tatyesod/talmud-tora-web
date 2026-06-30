@@ -1,0 +1,71 @@
+<%- include('../partials/header', {title: 'הוצאות מול ספקים'}) %>
+
+<div class="card">
+  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+    <h1>הוצאות מול ספקים</h1>
+    <a href="/expenses/new" class="btn">+ הוצאה חדשה</a>
+  </div>
+  <div class="stats-row-inline">
+    <div class="summary-panel" style="margin-top:0;">
+      <div class="summary-num"><%= totalAll.toLocaleString() %> ₪</div>
+      <div class="summary-text">סך כל ההוצאות (מסונן)</div>
+    </div>
+    <div class="summary-panel" style="margin-top:0; background:linear-gradient(135deg, #f6efe8, #f5f3ee); border-color:#e0c9a8;">
+      <div class="summary-num" style="color:var(--danger);"><%= totalUnpaid.toLocaleString() %> ₪</div>
+      <div class="summary-text">טרם שולם</div>
+    </div>
+  </div>
+
+  <form class="searchbar auto-filter" method="GET" action="/expenses" style="margin-top:14px;">
+    <select name="supplier_id">
+      <option value="">כל הספקים</option>
+      <% suppliers.forEach(s => { %>
+        <option value="<%= s.id %>" <%= String(supplier_id) === String(s.id) ? 'selected' : '' %>><%= s.name %></option>
+      <% }) %>
+    </select>
+    <select name="paid">
+      <option value="">הכל</option>
+      <option value="כן" <%= paid === 'כן' ? 'selected' : '' %>>שולם</option>
+      <option value="לא" <%= paid === 'לא' ? 'selected' : '' %>>לא שולם</option>
+    </select>
+  </form>
+
+  <% if (expenses.length === 0) { %>
+    <p class="empty-state">אין הוצאות רשומות</p>
+  <% } else { %>
+    <table>
+      <thead><tr><th>תאריך</th><th>ספק</th><th>תיאור</th><th>קטגוריה</th><th>סכום</th><th>שולם</th><th></th></tr></thead>
+      <tbody>
+        <% expenses.forEach(e => { %>
+          <tr>
+            <td><%= e.expense_date_str %></td>
+            <td><%- e.supplier_name ? `<a href="/suppliers/${e.supplier_id}">${e.supplier_name}</a>` : '' %></td>
+            <td><%= e.description || '' %></td>
+            <td><%= e.category || '' %></td>
+            <td><%= e.amount != null ? e.amount.toLocaleString()+' ₪' : '' %></td>
+            <td><span class="badge <%= !e.paid ? 'archive' : '' %>"><%= e.paid ? 'שולם' : 'לא שולם' %></span></td>
+            <td><a href="/expenses/<%= e.id %>/edit" class="btn small secondary">עריכה</a></td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  <% } %>
+</div>
+
+<div class="card">
+  <h3>סך הוצאות לפי ספק</h3>
+  <table>
+    <thead><tr><th>ספק</th><th>מס' הוצאות</th><th>סך הכל</th></tr></thead>
+    <tbody>
+      <% bySupplier.filter(s => s.count > 0).forEach(s => { %>
+        <tr>
+          <td><a href="/suppliers/<%= s.id %>"><%= s.name %></a></td>
+          <td><%= s.count %></td>
+          <td><%= s.total.toLocaleString() %> ₪</td>
+        </tr>
+      <% }) %>
+    </tbody>
+  </table>
+</div>
+
+<%- include('../partials/footer') %>

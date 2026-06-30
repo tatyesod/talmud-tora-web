@@ -1,0 +1,37 @@
+<%- include('../partials/header', {title: 'מלאי וציוד'}) %>
+
+<div class="card">
+  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+    <h1>מלאי וציוד</h1>
+    <div class="actions">
+      <a href="/inventory/maintenance" class="btn secondary">🔧 בקשות תחזוקה<% if (openRequests > 0) { %> <span class="unread-badge-light"><%= openRequests %></span><% } %></a>
+      <a href="/inventory/new" class="btn">+ פריט חדש</a>
+    </div>
+  </div>
+  <% if (items.length === 0) { %>
+    <p class="empty-state">אין פריטי מלאי רשומים</p>
+  <% } else { %>
+    <table>
+      <thead><tr><th>פריט</th><th>כיתה/מיקום</th><th>כמות</th><th>מצב</th><th>הערות</th><th></th></tr></thead>
+      <tbody>
+        <% items.forEach(i => { %>
+          <tr>
+            <td><%= i.name %></td>
+            <td><%= i.class_name ? i.class_name+(i.parallel?' ('+i.parallel+')':'') : (i.location || '') %></td>
+            <td><%= i.quantity != null ? i.quantity : '' %></td>
+            <td><%= i.condition || '' %></td>
+            <td><%= i.notes || '' %></td>
+            <td>
+              <a href="/inventory/<%= i.id %>/edit" class="btn small secondary">עריכה</a>
+              <form method="POST" action="/inventory/<%= i.id %>?_method=DELETE" onsubmit="return confirm('למחוק פריט זה?');" style="display:inline">
+                <button type="submit" class="btn small danger">מחק</button>
+              </form>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  <% } %>
+</div>
+
+<%- include('../partials/footer') %>

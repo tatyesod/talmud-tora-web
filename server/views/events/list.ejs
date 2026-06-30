@@ -1,0 +1,50 @@
+<%- include('../partials/header', {title: 'אירועים ולוח שנה'}) %>
+
+<div class="card">
+  <div style="display:flex; justify-content:space-between; align-items:center;">
+    <h1>אירועים קרובים</h1>
+    <a href="/events/new" class="btn">+ אירוע חדש</a>
+  </div>
+  <% if (upcoming.length === 0) { %>
+    <p class="empty-state">אין אירועים קרובים</p>
+  <% } else { %>
+    <table>
+      <thead><tr><th>תאריך</th><th>אירוע</th><th>קטגוריה</th><th>כיתה</th><th>נרשמים</th><th></th></tr></thead>
+      <tbody>
+        <% upcoming.forEach(e => { %>
+          <tr>
+            <td><%= e.event_date_str %></td>
+            <td><a href="/events/<%= e.id %>"><%= e.title %></a></td>
+            <td><%= e.category || '' %></td>
+            <td><%= e.class_name ? e.class_name + (e.parallel ? ' ('+e.parallel+')' : '') : 'כלל המוסד' %></td>
+            <td><%= e.requires_registration ? e.registrations_count : '—' %></td>
+            <td><a href="/events/<%= e.id %>" class="btn small secondary">פתח</a></td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  <% } %>
+</div>
+
+<div class="card">
+  <h1>אירועים שעברו</h1>
+  <% if (past.length === 0) { %>
+    <p class="empty-state">אין אירועים קודמים</p>
+  <% } else { %>
+    <table>
+      <thead><tr><th>תאריך</th><th>אירוע</th><th>קטגוריה</th><th></th></tr></thead>
+      <tbody>
+        <% past.slice(0, 20).forEach(e => { %>
+          <tr>
+            <td><%= e.event_date_str %></td>
+            <td><a href="/events/<%= e.id %>"><%= e.title %></a></td>
+            <td><%= e.category || '' %></td>
+            <td><a href="/events/<%= e.id %>" class="btn small secondary">פתח</a></td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  <% } %>
+</div>
+
+<%- include('../partials/footer') %>

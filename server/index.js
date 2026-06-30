@@ -24,12 +24,26 @@ app.use(
   })
 );
 
-// --- אימות בסיסי (משתמש/סיסמה יחיד מוגדר ב-ENV, אפשר להרחיב לריבוי משתמשים) ---
-const AUTH_USER = process.env.APP_USER || "admin";
-const AUTH_PASS = process.env.APP_PASS || "admin123";
-
+// --- אימות מבוסס מסד נתונים, ריבוי משתמשים ---
 app.use((req, res, next) => {
-  res.locals.user = req.session.user || null;
+  if (req.session.userId) {
+    const db = require("./db");
+    const u = db.prepare("SELECT id, username, display_name FROM users WHERE id = ?").get(req.session.userId);
+    if (u) {
+      req.currentUser = u;
+      res.locals.user = u.display_name || u.username;
+      res.locals.currentUserId = u.id;
+      db.prepare(
+        "INSERT INTO user_presence (user_id, last_seen) VALUES (?, ?) ON CONFLICT(user_id) DO UPDATE SET last_seen = excluded.last_seen"
+      ).run(u.id, new Date().toISOString());
+    } else {
+      res.locals.user = null;
+      res.locals.currentUserId = null;
+    }
+  } else {
+    res.locals.user = null;
+    res.locals.currentUserId = null;
+  }
   res.locals.sortUrl = (col) => {
     const params = new URLSearchParams(req.query);
     const curSort = req.query.sort;
@@ -60,7 +74,7 @@ app.use((req, res, next) => {
 });
 
 function requireLogin(req, res, next) {
-  if (req.session.user) return next();
+  if (req.session.userId) return next();
   return res.redirect("/login");
 }
 
@@ -70,8 +84,11 @@ app.get("/login", (req, res) => {
 
 app.post("/login", (req, res) => {
   const { username, password } = req.body;
-  if (username === AUTH_USER && password === AUTH_PASS) {
-    req.session.user = username;
+  const db = require("./db");
+  const { verifyPassword } = require("./auth");
+  const u = db.prepare("SELECT * FROM users WHERE username = ?").get(username);
+  if (u && verifyPassword(password, u.password_hash)) {
+    req.session.userId = u.id;
     return res.redirect("/");
   }
   res.render("login", { error: "שם משתמש או סיסמה שגויים" });
@@ -108,7 +125,20 @@ app.get("/", (req, res) => {
   const hebrewDateToday = hd.serialToHebrewString(hd.todayAccessSerial());
   const dayNames = ["ראשון", "שני", "שלישי", "רביעי", "חמישי", "שישי", "שבת"];
   const dayName = dayNames[new Date().getDay()];
-  res.render("home", { stats, branchStats, monthlyTotal, currentYear, hebrewDateToday, dayName });
+
+  const myTasks = db
+    .prepare("SELECT * FROM tasks WHERE user_id = ? ORDER BY done ASC, due_date IS NULL, due_date ASC, id DESC")
+    .all(req.currentUser.id)
+    .map((t) => ({ ...t, due_date_str: t.due_date ? hd.serialToGregorianString(t.due_date) : "" }));
+
+  const unreadCount = db
+    .prepare("SELECT COUNT(*) c FROM messages WHERE recipient_id = ? AND read_at IS NULL")
+    .get(req.currentUser.id).c;
+
+  res.render("home", {
+    stats, branchStats, monthlyTotal, currentYear, hebrewDateToday, dayName,
+    myTasks, unreadCount,
+  });
 });
 
 app.use("/", require("./routes/students"));
@@ -118,6 +148,15 @@ app.use("/families", require("./routes/families"));
 app.use("/tuition", require("./routes/tuition"));
 app.use("/reports", require("./routes/reports"));
 app.use("/year", require("./routes/year"));
+app.use("/tasks", require("./routes/tasks"));
+app.use("/messages", require("./routes/messages"));
+app.use("/presence", require("./routes/presence"));
+app.use("/users", require("./routes/users"));
+app.use("/suppliers", require("./routes/suppliers"));
+app.use("/parent-comm", require("./routes/parent-comm"));
+app.use("/events", require("./routes/events"));
+app.use("/inventory", require("./routes/inventory"));
+app.use("/expenses", require("./routes/expenses"));
 
 app.use((req, res) => {
   res.status(404).render("404");

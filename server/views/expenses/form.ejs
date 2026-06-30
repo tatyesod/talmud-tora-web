@@ -1,0 +1,44 @@
+<%- include('../partials/header', {title: mode === 'new' ? 'הוצאה חדשה' : 'עריכת הוצאה'}) %>
+
+<div class="card">
+  <h1><%= mode === 'new' ? 'הוספת הוצאה חדשה' : 'עריכת הוצאה' %></h1>
+  <form method="POST" action="<%= mode === 'new' ? '/expenses' : '/expenses/' + expense.id + '?_method=PUT' %>">
+    <div class="form-grid">
+      <div class="form-group">
+        <label>ספק</label>
+        <select name="supplier_id">
+          <option value="">--</option>
+          <% suppliers.forEach(s => { %>
+            <option value="<%= s.id %>" <%= String(expense.supplier_id) === String(s.id) ? 'selected' : '' %>><%= s.name %></option>
+          <% }) %>
+        </select>
+      </div>
+      <div class="form-group"><label>תאריך</label><input type="date" name="expense_date" value="<%= expense.expense_date || '' %>" required /></div>
+      <div class="form-group"><label>סכום (₪)</label><input type="number" step="0.01" name="amount" value="<%= expense.amount != null ? expense.amount : '' %>" required /></div>
+      <div class="form-group">
+        <label>קטגוריה</label>
+        <input type="text" name="category" list="exp-cat" value="<%= expense.category || '' %>" />
+        <datalist id="exp-cat">
+          <option value="ציוד משרדי"><option value="הסעות"><option value="מזון"><option value="תחזוקה"><option value="ריהוט"><option value="ספרים"><option value="טכנולוגיה">
+        </datalist>
+      </div>
+      <div class="form-group"><label>מספר חשבונית</label><input type="text" name="invoice_number" value="<%= expense.invoice_number || '' %>" /></div>
+      <div class="form-group">
+        <label><input type="checkbox" name="paid" <%= expense.paid ? 'checked' : '' %> style="width:auto; margin-left:6px;" /> שולם</label>
+      </div>
+      <div class="form-group full"><label>תיאור</label><input type="text" name="description" value="<%= expense.description || '' %>" /></div>
+      <div class="form-group full"><label>הערות</label><textarea name="notes"><%= expense.notes || '' %></textarea></div>
+    </div>
+    <div class="actions" style="margin-top:14px;">
+      <button type="submit" class="btn">שמירה</button>
+      <a href="/expenses" class="btn secondary">ביטול</a>
+    </div>
+  </form>
+  <% if (mode === 'edit') { %>
+    <form method="POST" action="/expenses/<%= expense.id %>?_method=DELETE" onsubmit="return confirm('האם למחוק הוצאה זו?');" style="margin-top:10px;">
+      <button type="submit" class="btn danger">מחיקת הוצאה</button>
+    </form>
+  <% } %>
+</div>
+
+<%- include('../partials/footer') %>

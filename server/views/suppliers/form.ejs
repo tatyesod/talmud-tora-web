@@ -1,0 +1,42 @@
+<%- include('../partials/header', {title: mode === 'new' ? 'ספק חדש' : 'עריכת ספק'}) %>
+
+<div class="card">
+  <h1><%= mode === 'new' ? 'הוספת ספק חדש' : 'עריכת ספק' %></h1>
+  <form method="POST" action="<%= mode === 'new' ? '/suppliers' : '/suppliers/' + supplier.id + '?_method=PUT' %>">
+    <div class="form-grid">
+      <div class="form-group"><label>שם הספק</label><input type="text" name="name" value="<%= supplier.name || '' %>" required /></div>
+      <div class="form-group">
+        <label>קטגוריה</label>
+        <input type="text" name="category" list="category-suggestions" value="<%= supplier.category || '' %>" placeholder="לדוגמה: ציוד משרדי, הסעות, מזון, תחזוקה..." />
+        <datalist id="category-suggestions">
+          <option value="ציוד משרדי">
+          <option value="הסעות">
+          <option value="מזון וקייטרינג">
+          <option value="תחזוקה ואחזקה">
+          <option value="ריהוט וציוד">
+          <option value="ספרים ולימוד">
+          <option value="ביגוד">
+          <option value="טכנולוגיה ומחשוב">
+        </datalist>
+      </div>
+      <div class="form-group"><label>איש קשר</label><input type="text" name="contact_person" value="<%= supplier.contact_person || '' %>" /></div>
+      <div class="form-group"><label>טלפון</label><input type="text" name="phone" value="<%= supplier.phone || '' %>" /></div>
+      <div class="form-group"><label>מייל</label><input type="email" name="email" value="<%= supplier.email || '' %>" /></div>
+      <div class="form-group"><label>כתובת</label><input type="text" name="address" value="<%= supplier.address || '' %>" /></div>
+      <div class="form-group">
+        <label>סטטוס</label>
+        <select name="status">
+          <option value="פעיל" <%= supplier.status === 'פעיל' || !supplier.status ? 'selected' : '' %>>פעיל</option>
+          <option value="לא פעיל" <%= supplier.status === 'לא פעיל' ? 'selected' : '' %>>לא פעיל</option>
+        </select>
+      </div>
+      <div class="form-group full"><label>הערות</label><textarea name="notes"><%= supplier.notes || '' %></textarea></div>
+    </div>
+    <div class="actions" style="margin-top:14px;">
+      <button type="submit" class="btn">שמירה</button>
+      <a href="<%= mode === 'new' ? '/suppliers' : '/suppliers/' + supplier.id %>" class="btn secondary">ביטול</a>
+    </div>
+  </form>
+</div>
+
+<%- include('../partials/footer') %>

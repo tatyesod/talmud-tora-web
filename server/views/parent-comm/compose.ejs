@@ -1,0 +1,42 @@
+<%- include('../partials/header', {title: 'תקשורת הורים במייל'}) %>
+
+<div class="card">
+  <h1>שליחת מייל להורים</h1>
+  <p style="color:var(--muted); font-size:0.9em;">בחר כיתה (או השאר ריק לכל ההורים) כדי לקבל רשימת כתובות מייל, ולפתוח חלון שליחה ב-Gmail עם כולם ב-BCC.</p>
+
+  <form method="GET" action="/parent-comm/emails">
+    <div class="form-grid">
+      <div class="form-group">
+        <label>כיתה (ריק = כל ההורים)</label>
+        <select name="class_id">
+          <option value="">כל הכיתות</option>
+          <% classes.forEach(c => { %>
+            <option value="<%= c.id %>" <%= typeof selectedClassId !== 'undefined' && String(selectedClassId) === String(c.id) ? 'selected' : '' %>><%= c.name %><%= c.parallel ? ' ('+c.parallel+')' : '' %></option>
+          <% }) %>
+        </select>
+      </div>
+    </div>
+    <div class="actions" style="margin-top:14px;">
+      <button type="submit" class="btn">קבל רשימת כתובות</button>
+    </div>
+  </form>
+</div>
+
+<% if (emails) { %>
+  <div class="card">
+    <h3>נמענים: <%= classLabel %> (<%= emails.length %> כתובות מייל)</h3>
+    <% if (emails.length === 0) { %>
+      <p class="empty-state">לא נמצאו כתובות מייל עבור הבחירה הזו</p>
+    <% } else { %>
+      <textarea readonly style="width:100%; min-height:80px; font-family:monospace; font-size:0.85em;"><%= emails.join(', ') %></textarea>
+      <div class="actions" style="margin-top:14px;">
+        <a href="https://mail.google.com/mail/?view=cm&fs=1&bcc=<%= encodeURIComponent(emails.join(',')) %>" target="_blank" class="btn">✉️ פתח הודעה ב-Gmail (BCC לכולם)</a>
+      </div>
+      <p style="color:var(--muted); font-size:0.85em; margin-top:10px;">
+        כל הכתובות נכנסות לשדה BCC (עותק מוסתר) כדי שהורים לא יראו את כתובות המייל של זה.
+      </p>
+    <% } %>
+  </div>
+<% } %>
+
+<%- include('../partials/footer') %>

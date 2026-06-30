@@ -28,6 +28,7 @@
             <option value="ארכיון" <%= teacher.status === 'ארכיון' ? 'selected' : '' %>>ארכיון</option>
           </select>
         </div>
+        <div class="form-group"><label>מספר ילדים בבית (לחלוקת מתנות)</label><input type="number" min="0" name="children_count" value="<%= teacher.children_count != null ? teacher.children_count : '' %>" /></div>
         <div class="form-group"><label>נייד</label><input type="text" name="mobile" value="<%= teacher.mobile || '' %>" /></div>
         <div class="form-group"><label>טלפון בית</label><input type="text" name="home_phone" value="<%= teacher.home_phone || '' %>" /></div>
         <div class="form-group"><label>רחוב</label><input type="text" name="street" value="<%= teacher.street || '' %>" /></div>

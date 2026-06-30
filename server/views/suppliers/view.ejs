@@ -1,0 +1,50 @@
+<%- include('../partials/header', {title: supplier.name}) %>
+
+<div class="card">
+  <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:10px;">
+    <h1><%= supplier.name %> <span class="badge <%= supplier.status !== 'פעיל' ? 'archive' : '' %>"><%= supplier.status || '' %></span></h1>
+    <div class="actions">
+      <a href="/suppliers/<%= supplier.id %>/edit" class="btn">עריכה</a>
+      <form method="POST" action="/suppliers/<%= supplier.id %>?_method=DELETE" onsubmit="return confirm('האם למחוק את הספק?');" style="display:inline">
+        <button type="submit" class="btn danger">מחיקה</button>
+      </form>
+      <a href="/suppliers" class="btn secondary">חזרה לרשימה</a>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <table>
+    <tr><th>קטגוריה</th><td><%= supplier.category || '' %></td><th>איש קשר</th><td><%= supplier.contact_person || '' %></td></tr>
+    <tr><th>טלפון</th><td><%- phoneLink(supplier.phone) %></td><th>מייל</th><td><%- emailLink(supplier.email) %></td></tr>
+    <tr><th>כתובת</th><td colspan="3"><%= supplier.address || '' %></td></tr>
+    <tr><th>הערות</th><td colspan="3"><%= supplier.notes || '' %></td></tr>
+  </table>
+</div>
+
+<div class="card">
+  <div style="display:flex; justify-content:space-between; align-items:center;">
+    <h3>היסטוריית הוצאות מול ספק זה</h3>
+    <a href="/expenses/new" class="btn small">+ הוצאה חדשה</a>
+  </div>
+  <p style="color:var(--muted); font-size:0.9em;">סך הכל: <strong style="color:var(--primary-dark);"><%= totalSpent.toLocaleString() %> ₪</strong></p>
+  <% if (expenses.length === 0) { %>
+    <p class="empty-state">אין הוצאות רשומות מול ספק זה</p>
+  <% } else { %>
+    <table>
+      <thead><tr><th>תאריך</th><th>תיאור</th><th>סכום</th><th>שולם</th></tr></thead>
+      <tbody>
+        <% expenses.forEach(e => { %>
+          <tr>
+            <td><%= e.expense_date_str %></td>
+            <td><%= e.description || '' %></td>
+            <td><%= e.amount != null ? e.amount.toLocaleString()+' ₪' : '' %></td>
+            <td><span class="badge <%= !e.paid ? 'archive' : '' %>"><%= e.paid ? 'שולם' : 'לא שולם' %></span></td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  <% } %>
+</div>
+
+<%- include('../partials/footer') %>

@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="/css/style.css" />
   <script src="/js/auto-filter.js" defer></script>
   <script src="/js/phone-link.js" defer></script>
+  <script src="/js/presence.js" defer></script>
 </head>
 <body>
   <header class="topbar">
@@ -18,8 +19,15 @@
       <a href="/teachers">מלמדים</a>
       <a href="/families">משפחות</a>
       <a href="/tuition">שכר לימוד</a>
+      <a href="/suppliers">ספקים</a>
+      <a href="/expenses">הוצאות</a>
+      <a href="/events">אירועים</a>
+      <a href="/inventory">מלאי ותחזוקה</a>
+      <a href="/parent-comm">תקשורת הורים</a>
       <a href="/reports">דוחות</a>
       <a href="/year">ניהול שנה</a>
+      <a href="/messages">הודעות</a>
+      <a href="/users">משתמשים</a>
       <% if (user) { %>
         <form action="/logout" method="POST" style="display:inline">
           <button type="submit" class="btn small secondary" style="margin-inline-start:16px;"><%= user %> · יציאה</button>
@@ -27,4 +35,4 @@
       <% } %>
     </nav>
   </header>
-  <div class="container">
+  <div class="container <%= typeof wide !== 'undefined' && wide ? 'container-wide' : '' %>">

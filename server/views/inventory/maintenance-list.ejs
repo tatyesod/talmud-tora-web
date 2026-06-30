@@ -1,0 +1,50 @@
+<%- include('../partials/header', {title: 'בקשות תחזוקה'}) %>
+
+<div class="card">
+  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+    <h1>בקשות תחזוקה ותיקונים</h1>
+    <div class="actions">
+      <a href="/inventory" class="btn secondary">חזרה למלאי</a>
+      <a href="/inventory/maintenance/new" class="btn">+ בקשה חדשה</a>
+    </div>
+  </div>
+  <form class="searchbar auto-filter" method="GET" action="/inventory/maintenance">
+    <select name="status">
+      <option value="">כל הסטטוסים</option>
+      <option value="פתוח" <%= status === 'פתוח' ? 'selected' : '' %>>פתוח</option>
+      <option value="בטיפול" <%= status === 'בטיפול' ? 'selected' : '' %>>בטיפול</option>
+      <option value="סגור" <%= status === 'סגור' ? 'selected' : '' %>>סגור</option>
+    </select>
+  </form>
+
+  <% if (requests.length === 0) { %>
+    <div class="empty-state">אין בקשות תחזוקה</div>
+  <% } else { %>
+    <table>
+      <thead><tr><th>תאריך</th><th>תיאור</th><th>מיקום</th><th>דווח ע"י</th><th>סטטוס</th><th></th></tr></thead>
+      <tbody>
+        <% requests.forEach(r => { %>
+          <tr>
+            <td><%= r.created_at_str %></td>
+            <td><%= r.description %></td>
+            <td><%= r.class_name ? r.class_name+(r.parallel?' ('+r.parallel+')':'') : (r.location || '') %></td>
+            <td><%= r.reporter_name || '' %></td>
+            <td>
+              <form method="POST" action="/inventory/maintenance/<%= r.id %>?_method=PUT" style="display:inline-flex; gap:4px; align-items:center;">
+                <select name="status" onchange="this.form.submit()">
+                  <option value="פתוח" <%= r.status === 'פתוח' ? 'selected' : '' %>>פתוח</option>
+                  <option value="בטיפול" <%= r.status === 'בטיפול' ? 'selected' : '' %>>בטיפול</option>
+                  <option value="סגור" <%= r.status === 'סגור' ? 'selected' : '' %>>סגור</option>
+                </select>
+                <input type="hidden" name="notes" value="<%= r.notes || '' %>" />
+              </form>
+            </td>
+            <td></td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  <% } %>
+</div>
+
+<%- include('../partials/footer') %>

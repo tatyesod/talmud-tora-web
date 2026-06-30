@@ -1,0 +1,67 @@
+<%- include('../partials/header', {title: event.title}) %>
+
+<div class="card">
+  <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:10px;">
+    <h1><%= event.title %></h1>
+    <div class="actions">
+      <a href="/events/<%= event.id %>/edit" class="btn">עריכה</a>
+      <form method="POST" action="/events/<%= event.id %>?_method=DELETE" onsubmit="return confirm('האם למחוק את האירוע?');" style="display:inline">
+        <button type="submit" class="btn danger">מחיקה</button>
+      </form>
+      <a href="/events" class="btn secondary">חזרה לרשימה</a>
+    </div>
+  </div>
+  <table>
+    <tr><th>תאריך</th><td><%= event.event_date_str %> (<%= event.event_date_hebrew_str %>)</td>
+        <th>תאריך סיום</th><td><%= event.event_date_end_str || '' %></td></tr>
+    <tr><th>קטגוריה</th><td><%= event.category || '' %></td>
+        <th>כיתה</th><td><%= event.class_name ? event.class_name + (event.parallel?' ('+event.parallel+')':'') : 'כלל המוסד' %></td></tr>
+    <tr><th>מחיר</th><td><%= event.price != null ? event.price+' ₪' : '' %></td>
+        <th>דורש הרשמה</th><td><%= event.requires_registration ? 'כן' : 'לא' %></td></tr>
+    <tr><th>תיאור</th><td colspan="3"><%= event.description || '' %></td></tr>
+  </table>
+</div>
+
+<% if (event.requires_registration) { %>
+<div class="card">
+  <h3>נרשמים (<%= registrations.length %>)</h3>
+  <% if (registrations.length === 0) { %>
+    <p class="empty-state">אין עדיין נרשמים</p>
+  <% } else { %>
+    <table>
+      <thead><tr><th>תלמיד</th><th>שולם</th><th></th></tr></thead>
+      <tbody>
+        <% registrations.forEach(r => { %>
+          <tr>
+            <td><a href="/students/<%= r.student_id %>"><%= r.first_name %> <%= r.last_name %></a></td>
+            <td>
+              <form method="POST" action="/events/<%= event.id %>/register/<%= r.id %>/toggle-paid" style="display:inline">
+                <button type="submit" class="btn small <%= r.paid ? 'secondary' : '' %>"><%= r.paid ? '✅ שולם' : 'לא שולם' %></button>
+              </form>
+            </td>
+            <td>
+              <form method="POST" action="/events/<%= event.id %>/register/<%= r.id %>?_method=DELETE" style="display:inline">
+                <button type="submit" class="btn small danger">הסר</button>
+              </form>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  <% } %>
+  <form method="POST" action="/events/<%= event.id %>/register" class="form-grid" style="margin-top:14px;">
+    <div class="form-group">
+      <label>הוספת תלמיד נרשם</label>
+      <select name="student_id" required>
+        <option value="">בחר תלמיד</option>
+        <% students.forEach(s => { %>
+          <option value="<%= s.id %>"><%= s.first_name %> <%= s.last_name %></option>
+        <% }) %>
+      </select>
+    </div>
+    <div class="form-group"><button type="submit" class="btn small" style="margin-top:22px;">+ הוסף</button></div>
+  </form>
+</div>
+<% } %>
+
+<%- include('../partials/footer') %>

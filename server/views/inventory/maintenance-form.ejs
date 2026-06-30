@@ -1,0 +1,26 @@
+<%- include('../partials/header', {title: 'בקשת תחזוקה חדשה'}) %>
+
+<div class="card">
+  <h1>בקשת תחזוקה/תיקון חדשה</h1>
+  <form method="POST" action="/inventory/maintenance">
+    <div class="form-grid">
+      <div class="form-group">
+        <label>כיתה (אופציונלי)</label>
+        <select name="class_id">
+          <option value="">--</option>
+          <% classes.forEach(c => { %>
+            <option value="<%= c.id %>"><%= c.name %><%= c.parallel ? ' ('+c.parallel+')' : '' %></option>
+          <% }) %>
+        </select>
+      </div>
+      <div class="form-group"><label>מיקום (אם לא כיתה ספציפית)</label><input type="text" name="location" /></div>
+      <div class="form-group full"><label>תיאור התקלה/הבקשה</label><textarea name="description" required></textarea></div>
+    </div>
+    <div class="actions" style="margin-top:14px;">
+      <button type="submit" class="btn">שמירה</button>
+      <a href="/inventory/maintenance" class="btn secondary">ביטול</a>
+    </div>
+  </form>
+</div>
+
+<%- include('../partials/footer') %>

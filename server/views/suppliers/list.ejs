@@ -1,0 +1,57 @@
+<%- include('../partials/header', {title: 'ספקים'}) %>
+
+<div class="card">
+  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+    <h1>ספקים</h1>
+    <a href="/suppliers/new" class="btn">+ ספק חדש</a>
+  </div>
+  <form class="searchbar auto-filter" method="GET" action="/suppliers">
+    <input type="text" name="q" placeholder="חיפוש לפי שם, איש קשר, טלפון, מייל..." value="<%= q %>" />
+    <select name="category">
+      <option value="">כל הקטגוריות</option>
+      <% categories.forEach(c => { %>
+        <option value="<%= c.category %>" <%= category === c.category ? 'selected' : '' %>><%= c.category %></option>
+      <% }) %>
+    </select>
+    <select name="status">
+      <option value="">כל הסטטוסים</option>
+      <option value="פעיל" <%= status === 'פעיל' ? 'selected' : '' %>>פעיל</option>
+      <option value="לא פעיל" <%= status === 'לא פעיל' ? 'selected' : '' %>>לא פעיל</option>
+    </select>
+    <button type="submit" class="btn">חיפוש</button>
+    <input type="hidden" name="sort" value="<%= sort %>" />
+    <input type="hidden" name="dir" value="<%= dir %>" />
+  </form>
+
+  <% if (suppliers.length === 0) { %>
+    <div class="empty-state">לא נמצאו ספקים. לחץ "+ ספק חדש" כדי להוסיף את הראשון</div>
+  <% } else { %>
+    <table>
+      <thead><tr>
+        <th><a href="<%= sortUrl('name') %>">שם הספק<%= sortIndicator('name') %></a></th>
+        <th><a href="<%= sortUrl('category') %>">קטגוריה<%= sortIndicator('category') %></a></th>
+        <th><a href="<%= sortUrl('contact_person') %>">איש קשר<%= sortIndicator('contact_person') %></a></th>
+        <th><a href="<%= sortUrl('phone') %>">טלפון<%= sortIndicator('phone') %></a></th>
+        <th>מייל</th>
+        <th><a href="<%= sortUrl('status') %>">סטטוס<%= sortIndicator('status') %></a></th>
+        <th></th>
+      </tr></thead>
+      <tbody>
+        <% suppliers.forEach(s => { %>
+          <tr>
+            <td><a href="/suppliers/<%= s.id %>"><%= s.name || '' %></a></td>
+            <td><%= s.category || '' %></td>
+            <td><%= s.contact_person || '' %></td>
+            <td><%- phoneLink(s.phone) %></td>
+            <td><%- emailLink(s.email) %></td>
+            <td><span class="badge <%= s.status !== 'פעיל' ? 'archive' : '' %>"><%= s.status || '' %></span></td>
+            <td><a href="/suppliers/<%= s.id %>" class="btn small secondary">צפייה</a></td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+    <p style="color:var(--muted); margin-top:10px;">סה"כ <%= suppliers.length %> ספקים</p>
+  <% } %>
+</div>
+
+<%- include('../partials/footer') %>

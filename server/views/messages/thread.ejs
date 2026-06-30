@@ -1,0 +1,26 @@
+<%- include('../partials/header', {title: 'שיחה עם ' + (otherUser.display_name || otherUser.username)}) %>
+
+<div class="card">
+  <h1>שיחה עם <%= otherUser.display_name || otherUser.username %></h1>
+  <a href="/messages" class="btn secondary" style="margin-bottom:14px; display:inline-block;">חזרה להודעות</a>
+
+  <div class="thread-box">
+    <% if (thread.length === 0) { %>
+      <p class="empty-state">אין הודעות עדיין - שלח את הראשונה!</p>
+    <% } else { %>
+      <% thread.forEach(m => { %>
+        <div class="msg-bubble <%= m.mine ? 'msg-mine' : 'msg-theirs' %>">
+          <div class="msg-body"><%= m.body %></div>
+          <div class="msg-time"><%= m.created_at_str %></div>
+        </div>
+      <% }) %>
+    <% } %>
+  </div>
+
+  <form method="POST" action="/messages/<%= otherUser.id %>" class="msg-form">
+    <textarea name="body" placeholder="כתוב הודעה..." required></textarea>
+    <button type="submit" class="btn">שלח</button>
+  </form>
+</div>
+
+<%- include('../partials/footer') %>

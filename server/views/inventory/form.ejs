@@ -1,0 +1,37 @@
+<%- include('../partials/header', {title: mode === 'new' ? 'פריט מלאי חדש' : 'עריכת פריט'}) %>
+
+<div class="card">
+  <h1><%= mode === 'new' ? 'הוספת פריט מלאי' : 'עריכת פריט' %></h1>
+  <form method="POST" action="<%= mode === 'new' ? '/inventory' : '/inventory/' + item.id + '?_method=PUT' %>">
+    <div class="form-grid">
+      <div class="form-group"><label>שם הפריט</label><input type="text" name="name" value="<%= item.name || '' %>" required /></div>
+      <div class="form-group">
+        <label>כיתה (אופציונלי)</label>
+        <select name="class_id">
+          <option value="">--</option>
+          <% classes.forEach(c => { %>
+            <option value="<%= c.id %>" <%= String(item.class_id) === String(c.id) ? 'selected' : '' %>><%= c.name %><%= c.parallel ? ' ('+c.parallel+')' : '' %></option>
+          <% }) %>
+        </select>
+      </div>
+      <div class="form-group"><label>מיקום (אם לא כיתה ספציפית)</label><input type="text" name="location" value="<%= item.location || '' %>" /></div>
+      <div class="form-group"><label>כמות</label><input type="number" name="quantity" value="<%= item.quantity != null ? item.quantity : '' %>" /></div>
+      <div class="form-group">
+        <label>מצב</label>
+        <select name="condition">
+          <option value="חדש" <%= item.condition === 'חדש' ? 'selected' : '' %>>חדש</option>
+          <option value="תקין" <%= item.condition === 'תקין' ? 'selected' : '' %>>תקין</option>
+          <option value="דורש תיקון" <%= item.condition === 'דורש תיקון' ? 'selected' : '' %>>דורש תיקון</option>
+          <option value="לא תקין" <%= item.condition === 'לא תקין' ? 'selected' : '' %>>לא תקין</option>
+        </select>
+      </div>
+      <div class="form-group full"><label>הערות</label><textarea name="notes"><%= item.notes || '' %></textarea></div>
+    </div>
+    <div class="actions" style="margin-top:14px;">
+      <button type="submit" class="btn">שמירה</button>
+      <a href="/inventory" class="btn secondary">ביטול</a>
+    </div>
+  </form>
+</div>
+
+<%- include('../partials/footer') %>

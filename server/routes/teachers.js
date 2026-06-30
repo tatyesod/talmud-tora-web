@@ -38,6 +38,7 @@ router.get("/", (req, res) => {
       id_number: "t.id_number",
       mobile: "t.mobile",
       chassidut: "ch.name",
+      children_count: "t.children_count",
       status: "t.status",
     },
     "ORDER BY t.last_name, t.first_name"
@@ -45,7 +46,8 @@ router.get("/", (req, res) => {
 
   const teachers = db.prepare(sql).all(...params).map(withDates);
   const statuses = db.prepare("SELECT DISTINCT status FROM teachers WHERE status IS NOT NULL ORDER BY status").all();
-  res.render("teachers/list", { teachers, statuses, q: q || "", status: status || "", sort: req.query.sort || "", dir: req.query.dir || "" });
+  const totalChildren = teachers.reduce((sum, t) => sum + (t.children_count || 0), 0);
+  res.render("teachers/list", { teachers, statuses, q: q || "", status: status || "", sort: req.query.sort || "", dir: req.query.dir || "", totalChildren });
 });
 
 router.get("/new", (req, res) => {
@@ -56,7 +58,7 @@ router.get("/new", (req, res) => {
 const TEACHER_FIELDS = [
   "last_name", "first_name", "id_number", "birth_date_civil", "street", "house_number",
   "apartment", "city", "zip_code", "home_phone", "mobile", "chassidut_id", "notes",
-  "status", "entry_date", "update_date", "exit_date",
+  "status", "entry_date", "update_date", "exit_date", "children_count",
 ];
 const DATE_FIELDS = ["birth_date_civil", "entry_date", "update_date", "exit_date"];
 
@@ -90,7 +92,43 @@ router.get("/:id", (req, res) => {
       WHERE tc.teacher_id = ?
     `)
     .all(req.params.id);
-  res.render("teachers/view", { teacher, classes });
+
+  const attendance = db
+    .prepare("SELECT * FROM teacher_attendance WHERE teacher_id = ? ORDER BY att_date DESC LIMIT 30")
+    .all(req.params.id)
+    .map((a) => ({ ...a, att_date_str: hd.serialToGregorianString(a.att_date) }));
+
+  const attendanceSummary = db
+    .prepare("SELECT status, COUNT(*) c FROM teacher_attendance WHERE teacher_id = ? GROUP BY status")
+    .all(req.params.id);
+
+  const file = db
+    .prepare("SELECT * FROM teacher_file WHERE teacher_id = ? ORDER BY entry_date DESC")
+    .all(req.params.id)
+    .map((f) => ({ ...f, entry_date_str: hd.serialToGregorianString(f.entry_date) }));
+
+  res.render("teachers/view", { teacher, classes, attendance, attendanceSummary, file });
+});
+
+router.post("/:id/attendance", (req, res) => {
+  const { att_date, status, notes } = req.body;
+  db.prepare("INSERT INTO teacher_attendance (teacher_id, att_date, status, notes) VALUES (?,?,?,?)").run(
+    req.params.id, att_date ? hd.gregorianStringToSerial(att_date) : hd.todayAccessSerial(), status, notes || null
+  );
+  res.redirect(`/teachers/${req.params.id}`);
+});
+
+router.delete("/:id/attendance/:attId", (req, res) => {
+  db.prepare("DELETE FROM teacher_attendance WHERE id = ? AND teacher_id = ?").run(req.params.attId, req.params.id);
+  res.redirect(`/teachers/${req.params.id}`);
+});
+
+router.post("/:id/file", (req, res) => {
+  const { entry_date, category, notes } = req.body;
+  db.prepare("INSERT INTO teacher_file (teacher_id, entry_date, category, notes) VALUES (?,?,?,?)").run(
+    req.params.id, entry_date ? hd.gregorianStringToSerial(entry_date) : hd.todayAccessSerial(), category || null, notes
+  );
+  res.redirect(`/teachers/${req.params.id}`);
 });
 
 router.get("/:id/edit", (req, res) => {

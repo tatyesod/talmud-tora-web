@@ -7,7 +7,10 @@
 </head>
 <body onload="window.print()">
   <div class="print-doc">
-    <h2>אנשי קשר לשעת חירום</h2>
+    <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #2c5f7c; padding-bottom:8px; margin-bottom:10px;">
+      <h2 style="margin:0; border:none; padding:0;">אנשי קשר לשעת חירום</h2>
+      <img src="/images/logo-reports.jpg" alt="לוגו" style="height:60px;" />
+    </div>
     <table style="width:100%; margin-bottom:20px;">
       <tr><td class="label">שם התלמיד</td><td><strong><%= student.full_name %></strong></td><td class="label">כיתה</td><td><%= student.class_name || '' %></td></tr>
       <tr><td class="label">שם האב</td><td><%= student.father_name || '' %></td><td class="label">נייד אב</td><td><%= student.father_mobile || '' %></td></tr>

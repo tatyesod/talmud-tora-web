@@ -1,8 +1,13 @@
 const express = require("express");
 const router = express.Router();
 const db = require("../db");
-const XLSX = require("xlsx");
+const ExcelJS = require("exceljs");
+const fs = require("fs");
+const path = require("path");
 const hd = require("../hebrewDate");
+
+const LOGO_PATH = path.join(__dirname, "..", "public", "images", "logo-reports.jpg");
+const LOGO_EXT = "jpeg";
 
 function buildAddress(row) {
   return [row.street, row.house_number ? row.house_number : null, row.city]
@@ -11,15 +16,79 @@ function buildAddress(row) {
     .trim();
 }
 
-function sendWorkbook(res, filename, sheetName, headerRow, dataRows) {
-  const wb = XLSX.utils.book_new();
-  const ws = XLSX.utils.aoa_to_sheet([headerRow, ...dataRows]);
-  ws["!cols"] = headerRow.map(() => ({ wch: 22 }));
-  XLSX.utils.book_append_sheet(wb, ws, sheetName);
-  const buf = XLSX.write(wb, { type: "buffer", bookType: "xlsx" });
+async function sendWorkbook(res, filename, sheetName, reportTitle, headerRow, dataRows) {
+  const wb = new ExcelJS.Workbook();
+  wb.creator = "מערכת ניהול תלמוד תורה החדש";
+  const ws = wb.addWorksheet(sheetName, { views: [{ rightToLeft: true }] });
+
+  const lastCol = headerRow.length;
+
+  // --- כותרת עליונה: שם המוסד + שם הדוח, עם מקום ללוגו בצד ימין ---
+  ws.mergeCells(1, 1, 1, Math.max(1, lastCol - 1));
+  const titleCell = ws.getCell(1, 1);
+  titleCell.value = "תלמוד תורה החדש";
+  titleCell.font = { size: 16, bold: true, color: { argb: "FF2C5F7C" } };
+  titleCell.alignment = { horizontal: "right", vertical: "middle" };
+  ws.getRow(1).height = 28;
+
+  ws.mergeCells(2, 1, 2, Math.max(1, lastCol - 1));
+  const subtitleCell = ws.getCell(2, 1);
+  subtitleCell.value = reportTitle;
+  subtitleCell.font = { size: 12, bold: true, color: { argb: "FF555555" } };
+  subtitleCell.alignment = { horizontal: "right", vertical: "middle" };
+
+  ws.mergeCells(3, 1, 3, Math.max(1, lastCol - 1));
+  const dateCell = ws.getCell(3, 1);
+  dateCell.value = `הופק בתאריך: ${new Date().toLocaleDateString("he-IL")}`;
+  dateCell.font = { size: 9, italic: true, color: { argb: "FF888888" } };
+  dateCell.alignment = { horizontal: "right", vertical: "middle" };
+
+  // לוגו בעמודה הימנית ביותר (אם קיים קובץ לוגו)
+  if (fs.existsSync(LOGO_PATH)) {
+    try {
+      const imageId = wb.addImage({ filename: LOGO_PATH, extension: LOGO_EXT });
+      ws.addImage(imageId, {
+        tl: { col: lastCol - 1, row: 0 },
+        ext: { width: 68, height: 59 },
+      });
+    } catch (e) {
+      // אם הוספת התמונה נכשלת, ממשיכים בלי לוגו (לא קריטי)
+    }
+  }
+
+  ws.addRow([]); // שורת רווח
+
+  const headerRowIdx = 5;
+  const headerExcelRow = ws.getRow(headerRowIdx);
+  headerRow.forEach((h, i) => {
+    headerExcelRow.getCell(i + 1).value = h;
+  });
+  headerExcelRow.font = { bold: true, color: { argb: "FFFFFFFF" } };
+  headerExcelRow.eachCell((cell) => {
+    cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF2C5F7C" } };
+    cell.alignment = { horizontal: "right", vertical: "middle" };
+    cell.border = { bottom: { style: "thin" } };
+  });
+  headerExcelRow.height = 20;
+
+  dataRows.forEach((row) => {
+    const r = ws.addRow(row);
+    r.alignment = { horizontal: "right" };
+  });
+
+  ws.columns.forEach((col, i) => {
+    let maxLen = (headerRow[i] || "").toString().length;
+    dataRows.forEach((row) => {
+      const v = row[i] != null ? String(row[i]) : "";
+      if (v.length > maxLen) maxLen = v.length;
+    });
+    col.width = Math.min(Math.max(maxLen + 3, 12), 40);
+  });
+
   res.setHeader("Content-Disposition", `attachment; filename="${encodeURIComponent(filename)}"`);
   res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-  res.send(buf);
+  await wb.xlsx.write(res);
+  res.end();
 }
 
 // --- מסך ראשי - תפריט דוחות ---
@@ -34,7 +103,7 @@ router.get("/class-list", (req, res) => {
   res.render("reports/class-list", { classes, statuses });
 });
 
-router.get("/class-list/export", (req, res) => {
+router.get("/class-list/export", async (req, res) => {
   let classIds = req.query.class_id || [];
   if (!Array.isArray(classIds)) classIds = [classIds];
   const status = req.query.status || "";
@@ -70,7 +139,7 @@ router.get("/class-list/export", (req, res) => {
     r.mother_mobile || "",
   ]);
 
-  sendWorkbook(res, "רשימת כתות.xlsx", "רשימת כתות", header, data);
+  await sendWorkbook(res, "רשימת כתות.xlsx", "רשימת כתות", "רשימת כתות", header, data);
 });
 
 // ============ רשימת תלמידים מלא - ייצוא לאקסל ============
@@ -79,7 +148,7 @@ router.get("/full-student-list", (req, res) => {
   res.render("reports/full-student-list", { statuses });
 });
 
-router.get("/full-student-list/export", (req, res) => {
+router.get("/full-student-list/export", async (req, res) => {
   const status = req.query.status || "";
   let sql = `
     SELECT s.last_name, s.first_name, s.id_number, c.name AS class_name, c.parallel,
@@ -95,7 +164,7 @@ router.get("/full-student-list/export", (req, res) => {
     sql += " AND s.status = ?";
     params.push(status);
   }
-  sql += " ORDER BY s.last_name, s.first_name";
+  sql += " ORDER BY c.name, c.parallel, s.last_name, s.first_name";
   const rows = db.prepare(sql).all(...params);
 
   const header = [
@@ -110,7 +179,7 @@ router.get("/full-student-list/export", (req, res) => {
     buildAddress(r), hd.serialToGregorianString(r.birth_date_civil),
   ]);
 
-  sendWorkbook(res, "רשימת תלמידים מלא.xlsx", "תלמידים", header, data);
+  await sendWorkbook(res, "רשימת תלמידים מלא.xlsx", "תלמידים", "רשימת תלמידים מלא", header, data);
 });
 
 // ============ דוח משפחות - ייצוא לאקסל ============
@@ -118,7 +187,7 @@ router.get("/families-report", (req, res) => {
   res.render("reports/families-report");
 });
 
-router.get("/families-report/export", (req, res) => {
+router.get("/families-report/export", async (req, res) => {
   const rows = db.prepare(`
     SELECT f.id, f.last_name, f.father_name, f.mother_name, f.home_phone, f.father_mobile,
            f.mother_mobile, f.street, f.house_number, f.city,
@@ -137,19 +206,23 @@ router.get("/families-report/export", (req, res) => {
   `);
 
   const header = ["שם משפחה", "שם האב", "שם האם", "טלפון בית", "נייד אב", "נייד אם", "כתובת", "מס' ילדים פעילים", "כיתת האח הבכור"];
-  const data = rows.map((r) => {
+  const enriched = rows.map((r) => {
     const eldest = eldestClassStmt.get(r.id);
     const eldestClass = eldest && eldest.class_name
       ? eldest.class_name + (eldest.parallel ? " " + eldest.parallel : "")
       : "";
-    return [
-      r.last_name || "", r.father_name || "", r.mother_name || "",
-      r.home_phone || "", r.father_mobile || "", r.mother_mobile || "",
-      buildAddress(r), r.active_children, eldestClass,
-    ];
+    return { r, eldestClass };
   });
+  // מיון לפי כיתת האח הבכור (משפחות ללא ילדים בסוף)
+  enriched.sort((a, b) => a.eldestClass.localeCompare(b.eldestClass, "he"));
 
-  sendWorkbook(res, "דוח משפחות.xlsx", "משפחות", header, data);
+  const data = enriched.map(({ r, eldestClass }) => [
+    r.last_name || "", r.father_name || "", r.mother_name || "",
+    r.home_phone || "", r.father_mobile || "", r.mother_mobile || "",
+    buildAddress(r), r.active_children, eldestClass,
+  ]);
+
+  await sendWorkbook(res, "דוח משפחות.xlsx", "משפחות", "דוח משפחות", header, data);
 });
 
 // ============ רשימת סבים וכתובתם - ייצוא לאקסל ============
@@ -157,11 +230,11 @@ router.get("/grandparents-report", (req, res) => {
   res.render("reports/grandparents-report");
 });
 
-router.get("/grandparents-report/export", (req, res) => {
+router.get("/grandparents-report/export", async (req, res) => {
   const rows = db.prepare("SELECT name, address, city FROM grandparents WHERE name IS NOT NULL ORDER BY name").all();
   const header = ["שם", "כתובת", "עיר"];
   const data = rows.map((r) => [r.name || "", r.address || "", r.city || ""]);
-  sendWorkbook(res, "רשימת סבים וכתובתם.xlsx", "סבים", header, data);
+  await sendWorkbook(res, "רשימת סבים וכתובתם.xlsx", "סבים", "רשימת סבים וכתובתם", header, data);
 });
 
 // ============ יומן כיתה ============

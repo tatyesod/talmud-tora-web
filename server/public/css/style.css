@@ -55,6 +55,10 @@ header.topbar nav a:hover { color: var(--accent); }
   padding: 0 16px;
 }
 
+.container-wide {
+  max-width: 1600px;
+}
+
 .card {
   background: var(--card-bg);
   border: 1px solid var(--border);
@@ -147,6 +151,56 @@ legend { color: var(--primary-dark); font-weight: 700; padding: 0 8px; }
   .print-doc { border: none; box-shadow: none; margin: 0; }
 }
 
+.unread-badge-light {
+  background: var(--danger);
+  color: #fff;
+  border-radius: 10px;
+  padding: 1px 7px;
+  font-size: 0.8em;
+  font-weight: 700;
+  margin-right: 6px;
+}
+
+.thread-box {
+  max-height: 420px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 4px;
+  margin-bottom: 14px;
+}
+.msg-bubble {
+  max-width: 70%;
+  padding: 8px 14px;
+  border-radius: 14px;
+  font-size: 0.92em;
+}
+.msg-theirs {
+  align-self: flex-start;
+  background: #efe9da;
+  color: var(--text);
+  border-bottom-right-radius: 4px;
+}
+.msg-mine {
+  align-self: flex-end;
+  background: var(--primary);
+  color: #fff;
+  border-bottom-left-radius: 4px;
+}
+.msg-time { font-size: 0.72em; opacity: 0.7; margin-top: 3px; }
+
+.msg-form { display: flex; gap: 10px; }
+.msg-form textarea {
+  flex: 1;
+  min-height: 50px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-family: inherit;
+  resize: vertical;
+}
+
 .login-box {
   max-width: 360px;
   margin: 80px auto;
@@ -154,6 +208,13 @@ legend { color: var(--primary-dark); font-weight: 700; padding: 0 8px; }
 .error-msg { color: var(--danger); margin-bottom: 10px; }
 
 .empty-state { text-align: center; color: var(--muted); padding: 40px 0; }
+
+.stats-row-inline {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.stats-row-inline .summary-panel { flex: 1; min-width: 200px; }
 
 .summary-panel {
   display: flex;

@@ -2,6 +2,10 @@
 
 <div class="card">
   <h1>מלמדים ועובדים</h1>
+  <p style="color:var(--muted); font-size:0.9em; margin-top:-8px;">
+    סך הכל ילדים בבית (לפי הרשימה המוצגת): <strong style="color:var(--primary-dark);"><%= totalChildren %></strong>
+    — שימושי לחישוב תקציב חלוקת מתנות
+  </p>
   <form class="searchbar auto-filter" method="GET" action="/teachers">
     <input type="text" name="q" placeholder="חיפוש לפי שם, ת.ז, נייד..." value="<%= q %>" />
     <select name="status">
@@ -26,6 +30,7 @@
         <th><a href="<%= sortUrl('id_number') %>">ת.ז<%= sortIndicator('id_number') %></a></th>
         <th><a href="<%= sortUrl('mobile') %>">נייד<%= sortIndicator('mobile') %></a></th>
         <th><a href="<%= sortUrl('chassidut') %>">חסידות<%= sortIndicator('chassidut') %></a></th>
+        <th><a href="<%= sortUrl('children_count') %>">מס' ילדים<%= sortIndicator('children_count') %></a></th>
         <th><a href="<%= sortUrl('status') %>">סטטוס<%= sortIndicator('status') %></a></th>
         <th></th>
       </tr></thead>
@@ -37,6 +42,7 @@
             <td><%= t.id_number || '' %></td>
             <td><%- phoneLink(t.mobile) %></td>
             <td><%= t.chassidut_name || '' %></td>
+            <td><%= t.children_count != null ? t.children_count : '' %></td>
             <td><span class="badge <%= t.status !== 'פעיל' ? 'archive' : '' %>"><%= t.status || '' %></span></td>
             <td><a href="/teachers/<%= t.id %>" class="btn small secondary">צפייה</a></td>
           </tr>

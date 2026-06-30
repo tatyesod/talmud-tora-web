@@ -1,0 +1,33 @@
+<%- include('../partials/header', {title: 'ניהול משתמשים'}) %>
+
+<div class="card">
+  <div style="display:flex; justify-content:space-between; align-items:center;">
+    <h1>ניהול משתמשים</h1>
+    <a href="/users/new" class="btn">+ משתמש חדש</a>
+  </div>
+  <table>
+    <thead><tr><th>שם משתמש</th><th>שם תצוגה</th><th>נוצר בתאריך</th><th></th></tr></thead>
+    <tbody>
+      <% users.forEach(u => { %>
+        <tr>
+          <td><%= u.username %></td>
+          <td><%= u.display_name || '' %></td>
+          <td><%= u.created_at ? new Date(u.created_at).toLocaleDateString('he-IL') : '' %></td>
+          <td>
+            <a href="/users/<%= u.id %>/edit" class="btn small secondary">עריכה</a>
+            <% if (u.id !== currentUserId) { %>
+              <form method="POST" action="/users/<%= u.id %>?_method=DELETE" onsubmit="return confirm('האם למחוק את המשתמש?');" style="display:inline">
+                <button type="submit" class="btn small danger">מחיקה</button>
+              </form>
+            <% } %>
+          </td>
+        </tr>
+      <% }) %>
+    </tbody>
+  </table>
+  <p style="color:var(--muted); margin-top:10px; font-size:0.9em;">
+    כל המשתמשים הרשומים כאן יכולים להתחבר למערכת, לראות ולערוך נתונים, ולשלוח הודעות זה לזה.
+  </p>
+</div>
+
+<%- include('../partials/footer') %>

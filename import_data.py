@@ -88,6 +88,7 @@ CREATE TABLE teachers (
     chassidut_id INTEGER,
     notes TEXT, status TEXT,
     entry_date INTEGER, update_date INTEGER, exit_date INTEGER,
+    children_count INTEGER,
     FOREIGN KEY(chassidut_id) REFERENCES chassidut(id)
 );
 
@@ -117,6 +118,42 @@ CREATE TABLE emergency_contacts (
     FOREIGN KEY(family_id) REFERENCES families(id)
 );
 
+CREATE TABLE users (
+    id INTEGER PRIMARY KEY,
+    username TEXT UNIQUE,
+    password_hash TEXT,
+    display_name TEXT,
+    created_at TEXT
+);
+
+CREATE TABLE tasks (
+    id INTEGER PRIMARY KEY,
+    user_id INTEGER,
+    title TEXT,
+    notes TEXT,
+    due_date INTEGER,
+    done INTEGER DEFAULT 0,
+    created_at TEXT,
+    FOREIGN KEY(user_id) REFERENCES users(id)
+);
+
+CREATE TABLE messages (
+    id INTEGER PRIMARY KEY,
+    sender_id INTEGER,
+    recipient_id INTEGER,
+    body TEXT,
+    created_at TEXT,
+    read_at TEXT,
+    FOREIGN KEY(sender_id) REFERENCES users(id),
+    FOREIGN KEY(recipient_id) REFERENCES users(id)
+);
+
+CREATE TABLE user_presence (
+    user_id INTEGER PRIMARY KEY,
+    last_seen TEXT,
+    FOREIGN KEY(user_id) REFERENCES users(id)
+);
+
 CREATE TABLE settings (
     key TEXT PRIMARY KEY,
     value TEXT
@@ -127,6 +164,121 @@ CREATE TABLE year_snapshots (
     year_label TEXT,
     created_at TEXT,
     data TEXT
+);
+
+CREATE TABLE suppliers (
+    id INTEGER PRIMARY KEY,
+    name TEXT,
+    category TEXT,
+    contact_person TEXT,
+    phone TEXT,
+    email TEXT,
+    address TEXT,
+    notes TEXT,
+    status TEXT,
+    created_at TEXT
+);
+
+-- ניהול כוח אדם
+CREATE TABLE teacher_attendance (
+    id INTEGER PRIMARY KEY,
+    teacher_id INTEGER,
+    att_date INTEGER,
+    status TEXT,
+    notes TEXT,
+    FOREIGN KEY(teacher_id) REFERENCES teachers(id)
+);
+
+CREATE TABLE teacher_file (
+    id INTEGER PRIMARY KEY,
+    teacher_id INTEGER,
+    entry_date INTEGER,
+    category TEXT,
+    notes TEXT,
+    FOREIGN KEY(teacher_id) REFERENCES teachers(id)
+);
+
+-- תקשורת הורים ופניות
+CREATE TABLE parent_requests (
+    id INTEGER PRIMARY KEY,
+    family_id INTEGER,
+    student_id INTEGER,
+    subject TEXT,
+    body TEXT,
+    status TEXT,
+    response TEXT,
+    created_at TEXT,
+    resolved_at TEXT,
+    handled_by_user_id INTEGER,
+    FOREIGN KEY(family_id) REFERENCES families(id),
+    FOREIGN KEY(student_id) REFERENCES students(id)
+);
+
+-- אירועים ולוח שנה
+CREATE TABLE events (
+    id INTEGER PRIMARY KEY,
+    title TEXT,
+    description TEXT,
+    event_date INTEGER,
+    event_date_end INTEGER,
+    category TEXT,
+    class_id INTEGER,
+    requires_registration INTEGER DEFAULT 0,
+    price REAL,
+    created_at TEXT,
+    FOREIGN KEY(class_id) REFERENCES classes(id)
+);
+
+CREATE TABLE event_registrations (
+    id INTEGER PRIMARY KEY,
+    event_id INTEGER,
+    student_id INTEGER,
+    paid INTEGER DEFAULT 0,
+    notes TEXT,
+    created_at TEXT,
+    FOREIGN KEY(event_id) REFERENCES events(id),
+    FOREIGN KEY(student_id) REFERENCES students(id)
+);
+
+-- מלאי וציוד
+CREATE TABLE inventory_items (
+    id INTEGER PRIMARY KEY,
+    name TEXT,
+    class_id INTEGER,
+    location TEXT,
+    quantity INTEGER,
+    condition TEXT,
+    notes TEXT,
+    updated_at TEXT,
+    FOREIGN KEY(class_id) REFERENCES classes(id)
+);
+
+CREATE TABLE maintenance_requests (
+    id INTEGER PRIMARY KEY,
+    description TEXT,
+    class_id INTEGER,
+    location TEXT,
+    status TEXT,
+    reported_by_user_id INTEGER,
+    created_at TEXT,
+    resolved_at TEXT,
+    notes TEXT,
+    FOREIGN KEY(class_id) REFERENCES classes(id)
+);
+
+-- הוצאות מול ספקים
+CREATE TABLE expenses (
+    id INTEGER PRIMARY KEY,
+    supplier_id INTEGER,
+    description TEXT,
+    amount REAL,
+    expense_date INTEGER,
+    category TEXT,
+    paid INTEGER DEFAULT 0,
+    invoice_number TEXT,
+    notes TEXT,
+    created_at TEXT,
+    FOREIGN KEY(supplier_id) REFERENCES suppliers(id)
 );
 
 CREATE INDEX idx_students_family ON students(family_id);

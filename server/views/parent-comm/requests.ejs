@@ -1,0 +1,37 @@
+<%- include('../partials/header', {title: 'פניות הורים'}) %>
+
+<div class="card">
+  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+    <h1>פניות הורים</h1>
+    <a href="/parent-comm/requests/new" class="btn">+ רישום פנייה חדשה</a>
+  </div>
+  <form class="searchbar auto-filter" method="GET" action="/parent-comm/requests">
+    <select name="status">
+      <option value="">כל הסטטוסים</option>
+      <option value="פתוח" <%= status === 'פתוח' ? 'selected' : '' %>>פתוח</option>
+      <option value="בטיפול" <%= status === 'בטיפול' ? 'selected' : '' %>>בטיפול</option>
+      <option value="סגור" <%= status === 'סגור' ? 'selected' : '' %>>סגור</option>
+    </select>
+  </form>
+
+  <% if (requests.length === 0) { %>
+    <div class="empty-state">אין פניות רשומות</div>
+  <% } else { %>
+    <table>
+      <thead><tr><th>תאריך</th><th>משפחה</th><th>נושא</th><th>סטטוס</th><th></th></tr></thead>
+      <tbody>
+        <% requests.forEach(r => { %>
+          <tr>
+            <td><%= r.created_at_str %></td>
+            <td><%= r.family_last_name || '' %></td>
+            <td><%= r.subject %></td>
+            <td><span class="badge <%= r.status !== 'סגור' ? '' : 'archive' %>"><%= r.status %></span></td>
+            <td><a href="/parent-comm/requests/<%= r.id %>" class="btn small secondary">פתח</a></td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  <% } %>
+</div>
+
+<%- include('../partials/footer') %>

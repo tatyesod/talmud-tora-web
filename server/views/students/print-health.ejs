@@ -7,7 +7,10 @@
 </head>
 <body onload="window.print()">
   <div class="print-doc">
-    <h2>טופס בריאות</h2>
+    <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #2c5f7c; padding-bottom:8px; margin-bottom:10px;">
+      <h2 style="margin:0; border:none; padding:0;">טופס בריאות</h2>
+      <img src="/images/logo-reports.jpg" alt="לוגו" style="height:60px;" />
+    </div>
     <table style="width:100%;">
       <tr><td class="label">שם התלמיד</td><td><strong><%= student.full_name %></strong></td><td class="label">כיתה</td><td><%= student.class_name || '' %></td></tr>
       <tr><td class="label">ת.ז</td><td><%= student.id_number || '' %></td><td class="label">תאריך לידה</td><td><%= student.birth_date_civil_str || '' %> (<%= student.birth_date_hebrew_str || '' %>)</td></tr>
