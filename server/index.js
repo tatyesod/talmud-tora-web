@@ -28,21 +28,24 @@ app.use(
 app.use((req, res, next) => {
   if (req.session.userId) {
     const db = require("./db");
-    const u = db.prepare("SELECT id, username, display_name FROM users WHERE id = ?").get(req.session.userId);
+    const u = db.prepare("SELECT id, username, display_name, is_admin FROM users WHERE id = ?").get(req.session.userId);
     if (u) {
       req.currentUser = u;
       res.locals.user = u.display_name || u.username;
       res.locals.currentUserId = u.id;
+      res.locals.isAdmin = !!u.is_admin;
       db.prepare(
         "INSERT INTO user_presence (user_id, last_seen) VALUES (?, ?) ON CONFLICT(user_id) DO UPDATE SET last_seen = excluded.last_seen"
       ).run(u.id, new Date().toISOString());
     } else {
       res.locals.user = null;
       res.locals.currentUserId = null;
+      res.locals.isAdmin = false;
     }
   } else {
     res.locals.user = null;
     res.locals.currentUserId = null;
+    res.locals.isAdmin = false;
   }
   res.locals.sortUrl = (col) => {
     const params = new URLSearchParams(req.query);
@@ -76,6 +79,11 @@ app.use((req, res, next) => {
 function requireLogin(req, res, next) {
   if (req.session.userId) return next();
   return res.redirect("/login");
+}
+
+function requireAdmin(req, res, next) {
+  if (req.currentUser && req.currentUser.is_admin) return next();
+  return res.status(403).render("403");
 }
 
 app.get("/login", (req, res) => {
@@ -151,7 +159,7 @@ app.use("/year", require("./routes/year"));
 app.use("/tasks", require("./routes/tasks"));
 app.use("/messages", require("./routes/messages"));
 app.use("/presence", require("./routes/presence"));
-app.use("/users", require("./routes/users"));
+app.use("/users", requireAdmin, require("./routes/users"));
 app.use("/suppliers", require("./routes/suppliers"));
 app.use("/parent-comm", require("./routes/parent-comm"));
 app.use("/events", require("./routes/events"));

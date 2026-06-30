@@ -27,7 +27,7 @@
       <a href="/reports">דוחות</a>
       <a href="/year">ניהול שנה</a>
       <a href="/messages">הודעות</a>
-      <a href="/users">משתמשים</a>
+      <% if (isAdmin) { %><a href="/users">משתמשים</a><% } %>
       <% if (user) { %>
         <form action="/logout" method="POST" style="display:inline">
           <button type="submit" class="btn small secondary" style="margin-inline-start:16px;"><%= user %> · יציאה</button>

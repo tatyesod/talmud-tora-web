@@ -20,7 +20,7 @@
     <span class="bsd">בס"ד</span>
     <a href="/year" class="year-pill">שנת לימודים: <strong><%= currentYear %></strong></a>
     <a href="/messages" class="year-pill">💬 הודעות<% if (unreadCount > 0) { %> <span class="unread-badge"><%= unreadCount %></span><% } %></a>
-    <a href="/users" class="year-pill">👥 משתמשים</a>
+    <% if (isAdmin) { %><a href="/users" class="year-pill">👥 משתמשים</a><% } %>
     <form action="/logout" method="POST">
       <button type="submit" class="btn-logout"><%= user %> · יציאה</button>
     </form>
