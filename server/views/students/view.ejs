@@ -1,0 +1,111 @@
+<%- include('../partials/header', {title: (student.first_name||'') + ' ' + (student.last_name||student.family_last_name||'')}) %>
+
+<div class="card">
+  <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:10px;">
+    <h1><%= student.first_name %> <%= student.last_name || student.family_last_name %> <span class="badge <%= student.status !== 'פעיל' ? 'archive' : '' %>"><%= student.status || '' %></span></h1>
+    <div class="actions">
+      <a href="/students/<%= student.id %>/edit" class="btn">עריכה</a>
+      <a href="/students/<%= student.id %>/print/health" target="_blank" class="btn secondary">🖨️ טופס בריאות</a>
+      <a href="/students/<%= student.id %>/print/emergency" target="_blank" class="btn secondary">🖨️ אנשי קשר לחירום</a>
+      <form method="POST" action="/students/<%= student.id %>?_method=DELETE" onsubmit="return confirm('האם למחוק את התלמיד?');" style="display:inline">
+        <button type="submit" class="btn danger">מחיקה</button>
+      </form>
+      <a href="/students" class="btn secondary">חזרה לרשימה</a>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <h3>פרטים אישיים</h3>
+  <table>
+    <tr><th>כינוי</th><td><%= student.nickname || '' %></td><th>ת.ז</th><td><%= student.id_number || '' %></td></tr>
+    <tr><th>תאריך לידה לועזי</th><td><%= student.birth_date_civil_str || '' %></td><th>תאריך לידה עברי</th><td><%= student.birth_date_hebrew_str || '' %></td></tr>
+    <tr>
+      <th>כיתה</th><td><%- student.class_name ? `<a href="/classes/${student.class_id}">${student.class_name}</a>` : '' %></td>
+      <th>מחזור</th><td><%= student.cohort_name || '' %></td>
+    </tr>
+    <tr><th>הולך לבדו</th><td><%= student.walks_alone || '' %></td><th>קופת חולים</th><td><%= student.health_fund || '' %></td></tr>
+    <tr><th>מגזר</th><td><%= student.sector || '' %></td><th></th><td></td></tr>
+    <tr><th>אלרגיות</th><td><%= student.allergies || '' %></td><th>תרופות</th><td><%= student.medications || '' %></td></tr>
+    <tr><th>תאריך רישום</th><td><%= student.registration_date_str || '' %></td><th>תאריך קבלה</th><td><%= student.admission_date_str || '' %></td></tr>
+    <tr><th>תאריך כניסה</th><td><%= student.entry_date_str || '' %></td><th>תאריך יציאה</th><td><%= student.exit_date_str || '' %></td></tr>
+    <tr><th>הערות</th><td colspan="3"><%= student.notes || '' %></td></tr>
+  </table>
+</div>
+
+<% if (teachers.length > 0) { %>
+<div class="card">
+  <h3>מלמדים בכיתה</h3>
+  <table>
+    <% teachers.forEach(t => { %>
+      <tr><td><%= t.role || '' %></td><td><a href="/teachers/<%= t.id %>"><%= t.first_name %> <%= t.last_name %></a></td><td><%- phoneLink(t.mobile) %></td></tr>
+    <% }) %>
+  </table>
+</div>
+<% } %>
+
+<div class="card">
+  <h3>הורים וכתובת <a href="/families/<%= student.family_id %>" class="btn small secondary" style="float:left;">כרטיס משפחה מלא</a></h3>
+  <table>
+    <tr><th>שם האב</th><td><%= student.father_name || '' %></td><th>שם האם</th><td><%= student.mother_name || '' %></td></tr>
+    <tr><th>טלפון בית</th><td><%- phoneLink(student.home_phone) %></td><th>נייד אב</th><td><%- phoneLink(student.father_mobile) %></td></tr>
+    <tr><th>נייד אם</th><td><%- phoneLink(student.mother_mobile) %></td>
+        <th>כתובת</th><td><%= [student.street, student.house_number, student.apartment ? 'דירה '+student.apartment : '', student.city].filter(Boolean).join(', ') %></td></tr>
+  </table>
+</div>
+
+<div class="card">
+  <h3>אנשי קשר לשעת חירום</h3>
+  <% if (contacts.length === 0) { %>
+    <p class="empty-state">לא הוזנו אנשי קשר לשעת חירום</p>
+  <% } else { %>
+    <table>
+      <thead><tr><th>שם</th><th>קרבה</th><th>טלפון 1</th><th>טלפון 2</th></tr></thead>
+      <tbody>
+        <% contacts.forEach(c => { %>
+          <tr>
+            <td><%= c.contact_name || '' %></td>
+            <td><%= c.relation || '' %></td>
+            <td><%= c.phone1 || '' %></td>
+            <td><%= c.phone2 || '' %></td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  <% } %>
+</div>
+
+<% if (siblings.length > 0) { %>
+<div class="card">
+  <h3>אחים/אחיות במערכת</h3>
+  <table>
+    <% siblings.forEach(s => { %>
+      <tr><td><a href="/students/<%= s.id %>"><%= s.first_name %> <%= s.last_name %></a></td></tr>
+    <% }) %>
+  </table>
+</div>
+<% } %>
+
+<div class="card">
+  <h3>תיק תלמיד (יומן הערות)</h3>
+  <% if (studentFile.length === 0) { %>
+    <p class="empty-state">אין רשומות בתיק התלמיד</p>
+  <% } else { %>
+    <table>
+      <thead><tr><th>תאריך</th><th>כיתה</th><th>הערה</th></tr></thead>
+      <tbody>
+        <% studentFile.forEach(f => { %>
+          <tr><td><%= f.entry_date_str || '' %></td><td><%= f.class_name_at_time || '' %></td><td><%= f.notes || '' %></td></tr>
+        <% }) %>
+      </tbody>
+    </table>
+  <% } %>
+  <form method="POST" action="/students/<%= student.id %>/file" class="form-grid" style="margin-top:14px;">
+    <div class="form-group"><label>תאריך</label><input type="date" name="entry_date" /></div>
+    <div class="form-group"><label>כיתה (בזמן הרישום)</label><input type="text" name="class_name_at_time" value="<%= student.class_name || '' %>" /></div>
+    <div class="form-group full"><label>הערה</label><textarea name="notes" required></textarea></div>
+    <div class="form-group full"><button type="submit" class="btn small">הוסף רשומה לתיק</button></div>
+  </form>
+</div>
+
+<%- include('../partials/footer') %>

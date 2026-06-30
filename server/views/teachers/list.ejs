@@ -1,0 +1,50 @@
+<%- include('../partials/header', {title: 'מלמדים ועובדים'}) %>
+
+<div class="card">
+  <h1>מלמדים ועובדים</h1>
+  <form class="searchbar auto-filter" method="GET" action="/teachers">
+    <input type="text" name="q" placeholder="חיפוש לפי שם, ת.ז, נייד..." value="<%= q %>" />
+    <select name="status">
+      <option value="">כל הסטטוסים</option>
+      <% statuses.forEach(s => { %>
+        <option value="<%= s.status %>" <%= status === s.status ? 'selected' : '' %>><%= s.status %></option>
+      <% }) %>
+    </select>
+    <button type="submit" class="btn">חיפוש</button>
+    <a href="/teachers/new" class="btn secondary">+ מלמד/עובד חדש</a>
+    <input type="hidden" name="sort" value="<%= sort %>" />
+    <input type="hidden" name="dir" value="<%= dir %>" />
+  </form>
+
+  <% if (teachers.length === 0) { %>
+    <div class="empty-state">לא נמצאו מלמדים</div>
+  <% } else { %>
+    <table>
+      <thead><tr>
+        <th><a href="<%= sortUrl('last_name') %>">שם משפחה<%= sortIndicator('last_name') %></a></th>
+        <th><a href="<%= sortUrl('first_name') %>">שם פרטי<%= sortIndicator('first_name') %></a></th>
+        <th><a href="<%= sortUrl('id_number') %>">ת.ז<%= sortIndicator('id_number') %></a></th>
+        <th><a href="<%= sortUrl('mobile') %>">נייד<%= sortIndicator('mobile') %></a></th>
+        <th><a href="<%= sortUrl('chassidut') %>">חסידות<%= sortIndicator('chassidut') %></a></th>
+        <th><a href="<%= sortUrl('status') %>">סטטוס<%= sortIndicator('status') %></a></th>
+        <th></th>
+      </tr></thead>
+      <tbody>
+        <% teachers.forEach(t => { %>
+          <tr>
+            <td><a href="/teachers/<%= t.id %>"><%= t.last_name || '' %></a></td>
+            <td><%= t.first_name || '' %></td>
+            <td><%= t.id_number || '' %></td>
+            <td><%- phoneLink(t.mobile) %></td>
+            <td><%= t.chassidut_name || '' %></td>
+            <td><span class="badge <%= t.status !== 'פעיל' ? 'archive' : '' %>"><%= t.status || '' %></span></td>
+            <td><a href="/teachers/<%= t.id %>" class="btn small secondary">צפייה</a></td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+    <p style="color:var(--muted); margin-top:10px;">סה"כ <%= teachers.length %> מלמדים</p>
+  <% } %>
+</div>
+
+<%- include('../partials/footer') %>

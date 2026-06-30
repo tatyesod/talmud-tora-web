@@ -1,0 +1,61 @@
+<%- include('../partials/header', {title: 'עריכת משפחה'}) %>
+
+<div class="card">
+  <h1>עריכת משפחת <%= family.last_name %></h1>
+  <form method="POST" action="/families/<%= family.id %>?_method=PUT">
+    <fieldset>
+      <legend>מגזר</legend>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>מגזר</label>
+          <select name="sector">
+            <option value="">--</option>
+            <option value="ליטאי" <%= family.sector === 'ליטאי' ? 'selected' : '' %>>ליטאי</option>
+            <option value="ספרדי" <%= family.sector === 'ספרדי' ? 'selected' : '' %>>ספרדי</option>
+            <option value="תמני" <%= family.sector === 'תמני' ? 'selected' : '' %>>תמני</option>
+          </select>
+        </div>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>פרטי הורים</legend>
+      <div class="form-grid">
+        <div class="form-group"><label>שם משפחה</label><input type="text" name="last_name" value="<%= family.last_name || '' %>" /></div>
+        <div class="form-group"><label>שם האב</label><input type="text" name="father_name" value="<%= family.father_name || '' %>" /></div>
+        <div class="form-group"><label>ת.ז אב</label><input type="text" name="father_id_number" value="<%= family.father_id_number || '' %>" /></div>
+        <div class="form-group"><label>מייל אב</label><input type="email" name="father_email" value="<%= family.father_email || '' %>" /></div>
+        <div class="form-group"><label>שם האם</label><input type="text" name="mother_name" value="<%= family.mother_name || '' %>" /></div>
+        <div class="form-group"><label>ת.ז אם</label><input type="text" name="mother_id_number" value="<%= family.mother_id_number || '' %>" /></div>
+        <div class="form-group"><label>מייל אם</label><input type="email" name="mother_email" value="<%= family.mother_email || '' %>" /></div>
+        <div class="form-group"><label>טלפון בית</label><input type="text" name="home_phone" value="<%= family.home_phone || '' %>" /></div>
+        <div class="form-group"><label>נייד אב</label><input type="text" name="father_mobile" value="<%= family.father_mobile || '' %>" /></div>
+        <div class="form-group"><label>נייד אם</label><input type="text" name="mother_mobile" value="<%= family.mother_mobile || '' %>" /></div>
+        <div class="form-group"><label>מקום עבודת האב</label><input type="text" name="father_workplace" value="<%= family.father_workplace || '' %>" /></div>
+        <div class="form-group"><label>טלפון עבודת האב</label><input type="text" name="father_work_phone" value="<%= family.father_work_phone || '' %>" /></div>
+        <div class="form-group"><label>מקום עבודת האם</label><input type="text" name="mother_workplace" value="<%= family.mother_workplace || '' %>" /></div>
+        <div class="form-group"><label>טלפון עבודת האם</label><input type="text" name="mother_work_phone" value="<%= family.mother_work_phone || '' %>" /></div>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>כתובת</legend>
+      <div class="form-grid">
+        <div class="form-group"><label>רחוב</label><input type="text" name="street" value="<%= family.street || '' %>" /></div>
+        <div class="form-group"><label>מספר בית</label><input type="text" name="house_number" value="<%= family.house_number || '' %>" /></div>
+        <div class="form-group"><label>דירה</label><input type="text" name="apartment" value="<%= family.apartment || '' %>" /></div>
+        <div class="form-group"><label>עיר</label><input type="text" name="city" value="<%= family.city || '' %>" /></div>
+        <div class="form-group"><label>מיקוד</label><input type="text" name="zip_code" value="<%= family.zip_code || '' %>" /></div>
+      </div>
+    </fieldset>
+
+    <div class="form-group full" style="margin-bottom:14px;"><label>הערות</label><textarea name="notes"><%= family.notes || '' %></textarea></div>
+
+    <div class="actions">
+      <button type="submit" class="btn">שמירה</button>
+      <a href="/families/<%= family.id %>" class="btn secondary">ביטול</a>
+    </div>
+  </form>
+</div>
+
+<%- include('../partials/footer') %>

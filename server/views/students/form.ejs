@@ -1,0 +1,103 @@
+<%- include('../partials/header', {title: mode === 'new' ? 'תלמיד חדש' : 'עריכת תלמיד'}) %>
+
+<div class="card">
+  <h1><%= mode === 'new' ? 'הוספת תלמיד חדש' : 'עריכת תלמיד' %></h1>
+
+  <form method="POST" action="<%= mode === 'new' ? '/students' : '/students/' + student.id + '?_method=PUT' %>">
+    <fieldset>
+      <legend>פרטים אישיים</legend>
+      <div class="form-grid">
+        <div class="form-group"><label>שם משפחה</label><input type="text" name="last_name" value="<%= student.last_name || '' %>" /></div>
+        <div class="form-group"><label>שם פרטי</label><input type="text" name="first_name" value="<%= student.first_name || '' %>" /></div>
+        <div class="form-group"><label>כינוי</label><input type="text" name="nickname" value="<%= student.nickname || '' %>" /></div>
+        <div class="form-group"><label>תעודת זהות</label><input type="text" name="id_number" value="<%= student.id_number || '' %>" /></div>
+        <div class="form-group"><label>תאריך לידה (לועזי)</label><input type="date" name="birth_date_civil" value="<%= student.birth_date_civil || '' %>" /></div>
+        <div class="form-group">
+          <label>סטטוס</label>
+          <select name="status">
+            <option value="">--</option>
+            <option value="פעיל" <%= student.status === 'פעיל' ? 'selected' : '' %>>פעיל</option>
+            <option value="לא פעיל" <%= student.status === 'לא פעיל' ? 'selected' : '' %>>לא פעיל</option>
+            <option value="ארכיון" <%= student.status === 'ארכיון' ? 'selected' : '' %>>ארכיון</option>
+            <option value="נרשם" <%= student.status === 'נרשם' ? 'selected' : '' %>>נרשם</option>
+            <option value="לא התקבל" <%= student.status === 'לא התקבל' ? 'selected' : '' %>>לא התקבל</option>
+          </select>
+        </div>
+        <div class="form-group"><label>הולך לבדו</label>
+          <select name="walks_alone">
+            <option value="">--</option>
+            <option value="כן" <%= student.walks_alone === 'כן' ? 'selected' : '' %>>כן</option>
+            <option value="לא" <%= student.walks_alone === 'לא' ? 'selected' : '' %>>לא</option>
+          </select>
+        </div>
+        <div class="form-group"><label>קופת חולים</label><input type="text" name="health_fund" value="<%= student.health_fund || '' %>" /></div>
+        <div class="form-group"><label>אלרגיות</label><input type="text" name="allergies" value="<%= student.allergies || '' %>" /></div>
+        <div class="form-group"><label>תרופות קבועות</label><input type="text" name="medications" value="<%= student.medications || '' %>" /></div>
+        <div class="form-group full"><label>הערות</label><textarea name="notes"><%= student.notes || '' %></textarea></div>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>כיתה, מחזור ומשפחה</legend>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>כיתה</label>
+          <select name="class_id">
+            <option value="">--</option>
+            <% classes.forEach(c => { %>
+              <option value="<%= c.id %>" <%= String(student.class_id) === String(c.id) ? 'selected' : '' %>><%= c.name %><%= c.parallel ? ' ('+c.parallel+')' : '' %></option>
+            <% }) %>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>מחזור</label>
+          <select name="cohort_id">
+            <option value="">--</option>
+            <% cohorts.forEach(c => { %>
+              <option value="<%= c.id %>" <%= String(student.cohort_id) === String(c.id) ? 'selected' : '' %>><%= c.name %></option>
+            <% }) %>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>משפחה (הורים)</label>
+          <select name="family_id" id="family_id_select" onchange="syncSectorFromFamily()">
+            <option value="">--</option>
+            <% families.forEach(f => { %>
+              <option value="<%= f.id %>" data-sector="<%= f.sector || '' %>" <%= String(student.family_id) === String(f.id) ? 'selected' : '' %>><%= f.last_name %><%= f.father_name ? ' - '+f.father_name : '' %></option>
+            <% }) %>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>מגזר (משויך למשפחה כולה)</label>
+          <select name="sector" id="sector_select">
+            <option value="">--</option>
+            <option value="ליטאי" <%= student.sector === 'ליטאי' ? 'selected' : '' %>>ליטאי</option>
+            <option value="ספרדי" <%= student.sector === 'ספרדי' ? 'selected' : '' %>>ספרדי</option>
+            <option value="תמני" <%= student.sector === 'תמני' ? 'selected' : '' %>>תמני</option>
+          </select>
+        </div>
+        <div class="form-group"><label>תאריך כניסה</label><input type="date" name="entry_date" value="<%= student.entry_date || '' %>" /></div>
+        <div class="form-group"><label>תאריך יציאה</label><input type="date" name="exit_date" value="<%= student.exit_date || '' %>" /></div>
+        <div class="form-group"><label>תאריך רישום</label><input type="date" name="registration_date" value="<%= student.registration_date || '' %>" /></div>
+        <div class="form-group"><label>תאריך קבלה</label><input type="date" name="admission_date" value="<%= student.admission_date || '' %>" /></div>
+      </div>
+    </fieldset>
+
+    <div class="actions">
+      <button type="submit" class="btn">שמירה</button>
+      <a href="<%= mode === 'new' ? '/students' : '/students/' + student.id %>" class="btn secondary">ביטול</a>
+    </div>
+  </form>
+</div>
+
+<script>
+  function syncSectorFromFamily() {
+    const famSel = document.getElementById('family_id_select');
+    const sectorSel = document.getElementById('sector_select');
+    const opt = famSel.options[famSel.selectedIndex];
+    const sector = opt ? opt.getAttribute('data-sector') : '';
+    if (sector) sectorSel.value = sector;
+  }
+</script>
+
+<%- include('../partials/footer') %>

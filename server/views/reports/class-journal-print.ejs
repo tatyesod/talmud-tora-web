@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <title>יומן כיתה - <%= classRow ? classRow.name : '' %></title>
+  <link rel="stylesheet" href="/css/style.css" />
+  <style>
+    table.journal { width: 100%; border-collapse: collapse; font-size: 0.85em; }
+    table.journal th, table.journal td { border: 1px solid #999; padding: 4px 6px; text-align: center; }
+    table.journal th { background: #eee; }
+    table.journal td.name { text-align: right; white-space: nowrap; }
+  </style>
+</head>
+<body onload="window.print()">
+  <div class="print-doc" style="max-width:100%;">
+    <h2>יומן כיתה: <%= classRow ? classRow.name + (classRow.parallel ? ' ('+classRow.parallel+')' : '') : '' %></h2>
+    <table class="journal">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>שם תלמיד</th>
+          <% for (let d = 1; d <= 26; d++) { %><th><%= d %></th><% } %>
+        </tr>
+      </thead>
+      <tbody>
+        <% students.forEach((s, i) => { %>
+          <tr>
+            <td><%= i + 1 %></td>
+            <td class="name"><%= s.last_name %> <%= s.first_name %></td>
+            <% for (let d = 1; d <= 26; d++) { %><td>&nbsp;</td><% } %>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+    <p style="margin-top:20px; font-size:0.8em; color:var(--muted);">הופק ממערכת ניהול תלמוד תורה בתאריך <%= new Date().toLocaleDateString('he-IL') %></p>
+  </div>
+</body>
+</html>

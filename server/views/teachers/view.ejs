@@ -1,0 +1,41 @@
+<%- include('../partials/header', {title: (teacher.first_name||'')+' '+(teacher.last_name||'')}) %>
+
+<div class="card">
+  <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:10px;">
+    <h1><%= teacher.first_name %> <%= teacher.last_name %> <span class="badge <%= teacher.status !== 'פעיל' ? 'archive' : '' %>"><%= teacher.status || '' %></span></h1>
+    <div class="actions">
+      <a href="/teachers/<%= teacher.id %>/edit" class="btn">עריכה</a>
+      <form method="POST" action="/teachers/<%= teacher.id %>?_method=DELETE" onsubmit="return confirm('האם למחוק?');" style="display:inline">
+        <button type="submit" class="btn danger">מחיקה</button>
+      </form>
+      <a href="/teachers" class="btn secondary">חזרה לרשימה</a>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <h3>פרטים</h3>
+  <table>
+    <tr><th>ת.ז</th><td><%= teacher.id_number || '' %></td><th>תאריך לידה</th><td><%= teacher.birth_date_civil_str || '' %></td></tr>
+    <tr><th>חסידות</th><td><%= teacher.chassidut_name || '' %></td><th>נייד</th><td><%- phoneLink(teacher.mobile) %></td></tr>
+    <tr><th>טלפון בית</th><td><%- phoneLink(teacher.home_phone) %></td>
+        <th>כתובת</th><td><%= [teacher.street, teacher.house_number, teacher.apartment?'דירה '+teacher.apartment:'', teacher.city].filter(Boolean).join(', ') %></td></tr>
+    <tr><th>תאריך כניסה</th><td><%= teacher.entry_date_str || '' %></td><th>תאריך יציאה</th><td><%= teacher.exit_date_str || '' %></td></tr>
+    <tr><th>הערות</th><td colspan="3"><%= teacher.notes || '' %></td></tr>
+  </table>
+</div>
+
+<div class="card">
+  <h3>כיתות בהוראה</h3>
+  <% if (classes.length === 0) { %>
+    <p class="empty-state">לא משובץ לכיתות</p>
+  <% } else { %>
+    <table>
+      <% classes.forEach(c => { %>
+        <tr><td><a href="/classes/<%= c.id %>"><%= c.name %><%= c.parallel ? ' ('+c.parallel+')' : '' %></a></td><td><%= c.role || '' %></td></tr>
+      <% }) %>
+    </table>
+  <% } %>
+</div>
+
+<%- include('../partials/footer') %>

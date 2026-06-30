@@ -1,0 +1,75 @@
+<%- include('../partials/header', {title: classRow.name}) %>
+
+<div class="card">
+  <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:10px;">
+    <h1>כיתה: <%= classRow.name %><%= classRow.parallel ? ' ('+classRow.parallel+')' : '' %></h1>
+    <div class="actions">
+      <a href="/classes/<%= classRow.id %>/edit" class="btn">עריכה</a>
+      <form method="POST" action="/classes/<%= classRow.id %>?_method=DELETE" onsubmit="return confirm('האם למחוק את הכיתה?');" style="display:inline">
+        <button type="submit" class="btn danger">מחיקה</button>
+      </form>
+      <a href="/classes" class="btn secondary">חזרה לכיתות</a>
+    </div>
+  </div>
+  <table>
+    <tr><th>סניף</th><td><%= classRow.branch || '' %></td><th>קטגוריית שכר לימוד</th><td><%= classRow.category_name || '' %></td></tr>
+    <tr><th>מחיר</th><td><%= classRow.price != null ? classRow.price+' ₪' : '' %></td><th>סטטוס</th><td><%= classRow.status || '' %></td></tr>
+  </table>
+</div>
+
+<div class="card">
+  <h3>פילוח מגזרים בכיתה (תלמידים פעילים)</h3>
+  <% if (sectorBreakdown.length === 0) { %>
+    <p class="empty-state">אין נתונים</p>
+  <% } else { %>
+    <table>
+      <thead><tr><th>מגזר</th><th>מס' תלמידים</th></tr></thead>
+      <tbody>
+        <% sectorBreakdown.forEach(s => { %>
+          <tr><td><%= s.sector %></td><td><%= s.count %></td></tr>
+        <% }) %>
+      </tbody>
+    </table>
+  <% } %>
+</div>
+
+<div class="card">
+  <h3>מלמדים בכיתה זו</h3>
+  <% if (teachers.length === 0) { %>
+    <p class="empty-state">לא משובץ מלמד</p>
+  <% } else { %>
+    <table>
+      <thead><tr><th>תפקיד</th><th>שם</th><th>נייד</th></tr></thead>
+      <tbody>
+        <% teachers.forEach(t => { %>
+          <tr><td><%= t.role || '' %></td><td><a href="/teachers/<%= t.id %>"><%= t.first_name %> <%= t.last_name %></a></td><td><%- phoneLink(t.mobile) %></td></tr>
+        <% }) %>
+      </tbody>
+    </table>
+  <% } %>
+</div>
+
+<div class="card">
+  <h3>תלמידים בכיתה</h3>
+  <% if (students.length === 0) { %>
+    <p class="empty-state">אין תלמידים בכיתה זו</p>
+  <% } else { %>
+    <table>
+      <thead><tr><th>שם משפחה</th><th>שם פרטי</th><th>ת.ז</th><th>סטטוס</th><th></th></tr></thead>
+      <tbody>
+        <% students.forEach(s => { %>
+          <tr>
+            <td><%= s.last_name || '' %></td>
+            <td><%= s.first_name || '' %></td>
+            <td><%= s.id_number || '' %></td>
+            <td><span class="badge <%= s.status !== 'פעיל' ? 'archive' : '' %>"><%= s.status || '' %></span></td>
+            <td><a href="/students/<%= s.id %>" class="btn small secondary">צפייה</a></td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+    <p style="color:var(--muted); margin-top:10px;">סה"כ <%= students.length %> תלמידים</p>
+  <% } %>
+</div>
+
+<%- include('../partials/footer') %>

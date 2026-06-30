@@ -1,0 +1,29 @@
+<%- include('../partials/header', {title: 'תמונת מצב - ' + snapshot.year_label}) %>
+
+<div class="card">
+  <h1>תמונת מצב: שנת <%= snapshot.year_label %></h1>
+  <p style="color:var(--muted);">נשמר בתאריך: <%= new Date(snapshot.created_at).toLocaleDateString('he-IL') %></p>
+  <a href="/year" class="btn secondary">חזרה לניהול שנה</a>
+</div>
+
+<div class="card">
+  <h3>תלמידים (כפי שהיו באותה שנה)</h3>
+  <table>
+    <thead><tr><th>שם משפחה</th><th>שם פרטי</th><th>ת.ז</th><th>כיתה</th><th>מחזור</th><th>סטטוס</th></tr></thead>
+    <tbody>
+      <% snapshot.data.students.forEach(s => { %>
+        <tr>
+          <td><%= s.last_name || s.family_last_name || '' %></td>
+          <td><%= s.first_name || '' %></td>
+          <td><%= s.id_number || '' %></td>
+          <td><%= s.class_name ? s.class_name + (s.class_parallel ? ' ('+s.class_parallel+')' : '') : '' %></td>
+          <td><%= s.cohort_name || '' %></td>
+          <td><span class="badge <%= s.status !== 'פעיל' ? 'archive' : '' %>"><%= s.status || '' %></span></td>
+        </tr>
+      <% }) %>
+    </tbody>
+  </table>
+  <p style="color:var(--muted); margin-top:10px;">סה"כ <%= snapshot.data.students.length %> תלמידים בתמונת המצב</p>
+</div>
+
+<%- include('../partials/footer') %>

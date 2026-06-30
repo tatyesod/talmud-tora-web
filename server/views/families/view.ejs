@@ -1,0 +1,99 @@
+<%- include('../partials/header', {title: family.last_name || 'כרטיס משפחה'}) %>
+
+<div class="card">
+  <h1>משפחת <%= family.last_name %><%= family.sector ? ' · '+family.sector : '' %></h1>
+  <% if (eldest && eldest.class_name) { %>
+    <p style="color:var(--muted); margin-top:-6px;">כיתת האח הבכור: <strong><%= eldest.class_name %><%= eldest.parallel ? ' ('+eldest.parallel+')' : '' %></strong></p>
+  <% } %>
+  <div class="actions">
+    <a href="/families/<%= family.id %>/edit" class="btn">עריכה</a>
+    <form method="POST" action="/families/<%= family.id %>?_method=DELETE" onsubmit="return confirm('האם למחוק את המשפחה? התלמידים המשויכים אליה לא יימחקו, אך הקישור למשפחה יוסר מהם. לא ניתן לבטל פעולה זו.');" style="display:inline">
+      <button type="submit" class="btn danger">מחיקת משפחה</button>
+    </form>
+    <a href="/families" class="btn secondary">חזרה לרשימה</a>
+  </div>
+</div>
+
+<div class="card">
+  <h3>פרטי הורים</h3>
+  <table>
+    <tr><th>מגזר</th><td><%= family.sector || '' %></td><th></th><td></td></tr>
+    <tr><th>שם האב</th><td><%= family.father_name || '' %></td><th>ת.ז אב</th><td><%= family.father_id_number || '' %></td></tr>
+    <tr><th>מייל אב</th><td><%- emailLink(family.father_email) %></td><th></th><td></td></tr>
+    <tr><th>שם האם</th><td><%= family.mother_name || '' %></td><th>ת.ז אם</th><td><%= family.mother_id_number || '' %></td></tr>
+    <tr><th>מייל אם</th><td><%- emailLink(family.mother_email) %></td><th></th><td></td></tr>
+    <tr><th>טלפון בית</th><td><%- phoneLink(family.home_phone) %></td><th>נייד אב</th><td><%- phoneLink(family.father_mobile) %></td></tr>
+    <tr><th>נייד אם</th><td><%- phoneLink(family.mother_mobile) %></td><th>מקום עבודת האב</th><td><%= family.father_workplace || '' %></td></tr>
+    <tr><th>טלפון עבודת האב</th><td><%- phoneLink(family.father_work_phone) %></td><th>מקום עבודת האם</th><td><%= family.mother_workplace || '' %></td></tr>
+    <tr><th>טלפון עבודת האם</th><td><%- phoneLink(family.mother_work_phone) %></td>
+        <th>כתובת</th><td><%= [family.street, family.house_number, family.apartment?'דירה '+family.apartment:'', family.city].filter(Boolean).join(', ') %></td></tr>
+    <tr><th>הורי האב</th><td><%= family.paternal_grandparents || '' %></td><th>כתובת הורי האב</th><td><%= family.paternal_grandparents_address || '' %></td></tr>
+    <tr><th>הורי האם</th><td><%= family.maternal_grandparents || '' %></td><th>כתובת הורי האם</th><td><%= family.maternal_grandparents_address || '' %></td></tr>
+    <tr><th>הערות</th><td colspan="3"><%= family.notes || '' %></td></tr>
+  </table>
+</div>
+
+<div class="card">
+  <h3>ילדים במערכת</h3>
+  <% if (students.length === 0) { %>
+    <p class="empty-state">לא נמצאו ילדים</p>
+  <% } else { %>
+    <table>
+      <thead><tr><th>שם</th><th>כיתה</th><th>סטטוס</th><th></th></tr></thead>
+      <tbody>
+        <% students.forEach(s => { %>
+          <tr>
+            <td><%= s.first_name %> <%= s.last_name %></td>
+            <td><%= s.class_name || '' %></td>
+            <td><span class="badge <%= s.status !== 'פעיל' ? 'archive' : '' %>"><%= s.status || '' %></span></td>
+            <td><a href="/students/<%= s.id %>" class="btn small secondary">צפייה</a></td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  <% } %>
+</div>
+
+<div class="card">
+  <h3>אנשי קשר לשעת חירום</h3>
+  <% if (contacts.length === 0) { %>
+    <p class="empty-state">לא הוזנו אנשי קשר לשעת חירום</p>
+  <% } else { %>
+    <table>
+      <thead><tr><th>שם</th><th>קרבה</th><th>טלפון 1</th><th>טלפון 2</th></tr></thead>
+      <tbody>
+        <% contacts.forEach(c => { %>
+          <tr><td><%= c.contact_name || '' %></td><td><%= c.relation || '' %></td><td><%= c.phone1 || '' %></td><td><%= c.phone2 || '' %></td></tr>
+        <% }) %>
+      </tbody>
+    </table>
+  <% } %>
+</div>
+
+<div class="card">
+  <h3>שכר לימוד</h3>
+  <% if (tuition.children.length === 0) { %>
+    <p class="empty-state">אין ילדים פעילים לחישוב שכר לימוד</p>
+  <% } else { %>
+    <table>
+      <thead><tr><th>ילד</th><th>כיתה</th><th>קטגוריה</th><th>מחיר</th></tr></thead>
+      <tbody>
+        <% tuition.children.forEach(c => { %>
+          <tr>
+            <td><a href="/students/<%= c.id %>"><%= c.first_name %> <%= c.last_name %></a></td>
+            <td><%= c.class_name || '' %></td>
+            <td><%= c.category_name || '' %></td>
+            <td><%= c.price != null ? c.price.toLocaleString()+' ₪' : '—' %></td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+    <table style="margin-top:10px;">
+      <tr><th>סה"כ מלא</th><td><%= tuition.grossTotal.toLocaleString() %> ₪</td></tr>
+      <tr><th>הנחה (<%= tuition.activeCount %> ילדים פעילים)</th><td><%= tuition.discountPercent %>% (-<%= tuition.discountAmount.toLocaleString() %> ₪)</td></tr>
+      <tr><th>לתשלום חודשי</th><td><strong style="font-size:1.2em; color:var(--primary-dark);"><%= tuition.netTotal.toLocaleString() %> ₪</strong></td></tr>
+    </table>
+  <% } %>
+</div>
+
+<%- include('../partials/footer') %>

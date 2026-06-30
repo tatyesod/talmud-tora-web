@@ -1,0 +1,75 @@
+<%- include('../partials/header', {title: 'שכר לימוד והנחות'}) %>
+
+<div class="card">
+  <div style="display:flex; justify-content:space-between; align-items:center;">
+    <h1>קטגוריות שכר לימוד</h1>
+    <a href="/tuition/categories/new" class="btn">+ קטגוריה חדשה</a>
+  </div>
+  <table>
+    <thead><tr><th>קטגוריה</th><th>מחיר חודשי</th><th>כיתות בקטגוריה</th><th>תלמידים פעילים</th><th></th></tr></thead>
+    <tbody>
+      <% classesByCategory.forEach(c => { %>
+        <tr>
+          <td><%= c.name %></td>
+          <td><%= c.price != null ? c.price + ' ₪' : '' %></td>
+          <td><%= c.class_names || '' %></td>
+          <td><%= c.active_students %></td>
+          <td><a href="/tuition/categories/<%= c.id %>/edit" class="btn small secondary">עריכה</a></td>
+        </tr>
+      <% }) %>
+    </tbody>
+  </table>
+</div>
+
+<div class="card">
+  <div style="display:flex; justify-content:space-between; align-items:center;">
+    <h1>מדיניות הנחות (לפי מספר ילדים פעילים במשפחה)</h1>
+    <a href="/tuition/discounts/new" class="btn">+ הנחה חדשה</a>
+  </div>
+  <table>
+    <thead><tr><th>מספר ילדים</th><th>הנחה</th><th></th></tr></thead>
+    <tbody>
+      <tr><td>ילד אחד</td><td>ללא הנחה (100% מהמחיר)</td><td></td></tr>
+      <% discounts.forEach(d => { %>
+        <tr>
+          <td><%= d.siblings_count %> ילדים<%= d.type_name === 'ומעלה' ? ' ומעלה' : '' %></td>
+          <td>הנחה של <%= d.amount %>%</td>
+          <td><a href="/tuition/discounts/<%= d.id %>/edit" class="btn small secondary">עריכה</a></td>
+        </tr>
+      <% }) %>
+    </tbody>
+  </table>
+  <p style="color:var(--muted); margin-top:10px; font-size:0.9em;">
+    ההנחה מחושבת על סך שכר הלימוד הכולל של המשפחה, לפי מספר הילדים הרשומים כ"פעיל" באותה משפחה כרגע.
+  </p>
+</div>
+
+<div class="card">
+  <h1>חישוב שכר לימוד לפי משפחה</h1>
+  <p style="color:var(--muted); font-size:0.9em; margin-top:-8px;">
+    סה"כ <%= familiesTuition.length %> משפחות עם ילדים פעילים &middot;
+    סה"כ חודשי כולל למוסד: <strong><%= grandTotal.toLocaleString() %> ₪</strong>
+  </p>
+  <table>
+    <thead>
+      <tr>
+        <th>משפחה</th><th>אב</th><th>מס' ילדים</th><th>סכום מלא</th><th>הנחה</th><th>סכום לתשלום</th><th></th>
+      </tr>
+    </thead>
+    <tbody>
+      <% familiesTuition.forEach(f => { %>
+        <tr>
+          <td><a href="/families/<%= f.id %>"><%= f.last_name %></a></td>
+          <td><%= f.father_name || '' %></td>
+          <td><%= f.activeCount %></td>
+          <td><%= f.grossTotal.toLocaleString() %> ₪</td>
+          <td><%= f.discountPercent %>%<%= f.discountAmount ? ' (-'+f.discountAmount.toLocaleString()+' ₪)' : '' %></td>
+          <td><strong><%= f.netTotal.toLocaleString() %> ₪</strong></td>
+          <td><a href="/families/<%= f.id %>" class="btn small secondary">פירוט</a></td>
+        </tr>
+      <% }) %>
+    </tbody>
+  </table>
+</div>
+
+<%- include('../partials/footer') %>

@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <title>הצהרת בריאות</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: "Segoe UI", "Arial Hebrew", Arial, sans-serif;
+      direction: rtl;
+      margin: 0;
+      color: #1a1a1a;
+    }
+    .page {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 28px 34px;
+      page-break-after: always;
+    }
+    .page:last-child { page-break-after: auto; }
+
+    .form-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      border-bottom: 3px solid #2c5f7c;
+      padding-bottom: 10px;
+      margin-bottom: 14px;
+    }
+    .form-header img { height: 70px; }
+    .form-header .school-info { text-align: left; font-size: 0.8em; color: #555; }
+    .bsd { text-align: left; font-size: 0.8em; color: #888; }
+
+    h2.form-title { text-align: center; margin: 6px 0 4px; font-size: 1.3em; }
+    h3.form-subtitle { text-align: center; margin: 0 0 16px; font-size: 1.05em; font-weight: 600; }
+
+    table.fields { width: 100%; border-collapse: collapse; margin-bottom: 12px; font-size: 0.88em; }
+    table.fields td { padding: 5px 6px; vertical-align: bottom; }
+    table.fields td.label { color: #555; font-size: 0.85em; white-space: nowrap; }
+    table.fields td.value { border-bottom: 1px solid #888; min-width: 60px; font-weight: 600; }
+
+    .section-title { font-weight: 700; margin: 14px 0 6px; text-decoration: underline; }
+
+    .declaration { font-size: 0.85em; line-height: 1.7; }
+    .declaration .row { margin-bottom: 6px; }
+    .checkbox { display: inline-block; width: 1.1em; }
+    .checked { font-weight: bold; }
+    .free-text { border-bottom: 1px dotted #888; padding: 0 4px; font-weight: 600; }
+
+    .sign-row {
+      display: flex; justify-content: space-between; margin-top: 26px; font-size: 0.85em;
+    }
+    .sign-row div { width: 30%; text-align: center; }
+    .sign-line { border-top: 1px solid #444; margin-top: 28px; padding-top: 4px; }
+
+    @media print {
+      .page { padding: 18px 28px; }
+    }
+  </style>
+</head>
+<body onload="window.print()">
+  <% students.forEach(s => { %>
+  <div class="page">
+    <div class="form-header">
+      <img src="/images/logo.png" alt="לוגו" />
+      <div class="school-info">
+        תלמוד תורה החדש (יסוד העולם)<br />
+        כתובת: סוקולוב 5, בני ברק<br />
+        טל: 03-6185020 | פקס: 03-6185030
+      </div>
+    </div>
+    <div class="bsd">בס"ד</div>
+
+    <h2 class="form-title">טופס הצהרת ההורים</h2>
+    <h3 class="form-subtitle">על מצב בריאותו של ילדם הלומד בתלמוד תורה</h3>
+
+    <table class="fields">
+      <tr>
+        <td class="label">פרטי התלמיד:</td>
+        <td class="value" colspan="3"><%= s.first_name %> <%= s.last_name %></td>
+      </tr>
+      <tr>
+        <td class="label">מס' ת"ז</td><td class="value"><%= s.id_number || '' %></td>
+        <td class="label">שם חיבה</td><td class="value"><%= s.nickname || '' %></td>
+      </tr>
+      <tr>
+        <td class="label">כיתה</td>
+        <td class="value"><%= s.class_name ? s.class_name + (s.class_parallel ? ' ('+s.class_parallel+')' : '') : '' %></td>
+        <td class="label">קופ"ח</td><td class="value"><%= s.health_fund || '' %></td>
+      </tr>
+      <tr>
+        <td class="label">תאריך לידה עברי</td><td class="value"><%= s.birth_date_hebrew_str || '' %></td>
+        <td class="label">תאריך לידה לועזי</td><td class="value"><%= s.birth_date_civil_str || '' %></td>
+      </tr>
+      <tr>
+        <td class="label">ארץ הלידה</td><td class="value">ישראל</td>
+        <td class="label">מס' הילדים במשפחה</td><td class="value"><%= s.siblings_count || '' %></td>
+      </tr>
+      <tr>
+        <td class="label">הכתובת</td><td class="value" colspan="3"><%= s.address || '' %></td>
+      </tr>
+      <tr>
+        <td class="label">טלפון בבית</td><td class="value" colspan="3"><%= s.home_phone || '' %></td>
+      </tr>
+      <tr>
+        <td class="label">שם האב</td><td class="value"><%= s.father_name || '' %></td>
+        <td class="label">עיסוק האב</td><td class="value"><%= s.father_workplace || '' %></td>
+      </tr>
+      <tr>
+        <td class="label">נייד האב</td><td class="value"><%= s.father_mobile || '' %></td>
+        <td class="label">טלפון בעבודה</td><td class="value"><%= s.father_work_phone || '' %></td>
+      </tr>
+      <tr>
+        <td class="label">שם האם</td><td class="value"><%= s.mother_name || '' %></td>
+        <td class="label">עיסוק האם</td><td class="value"><%= s.mother_workplace || '' %></td>
+      </tr>
+      <tr>
+        <td class="label">נייד האם</td><td class="value"><%= s.mother_mobile || '' %></td>
+        <td class="label">טלפון בעבודה</td><td class="value"><%= s.mother_work_phone || '' %></td>
+      </tr>
+      <tr>
+        <td class="label" colspan="4">איש קשר לשעת מצוקה (כשאחד מן ההורים לא זמין):</td>
+      </tr>
+      <tr>
+        <td class="value" colspan="4">
+          <%= s.emergency_contact ? `${s.emergency_contact.contact_name || ''} (${s.emergency_contact.relation || ''}) — ${s.emergency_contact.phone1 || ''} ${s.emergency_contact.phone2 || ''}` : '' %>
+        </td>
+      </tr>
+    </table>
+
+    <div class="section-title">הצהרת בריאות:</div>
+    <div class="declaration">
+      <div class="row">
+        <span class="checkbox"><%= s.hasHealthIssue ? '☐' : '☑' %></span>
+        לא ידוע לי על מגבלות בריאותיות המונעות מבני להשתתף בפעילויות הנערכות בת"ת ומטעמו.
+      </div>
+      <div class="row">
+        <span class="checkbox"><%= s.hasHealthIssue ? '☑' : '☐' %></span>
+        יש לבני בעיה בריאותית כרונית / רגישות לתרופות או למזון. פרט:
+        <span class="free-text"><%= [s.allergies, s.medications].filter(v => v && v !== 'לא ידוע').join(' | ') || '—' %></span>
+      </div>
+      <div class="row">
+        <span class="checkbox"><%= (s.medications && s.medications !== 'לא ידוע') ? '☑' : '☐' %></span>
+        בני נוטל תרופה/ות באופן קבוע. פרט:
+        <span class="free-text"><%= (s.medications && s.medications !== 'לא ידוע') ? s.medications : '—' %></span>
+      </div>
+      <div class="row">
+        <span class="checkbox"><%= (s.allergies && s.allergies !== 'לא ידוע') ? '☑' : '☐' %></span>
+        בני סובל מרגישות לתרופות או למזון. פרט:
+        <span class="free-text"><%= (s.allergies && s.allergies !== 'לא ידוע') ? s.allergies : '—' %></span>
+      </div>
+      <div class="row">
+        ☐ הריני מתחייב/ת להודיע למנהל/מלמד על כל שינוי או הגבלה שיחולו במצב בריאות בני.
+      </div>
+    </div>
+
+    <div class="section-title">אישור הורים ללכת לבד (כיתה א' ומעלה בלבד):</div>
+    <div class="declaration row">
+      <span class="checkbox"><%= s.walks_alone === 'כן' ? '☑' : '☐' %></span>
+      מאשר/ת לבני ללכת לבדו אל הת"ת וכן בשובו הביתה.
+      <% if (s.walks_alone) { %> (סטטוס נוכחי במערכת: <strong><%= s.walks_alone %></strong>) <% } %>
+    </div>
+
+    <div class="sign-row">
+      <div><div class="sign-line">תאריך</div></div>
+      <div><div class="sign-line">שמות ההורים</div></div>
+      <div><div class="sign-line">חתימת ההורים</div></div>
+    </div>
+  </div>
+  <% }) %>
+</body>
+</html>

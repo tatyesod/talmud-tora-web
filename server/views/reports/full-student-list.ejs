@@ -1,0 +1,26 @@
+<%- include('../partials/header', {title: 'רשימת תלמידים מלא'}) %>
+
+<div class="card">
+  <h1>רשימת תלמידים מלא - ייצוא לאקסל</h1>
+  <p style="color:var(--muted);">כולל פרטי תלמיד, הורים, כתובת וטלפונים.</p>
+
+  <form method="GET" action="/reports/full-student-list/export">
+    <div class="form-grid">
+      <div class="form-group">
+        <label>סטטוס</label>
+        <select name="status">
+          <option value="">הכל</option>
+          <% statuses.forEach(s => { %>
+            <option value="<%= s.status %>"><%= s.status %></option>
+          <% }) %>
+        </select>
+      </div>
+    </div>
+    <div class="actions" style="margin-top:14px;">
+      <button type="submit" class="btn">📊 ייצוא לאקסל</button>
+      <a href="/reports" class="btn secondary">חזרה לדוחות</a>
+    </div>
+  </form>
+</div>
+
+<%- include('../partials/footer') %>

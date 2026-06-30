@@ -1,0 +1,28 @@
+<%- include('../partials/header', {title: 'הצהרת בריאות תלמיד'}) %>
+
+<div class="card">
+  <h1>הצהרת בריאות תלמיד</h1>
+  <p style="color:var(--muted);">
+    בחר כיתה אחת, כמה כיתות, או השאר ריק להפקה עבור כל הכיתות (תלמידים פעילים בלבד).
+    הטופס ייפתח כעמוד הדפסה — בחלון ההדפסה ניתן לבחור "שמירה כ-PDF" כדי לייצא לקובץ.
+  </p>
+
+  <form method="GET" action="/reports/health-declaration/view" target="_blank">
+    <div class="form-grid">
+      <div class="form-group full">
+        <label>כיתות (ניתן לבחור כמה - Ctrl+לחיצה; ריק = הכל)</label>
+        <select name="class_id" multiple size="12" style="height:260px;">
+          <% classes.forEach(c => { %>
+            <option value="<%= c.id %>"><%= c.name %><%= c.parallel ? ' ('+c.parallel+')' : '' %></option>
+          <% }) %>
+        </select>
+      </div>
+    </div>
+    <div class="actions" style="margin-top:14px;">
+      <button type="submit" class="btn">🖨️ הפק טפסים (PDF/הדפסה)</button>
+      <a href="/reports" class="btn secondary">חזרה לדוחות</a>
+    </div>
+  </form>
+</div>
+
+<%- include('../partials/footer') %>

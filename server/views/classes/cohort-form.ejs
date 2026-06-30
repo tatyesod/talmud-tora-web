@@ -1,0 +1,36 @@
+<%- include('../partials/header', {title: mode === 'new' ? 'מחזור חדש' : 'עריכת מחזור'}) %>
+
+<div class="card">
+  <h1><%= mode === 'new' ? 'הוספת מחזור חדש' : 'עריכת מחזור' %></h1>
+  <p style="color:var(--muted); font-size:0.9em;">
+    "מחזור" קובע טווח תאריכי לידה (לפי שנה עברית) שמשייך תלמיד למחזור מסוים בעת הרישום.
+    כברירת מחדל המחזורים נקבעו מא' תמוז עד ל' סיון של השנה שלאחר מכן — ניתן לשנות כל
+    מחזור בנפרד לטווח אחר לפי הצורך.
+  </p>
+  <form method="POST" action="<%= mode === 'new' ? '/classes/cohorts' : '/classes/cohorts/' + cohort.id + '?_method=PUT' %>">
+    <div class="form-grid">
+      <div class="form-group"><label>שם המחזור</label><input type="text" name="name" value="<%= cohort.name || '' %>" required /></div>
+      <div class="form-group">
+        <label>סטטוס</label>
+        <select name="status">
+          <option value="פעיל" <%= cohort.status === 'פעיל' ? 'selected' : '' %>>פעיל</option>
+          <option value="לא פעיל" <%= cohort.status === 'לא פעיל' ? 'selected' : '' %>>לא פעיל</option>
+          <option value="ארכיון" <%= cohort.status === 'ארכיון' ? 'selected' : '' %>>ארכיון</option>
+        </select>
+      </div>
+      <div class="form-group"><label>מתאריך (תחילת טווח לידה)</label><input type="date" name="from_date" value="<%= cohort.from_date || '' %>" /></div>
+      <div class="form-group"><label>עד תאריך (סוף טווח לידה)</label><input type="date" name="to_date" value="<%= cohort.to_date || '' %>" /></div>
+    </div>
+    <div class="actions" style="margin-top:14px;">
+      <button type="submit" class="btn">שמירה</button>
+      <a href="/classes" class="btn secondary">ביטול</a>
+    </div>
+  </form>
+  <% if (mode === 'edit') { %>
+    <form method="POST" action="/classes/cohorts/<%= cohort.id %>?_method=DELETE" onsubmit="return confirm('האם למחוק את המחזור?');" style="margin-top:10px;">
+      <button type="submit" class="btn danger">מחיקת מחזור</button>
+    </form>
+  <% } %>
+</div>
+
+<%- include('../partials/footer') %>

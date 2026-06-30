@@ -1,0 +1,21 @@
+{
+  "name": "talmud-tora-web",
+  "version": "1.0.0",
+  "description": "מערכת ניהול תלמודי תורה - גרסת Web",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "build-db": "node server/buildDb.js",
+    "export-seed": "node server/exportSeed.js"
+  },
+  "engines": {
+    "node": ">=22.5.0"
+  },
+  "dependencies": {
+    "ejs": "^3.1.10",
+    "express": "^4.19.2",
+    "express-session": "^1.18.0",
+    "method-override": "^3.0.0",
+    "xlsx": "^0.18.5"
+  }
+}

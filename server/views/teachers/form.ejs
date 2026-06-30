@@ -1,0 +1,96 @@
+<%- include('../partials/header', {title: mode === 'new' ? 'מלמד חדש' : 'עריכת מלמד'}) %>
+
+<div class="card">
+  <h1><%= mode === 'new' ? 'הוספת מלמד/עובד חדש' : 'עריכת מלמד' %></h1>
+  <form method="POST" action="<%= mode === 'new' ? '/teachers' : '/teachers/' + teacher.id + '?_method=PUT' %>">
+    <fieldset>
+      <legend>פרטים אישיים</legend>
+      <div class="form-grid">
+        <div class="form-group"><label>שם משפחה</label><input type="text" name="last_name" value="<%= teacher.last_name || '' %>" /></div>
+        <div class="form-group"><label>שם פרטי</label><input type="text" name="first_name" value="<%= teacher.first_name || '' %>" /></div>
+        <div class="form-group"><label>תעודת זהות</label><input type="text" name="id_number" value="<%= teacher.id_number || '' %>" /></div>
+        <div class="form-group"><label>תאריך לידה</label><input type="date" name="birth_date_civil" value="<%= teacher.birth_date_civil || '' %>" /></div>
+        <div class="form-group">
+          <label>חסידות</label>
+          <select name="chassidut_id">
+            <option value="">--</option>
+            <% chassidut.forEach(c => { %>
+              <option value="<%= c.id %>" <%= String(teacher.chassidut_id) === String(c.id) ? 'selected' : '' %>><%= c.name %></option>
+            <% }) %>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>סטטוס</label>
+          <select name="status">
+            <option value="">--</option>
+            <option value="פעיל" <%= teacher.status === 'פעיל' ? 'selected' : '' %>>פעיל</option>
+            <option value="לא פעיל" <%= teacher.status === 'לא פעיל' ? 'selected' : '' %>>לא פעיל</option>
+            <option value="ארכיון" <%= teacher.status === 'ארכיון' ? 'selected' : '' %>>ארכיון</option>
+          </select>
+        </div>
+        <div class="form-group"><label>נייד</label><input type="text" name="mobile" value="<%= teacher.mobile || '' %>" /></div>
+        <div class="form-group"><label>טלפון בית</label><input type="text" name="home_phone" value="<%= teacher.home_phone || '' %>" /></div>
+        <div class="form-group"><label>רחוב</label><input type="text" name="street" value="<%= teacher.street || '' %>" /></div>
+        <div class="form-group"><label>מספר בית</label><input type="text" name="house_number" value="<%= teacher.house_number || '' %>" /></div>
+        <div class="form-group"><label>דירה</label><input type="text" name="apartment" value="<%= teacher.apartment || '' %>" /></div>
+        <div class="form-group"><label>עיר</label><input type="text" name="city" value="<%= teacher.city || '' %>" /></div>
+        <div class="form-group"><label>תאריך כניסה</label><input type="date" name="entry_date" value="<%= teacher.entry_date || '' %>" /></div>
+        <div class="form-group"><label>תאריך יציאה</label><input type="date" name="exit_date" value="<%= teacher.exit_date || '' %>" /></div>
+        <div class="form-group full"><label>הערות</label><textarea name="notes"><%= teacher.notes || '' %></textarea></div>
+      </div>
+    </fieldset>
+    <div class="actions">
+      <button type="submit" class="btn">שמירה</button>
+      <a href="<%= mode === 'new' ? '/teachers' : '/teachers/' + teacher.id %>" class="btn secondary">ביטול</a>
+    </div>
+  </form>
+</div>
+
+<% if (mode === 'edit') { %>
+<div class="card">
+  <h3>שיבוץ לכיתות</h3>
+  <% if (assignments.length === 0) { %>
+    <p class="empty-state">המלמד אינו משובץ לאף כיתה</p>
+  <% } else { %>
+    <table>
+      <thead><tr><th>כיתה</th><th>תפקיד</th><th></th></tr></thead>
+      <tbody>
+        <% assignments.forEach(a => { %>
+          <tr>
+            <td><a href="/classes/<%= a.class_id %>"><%= a.name %><%= a.parallel ? ' ('+a.parallel+')' : '' %></a></td>
+            <td><%= a.role || '' %></td>
+            <td>
+              <form method="POST" action="/teachers/<%= teacher.id %>/classes/<%= a.assignment_id %>?_method=DELETE" onsubmit="return confirm('להסיר שיבוץ זה?');" style="display:inline">
+                <button type="submit" class="btn small danger">הסר</button>
+              </form>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  <% } %>
+
+  <form method="POST" action="/teachers/<%= teacher.id %>/classes" class="form-grid" style="margin-top:14px;">
+    <div class="form-group">
+      <label>הוספת שיבוץ - כיתה</label>
+      <select name="class_id" required>
+        <option value="">בחר כיתה</option>
+        <% allClasses.forEach(c => { %>
+          <option value="<%= c.id %>"><%= c.name %><%= c.parallel ? ' ('+c.parallel+')' : '' %><%= c.branch ? ' - '+c.branch : '' %></option>
+        <% }) %>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>תפקיד</label>
+      <select name="role">
+        <option value="בוקר">בוקר</option>
+        <option value='אחה"צ'>אחה"צ</option>
+        <option value="עוזר">עוזר</option>
+      </select>
+    </div>
+    <div class="form-group"><button type="submit" class="btn small" style="margin-top:22px;">+ הוסף שיבוץ</button></div>
+  </form>
+</div>
+<% } %>
+
+<%- include('../partials/footer') %>

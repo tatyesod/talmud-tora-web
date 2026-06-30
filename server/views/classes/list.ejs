@@ -1,0 +1,98 @@
+<%- include('../partials/header', {title: 'כיתות ומחזורים'}) %>
+
+<div class="card">
+  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+    <h1>כיתות</h1>
+    <a href="/classes/new" class="btn">+ כיתה חדשה</a>
+  </div>
+
+  <% if (selectedClassIds.length > 0) { %>
+    <div class="summary-panel">
+      <div class="summary-num"><%= filteredTotal %></div>
+      <div class="summary-text">תלמידים פעילים ב-<%= selectedClassIds.length %> כיתות נבחרות</div>
+      <a href="/classes<%= branch ? '?branch='+encodeURIComponent(branch) : '' %>" class="btn small secondary" style="margin-right:auto;">נקה בחירה</a>
+    </div>
+  <% } %>
+
+  <form class="searchbar auto-filter" method="GET" action="/classes">
+    <select name="branch">
+      <option value="">כל הסניפים</option>
+      <option value="סוקולוב" <%= branch === 'סוקולוב' ? 'selected' : '' %>>סוקולוב</option>
+      <option value="נפחא" <%= branch === 'נפחא' ? 'selected' : '' %>>נפחא</option>
+      <option value="בן פתחיה" <%= branch === 'בן פתחיה' ? 'selected' : '' %>>בן פתחיה</option>
+    </select>
+    <input type="hidden" name="sort" value="<%= sort %>" />
+    <input type="hidden" name="dir" value="<%= dir %>" />
+
+    <div class="class-checkbox-group">
+      <% allClassesForFilter.forEach(c => { %>
+        <label class="class-checkbox">
+          <input type="checkbox" name="class_id" value="<%= c.id %>" <%= selectedClassIds.includes(String(c.id)) ? 'checked' : '' %> onchange="this.form.submit()" />
+          <%= c.name %><%= c.parallel ? ' ('+c.parallel+')' : '' %>
+        </label>
+      <% }) %>
+    </div>
+  </form>
+
+  <% if (classes.length === 0) { %>
+    <p class="empty-state">לא נמצאו כיתות</p>
+  <% } else { %>
+    <table>
+      <thead><tr>
+        <th><a href="<%= sortUrl('name') %>">כיתה<%= sortIndicator('name') %></a></th>
+        <th><a href="<%= sortUrl('parallel') %>">מקבילה<%= sortIndicator('parallel') %></a></th>
+        <th><a href="<%= sortUrl('branch') %>">סניף<%= sortIndicator('branch') %></a></th>
+        <th><a href="<%= sortUrl('category') %>">קטגוריית שכ"ל<%= sortIndicator('category') %></a></th>
+        <th><a href="<%= sortUrl('active_count') %>">תלמידים פעילים<%= sortIndicator('active_count') %></a></th>
+        <th><a href="<%= sortUrl('status') %>">סטטוס<%= sortIndicator('status') %></a></th>
+        <th></th>
+      </tr></thead>
+      <tbody>
+        <% classes.forEach(c => { %>
+          <tr>
+            <td><%= c.name %></td>
+            <td><%= c.parallel || '' %></td>
+            <td><%= c.branch || '' %></td>
+            <td><%= c.category_name || '' %><%= c.price != null ? ' ('+c.price+' ₪)' : '' %></td>
+            <td><%= c.active_count %></td>
+            <td><span class="badge <%= c.status !== 'פעיל' ? 'archive' : '' %>"><%= c.status || '' %></span></td>
+            <td>
+              <a href="/classes/<%= c.id %>" class="btn small secondary">צפייה</a>
+              <a href="/classes/<%= c.id %>/edit" class="btn small secondary">עריכה</a>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  <% } %>
+</div>
+
+<div class="card">
+  <div style="display:flex; justify-content:space-between; align-items:center;">
+    <h1>מחזורים</h1>
+    <a href="/classes/cohorts/new" class="btn">+ מחזור חדש</a>
+  </div>
+  <% if (cohorts.length === 0) { %>
+    <p class="empty-state">לא נמצאו מחזורים</p>
+  <% } else { %>
+    <table>
+      <thead><tr><th>מחזור</th><th>טווח תאריכי לידה</th><th>סטטוס</th><th>מס' תלמידים</th><th></th></tr></thead>
+      <tbody>
+        <% cohorts.forEach(c => { %>
+          <tr>
+            <td><%= c.name %></td>
+            <td><%= (c.from_date_str || c.to_date_str) ? (c.from_date_str || '?') + ' – ' + (c.to_date_str || '?') : '' %></td>
+            <td><span class="badge <%= c.status !== 'פעיל' ? 'archive' : '' %>"><%= c.status || '' %></span></td>
+            <td><%= c.count %></td>
+            <td>
+              <a href="/students?cohort_id=<%= c.id %>" class="btn small secondary">תלמידים</a>
+              <a href="/classes/cohorts/<%= c.id %>/edit" class="btn small secondary">עריכה</a>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  <% } %>
+</div>
+
+<%- include('../partials/footer') %>

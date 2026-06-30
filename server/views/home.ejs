@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>תלמוד תורה החדש - מערכת ניהול</title>
+  <link rel="stylesheet" href="/css/style.css" />
+  <link rel="stylesheet" href="/css/home.css" />
+</head>
+<body class="home-body">
+
+  <div class="home-bg">
+    <div class="orb orb1"></div>
+    <div class="orb orb2"></div>
+    <div class="orb orb3"></div>
+    <div class="stars"></div>
+  </div>
+
+  <div class="home-topbar">
+    <span class="bsd">בס"ד</span>
+    <a href="/year" class="year-pill">שנת לימודים: <strong><%= currentYear %></strong></a>
+    <form action="/logout" method="POST">
+      <button type="submit" class="btn-logout"><%= user %> · יציאה</button>
+    </form>
+  </div>
+
+  <main class="home-main">
+    <div class="logo-wrap">
+      <div class="logo-glow"></div>
+      <img src="/images/logo.png" alt="תלמוד תורה החדש" class="home-logo" />
+    </div>
+
+    <h1 class="home-title">תלמוד תורה החדש</h1>
+    <p class="home-subtitle">מערכת ניהול דיגיטלית</p>
+
+    <div class="stats-row">
+      <div class="stat-pill"><span class="stat-num"><%= stats.students %></span><span class="stat-label">תלמידים פעילים</span></div>
+      <div class="stat-pill"><span class="stat-num"><%= stats.classes %></span><span class="stat-label">כיתות</span></div>
+      <div class="stat-pill"><span class="stat-num"><%= stats.teachers %></span><span class="stat-label">מלמדים</span></div>
+      <div class="stat-pill"><span class="stat-num"><%= stats.families %></span><span class="stat-label">משפחות</span></div>
+      <div class="stat-pill stat-pill-money"><span class="stat-num"><%= Math.round(monthlyTotal).toLocaleString() %> ₪</span><span class="stat-label">סך גבייה חודשית</span></div>
+    </div>
+
+    <div class="branch-stats-row">
+      <% branchStats.forEach(b => { %>
+        <a href="/students?status=<%= encodeURIComponent('פעיל') %>&branch=<%= b.branch === 'לא משויך' ? '__none__' : encodeURIComponent(b.branch) %>" class="branch-pill">
+          <span class="branch-pill-count"><%= b.count %></span>
+          <span class="branch-pill-name"><%= b.branch %></span>
+        </a>
+      <% }) %>
+    </div>
+
+    <div class="nav-grid">
+      <a href="/students" class="nav-card" style="--d:0">
+        <div class="nav-icon">🧒</div>
+        <div class="nav-text">תלמידים</div>
+        <div class="nav-sub">רשימה, חיפוש, כרטיסים</div>
+      </a>
+      <a href="/classes" class="nav-card" style="--d:1">
+        <div class="nav-icon">🏫</div>
+        <div class="nav-text">כיתות ומחזורים</div>
+        <div class="nav-sub">שיבוצים וניהול כיתות</div>
+      </a>
+      <a href="/teachers" class="nav-card" style="--d:2">
+        <div class="nav-icon">🧑‍🏫</div>
+        <div class="nav-text">מלמדים ועובדים</div>
+        <div class="nav-sub">סגל הוראה וניהול</div>
+      </a>
+      <a href="/families" class="nav-card" style="--d:3">
+        <div class="nav-icon">👨‍👩‍👧‍👦</div>
+        <div class="nav-text">משפחות</div>
+        <div class="nav-sub">הורים, כתובות וקשר</div>
+      </a>
+      <a href="/tuition" class="nav-card" style="--d:4">
+        <div class="nav-icon">💳</div>
+        <div class="nav-text">שכר לימוד</div>
+        <div class="nav-sub">תעריפים, הנחות וחישוב</div>
+      </a>
+      <a href="/students/new" class="nav-card" style="--d:5">
+        <div class="nav-icon">➕</div>
+        <div class="nav-text">קליטת תלמיד חדש</div>
+        <div class="nav-sub">הוספה מהירה</div>
+      </a>
+    </div>
+
+    <p class="home-footer">© כל הזכויות שמורות לתלמוד תורה החדש</p>
+  </main>
+
+  <div class="info-bar" id="info-bar">
+    <div class="info-item" id="info-clock">
+      <span class="info-value" id="clock-time">--:--:--</span>
+      <span class="info-label" id="clock-date"><%= dayName %>, <%= hebrewDateToday %></span>
+    </div>
+    <div class="info-item" id="info-dafyomi">
+      <span class="info-value">דף יומי</span>
+      <span class="info-label" id="dafyomi-value">טוען...</span>
+    </div>
+    <div class="info-item" id="info-weather">
+      <span class="info-value" id="weather-temp">--°</span>
+      <span class="info-label">בני ברק</span>
+    </div>
+    <div class="info-item" id="info-shabbat">
+      <span class="info-value">כניסת שבת</span>
+      <span class="info-label" id="shabbat-in">טוען...</span>
+    </div>
+    <div class="info-item" id="info-shabbat-out">
+      <span class="info-value">צאת שבת</span>
+      <span class="info-label" id="shabbat-out">טוען...</span>
+    </div>
+    <button type="button" class="zmanim-toggle" id="zmanim-toggle" onclick="document.getElementById('zmanim-row').classList.toggle('open'); this.classList.toggle('open');">
+      זמני היום ⌃
+    </button>
+  </div>
+
+  <div class="zmanim-row" id="zmanim-row">
+    <div class="zman-item"><span class="zman-label">עלות השחר</span><span class="zman-value" id="z-alotHaShachar">--:--</span></div>
+    <div class="zman-item"><span class="zman-label">הנץ החמה</span><span class="zman-value" id="z-sunrise">--:--</span></div>
+    <div class="zman-item"><span class="zman-label">סוף זמן ק"ש (מג"א)</span><span class="zman-value" id="z-sofZmanShmaMGA">--:--</span></div>
+    <div class="zman-item"><span class="zman-label">סוף זמן ק"ש (גר"א)</span><span class="zman-value" id="z-sofZmanShma">--:--</span></div>
+    <div class="zman-item"><span class="zman-label">סוף זמן תפילה (מג"א)</span><span class="zman-value" id="z-sofZmanTfillaMGA">--:--</span></div>
+    <div class="zman-item"><span class="zman-label">סוף זמן תפילה (גר"א)</span><span class="zman-value" id="z-sofZmanTfilla">--:--</span></div>
+    <div class="zman-item"><span class="zman-label">חצות היום</span><span class="zman-value" id="z-chatzot">--:--</span></div>
+    <div class="zman-item"><span class="zman-label">מנחה גדולה</span><span class="zman-value" id="z-minchaGedola">--:--</span></div>
+    <div class="zman-item"><span class="zman-label">מנחה קטנה</span><span class="zman-value" id="z-minchaKetana">--:--</span></div>
+    <div class="zman-item"><span class="zman-label">פלג המנחה</span><span class="zman-value" id="z-plagHaMincha">--:--</span></div>
+    <div class="zman-item"><span class="zman-label">שקיעה</span><span class="zman-value" id="z-sunset">--:--</span></div>
+    <div class="zman-item"><span class="zman-label">צאת הכוכבים</span><span class="zman-value" id="z-tzeit7083deg">--:--</span></div>
+    <div class="zman-item"><span class="zman-label">חצות הלילה</span><span class="zman-value" id="z-chatzotNight">--:--</span></div>
+  </div>
+
+  <script src="/js/info-bar.js"></script>
+</body>
+</html>

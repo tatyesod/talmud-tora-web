@@ -1,0 +1,57 @@
+<%- include('../partials/header', {title: 'ניהול שנת לימודים'}) %>
+
+<div class="card">
+  <h1>ניהול שנת לימודים</h1>
+  <p style="font-size:1.3em;">השנה הנוכחית במערכת: <strong style="color:var(--primary-dark);"><%= currentYear %></strong></p>
+
+  <% if (result) { %>
+    <div class="card" style="background:#eef6ee; border-color:#bcd9bc;">
+      <strong>העלאת השנה בוצעה בהצלחה!</strong>
+      <p>
+        השנה עודכנה מ-<%= result.previousLabel %> ל-<%= result.newLabel %>.<br />
+        <%= result.promoted %> תלמידים קודמו לכיתה הבאה,
+        <%= result.movedToMechina %> תלמידים מ"עדיין לא נכנסו" נכנסו למכינה א',
+        <%= result.archived %> תלמידי כיתה ח' עברו לארכיון.
+      </p>
+    </div>
+  <% } %>
+
+  <fieldset>
+    <legend>העלאת שנה</legend>
+    <p style="color:var(--muted);">
+      פעולה זו תשמור תמונת מצב מלאה של השנה הנוכחית (לצפייה עתידית), ולאחר מכן:
+    </p>
+    <ul style="color:var(--muted); line-height:1.8;">
+      <li>תקדם את כל התלמידים המשובצים לכיתה אחת קדימה (לדוגמה: כיתה א' ← כיתה ב')</li>
+      <li>תלמידי כיתה ח' יעברו אוטומטית לסטטוס "ארכיון"</li>
+      <li>תלמידים מכיתות "עדיין לא נכנסו" (לפי מקבילה) יעברו למכינה א' המתאימה ויהפכו לסטטוס "פעיל"</li>
+      <li>תלמידים ללא שיבוץ לכיתה (אחים קטנים) יישארו ללא שינוי, בסטטוס "לא פעיל"</li>
+      <li>השנה הנוכחית במערכת תתקדם בשנה אחת</li>
+    </ul>
+    <form method="POST" action="/year/promote" onsubmit="return confirm('פעולה זו תעדכן את כל הכיתות והסטטוסים של כל בתי הספר. להמשיך?');">
+      <button type="submit" class="btn">⬆️ העלאת שנה</button>
+    </form>
+  </fieldset>
+</div>
+
+<div class="card">
+  <h1>שנים קודמות (תמונות מצב שמורות)</h1>
+  <% if (snapshots.length === 0) { %>
+    <p class="empty-state">עדיין לא בוצעה העלאת שנה - אין תמונות מצב שמורות</p>
+  <% } else { %>
+    <table>
+      <thead><tr><th>שנה</th><th>תאריך שמירה</th><th></th></tr></thead>
+      <tbody>
+        <% snapshots.forEach(s => { %>
+          <tr>
+            <td><%= s.year_label %></td>
+            <td><%= new Date(s.created_at).toLocaleDateString('he-IL') %></td>
+            <td><a href="/year/snapshots/<%= s.id %>" class="btn small secondary">צפייה</a></td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  <% } %>
+</div>
+
+<%- include('../partials/footer') %>

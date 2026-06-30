@@ -1,0 +1,61 @@
+<%- include('../partials/header', {title: 'משפחות'}) %>
+
+<div class="card">
+  <h1>משפחות</h1>
+  <form class="searchbar auto-filter" method="GET" action="/families">
+    <input type="text" name="q" placeholder="חיפוש לפי שם משפחה, שם אב, טלפון..." value="<%= q %>" />
+    <select name="sector">
+      <option value="">כל המגזרים</option>
+      <option value="ליטאי" <%= sector === 'ליטאי' ? 'selected' : '' %>>ליטאי</option>
+      <option value="ספרדי" <%= sector === 'ספרדי' ? 'selected' : '' %>>ספרדי</option>
+      <option value="תמני" <%= sector === 'תמני' ? 'selected' : '' %>>תמני</option>
+    </select>
+    <select name="branch">
+      <option value="">כל הסניפים</option>
+      <option value="סוקולוב" <%= branch === 'סוקולוב' ? 'selected' : '' %>>סוקולוב</option>
+      <option value="נפחא" <%= branch === 'נפחא' ? 'selected' : '' %>>נפחא</option>
+      <option value="בן פתחיה" <%= branch === 'בן פתחיה' ? 'selected' : '' %>>בן פתחיה</option>
+    </select>
+    <select name="status">
+      <option value="">כל הסטטוסים</option>
+      <option value="פעיל" <%= status === 'פעיל' ? 'selected' : '' %>>פעיל</option>
+      <option value="לא פעיל" <%= status === 'לא פעיל' ? 'selected' : '' %>>לא פעיל</option>
+      <option value="ארכיון" <%= status === 'ארכיון' ? 'selected' : '' %>>ארכיון</option>
+    </select>
+    <button type="submit" class="btn">חיפוש</button>
+    <input type="hidden" name="sort" value="<%= sort %>" />
+    <input type="hidden" name="dir" value="<%= dir %>" />
+  </form>
+
+  <% if (families.length === 0) { %>
+    <div class="empty-state">לא נמצאו משפחות</div>
+  <% } else { %>
+    <table>
+      <thead><tr>
+        <th><a href="<%= sortUrl('last_name') %>">שם משפחה<%= sortIndicator('last_name') %></a></th>
+        <th><a href="<%= sortUrl('sector') %>">מגזר<%= sortIndicator('sector') %></a></th>
+        <th><a href="<%= sortUrl('father_name') %>">שם האב<%= sortIndicator('father_name') %></a></th>
+        <th><a href="<%= sortUrl('mother_name') %>">שם האם<%= sortIndicator('mother_name') %></a></th>
+        <th><a href="<%= sortUrl('home_phone') %>">טלפון בית<%= sortIndicator('home_phone') %></a></th>
+        <th><a href="<%= sortUrl('city') %>">עיר<%= sortIndicator('city') %></a></th>
+        <th></th>
+      </tr></thead>
+      <tbody>
+        <% families.forEach(f => { %>
+          <tr>
+            <td><a href="/families/<%= f.id %>"><%= f.last_name || '' %></a></td>
+            <td><%= f.sector || '' %></td>
+            <td><%= f.father_name || '' %></td>
+            <td><%= f.mother_name || '' %></td>
+            <td><%- phoneLink(f.home_phone) %></td>
+            <td><%= f.city || '' %></td>
+            <td><a href="/families/<%= f.id %>" class="btn small secondary">צפייה</a></td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+    <p style="color:var(--muted); margin-top:10px;">סה"כ <%= families.length %> משפחות</p>
+  <% } %>
+</div>
+
+<%- include('../partials/footer') %>

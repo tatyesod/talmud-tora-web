@@ -1,0 +1,24 @@
+<%- include('../partials/header', {title: 'יומן כיתה'}) %>
+
+<div class="card">
+  <h1>יומן כיתה</h1>
+  <form method="GET" action="/reports/class-journal/view" target="_blank">
+    <div class="form-grid">
+      <div class="form-group">
+        <label>כיתה</label>
+        <select name="class_id" required>
+          <option value="">בחר כיתה</option>
+          <% classes.forEach(c => { %>
+            <option value="<%= c.id %>"><%= c.name %><%= c.parallel ? ' ('+c.parallel+')' : '' %></option>
+          <% }) %>
+        </select>
+      </div>
+    </div>
+    <div class="actions" style="margin-top:14px;">
+      <button type="submit" class="btn">🖨️ הצג והדפס</button>
+      <a href="/reports" class="btn secondary">חזרה לדוחות</a>
+    </div>
+  </form>
+</div>
+
+<%- include('../partials/footer') %>

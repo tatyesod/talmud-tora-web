@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title><%= typeof title !== 'undefined' ? title : 'תלמוד תורה' %></title>
+  <link rel="stylesheet" href="/css/style.css" />
+  <script src="/js/auto-filter.js" defer></script>
+  <script src="/js/phone-link.js" defer></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><a href="/" style="color:#fff; display:flex; align-items:center; gap:10px;"><img src="/images/logo.png" alt="לוגו" style="height:40px; width:auto;" /> תלמוד תורה החדש</a></div>
+    <nav>
+      <a href="/">בית</a>
+      <a href="/students">תלמידים</a>
+      <a href="/classes">כיתות ומחזורים</a>
+      <a href="/teachers">מלמדים</a>
+      <a href="/families">משפחות</a>
+      <a href="/tuition">שכר לימוד</a>
+      <a href="/reports">דוחות</a>
+      <a href="/year">ניהול שנה</a>
+      <% if (user) { %>
+        <form action="/logout" method="POST" style="display:inline">
+          <button type="submit" class="btn small secondary" style="margin-inline-start:16px;"><%= user %> · יציאה</button>
+        </form>
+      <% } %>
+    </nav>
+  </header>
+  <div class="container">

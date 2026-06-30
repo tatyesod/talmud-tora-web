@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>התחברות - תלמוד תורה</title>
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <div class="login-box card">
+    <h2>📖 כניסה למערכת</h2>
+    <% if (error) { %><div class="error-msg"><%= error %></div><% } %>
+    <form method="POST" action="/login">
+      <div class="form-group">
+        <label>שם משתמש</label>
+        <input type="text" name="username" required autofocus />
+      </div>
+      <div class="form-group" style="margin-top:10px;">
+        <label>סיסמה</label>
+        <input type="password" name="password" required />
+      </div>
+      <button type="submit" class="btn" style="margin-top:16px; width:100%;">כניסה</button>
+    </form>
+  </div>
+</body>
+</html>
