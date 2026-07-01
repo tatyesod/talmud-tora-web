@@ -6,12 +6,19 @@
     <a href="/users/new" class="btn">+ משתמש חדש</a>
   </div>
   <table>
-    <thead><tr><th>שם משתמש</th><th>שם תצוגה</th><th>נוצר בתאריך</th><th></th></tr></thead>
+    <thead><tr><th>שם משתמש</th><th>שם תצוגה</th><th>סטטוס</th><th>נוצר בתאריך</th><th></th></tr></thead>
     <tbody>
       <% users.forEach(u => { %>
         <tr>
           <td><%= u.username %></td>
           <td><%= u.display_name || '' %></td>
+          <td>
+            <% if (u.force_password_change) { %>
+              <span class="badge archive">ממתין לשינוי סיסמה</span>
+            <% } else { %>
+              <span class="badge">פעיל</span>
+            <% } %>
+          </td>
           <td><%= u.created_at ? new Date(u.created_at).toLocaleDateString('he-IL') : '' %></td>
           <td>
             <a href="/users/<%= u.id %>/edit" class="btn small secondary">עריכה</a>

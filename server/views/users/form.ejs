@@ -14,6 +14,16 @@
         <label><%= mode === 'new' ? 'סיסמה' : 'סיסמה חדשה (השאר ריק כדי לא לשנות)' %></label>
         <input type="password" name="password" <%= mode === 'new' ? 'required' : '' %> />
       </div>
+      <% if (mode === 'edit') { %>
+      <div class="form-group">
+        <label>
+          <input type="checkbox" name="force_password_change"
+            <%= typeof editUser !== 'undefined' && editUser.force_password_change ? 'checked' : '' %>
+            style="width:auto; margin-left:6px;" />
+          חייב לשנות סיסמה בכניסה הבאה
+        </label>
+      </div>
+      <% } %>
     </div>
     <div class="actions" style="margin-top:14px;">
       <button type="submit" class="btn">שמירה</button>

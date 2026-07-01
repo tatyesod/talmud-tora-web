@@ -28,7 +28,7 @@ app.use(
 app.use((req, res, next) => {
   if (req.session.userId) {
     const db = require("./db");
-    const u = db.prepare("SELECT id, username, display_name, full_name, role_title, is_admin FROM users WHERE id = ?").get(req.session.userId);
+    const u = db.prepare("SELECT id, username, display_name, full_name, role_title, is_admin, force_password_change FROM users WHERE id = ?").get(req.session.userId);
     if (u) {
       req.currentUser = u;
       res.locals.user = u.display_name || u.username;
@@ -87,6 +87,39 @@ function requireAdmin(req, res, next) {
   return res.status(403).render("403");
 }
 
+// אם המשתמש חייב לשנות סיסמה — מנתב לעמוד שינוי סיסמה בלבד
+function checkForcePasswordChange(req, res, next) {
+  if (
+    req.currentUser &&
+    req.currentUser.force_password_change &&
+    req.path !== "/force-change-password" &&
+    req.path !== "/logout"
+  ) {
+    return res.redirect("/force-change-password");
+  }
+  next();
+}
+
+app.get("/force-change-password", requireLogin, (req, res) => {
+  res.render("force-change-password", { error: null });
+});
+
+app.post("/force-change-password", requireLogin, (req, res) => {
+  const { password, password2 } = req.body;
+  const db = require("./db");
+  const { hashPassword } = require("./auth");
+  if (!password || password.length < 6) {
+    return res.render("force-change-password", { error: "הסיסמה חייבת להכיל לפחות 6 תווים" });
+  }
+  if (password !== password2) {
+    return res.render("force-change-password", { error: "הסיסמאות אינן תואמות" });
+  }
+  db.prepare("UPDATE users SET password_hash = ?, force_password_change = 0 WHERE id = ?").run(
+    hashPassword(password), req.currentUser.id
+  );
+  res.redirect("/");
+});
+
 app.get("/login", (req, res) => {
   res.render("login", { error: null });
 });
@@ -108,6 +141,7 @@ app.post("/logout", (req, res) => {
 });
 
 app.use(requireLogin);
+app.use(checkForcePasswordChange);
 
 app.get("/", (req, res) => {
   const db = require("./db");

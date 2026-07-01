@@ -128,6 +128,7 @@ CREATE TABLE users (
     phone TEXT,
     email TEXT,
     is_admin INTEGER DEFAULT 0,
+    force_password_change INTEGER DEFAULT 0,
     created_at TEXT
 );
 

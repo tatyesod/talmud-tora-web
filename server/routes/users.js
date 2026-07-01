@@ -27,7 +27,7 @@ router.post("/profile", (req, res) => {
 });
 
 router.get("/", (req, res) => {
-  const users = db.prepare("SELECT id, username, display_name, created_at FROM users ORDER BY id").all();
+  const users = db.prepare("SELECT id, username, display_name, force_password_change, created_at FROM users ORDER BY id").all();
   res.render("users/list", { users });
 });
 
@@ -49,14 +49,16 @@ router.post("/", (req, res) => {
 });
 
 router.get("/:id/edit", (req, res) => {
-  const user = db.prepare("SELECT id, username, display_name FROM users WHERE id = ?").get(req.params.id);
+  const user = db.prepare("SELECT id, username, display_name, force_password_change FROM users WHERE id = ?").get(req.params.id);
   if (!user) return res.status(404).render("404");
   res.render("users/form", { mode: "edit", editUser: user });
 });
 
 router.put("/:id", (req, res) => {
-  const { display_name, password } = req.body;
-  db.prepare("UPDATE users SET display_name = ? WHERE id = ?").run(display_name, req.params.id);
+  const { display_name, password, force_password_change } = req.body;
+  db.prepare("UPDATE users SET display_name = ?, force_password_change = ? WHERE id = ?").run(
+    display_name, force_password_change === "on" ? 1 : 0, req.params.id
+  );
   if (password && password.trim()) {
     db.prepare("UPDATE users SET password_hash = ? WHERE id = ?").run(hashPassword(password), req.params.id);
   }

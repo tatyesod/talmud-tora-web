@@ -13,19 +13,19 @@ if (existing.c > 0) {
 }
 
 const defaultUsers = [
-  { username: "admin", password: "admin123", display_name: "מנהל המערכת", is_admin: 1 },
-  { username: "user2", password: "user2123", display_name: "משתמש 2", is_admin: 0 },
-  { username: "user3", password: "user3123", display_name: "משתמש 3", is_admin: 0 },
-  { username: "user4", password: "user4123", display_name: "משתמש 4", is_admin: 0 },
+  { username: "admin", password: "admin123", display_name: "מנהל המערכת", is_admin: 1, force: 0 },
+  { username: "user2", password: "user2123", display_name: "משתמש 2", is_admin: 0, force: 1 },
+  { username: "user3", password: "user3123", display_name: "משתמש 3", is_admin: 0, force: 1 },
+  { username: "user4", password: "user4123", display_name: "משתמש 4", is_admin: 0, force: 1 },
 ];
 
 const stmt = db.prepare(
-  "INSERT INTO users (username, password_hash, display_name, is_admin, created_at) VALUES (?,?,?,?,?)"
+  "INSERT INTO users (username, password_hash, display_name, is_admin, force_password_change, created_at) VALUES (?,?,?,?,?,?)"
 );
 
 for (const u of defaultUsers) {
-  stmt.run(u.username, hashPassword(u.password), u.display_name, u.is_admin, new Date().toISOString());
-  console.log(`נוצר משתמש: ${u.username} / ${u.password} (${u.display_name}${u.is_admin ? " - מנהל" : ""})`);
+  stmt.run(u.username, hashPassword(u.password), u.display_name, u.is_admin, u.force, new Date().toISOString());
+  console.log(`נוצר משתמש: ${u.username} / ${u.password} (${u.display_name}${u.is_admin ? " - מנהל" : ""}${u.force ? " - חייב לשנות סיסמה" : ""})`);
 }
 
 console.log("\nחשוב: שנו את הסיסמאות האלו דרך 'ניהול משתמשים' לאחר הכניסה הראשונה!");
