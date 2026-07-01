@@ -657,3 +657,66 @@
 .side-panel {
   box-shadow: 0 4px 20px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.04);
 }
+
+/* ===== משימות משותפות ===== */
+.shared-task-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 10px;
+  padding: 7px 12px;
+  font-size: 0.85em;
+  flex: 1 1 260px;
+  min-width: 200px;
+  max-width: 400px;
+  transition: border-color 0.2s;
+}
+.shared-task-item.shared-task-done {
+  opacity: 0.6;
+  border-color: rgba(76,175,110,0.3);
+  background: rgba(76,175,110,0.06);
+}
+.shared-task-dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.shared-task-dot.pending { background: #e05555; box-shadow: 0 0 5px #e05555; }
+.shared-task-dot.done    { background: #4caf6e; box-shadow: 0 0 5px #4caf6e; }
+
+.shared-task-title {
+  flex: 1;
+  color: #f0e9d8;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.shared-task-item.shared-task-done .shared-task-title {
+  text-decoration: line-through;
+  color: #8a96a3;
+}
+.shared-task-assign {
+  color: #c9974c;
+  font-size: 0.82em;
+  white-space: nowrap;
+  background: rgba(201,151,76,0.15);
+  border-radius: 6px;
+  padding: 1px 6px;
+}
+.shared-task-creator {
+  color: #6b7682;
+  font-size: 0.78em;
+  white-space: nowrap;
+}
+.shared-task-actions { display: flex; gap: 4px; }
+.stbtn {
+  border: none; border-radius: 6px; padding: 2px 7px;
+  font-size: 0.8em; cursor: pointer; transition: opacity 0.15s;
+}
+.stbtn:hover { opacity: 0.8; }
+.stbtn-done { background: rgba(76,175,110,0.25); color: #4caf6e; }
+.stbtn-undo { background: rgba(255,255,255,0.1); color: #ccc; }
+.stbtn-del  { background: rgba(220,80,80,0.2); color: #e07070; }

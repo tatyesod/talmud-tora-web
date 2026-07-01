@@ -197,9 +197,11 @@ app.get("/", (req, res) => {
     .prepare("SELECT COUNT(*) c FROM messages WHERE recipient_id = ? AND read_at IS NULL")
     .get(req.currentUser.id).c;
 
+  const allUsers = db.prepare("SELECT id, username, display_name FROM users ORDER BY display_name").all();
+
   res.render("home", {
     stats, branchStats, monthlyTotal, currentYear, hebrewDateToday, dayName,
-    myTasks, unreadCount, greeting, fullName,
+    myTasks, unreadCount, greeting, fullName, allUsers,
   });
 });
 
@@ -247,6 +249,50 @@ app.use("/expenses", require("./routes/expenses"));
 app.use("/books", require("./routes/books"));
 app.use("/labels", require("./routes/labels"));
 
+// ===== API — משימות משותפות =====
+app.get("/api/shared-tasks", (req, res) => {
+  const db = require("./db");
+  const tasks = db.prepare(`
+    SELECT st.*, 
+           uc.display_name AS created_by_name,
+           ud.display_name AS done_by_name
+    FROM shared_tasks st
+    LEFT JOIN users uc ON st.created_by = uc.id
+    LEFT JOIN users ud ON st.done_by = ud.id
+    ORDER BY st.done ASC, st.created_at DESC
+  `).all();
+  res.json(tasks);
+});
+
+app.post("/api/shared-tasks", (req, res) => {
+  const db = require("./db");
+  const { title, assigned_label } = req.body;
+  if (!title || !title.trim()) return res.status(400).json({ error: "כותרת חסרה" });
+  const info = db.prepare(
+    "INSERT INTO shared_tasks (title, assigned_label, created_by, created_at) VALUES (?,?,?,?)"
+  ).run(title.trim(), assigned_label || "כולם", req.currentUser.id, new Date().toISOString());
+  res.json({ id: info.lastInsertRowid });
+});
+
+app.post("/api/shared-tasks/:id/done", (req, res) => {
+  const db = require("./db");
+  db.prepare("UPDATE shared_tasks SET done=1, done_at=?, done_by=? WHERE id=?")
+    .run(new Date().toISOString(), req.currentUser.id, req.params.id);
+  res.json({ ok: true });
+});
+
+app.post("/api/shared-tasks/:id/undone", (req, res) => {
+  const db = require("./db");
+  db.prepare("UPDATE shared_tasks SET done=0, done_at=NULL, done_by=NULL WHERE id=?").run(req.params.id);
+  res.json({ ok: true });
+});
+
+app.delete("/api/shared-tasks/:id", (req, res) => {
+  const db = require("./db");
+  db.prepare("DELETE FROM shared_tasks WHERE id=?").run(req.params.id);
+  res.json({ ok: true });
+});
+
 app.use((req, res) => {
   res.status(404).render("404");
 });
@@ -290,3 +336,14 @@ app.listen(PORT, () => {
   }
   scheduleNightlyBackup();
 });
+
+// ===== API — משימות משותפות =====
+// ניקוי אוטומטי: מחיקת משימות שבוצעו לפני יותר מ-24 שעות
+function cleanOldSharedTasks() {
+  const db = require("./db");
+  const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+  const del = db.prepare("DELETE FROM shared_tasks WHERE done=1 AND done_at < ?").run(cutoff);
+  if (del.changes > 0) console.log(`[shared_tasks] נמחקו ${del.changes} משימות ישנות`);
+}
+setInterval(cleanOldSharedTasks, 60 * 60 * 1000); // כל שעה
+cleanOldSharedTasks(); // גם בהפעלה

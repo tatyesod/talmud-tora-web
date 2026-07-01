@@ -87,6 +87,17 @@ const migrations = [
     publisher TEXT,
     updated_at TEXT
   )`,
+  `CREATE TABLE IF NOT EXISTS shared_tasks (
+    id INTEGER PRIMARY KEY,
+    title TEXT NOT NULL,
+    assigned_to INTEGER,
+    assigned_label TEXT,
+    done INTEGER DEFAULT 0,
+    done_at TEXT,
+    done_by INTEGER,
+    created_by INTEGER NOT NULL,
+    created_at TEXT NOT NULL
+  )`,
   `CREATE TABLE IF NOT EXISTS book_prices (
     id INTEGER PRIMARY KEY, item_name TEXT NOT NULL, publisher TEXT,
     price REAL NOT NULL DEFAULT 0, notes TEXT, updated_at TEXT

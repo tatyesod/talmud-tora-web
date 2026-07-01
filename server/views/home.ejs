@@ -162,6 +162,55 @@
       </a>
     </div>
 
+    <!-- ===== לוח משימות משותף ===== -->
+    <div id="shared-tasks-bar" style="
+      margin: 18px 0 0;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(201,151,76,0.3);
+      border-radius: 14px;
+      padding: 14px 18px;
+      backdrop-filter: blur(8px);
+    ">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+        <h3 style="color:#f7f1e3; font-size:0.95em; margin:0;">📋 משימות משותפות</h3>
+        <button onclick="openAddSharedTask()" style="
+          background:rgba(201,151,76,0.25); border:1px solid rgba(201,151,76,0.5);
+          color:#f7f1e3; border-radius:8px; padding:4px 12px; cursor:pointer; font-size:0.82em;
+        ">+ הוסף</button>
+      </div>
+
+      <!-- טופס הוספה (מוסתר) -->
+      <div id="shared-task-form" style="display:none; margin-bottom:12px; display:none;">
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          <input id="shared-task-title" type="text" placeholder="תיאור המשימה..."
+            style="flex:2; min-width:180px; padding:7px 10px; border-radius:8px;
+                   border:1px solid rgba(255,255,255,0.2); background:rgba(255,255,255,0.08);
+                   color:#f0e9d8; font-size:0.88em;" />
+          <select id="shared-task-assign" style="
+            padding:7px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.2);
+            background:rgba(20,35,55,0.9); color:#f0e9d8; font-size:0.85em; min-width:120px;">
+            <option value="כולם">→ כולם</option>
+            <% if (typeof allUsers !== 'undefined') allUsers.forEach(u => { %>
+              <option value="<%= u.display_name || u.username %>">→ <%= u.display_name || u.username %></option>
+            <% }) %>
+          </select>
+          <button onclick="submitSharedTask()" style="
+            background:#2c5f7c; color:#fff; border:none; border-radius:8px;
+            padding:7px 14px; cursor:pointer; font-size:0.85em;">שמור</button>
+          <button onclick="closeAddSharedTask()" style="
+            background:rgba(255,255,255,0.1); color:#ccc; border:none; border-radius:8px;
+            padding:7px 10px; cursor:pointer; font-size:0.85em;">ביטול</button>
+        </div>
+      </div>
+
+      <!-- רשימת משימות -->
+      <div id="shared-tasks-list" style="
+        display:flex; flex-wrap:wrap; gap:8px; min-height:32px;
+      ">
+        <span style="color:#7c8a96; font-size:0.85em;">טוען...</span>
+      </div>
+    </div>
+
     <p class="home-footer">© כל הזכויות שמורות לתלמוד תורה החדש</p>
   </main>
 
@@ -250,6 +299,7 @@
   <script src="/js/presence.js"></script>
   <script src="/js/messages-preview.js"></script>
   <script src="/js/notifications.js"></script>
+  <script src="/js/shared-tasks.js"></script>
   <script>
   // ===== גרירת כרטיסי ניווט =====
   (function() {
