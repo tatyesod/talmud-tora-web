@@ -96,15 +96,36 @@
     <p class="empty-state">אין רשומות בתיק העובד</p>
   <% } else { %>
     <table>
-      <thead><tr><th>תאריך</th><th>קטגוריה</th><th>פירוט</th></tr></thead>
+      <thead><tr><th>תאריך</th><th>קטגוריה</th><th>פירוט</th><th>קובץ מצורף</th><th></th></tr></thead>
       <tbody>
         <% file.forEach(f => { %>
-          <tr><td><%= f.entry_date_str %></td><td><%= f.category || '' %></td><td><%= f.notes || '' %></td></tr>
+          <tr>
+            <td><%= f.entry_date_str %></td>
+            <td><%= f.category || '' %></td>
+            <td><%= f.notes || '' %></td>
+            <td>
+              <% if (f.file_path) { %>
+                <a href="<%= f.file_path %>" target="_blank" class="btn small secondary" style="font-size:0.8em;">
+                  📎 <%= f.file_name || 'פתח קובץ' %>
+                </a>
+              <% } else { %>
+                <span style="color:var(--muted); font-size:0.85em;">—</span>
+              <% } %>
+            </td>
+            <td>
+              <form method="POST" action="/teachers/<%= teacher.id %>/file/<%= f.id %>?_method=DELETE"
+                    onsubmit="return confirm('למחוק רשומה זו?');" style="display:inline">
+                <button type="submit" class="btn small danger">מחק</button>
+              </form>
+            </td>
+          </tr>
         <% }) %>
       </tbody>
     </table>
   <% } %>
-  <form method="POST" action="/teachers/<%= teacher.id %>/file" class="form-grid" style="margin-top:14px;">
+
+  <form method="POST" action="/teachers/<%= teacher.id %>/file"
+        enctype="multipart/form-data" class="form-grid" style="margin-top:16px;">
     <div class="form-group"><label>תאריך</label><input type="date" name="entry_date" /></div>
     <div class="form-group">
       <label>קטגוריה</label>
@@ -112,11 +133,21 @@
         <option value="חוזה">חוזה</option>
         <option value="תעודה">תעודה</option>
         <option value="הערכה">הערכה</option>
+        <option value="מסמך רפואי">מסמך רפואי</option>
+        <option value="אישור">אישור</option>
         <option value="אחר">אחר</option>
       </select>
     </div>
-    <div class="form-group full"><label>פירוט</label><textarea name="notes" required></textarea></div>
-    <div class="form-group full"><button type="submit" class="btn small">+ הוסף לתיק</button></div>
+    <div class="form-group full"><label>פירוט / הערות</label><textarea name="notes" rows="2"></textarea></div>
+    <div class="form-group full">
+      <label>קובץ מצורף (PDF, Word, תמונה — עד 10MB)</label>
+      <input type="file" name="attachment"
+             accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.xls,.xlsx"
+             style="padding:6px; border:1px solid var(--border); border-radius:8px; width:100%;" />
+    </div>
+    <div class="form-group full">
+      <button type="submit" class="btn small">📎 הוסף לתיק העובד</button>
+    </div>
   </form>
 </div>
 

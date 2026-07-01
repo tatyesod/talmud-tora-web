@@ -3,6 +3,32 @@ const router = express.Router();
 const db = require("../db");
 const hd = require("../hebrewDate");
 const { buildOrderBy } = require("../sortHelper");
+const multer = require("multer");
+const path = require("path");
+const fs = require("fs");
+
+// הגדרת multer להעלאת קבצי תיק עובד
+const DATA_DIR = process.env.RENDER_PERSISTENT_DIR || path.join(__dirname, "..");
+const uploadDir = path.join(DATA_DIR, "uploads", "teachers");
+if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, uploadDir),
+  filename: (req, file, cb) => {
+    const ts = Date.now();
+    const safe = Buffer.from(file.originalname, "latin1").toString("utf8");
+    cb(null, `${req.params.id}_${ts}_${safe}`);
+  },
+});
+const upload = multer({
+  storage,
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB מקסימום
+  fileFilter: (req, file, cb) => {
+    const allowed = [".pdf", ".doc", ".docx", ".jpg", ".jpeg", ".png", ".xls", ".xlsx"];
+    const ext = path.extname(file.originalname).toLowerCase();
+    cb(null, allowed.includes(ext));
+  },
+});
 
 function withDates(t) {
   if (!t) return t;
@@ -124,11 +150,28 @@ router.delete("/:id/attendance/:attId", (req, res) => {
   res.redirect(`/teachers/${req.params.id}`);
 });
 
-router.post("/:id/file", (req, res) => {
+router.post("/:id/file", upload.single("attachment"), (req, res) => {
   const { entry_date, category, notes } = req.body;
-  db.prepare("INSERT INTO teacher_file (teacher_id, entry_date, category, notes) VALUES (?,?,?,?)").run(
-    req.params.id, entry_date ? hd.gregorianStringToSerial(entry_date) : hd.todayAccessSerial(), category || null, notes
+  const file_path = req.file ? `/uploads/teachers/${req.file.filename}` : null;
+  const file_name = req.file ? Buffer.from(req.file.originalname, "latin1").toString("utf8") : null;
+  db.prepare("INSERT INTO teacher_file (teacher_id, entry_date, category, notes, file_path, file_name) VALUES (?,?,?,?,?,?)").run(
+    req.params.id,
+    entry_date ? hd.gregorianStringToSerial(entry_date) : hd.todayAccessSerial(),
+    category || null,
+    notes || null,
+    file_path,
+    file_name
   );
+  res.redirect(`/teachers/${req.params.id}`);
+});
+
+router.delete("/:id/file/:fileId", (req, res) => {
+  const row = db.prepare("SELECT file_path FROM teacher_file WHERE id=? AND teacher_id=?").get(req.params.fileId, req.params.id);
+  if (row?.file_path) {
+    const full = path.join(__dirname, "..", row.file_path.replace(/^\//, ""));
+    try { if (fs.existsSync(full)) fs.unlinkSync(full); } catch(e) {}
+  }
+  db.prepare("DELETE FROM teacher_file WHERE id = ? AND teacher_id = ?").run(req.params.fileId, req.params.id);
   res.redirect(`/teachers/${req.params.id}`);
 });
 

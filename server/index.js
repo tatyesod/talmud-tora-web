@@ -13,6 +13,10 @@ app.set("views", path.join(__dirname, "views"));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(methodOverride("_method"));
+const UPLOADS_DIR = process.env.RENDER_PERSISTENT_DIR
+  ? path.join(process.env.RENDER_PERSISTENT_DIR, "uploads")
+  : path.join(__dirname, "uploads");
+app.use("/uploads", express.static(UPLOADS_DIR));
 app.use(express.static(path.join(__dirname, "public")));
 
 app.use(
