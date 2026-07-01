@@ -334,11 +334,70 @@ legend { color: var(--primary-dark); font-weight: 700; padding: 0 8px; }
   flex-shrink: 0;
   margin-top: 4px;
 }
-.msg-preview-item {
+
+/* רשימת שיחות בפאנל הצד */
+.chat-preview-item {
   display: flex;
+  align-items: center;
   gap: 10px;
-  align-items: flex-start;
+  padding: 8px 6px;
+  border-radius: 10px;
+  text-decoration: none;
+  color: #e9e2d0;
+  transition: background 0.15s;
+  cursor: pointer;
 }
+.chat-preview-item:hover { background: rgba(255,255,255,0.08); text-decoration: none; }
+.chat-preview-unread { background: rgba(201,151,76,0.1); }
+.chat-preview-unread:hover { background: rgba(201,151,76,0.18); }
+
+.chat-preview-avatar {
+  width: 36px; height: 36px;
+  background: rgba(201,151,76,0.3);
+  color: #f7f1e3;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1em;
+  flex-shrink: 0;
+}
+.chat-preview-text { flex: 1; min-width: 0; }
+.chat-preview-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 4px;
+}
+.chat-preview-name {
+  font-size: 0.88em;
+  font-weight: 700;
+  color: #f7f1e3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.chat-preview-badge {
+  background: #c9974c;
+  color: #fff;
+  border-radius: 10px;
+  padding: 1px 6px;
+  font-size: 0.72em;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.chat-preview-msg {
+  display: block;
+  font-size: 0.78em;
+  color: #8a96a3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 1px;
+}
+.chat-preview-unread .chat-preview-msg { color: #c9c4bb; }
+.chat-preview-empty { font-style: italic; }
 
 .unread-badge-light {
   background: var(--danger);

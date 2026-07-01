@@ -10,31 +10,31 @@ function fmtTime(iso) {
 
 router.get("/recent/json", (req, res) => {
   const myId = req.currentUser.id;
-  const rows = db
-    .prepare(`
-      SELECT m.*, su.display_name AS sender_name, su.username AS sender_username,
-             ru.display_name AS recipient_name, ru.username AS recipient_username
-      FROM messages m
-      JOIN users su ON m.sender_id = su.id
-      JOIN users ru ON m.recipient_id = ru.id
-      WHERE m.sender_id = ? OR m.recipient_id = ?
-      ORDER BY m.created_at DESC
-      LIMIT 6
-    `)
-    .all(myId, myId);
 
-  const result = rows.map((m) => {
-    const mine = m.sender_id === myId;
-    const otherName = mine ? (m.recipient_name || m.recipient_username) : (m.sender_name || m.sender_username);
-    const otherId = mine ? m.recipient_id : m.sender_id;
+  // כל המשתמשים האחרים + הודעה אחרונה עם כל אחד
+  const otherUsers = db.prepare("SELECT id, username, display_name FROM users WHERE id != ? ORDER BY display_name").all(myId);
+
+  const result = otherUsers.map((u) => {
+    const lastMsg = db.prepare(`
+      SELECT * FROM messages
+      WHERE (sender_id = ? AND recipient_id = ?) OR (sender_id = ? AND recipient_id = ?)
+      ORDER BY created_at DESC LIMIT 1
+    `).get(myId, u.id, u.id, myId);
+
+    const unreadCount = db.prepare(
+      "SELECT COUNT(*) c FROM messages WHERE sender_id = ? AND recipient_id = ? AND read_at IS NULL"
+    ).get(u.id, myId).c;
+
     return {
-      otherId,
-      otherName,
-      body: m.body.length > 40 ? m.body.slice(0, 40) + "..." : m.body,
-      mine,
-      unread: !mine && !m.read_at,
+      otherId: u.id,
+      otherName: u.display_name || u.username,
+      body: lastMsg ? (lastMsg.body.length > 35 ? lastMsg.body.slice(0, 35) + "..." : lastMsg.body) : null,
+      mine: lastMsg ? lastMsg.sender_id === myId : false,
+      unread: unreadCount > 0,
+      unreadCount,
     };
   });
+
   res.json(result);
 });
 
