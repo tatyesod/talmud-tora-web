@@ -1,12 +1,33 @@
 <%- include('../partials/header', {title: 'דוח משפחות'}) %>
-
 <div class="card">
-  <h1>דוח משפחות - ייצוא לאקסל</h1>
-  <p style="color:var(--muted);">רשימת כל המשפחות עם פרטי קשר וכתובת ומספר ילדים פעילים.</p>
-  <div class="actions">
-    <a href="/reports/families-report/export" class="btn">📊 ייצוא לאקסל</a>
-    <a href="/reports" class="btn secondary">חזרה לדוחות</a>
-  </div>
+  <h1>דוח משפחות — ייצוא לאקסל</h1>
+  <form method="GET" action="/reports/families-report/export">
+    <div class="form-grid">
+      <div class="form-group">
+        <label>סטטוס תלמיד</label>
+        <select name="status">
+          <option value="פעיל" selected>פעיל</option>
+          <option value="">הכל</option>
+          <option value="לא פעיל">לא פעיל</option>
+          <option value="ארכיון">ארכיון</option>
+        </select>
+      </div>
+      <div class="form-group full">
+        <label>סינון לפי כיתה (ריק = כל הכיתות)</label>
+        <div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:6px; max-height:200px; overflow-y:auto; border:1px solid var(--border); border-radius:8px; padding:10px;">
+          <% classes.forEach(c => { %>
+            <label style="min-width:120px; font-size:0.9em; cursor:pointer;">
+              <input type="checkbox" name="class_id" value="<%= c.id %>" style="width:auto; margin-left:4px;" />
+              <%= c.name %><%= c.parallel ? ' ' + c.parallel : '' %>
+            </label>
+          <% }) %>
+        </div>
+      </div>
+    </div>
+    <div class="actions" style="margin-top:14px;">
+      <button type="submit" class="btn">📥 ייצוא לאקסל</button>
+      <a href="/reports" class="btn secondary">חזרה</a>
+    </div>
+  </form>
 </div>
-
 <%- include('../partials/footer') %>

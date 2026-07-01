@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <title>מדבקות — <%= clsLabel %></title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    @page {
+      size: A4;
+      margin: 0;
+    }
+
+    body {
+      font-family: Arial, 'Arial Hebrew', sans-serif;
+      direction: rtl;
+      background: #fff;
+    }
+
+    .no-print {
+      background: #2c5f7c;
+      color: #fff;
+      padding: 10px 16px;
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      font-size: 14px;
+    }
+    .no-print button {
+      background: #fff;
+      color: #2c5f7c;
+      border: none;
+      border-radius: 6px;
+      padding: 6px 16px;
+      cursor: pointer;
+      font-weight: 700;
+    }
+    .no-print a { color: #fff; }
+
+    @media print { .no-print { display: none; } }
+
+    /* דף מדבקות */
+    .label-page {
+      width: 210mm;
+      min-height: 297mm;
+      padding-top: <%= fmt.pageMarginTop %>;
+      padding-right: <%= fmt.pageMarginSide %>;
+      padding-left: <%= fmt.pageMarginSide %>;
+      page-break-after: always;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+    .label-page:last-child { page-break-after: auto; }
+
+    .label-row {
+      display: flex;
+      flex-direction: row-reverse; /* RTL: right to left */
+      gap: 0;
+    }
+
+    .label {
+      width: <%= fmt.labelW %>;
+      height: <%= fmt.labelH %>;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: flex-end; /* RTL */
+      padding: 1.5mm 2.5mm;
+      /* border: 0.3pt dashed #ccc; */ /* uncomment to see label borders */
+      font-size: <%= fmt.fontSize %>;
+      direction: rtl;
+      text-align: right;
+    }
+
+    .label.empty { /* blank label */ }
+
+    .label-line1 { font-weight: 700; font-size: 1.1em; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+    .label-line2 { font-size: 0.95em; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+    .label-line3 { font-size: 0.9em; line-height: 1.2; color: #444; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+
+    /* ברירת מחדל: הצג קווי מדבקה בעדינות */
+    .show-borders .label { border: 0.3pt dashed #bbb; }
+  </style>
+</head>
+<body>
+
+<div class="no-print">
+  <button onclick="window.print()">🖨️ הדפסה</button>
+  <span><strong><%= items.length %></strong> מדבקות | פורמט: TANEX <%= format %> (<%= fmt.perPage %> בדף)</span>
+  <label style="cursor:pointer; font-size:13px;">
+    <input type="checkbox" id="show-borders" style="margin-left:4px;" />
+    הצג קווי מדבקה
+  </label>
+  <a href="/labels">← חזרה</a>
+</div>
+
+<%
+// חלוקה לדפים
+const pages = [];
+let current = [];
+items.forEach((item, i) => {
+  current.push(item);
+  if (current.length === fmt.perPage || i === items.length - 1) {
+    pages.push([...current]);
+    current = [];
+  }
+});
+%>
+
+<% pages.forEach(page => { %>
+  <div class="label-page" id="page">
+    <%
+    // חלוקה לשורות
+    const allRows = [];
+    for (let r = 0; r < fmt.rows; r++) {
+      const rowItems = [];
+      for (let c = 0; c < fmt.cols; c++) {
+        const idx = r * fmt.cols + c;
+        rowItems.push(idx < page.length ? page[idx] : null);
+      }
+      allRows.push(rowItems);
+    }
+    %>
+    <% allRows.forEach(row => { %>
+      <div class="label-row">
+        <% row.forEach(item => { %>
+          <div class="label<%= !item ? ' empty' : '' %>">
+            <% if (item) { %>
+              <div class="label-line1"><%= item.line1 %></div>
+              <% if (item.line2) { %><div class="label-line2"><%= item.line2 %></div><% } %>
+              <% if (item.line3) { %><div class="label-line3"><%= item.line3 %></div><% } %>
+            <% } %>
+          </div>
+        <% }) %>
+      </div>
+    <% }) %>
+  </div>
+<% }) %>
+
+<script>
+document.getElementById('show-borders').addEventListener('change', function() {
+  document.querySelectorAll('.label-page').forEach(p => p.classList.toggle('show-borders', this.checked));
+});
+</script>
+</body>
+</html>

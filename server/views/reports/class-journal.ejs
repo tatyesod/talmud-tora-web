@@ -1,24 +1,31 @@
 <%- include('../partials/header', {title: 'יומן כיתה'}) %>
-
 <div class="card">
   <h1>יומן כיתה</h1>
-  <form method="GET" action="/reports/class-journal/view" target="_blank">
+  <form method="GET" action="/reports/class-journal/view">
     <div class="form-grid">
       <div class="form-group">
         <label>כיתה</label>
         <select name="class_id" required>
-          <option value="">בחר כיתה</option>
+          <option value="">בחר כיתה...</option>
           <% classes.forEach(c => { %>
-            <option value="<%= c.id %>"><%= c.name %><%= c.parallel ? ' ('+c.parallel+')' : '' %></option>
+            <option value="<%= c.id %>"><%= c.name %><%= c.parallel ? ' ' + c.parallel : '' %></option>
           <% }) %>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>סוג טופס</label>
+        <select name="fmt">
+          <option value="7col">7 טורים (שבועי)</option>
+          <option value="2col">2 טורים רחבים</option>
+          <option value="1col">טור הערות אחד</option>
+          <option value="grid">משבצות ריקות (חודשי)</option>
         </select>
       </div>
     </div>
     <div class="actions" style="margin-top:14px;">
-      <button type="submit" class="btn">🖨️ הצג והדפס</button>
-      <a href="/reports" class="btn secondary">חזרה לדוחות</a>
+      <button type="submit" class="btn">🖨️ הפק יומן</button>
+      <a href="/reports" class="btn secondary">חזרה</a>
     </div>
   </form>
 </div>
-
 <%- include('../partials/footer') %>

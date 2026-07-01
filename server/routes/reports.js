@@ -184,38 +184,45 @@ router.get("/full-student-list/export", async (req, res) => {
 
 // ============ דוח משפחות - ייצוא לאקסל ============
 router.get("/families-report", (req, res) => {
-  res.render("reports/families-report");
+  const classes = db.prepare("SELECT id, name, parallel FROM classes ORDER BY name, parallel").all();
+  res.render("reports/families-report", { classes });
 });
 
 router.get("/families-report/export", async (req, res) => {
-  const rows = db.prepare(`
-    SELECT f.id, f.last_name, f.father_name, f.mother_name, f.home_phone, f.father_mobile,
-           f.mother_mobile, f.street, f.house_number, f.city,
-           (SELECT COUNT(*) FROM students s WHERE s.family_id = f.id AND s.status='פעיל') AS active_children
-    FROM families f
-    ORDER BY f.last_name
-  `).all();
+  let classIds = req.query.class_id || [];
+  if (!Array.isArray(classIds)) classIds = [classIds];
+  const status = req.query.status || "";
 
+  let sql = `
+    SELECT DISTINCT f.id, f.last_name, f.father_name, f.mother_name, f.home_phone, f.father_mobile,
+           f.mother_mobile, f.street, f.house_number, f.city,
+           (SELECT COUNT(*) FROM students s2 WHERE s2.family_id = f.id AND s2.status='פעיל') AS active_children
+    FROM families f
+    JOIN students s ON s.family_id = f.id
+    WHERE 1=1
+  `;
+  const params = [];
+  if (status) { sql += " AND s.status = ?"; params.push(status); }
+  if (classIds.length > 0) {
+    sql += ` AND s.class_id IN (${classIds.map(() => "?").join(",")})`;
+    params.push(...classIds);
+  }
+  sql += " ORDER BY f.last_name";
+
+  const rows = db.prepare(sql).all(...params);
   const eldestClassStmt = db.prepare(`
     SELECT c.name AS class_name, c.parallel
-    FROM students s
-    LEFT JOIN classes c ON s.class_id = c.id
-    WHERE s.family_id = ?
-    ORDER BY (s.birth_date_civil IS NULL), s.birth_date_civil ASC
-    LIMIT 1
+    FROM students s LEFT JOIN classes c ON s.class_id = c.id
+    WHERE s.family_id = ? ORDER BY (s.birth_date_civil IS NULL), s.birth_date_civil ASC LIMIT 1
   `);
 
   const header = ["שם משפחה", "שם האב", "שם האם", "טלפון בית", "נייד אב", "נייד אם", "כתובת", "מס' ילדים פעילים", "כיתת האח הבכור"];
   const enriched = rows.map((r) => {
     const eldest = eldestClassStmt.get(r.id);
-    const eldestClass = eldest && eldest.class_name
-      ? eldest.class_name + (eldest.parallel ? " " + eldest.parallel : "")
-      : "";
+    const eldestClass = eldest?.class_name ? eldest.class_name + (eldest.parallel ? " " + eldest.parallel : "") : "";
     return { r, eldestClass };
   });
-  // מיון לפי כיתת האח הבכור (משפחות ללא ילדים בסוף)
   enriched.sort((a, b) => a.eldestClass.localeCompare(b.eldestClass, "he"));
-
   const data = enriched.map(({ r, eldestClass }) => [
     r.last_name || "", r.father_name || "", r.mother_name || "",
     r.home_phone || "", r.father_mobile || "", r.mother_mobile || "",
@@ -237,20 +244,24 @@ router.get("/grandparents-report/export", async (req, res) => {
   await sendWorkbook(res, "רשימת סבים וכתובתם.xlsx", "סבים", "רשימת סבים וכתובתם", header, data);
 });
 
-// ============ יומן כיתה ============
+// ============ יומן כיתה (4 פורמטים) ============
 router.get("/class-journal", (req, res) => {
   const classes = db.prepare("SELECT id, name, parallel FROM classes ORDER BY name, parallel").all();
   res.render("reports/class-journal", { classes });
 });
 
 router.get("/class-journal/view", (req, res) => {
-  const classId = req.query.class_id;
-  if (!classId) return res.redirect("/reports/class-journal");
-  const classRow = db.prepare("SELECT * FROM classes WHERE id = ?").get(classId);
+  const { class_id, fmt } = req.query;
+  if (!class_id) return res.redirect("/reports/class-journal");
+  const classRow = db.prepare("SELECT * FROM classes WHERE id = ?").get(class_id);
   const students = db
-    .prepare("SELECT * FROM students WHERE class_id = ? AND status = 'פעיל' ORDER BY last_name, first_name")
-    .all(classId);
-  res.render("reports/class-journal-print", { classRow, students });
+    .prepare("SELECT s.first_name, s.last_name, f.last_name AS family_last FROM students s LEFT JOIN families f ON s.family_id=f.id WHERE s.class_id = ? AND s.status = 'פעיל' ORDER BY s.last_name, s.first_name")
+    .all(class_id)
+    .map(s => ({ ...s, displayName: (s.last_name || s.family_last || "") + " " + (s.first_name || "") }));
+  // teacher
+  const teacher = db.prepare("SELECT t.first_name, t.last_name FROM teacher_classes tc JOIN teachers t ON tc.teacher_id=t.id WHERE tc.class_id=? ORDER BY tc.id LIMIT 1").get(class_id);
+  const teacherName = teacher ? `ר' ${teacher.first_name || ""} ${teacher.last_name || ""}`.trim() : "";
+  res.render("reports/class-journal-print", { classRow, students, teacherName, fmt: fmt || "7col" });
 });
 
 // ============ הצהרת בריאות ============

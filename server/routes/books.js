@@ -289,6 +289,40 @@ router.get("/letter", (req, res) => {
   res.redirect("/books");
 });
 
+// ============ מחירון בסיס ============
+router.get("/pricelist", (req, res) => {
+  const items = db.prepare("SELECT * FROM price_list ORDER BY item_name").all();
+  res.render("books/pricelist", { items, saved: req.query.saved || "" });
+});
+
+router.post("/pricelist", (req, res) => {
+  const { item_name, price, publisher } = req.body;
+  if (!item_name || !price) return res.redirect("/books/pricelist");
+  db.prepare("INSERT OR REPLACE INTO price_list (item_name, price, publisher, updated_at) VALUES (?,?,?,?)").run(
+    item_name, parseFloat(price), publisher || "", new Date().toISOString()
+  );
+  res.redirect("/books/pricelist?saved=1");
+});
+
+router.post("/pricelist/:id/update", (req, res) => {
+  const { price, publisher } = req.body;
+  const item = db.prepare("SELECT item_name FROM price_list WHERE id=?").get(req.params.id);
+  if (!item) return res.redirect("/books/pricelist");
+  db.prepare("UPDATE price_list SET price=?, publisher=?, updated_at=? WHERE id=?").run(
+    parseFloat(price), publisher || "", new Date().toISOString(), req.params.id
+  );
+  // עדכון כל פריטי הקטלוג עם אותו שם
+  db.prepare("UPDATE book_catalog SET price=? WHERE item_name LIKE ?").run(
+    parseFloat(price), `%${item.item_name.substring(0, 8)}%`
+  );
+  res.redirect("/books/pricelist?saved=1");
+});
+
+router.delete("/pricelist/:id", (req, res) => {
+  db.prepare("DELETE FROM price_list WHERE id=?").run(req.params.id);
+  res.redirect("/books/pricelist");
+});
+
 // ============ קטלוג ============
 router.get("/catalog", (req, res) => {
   const years = db.prepare("SELECT DISTINCT year_label FROM book_catalog ORDER BY year_label DESC").all().map(r => r.year_label);
@@ -312,4 +346,67 @@ router.delete("/catalog/:id", (req, res) => {
   res.redirect(`/books/catalog?year=${encodeURIComponent(row?.year_label || "")}`);
 });
 
+
+// ============ מחירון בסיס ============
+router.get("/prices", (req, res) => {
+  const prices = db.prepare("SELECT * FROM book_prices ORDER BY item_name").all();
+  res.render("books/prices", { prices, updated: req.query.updated || "" });
+});
+
+router.post("/prices", (req, res) => {
+  const { item_name, publisher, price, notes } = req.body;
+  const now = new Date().toISOString();
+  db.prepare("INSERT INTO book_prices (item_name, publisher, price, notes, updated_at) VALUES (?,?,?,?,?) ON CONFLICT(item_name) DO UPDATE SET price=excluded.price, publisher=excluded.publisher, notes=excluded.notes, updated_at=excluded.updated_at").run(item_name, publisher||'', parseFloat(price)||0, notes||'', now);
+  res.redirect("/books/prices");
+});
+
+// עדכון מחיר ומעדכן קטלוגים קשורים
+router.put("/prices/:id", (req, res) => {
+  const { price, publisher } = req.body;
+  const row = db.prepare("SELECT * FROM book_prices WHERE id=?").get(req.params.id);
+  if (!row) return res.redirect("/books/prices");
+  const newPrice = parseFloat(price) || 0;
+  db.prepare("UPDATE book_prices SET price=?, publisher=?, updated_at=? WHERE id=?").run(newPrice, publisher||row.publisher||'', new Date().toISOString(), req.params.id);
+  // עדכון כל הקטלוגים עם שם זהה
+  const updated = db.prepare("UPDATE book_catalog SET price=? WHERE item_name=?").run(newPrice, row.item_name);
+  res.redirect("/books/prices?updated=" + updated.changes);
+});
+
+router.delete("/prices/:id", (req, res) => {
+  db.prepare("DELETE FROM book_prices WHERE id=?").run(req.params.id);
+  res.redirect("/books/prices");
+});
+
+// ============ חידוש ספרים / הזמנות נוספות ============
+router.get("/renewals", (req, res) => {
+  const { year, class_id } = req.query;
+  const defaultYear = db.prepare("SELECT value FROM settings WHERE key='current_hebrew_year'").get()?.value || 'תשפ"ז';
+  const activeYear = year || defaultYear;
+  const classes = db.prepare("SELECT id, name, parallel FROM classes ORDER BY name, parallel").all();
+  let students = [];
+  if (class_id) {
+    students = db.prepare("SELECT s.id, s.first_name, s.last_name, f.last_name AS family_last FROM students s LEFT JOIN families f ON s.family_id=f.id WHERE s.class_id=? AND s.status='פעיל' ORDER BY s.last_name, s.first_name").all(class_id);
+  }
+  const prices = db.prepare("SELECT * FROM book_prices ORDER BY item_name").all();
+  const extras = class_id ? db.prepare(`SELECT e.*, s.first_name, s.last_name FROM book_order_extras e JOIN students s ON e.student_id=s.id WHERE e.year_label=? AND s.class_id=? ORDER BY s.last_name, e.item_name`).all(activeYear, class_id) : [];
+  res.render("books/renewals", { year: activeYear, classes, class_id: class_id||'', students, prices, extras });
+});
+
+router.post("/renewals", (req, res) => {
+  const { year, student_id, item_name, price, notes } = req.body;
+  const class_id = req.body.class_id;
+  db.prepare("INSERT INTO book_order_extras (year_label, student_id, item_name, price, notes, created_at) VALUES (?,?,?,?,?,?)").run(year, student_id, item_name, parseFloat(price)||0, notes||'', new Date().toISOString());
+  res.redirect(`/books/renewals?year=${encodeURIComponent(year)}&class_id=${class_id}`);
+});
+
+router.delete("/renewals/:id", (req, res) => {
+  const row = db.prepare("SELECT * FROM book_order_extras WHERE id=?").get(req.params.id);
+  db.prepare("DELETE FROM book_order_extras WHERE id=?").run(req.params.id);
+  const year = row?.year_label || '';
+  const sid = db.prepare("SELECT class_id FROM students WHERE id=?").get(row?.student_id)?.class_id || '';
+  res.redirect(`/books/renewals?year=${encodeURIComponent(year)}&class_id=${sid}`);
+});
+
 module.exports = router;
+
+// ============ מחירון בסיס ============

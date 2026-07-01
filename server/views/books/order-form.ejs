@@ -5,55 +5,48 @@
   <title>טופס הזמנת ספרים — <%= display %></title>
   <style>
     * { box-sizing: border-box; }
-    body { font-family: 'Times New Roman', David, serif; max-width: 780px; margin: 0 auto; padding: 20px; font-size: 12pt; direction: rtl; color: #222; }
-    .no-print { background: #f0f4f8; padding: 10px 16px; border-radius: 8px; margin-bottom: 16px; display:flex; gap:10px; align-items:center; }
-    @media print { .no-print { display: none; } }
-
-    .bsd { text-align: right; font-size: 9pt; margin-bottom: 4px; }
-    .letter-header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #333; padding-bottom: 8px; margin-bottom: 14px; }
-    .logo { height: 72px; }
-    .address-block { font-size: 9pt; color: #444; text-align: left; line-height: 1.4; }
-
-    h2 { text-align: center; text-decoration: underline; margin: 10px 0 6px; font-size: 16pt; }
-    .subtitle { text-align: center; font-size: 11pt; margin-bottom: 14px; }
-
-    .intro { font-size: 10.5pt; line-height: 1.6; margin-bottom: 14px; }
-
-    .family-fill { border: 1px solid #999; border-radius: 6px; padding: 10px 14px; margin-bottom: 14px; display:flex; gap:30px; font-size: 10.5pt; }
-    .family-fill span { flex: 1; }
-    .fill-line { display: inline-block; border-bottom: 1px solid #666; min-width: 120px; }
-
-    table.books { width: 100%; border-collapse: collapse; font-size: 10.5pt; }
-    table.books th { background: #2c5f7c; color: #fff; padding: 6px 10px; text-align: right; }
-    table.books td { border: 1px solid #ccc; padding: 5px 10px; text-align: right; vertical-align: middle; }
+    body { font-family: David, 'Times New Roman', serif; max-width: 800px; margin: 0 auto; padding: 20px; font-size: 12pt; direction: rtl; color: #222; }
+    .no-print { background: #f0f4f8; padding: 10px 16px; border-radius: 8px; margin-bottom: 16px; display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+    @media print { .no-print { display: none; } .letter { page-break-before: always; } .letter:first-child { page-break-before: auto; } }
+    .bsd { text-align: right; font-size: 9pt; margin-bottom: 2px; }
+    .letter-header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #333; padding-bottom: 8px; margin-bottom: 12px; }
+    .logo { height: 70px; }
+    .address-block { font-size: 9pt; color: #444; text-align: left; line-height: 1.5; }
+    h2 { text-align: center; text-decoration: underline; margin: 8px 0 4px; font-size: 15pt; }
+    .subtitle { text-align: center; font-size: 11pt; margin-bottom: 12px; color: #444; }
+    .intro { font-size: 10.5pt; line-height: 1.55; margin-bottom: 12px; }
+    .family-fill { border: 1px solid #aaa; border-radius: 5px; padding: 8px 12px; margin-bottom: 12px; display:flex; gap:20px; flex-wrap:wrap; font-size: 10.5pt; }
+    .fill-line { display: inline-block; border-bottom: 1px solid #666; min-width: 100px; }
+    table.books { width: 100%; border-collapse: collapse; font-size: 10.5pt; margin-bottom: 10px; }
+    table.books th { background: #2c5f7c; color: #fff; padding: 5px 8px; text-align: right; font-size: 10pt; }
+    table.books td { border: 1px solid #ccc; padding: 5px 8px; text-align: right; vertical-align: middle; }
     table.books tr:nth-child(even) td { background: #f8f9fa; }
-    .check-col { width: 40px; text-align: center; font-size: 14pt; }
-    .price-col { width: 70px; text-align: center; font-weight: 700; color: #2c5f7c; }
-    .mandatory { color: #c00; font-weight: 700; font-size: 9pt; }
-
-    .total-row td { font-weight: 700; background: #eef3f7 !important; font-size: 11pt; }
-
-    .payment-box { border: 1px solid #999; border-radius: 6px; padding: 10px 14px; margin-top: 14px; font-size: 10pt; }
-    .payment-box strong { display: block; margin-bottom: 6px; font-size: 11pt; }
-    .deadline { background: #fff3cd; border: 1px solid #ffc107; border-radius: 4px; padding: 6px 12px; margin-top: 10px; font-size: 10pt; font-weight: 700; }
-    .footer-sign { margin-top: 16px; font-size: 10pt; }
-    .important-note { background: #fdecea; border: 1px solid #e57373; border-radius: 4px; padding: 7px 12px; margin-top: 10px; font-size: 9.5pt; }
+    .check-col { width: 36px; text-align: center !important; font-size: 13pt; }
+    .renew-col { width: 36px; text-align: center !important; font-size: 13pt; color: #b55; }
+    .price-col { width: 65px; text-align: center !important; font-weight: 700; color: #2c5f7c; }
+    .mandatory { color: #c00; font-size: 8.5pt; font-weight: 700; }
+    .total-row td { font-weight: 700; background: #eef3f7 !important; }
+    .section-title { font-weight: 700; font-size: 11pt; margin: 14px 0 6px; border-bottom: 1px solid #ccc; padding-bottom: 3px; }
+    .renewal-table { width: 100%; border-collapse: collapse; font-size: 10pt; }
+    .renewal-table th { background: #7a3030; color: #fff; padding: 5px 8px; text-align: right; }
+    .renewal-table td { border: 1px solid #ddd; padding: 5px 8px; }
+    .payment-box { border: 1px solid #999; border-radius: 5px; padding: 8px 12px; margin-top: 12px; font-size: 10pt; }
+    .deadline { background: #fff3cd; border: 1px solid #ffc107; border-radius: 4px; padding: 5px 10px; margin-top: 8px; font-size: 10pt; font-weight: 700; }
+    .note { background: #fdecea; border: 1px solid #e57373; border-radius: 4px; padding: 5px 10px; margin-top: 8px; font-size: 9.5pt; }
   </style>
 </head>
 <body>
 
 <div class="no-print">
-  <button onclick="window.print()" style="padding:8px 18px; background:#2c5f7c; color:#fff; border:none; border-radius:6px; cursor:pointer; font-size:13px;">🖨️ הדפסה</button>
-  <a href="/books?year=<%= encodeURIComponent(year) %>">חזרה לרשימה</a>
-  <span style="color:#666; font-size:0.9em;">להדפסה לכל תלמידי הכיתה — הדפס מספר עותקים לפי מספר התלמידים</span>
+  <button onclick="window.print()" style="padding:7px 16px; background:#2c5f7c; color:#fff; border:none; border-radius:6px; cursor:pointer;">🖨️ הדפסה</button>
+  <a href="/books?year=<%= encodeURIComponent(year) %>">חזרה</a>
+  <span style="color:#666; font-size:0.88em;">יש להדפיס עותק אחד לכל תלמיד בכיתה (<%= cls.name %> — כלל המקבילות)</span>
 </div>
 
 <div class="bsd">בס"ד</div>
 
 <div class="letter-header">
-  <div>
-    <img src="/images/logo-reports.jpg" class="logo" alt="לוגו" />
-  </div>
+  <img src="/images/logo-reports.jpg" class="logo" alt="לוגו" />
   <div class="address-block">
     <strong>תלמוד תורה החדש</strong><br/>
     סוקולוב 5 \ נפחא 7 \ בן פתחיה 8, בני ברק<br/>
@@ -62,28 +55,28 @@
   </div>
 </div>
 
-<p>לכב' הורי תלמידי הת"ת</p>
-<p>שלום רב,</p>
-
+<p>לכב' הורי תלמידי הת"ת | שלום רב</p>
 <h2>הזמנת ספרי לימוד וכלי כתיבה</h2>
-<div class="subtitle">שנה"ל <%= year %> &nbsp;|&nbsp; <%= display %></div>
+<div class="subtitle">שנה"ל <%= year %> &nbsp;|&nbsp; <%= cls.name %></div>
 
 <div class="intro">
-  כחלק מהערכות לקראת שנה"ל הבאה, הנהלת הת"ת רוכשת במרוכז את כל הציוד הנדרש לתלמידים.
-  נבקש למלא את פרטי בנכם ולסמן ✓ ליד הפריטים הנדרשים, ולהשיב בהקדם <strong>עם התשלום</strong> למזכירות הת"ת.
-  <br/>התשלום <strong>במזומן או בצ'יק בלבד</strong> (לא ניתן בהו"ק).
+  כחלק מהערכות לקראת שנה"ל הבאה, הנהלת הת"ת רוכשת במרוכז את כל הציוד הנדרש.
+  נבקש לסמן <strong>✓</strong> ליד הפריטים הנדרשים ולהשיב עם התשלום (<strong>מזומן/צ'יק בלבד</strong>).
+  מי שיש לו ספרים מאחים — אינו חייב לסמן.
 </div>
 
 <div class="family-fill">
-  <span>שם התלמיד: <span class="fill-line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span></span>
-  <span>משפחה: <span class="fill-line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span></span>
+  <span>שם התלמיד: <span class="fill-line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span></span>
+  <span>משפחה: <span class="fill-line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span></span>
   <span>כיתה: <strong><%= display %></strong></span>
 </div>
 
+<div class="section-title">ספרי לימוד לשנה"ל <%= year %></div>
 <table class="books">
   <thead>
     <tr>
-      <th class="check-col">✓</th>
+      <th class="check-col">חדש<br/>✓</th>
+      <th class="renew-col">חידוש<br/>✓</th>
       <th>פריט</th>
       <th>הוצאה</th>
       <th class="price-col">מחיר</th>
@@ -93,39 +86,49 @@
     <% catalog.forEach(item => { %>
       <tr>
         <td class="check-col">☐</td>
-        <td>
-          <%= item.item_name %>
-          <% if (item.is_mandatory) { %><span class="mandatory"> (חובה)</span><% } %>
-        </td>
+        <td class="renew-col">☐</td>
+        <td><%= item.item_name %><% if (item.is_mandatory) { %> <span class="mandatory">(חובה)</span><% } %></td>
         <td><%= item.publisher || '' %></td>
         <td class="price-col"><%= item.price %> ₪</td>
       </tr>
     <% }) %>
     <tr class="total-row">
-      <td colspan="3" style="text-align:left;">סה"כ לתשלום (עבור פריטים מסומנים)</td>
-      <td class="price-col"><span class="fill-line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span> ₪</td>
+      <td colspan="4" style="text-align:left;">סה"כ (למלא הורה)</td>
+      <td class="price-col"><span class="fill-line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span> ₪</td>
     </tr>
   </tbody>
 </table>
 
+<div style="font-size:9pt; color:#555; margin-bottom:10px;">
+  <strong>חדש</strong> = ספר חדש לשנה הבאה &nbsp;|&nbsp;
+  <strong>חידוש</strong> = החלפת ספר ישן/בלוי שכבר ברשותכם (אותו מחיר)
+</div>
+
+<div class="section-title">הזמנת ספרים נוספים (חידוש מספרי שנים קודמות)</div>
+<p style="font-size:10pt; margin: 4px 0 6px;">
+  מי שמעוניין לחדש ספרים ישנים שאינם ברשימה לעיל — נא למלא:
+</p>
+<table class="renewal-table">
+  <thead><tr><th>שם הספר</th><th>הוצאה</th><th>מחיר</th></tr></thead>
+  <tbody>
+    <tr><td style="height:24px;"></td><td></td><td></td></tr>
+    <tr><td style="height:24px;"></td><td></td><td></td></tr>
+    <tr><td style="height:24px;"></td><td></td><td></td></tr>
+  </tbody>
+</table>
+<p style="font-size:9pt; color:#555; margin-top:4px;">
+  לפי המחירון: חומש 28₪ | גמרא 17-83₪ | משניות 15-35₪ | משנה ברורה 58₪ | נביא 20₪
+</p>
+
 <div class="payment-box">
-  <strong>אופן התשלום (אין אפשרות לשלם בהו"ק):</strong>
-  ☐ בצ'יק &nbsp;&nbsp;&nbsp;&nbsp; ☐ במזומן (נא לצרף במדויק)
+  <strong>אופן התשלום (לא ניתן בהו"ק):</strong> &nbsp;&nbsp;
+  ☐ בצ'יק &nbsp;&nbsp;&nbsp; ☐ במזומן (נא לצרף במדויק)
 </div>
 
-<div class="deadline">
-  ⏰ המועד האחרון לשליחת הטפסים: ________________ &nbsp;&nbsp;
-  לאחר מועד זה לא יתקבלו טפסים.
-</div>
+<div class="deadline">⏰ מועד אחרון: ________________ | לאחר מכן לא יתקבלו טפסים</div>
+<div class="note"><strong>חשוב:</strong> אין אפשרות להזמין חידושים בסוף שנה — רק בתחילת שנה.</div>
 
-<div class="important-note">
-  <strong>הערה:</strong> מי שיש לו ספרים מאחים משנים קודמות ואינו זקוק לספר מסוים — אינו חייב לסמן אותו.
-  למי שמעוניין לחדש ספר ישן — נא לציין זאת ולצרף כסף מדויק.
-</div>
-
-<div class="footer-sign">
-  <p>בברכה,<br/><strong>ההנהלה</strong></p>
-</div>
+<p style="margin-top:12px; font-size:10pt;">בברכה, <strong>ההנהלה</strong></p>
 
 </body>
 </html>

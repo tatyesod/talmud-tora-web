@@ -1,0 +1,108 @@
+<%- include('../partials/header', {title: 'חידוש ספרים'}) %>
+
+<div class="card">
+  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+    <h1>🔄 חידוש ספרים / הזמנות נוספות</h1>
+    <a href="/books" class="btn secondary">חזרה להזמנות</a>
+  </div>
+
+  <p style="color:var(--muted); font-size:0.9em;">
+    כאן ניתן להזין ספרים שהורה ביקש לחדש (ספרים בלויים / ישנים) — <strong>מחוץ</strong> לקטלוג הכיתתי הרגיל.
+  </p>
+
+  <div style="display:flex; gap:14px; align-items:flex-end; flex-wrap:wrap; margin-bottom:18px;">
+    <form class="searchbar" method="GET" action="/books/renewals">
+      <input type="hidden" name="year" value="<%= year %>" />
+      <label><strong>כיתה:</strong></label>
+      <select name="class_id" onchange="this.form.submit()">
+        <option value="">בחר כיתה...</option>
+        <% classes.forEach(c => { %>
+          <option value="<%= c.id %>" <%= String(class_id) === String(c.id) ? 'selected' : '' %>><%= c.name %> <%= c.parallel||'' %></option>
+        <% }) %>
+      </select>
+    </form>
+  </div>
+
+  <% if (class_id && students.length > 0) { %>
+    <div class="card" style="background:var(--card-alt);">
+      <h3>הוספת חידוש</h3>
+      <form method="POST" action="/books/renewals" class="form-grid">
+        <input type="hidden" name="year" value="<%= year %>" />
+        <input type="hidden" name="class_id" value="<%= class_id %>" />
+        <div class="form-group">
+          <label>תלמיד</label>
+          <select name="student_id" required>
+            <option value="">בחר תלמיד...</option>
+            <% students.forEach(s => { %>
+              <option value="<%= s.id %>"><%= s.first_name %> <%= s.last_name || s.family_last || '' %></option>
+            <% }) %>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>ספר לחידוש</label>
+          <input type="text" name="item_name" list="price-list" required placeholder="בחר מהמחירון או הקלד חופשי" />
+          <datalist id="price-list">
+            <% prices.forEach(p => { %><option value="<%= p.item_name %>"><% }) %>
+          </datalist>
+        </div>
+        <div class="form-group">
+          <label>מחיר (₪)</label>
+          <input type="number" name="price" step="0.01" id="price-input" required />
+        </div>
+        <div class="form-group">
+          <label>הערות</label>
+          <input type="text" name="notes" placeholder="לדוגמה: ספר בלוי, אבד..." />
+        </div>
+        <div class="form-group full"><button type="submit" class="btn small">+ הוסף חידוש</button></div>
+      </form>
+    </div>
+
+    <% if (extras.length > 0) { %>
+      <h3>חידושים רשומים (<%= extras.length %>)</h3>
+      <table>
+        <thead><tr><th>תלמיד</th><th>פריט</th><th>מחיר</th><th>הערות</th><th></th></tr></thead>
+        <tbody>
+          <% extras.forEach(e => { %>
+            <tr>
+              <td><%= e.first_name %> <%= e.last_name || '' %></td>
+              <td><%= e.item_name %></td>
+              <td><%= e.price %> ₪</td>
+              <td><%= e.notes || '' %></td>
+              <td>
+                <form method="POST" action="/books/renewals/<%= e.id %>?_method=DELETE" onsubmit="return confirm('למחוק?');" style="display:inline">
+                  <button type="submit" class="btn small danger">מחק</button>
+                </form>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+        <tfoot><tr>
+          <th colspan="2">סה"כ</th>
+          <th><%= extras.reduce((s,e)=>s+e.price,0) %> ₪</th>
+          <th colspan="2"></th>
+        </tr></tfoot>
+      </table>
+    <% } else { %>
+      <p class="empty-state">אין חידושים רשומים לכיתה זו</p>
+    <% } %>
+  <% } else if (class_id) { %>
+    <p class="empty-state">אין תלמידים פעילים בכיתה זו</p>
+  <% } %>
+</div>
+
+<script>
+// מילוי מחיר אוטומטי מהמחירון
+const priceMap = {
+  <% prices.forEach(p => { %>"<%= p.item_name.replace(/"/g,'\\\"') %>": <%= p.price %>,<% }) %>
+};
+const nameInput = document.querySelector('[name="item_name"]');
+const priceInput = document.getElementById('price-input');
+if (nameInput && priceInput) {
+  nameInput.addEventListener('change', () => {
+    const p = priceMap[nameInput.value];
+    if (p) priceInput.value = p;
+  });
+}
+</script>
+
+<%- include('../partials/footer') %>

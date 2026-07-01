@@ -1,0 +1,60 @@
+<%- include('../partials/header', {title: 'מחירון ספרים'}) %>
+
+<div class="card">
+  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+    <h1>💰 מחירון ספרים</h1>
+    <a href="/books" class="btn secondary">חזרה להזמנות</a>
+  </div>
+
+  <% if (updated) { %>
+    <div style="background:#eef6ee; border:1px solid #bcd9bc; border-radius:8px; padding:10px 16px; margin-bottom:14px; color:#2d7a2d;">
+      ✅ המחיר עודכן ב-<%= updated %> פריטי קטלוג
+    </div>
+  <% } %>
+
+  <p style="color:var(--muted); font-size:0.9em;">
+    שינוי מחיר כאן יעדכן <strong>אוטומטית</strong> את כל פריטי הקטלוג עם אותו שם.
+  </p>
+
+  <h3>הוספת/עדכון פריט</h3>
+  <form method="POST" action="/books/prices" class="form-grid" style="margin-bottom:24px;">
+    <div class="form-group"><label>שם הפריט</label><input type="text" name="item_name" required /></div>
+    <div class="form-group"><label>הוצאה</label><input type="text" name="publisher" /></div>
+    <div class="form-group"><label>מחיר (₪)</label><input type="number" step="0.01" name="price" required /></div>
+    <div class="form-group"><label>הערות</label><input type="text" name="notes" /></div>
+    <div class="form-group full"><button type="submit" class="btn small">+ הוסף / עדכן</button></div>
+  </form>
+
+  <h3>רשימת המחירון (<%= prices.length %> פריטים)</h3>
+  <% if (prices.length === 0) { %>
+    <p class="empty-state">אין פריטים במחירון</p>
+  <% } else { %>
+    <table>
+      <thead><tr><th>שם הפריט</th><th>הוצאה</th><th>מחיר</th><th>הערות</th><th>עדכון מחיר</th><th></th></tr></thead>
+      <tbody>
+        <% prices.forEach(p => { %>
+          <tr>
+            <td><%= p.item_name %></td>
+            <td><%= p.publisher || '' %></td>
+            <td><strong><%= p.price %> ₪</strong></td>
+            <td><%= p.notes || '' %></td>
+            <td>
+              <form method="POST" action="/books/prices/<%= p.id %>?_method=PUT" style="display:flex; gap:6px; align-items:center;">
+                <input type="number" name="price" value="<%= p.price %>" step="0.01" style="width:80px;" />
+                <input type="hidden" name="publisher" value="<%= p.publisher||'' %>" />
+                <button type="submit" class="btn small">עדכן</button>
+              </form>
+            </td>
+            <td>
+              <form method="POST" action="/books/prices/<%= p.id %>?_method=DELETE" onsubmit="return confirm('למחוק?');" style="display:inline">
+                <button type="submit" class="btn small danger">מחק</button>
+              </form>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  <% } %>
+</div>
+
+<%- include('../partials/footer') %>

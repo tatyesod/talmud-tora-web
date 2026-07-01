@@ -1,27 +1,40 @@
 <%- include('../partials/header', {title: 'דוחות'}) %>
 
 <div class="card">
-  <h1>דוחות</h1>
-  <p style="color:var(--muted);">בחר דוח להפקה. דוחות המסומנים ✅ זמינים להפעלה, השאר בתכנון.</p>
+  <h1>📊 דוחות</h1>
 
-  <div class="form-grid" style="margin-top:10px;">
-    <a href="/reports/full-student-list" class="btn secondary" style="text-align:right;">✅ רשימת תלמידים מלא ייצוא לאקסל</a>
-    <a href="/reports/class-list" class="btn secondary" style="text-align:right;">✅ רשימת כתות ייצוא לאקסל</a>
-    <a href="/reports/families-report" class="btn secondary" style="text-align:right;">✅ דוח משפחות ייצוא לאקסל</a>
-    <a href="/reports/grandparents-report" class="btn secondary" style="text-align:right;">✅ רשימת סבים וכתובתם ייצוא לאקסל</a>
-    <a href="/reports/class-journal" class="btn secondary" style="text-align:right;">✅ יומן כיתה</a>
-    <a href="/reports/health-declaration" class="btn secondary" style="text-align:right;">✅ הצהרת בריאות תלמיד (PDF, לפי כיתות)</a>
-    <span class="btn secondary" style="text-align:right; opacity:0.5; cursor:not-allowed;">⏳ דוח לפי שנתונים ייצוא לאקסל</span>
-    <span class="btn secondary" style="text-align:right; opacity:0.5; cursor:not-allowed;">⏳ מדבקות (קטן/בינוני/גדול)</span>
-    <span class="btn secondary" style="text-align:right; opacity:0.5; cursor:not-allowed;">⏳ מדבקות למשפחות</span>
-    <span class="btn secondary" style="text-align:right; opacity:0.5; cursor:not-allowed;">⏳ משבצות עם אותיות / ריקות</span>
-    <a href="/students" class="btn secondary" style="text-align:right;">✅ טופס בריאות תלמיד (מתוך כרטיס תלמיד)</a>
-    <a href="/tuition" class="btn secondary" style="text-align:right;">✅ שכר לימוד</a>
+  <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap:12px; margin-top:14px;">
+
+    <div class="report-group">
+      <h3 style="margin-bottom:8px; color:var(--primary); font-size:0.95em; border-bottom:1px solid var(--border); padding-bottom:4px;">📋 רשימות תלמידים</h3>
+      <a href="/reports/full-student-list" class="btn secondary report-btn">רשימת תלמידים מלא → Excel</a>
+      <a href="/reports/class-list" class="btn secondary report-btn">רשימת כיתות → Excel</a>
+      <a href="/reports/class-journal" class="btn secondary report-btn">יומן כיתה (4 פורמטים) → הדפסה</a>
+    </div>
+
+    <div class="report-group">
+      <h3 style="margin-bottom:8px; color:var(--primary); font-size:0.95em; border-bottom:1px solid var(--border); padding-bottom:4px;">👨‍👩‍👧 משפחות</h3>
+      <a href="/reports/families-report" class="btn secondary report-btn">דוח משפחות → Excel</a>
+      <a href="/reports/grandparents-report" class="btn secondary report-btn">רשימת סבים וכתובתם → Excel</a>
+    </div>
+
+    <div class="report-group">
+      <h3 style="margin-bottom:8px; color:var(--primary); font-size:0.95em; border-bottom:1px solid var(--border); padding-bottom:4px;">🖨️ הדפסות</h3>
+      <a href="/reports/health-declaration" class="btn secondary report-btn">הצהרת בריאות → הדפסה</a>
+      <a href="/labels" class="btn secondary report-btn">מדבקות (TANEX 33/72/120) → הדפסה</a>
+    </div>
+
+    <div class="report-group">
+      <h3 style="margin-bottom:8px; color:var(--primary); font-size:0.95em; border-bottom:1px solid var(--border); padding-bottom:4px;">📚 ספרים</h3>
+      <a href="/books" class="btn secondary report-btn">הזמנת ספרים ודוחות</a>
+    </div>
+
   </div>
-
-  <p style="color:var(--muted); margin-top:20px; font-size:0.9em;">
-    דוחות שמסומנים "בתכנון" טרם נבנו — שלח דוגמת קובץ/צילום מסך נוסף ונשחזר אותם בהתאמה.
-  </p>
 </div>
+
+<style>
+.report-group { display:flex; flex-direction:column; gap:8px; }
+.report-btn { text-align:right !important; width:100%; }
+</style>
 
 <%- include('../partials/footer') %>

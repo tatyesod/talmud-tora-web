@@ -235,6 +235,7 @@ app.use("/events", require("./routes/events"));
 app.use("/inventory", require("./routes/inventory"));
 app.use("/expenses", require("./routes/expenses"));
 app.use("/books", require("./routes/books"));
+app.use("/labels", require("./routes/labels"));
 
 app.use((req, res) => {
   res.status(404).render("404");
@@ -252,7 +253,9 @@ app.listen(PORT, () => {
       db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('current_hebrew_year_num', ?)").run("5787");
       console.log('שנת הלימודים עודכנה לתשפ"ז');
     }
-  } catch (e) {}
+    // אכלוס מחירון וקטלוג ספרים אם ריקים
+    require("./seedBooks")(db);
+  } catch (e) { console.error("שגיאה בהפעלה:", e.message); }
 
 
   // גיבוי אוטומטי ל-seed.json כל לילה בחצות (מגן על הנתונים)

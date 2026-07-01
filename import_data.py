@@ -287,7 +287,27 @@ CREATE TABLE expenses (
     FOREIGN KEY(supplier_id) REFERENCES suppliers(id)
 );
 
--- הזמנת ספרי לימוד
+-- מחירון בסיס לספרים
+CREATE TABLE book_prices (
+    id INTEGER PRIMARY KEY,
+    item_name TEXT NOT NULL,
+    publisher TEXT,
+    price REAL NOT NULL DEFAULT 0,
+    notes TEXT,
+    updated_at TEXT
+);
+
+-- הזמנות חידוש/נוספות לתלמיד (מחוץ לקטלוג הרגיל)
+CREATE TABLE book_order_extras (
+    id INTEGER PRIMARY KEY,
+    year_label TEXT NOT NULL,
+    student_id INTEGER NOT NULL,
+    item_name TEXT NOT NULL,
+    price REAL NOT NULL DEFAULT 0,
+    notes TEXT,
+    created_at TEXT,
+    FOREIGN KEY(student_id) REFERENCES students(id)
+);
 CREATE TABLE book_catalog (
     id INTEGER PRIMARY KEY,
     year_label TEXT NOT NULL,
