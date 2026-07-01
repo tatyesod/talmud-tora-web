@@ -20,7 +20,8 @@ app.use(
     secret: process.env.SESSION_SECRET || "talmud-tora-secret-change-me",
     resave: false,
     saveUninitialized: false,
-    cookie: { maxAge: 1000 * 60 * 60 * 12 },
+    rolling: true,  // מחדש את הטיימר בכל בקשה
+    cookie: { maxAge: 1000 * 60 * 20 }, // 20 דקות
   })
 );
 
@@ -137,6 +138,11 @@ app.post("/login", (req, res) => {
 });
 
 app.post("/logout", (req, res) => {
+  req.session.destroy(() => res.redirect("/login"));
+});
+
+// תמיכה בניתוק אוטומטי מ-JS (POST)
+app.get("/logout-get", (req, res) => {
   req.session.destroy(() => res.redirect("/login"));
 });
 

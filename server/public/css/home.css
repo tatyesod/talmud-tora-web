@@ -1,7 +1,7 @@
 .home-body {
   margin: 0;
   min-height: 100vh;
-  background: radial-gradient(ellipse at top, #1a3550 0%, #0c1e30 55%, #060f1a 100%);
+  background: radial-gradient(ellipse at 40% 0%, #2a5070 0%, #1a3a56 45%, #102840 100%);
   overflow-x: hidden;
   position: relative;
   font-family: "Segoe UI", "Arial Hebrew", Arial, sans-serif;
@@ -19,7 +19,7 @@
   position: absolute;
   border-radius: 50%;
   filter: blur(60px);
-  opacity: 0.35;
+  opacity: 0.28;
   animation: float 18s ease-in-out infinite;
 }
 .orb1 {
@@ -188,12 +188,13 @@
   animation: appear 0.8s ease-out 0.45s both;
 }
 .stat-pill {
-  background: rgba(255,255,255,0.06);
-  border: 1px solid rgba(201,151,76,0.3);
-  border-radius: 13px;
-  padding: 9px 18px;
-  min-width: 100px;
-  backdrop-filter: blur(6px);
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(201,151,76,0.4);
+  border-radius: 14px;
+  padding: 10px 20px;
+  min-width: 105px;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 2px 12px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.08);
 }
 .stat-num {
   display: block;
@@ -269,8 +270,9 @@
 
 .nav-card {
   position: relative;
-  background: linear-gradient(160deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02));
-  border: 1px solid rgba(201,151,76,0.25);
+  background: linear-gradient(145deg, rgba(255,255,255,0.10), rgba(255,255,255,0.03));
+  border: 1px solid rgba(201,151,76,0.30);
+  box-shadow: 0 3px 12px rgba(0,0,0,0.2);
   border-radius: 16px;
   padding: 18px 10px;
   text-decoration: none;
@@ -357,7 +359,7 @@
   top: 90px;
   width: 250px;
   max-height: calc(100vh - 180px);
-  background: rgba(10, 20, 32, 0.88);
+  background: rgba(14, 28, 44, 0.90);
   backdrop-filter: blur(10px);
   border: 1px solid rgba(201,151,76,0.25);
   border-radius: 16px;
@@ -412,9 +414,9 @@
   justify-content: center;
   flex-wrap: wrap;
   gap: 0;
-  background: rgba(8, 16, 26, 0.92);
-  backdrop-filter: blur(10px);
-  border-top: 1px solid rgba(201,151,76,0.35);
+  background: rgba(12, 28, 44, 0.92);
+  backdrop-filter: blur(12px);
+  border-top: 1px solid rgba(201,151,76,0.4);
   padding: 10px 16px;
 }
 
@@ -591,4 +593,67 @@
 
 @media (max-width: 700px) {
   .zmanim-row { position: static; max-height: none; }
+}
+
+/* ===== שיפורי עיצוב נוספים ===== */
+
+/* רשת עדינה ברקע */
+.home-bg::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+  background-size: 60px 60px;
+  pointer-events: none;
+}
+
+/* כרטיסי ניווט — הבהרה עדינה בריחוף */
+.nav-card:hover {
+  background: linear-gradient(145deg, rgba(201,151,76,0.20), rgba(42,80,112,0.18)) !important;
+  box-shadow: 0 14px 32px rgba(0,0,0,0.38), 0 0 0 1px rgba(201,151,76,0.35) inset !important;
+}
+
+/* אייקוני ניווט — הוסף זוהר עדין */
+.nav-icon {
+  filter: drop-shadow(0 2px 6px rgba(201,151,76,0.3));
+}
+
+/* stat pills — הוסף הברקה */
+.stat-pill:hover {
+  border-color: rgba(201,151,76,0.6);
+  background: rgba(255,255,255,0.11);
+  cursor: default;
+}
+
+/* title — הבהרה */
+.home-title {
+  text-shadow: 0 2px 22px rgba(201,151,76,0.5), 0 0 60px rgba(42,80,112,0.6) !important;
+}
+
+/* מפריד בין הלוגו לכרטיסים */
+.nav-section-divider {
+  width: 80%;
+  max-width: 500px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(201,151,76,0.4), transparent);
+  margin: 14px auto;
+}
+
+/* כרטיסי אחרונות */
+.personal-card {
+  box-shadow: 0 3px 14px rgba(0,0,0,0.25);
+  transition: border-color 0.2s ease;
+}
+.personal-card:hover { border-color: rgba(201,151,76,0.35); }
+
+/* zmanim row — בהיר יותר */
+.zmanim-row {
+  background: rgba(12, 28, 46, 0.97) !important;
+}
+
+/* עיגול ציר-זמן בפאנל צד */
+.side-panel {
+  box-shadow: 0 4px 20px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.04);
 }
