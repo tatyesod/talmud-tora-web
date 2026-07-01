@@ -1,5 +1,14 @@
 <%- include('../partials/header', {title: 'שכר לימוד והנחות'}) %>
 
+<!-- סך גביה חודשית — בולט בראש הדף -->
+<div style="display:flex; justify-content:flex-end; margin-bottom:14px;">
+  <div style="background:linear-gradient(135deg,#1a6b3a,#2d9e56); color:#fff; border-radius:14px; padding:14px 28px; text-align:center; box-shadow:0 4px 18px rgba(45,158,86,0.3);">
+    <div style="font-size:2em; font-weight:800; letter-spacing:1px;"><%= grandTotal.toLocaleString() %> ₪</div>
+    <div style="font-size:0.9em; opacity:0.9; margin-top:2px;">סך גבייה חודשית</div>
+    <div style="font-size:0.78em; opacity:0.75; margin-top:1px;"><%= familiesTuition.length %> משפחות פעילות</div>
+  </div>
+</div>
+
 <div class="card">
   <div style="display:flex; justify-content:space-between; align-items:center;">
     <h1>קטגוריות שכר לימוד</h1>

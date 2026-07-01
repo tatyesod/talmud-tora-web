@@ -39,11 +39,17 @@
     <p class="empty-state">לא נמצאו ילדים</p>
   <% } else { %>
     <table>
-      <thead><tr><th>שם</th><th>כיתה</th><th>סטטוס</th><th></th></tr></thead>
+      <thead><tr><th>שם</th><th>תאריך לידה</th><th>גיל</th><th>כיתה</th><th>סטטוס</th><th></th></tr></thead>
       <tbody>
         <% students.forEach(s => { %>
           <tr>
             <td><%= s.first_name %> <%= s.last_name %></td>
+            <td><%= s.birth_date_str || '' %></td>
+            <td>
+              <% if (s.age != null) { %>
+                <span style="background:#e8f0f7; color:#2c5f7c; border-radius:10px; padding:2px 8px; font-size:0.85em; font-weight:700;"><%= s.age %></span>
+              <% } %>
+            </td>
             <td><%= s.class_name || '' %></td>
             <td><span class="badge <%= s.status !== 'פעיל' ? 'archive' : '' %>"><%= s.status || '' %></span></td>
             <td><a href="/students/<%= s.id %>" class="btn small secondary">צפייה</a></td>

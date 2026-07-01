@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const db = require("../db");
+const hd = require("../hebrewDate");
 const { calcFamilyTuition } = require("../tuitionCalc");
 const { buildOrderBy } = require("../sortHelper");
 
@@ -56,9 +57,23 @@ router.get("/:id", (req, res) => {
     .prepare(`
       SELECT s.*, c.name AS class_name FROM students s
       LEFT JOIN classes c ON s.class_id = c.id WHERE s.family_id = ?
-      ORDER BY s.birth_date_civil
+      ORDER BY (s.birth_date_civil IS NULL), s.birth_date_civil ASC
     `)
-    .all(req.params.id);
+    .all(req.params.id)
+    .map(s => ({
+      ...s,
+      birth_date_str: hd.serialToGregorianString(s.birth_date_civil),
+      age: (() => {
+        if (!s.birth_date_civil) return null;
+        const epoch = new Date(1899, 11, 30);
+        const date = new Date(epoch.getTime() + s.birth_date_civil * 86400000);
+        const today = new Date();
+        let age = today.getFullYear() - date.getFullYear();
+        const m = today.getMonth() - date.getMonth();
+        if (m < 0 || (m === 0 && today.getDate() < date.getDate())) age--;
+        return age;
+      })()
+    }));
   const contacts = db.prepare("SELECT * FROM emergency_contacts WHERE family_id = ?").all(req.params.id);
   const tuition = calcFamilyTuition(req.params.id);
   const eldest = db.prepare(`
