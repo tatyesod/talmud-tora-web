@@ -177,9 +177,9 @@
     </form>
   </aside>
 
-  <!-- פאנל הודעות - צד שמאל -->
-  <aside class="side-panel side-panel-left">
-    <h3>💬 הודעות אחרונות<% if (unreadCount > 0) { %> <span class="unread-badge"><%= unreadCount %></span><% } %></h3>
+  <!-- פאנל הודעות - צד שמאל, מוצג רק אם יש הודעות שלא נקראו -->
+  <aside class="side-panel side-panel-left" id="messages-panel" style="display:<%= unreadCount > 0 ? 'flex' : 'none' %>">
+    <h3>💬 הודעות חדשות <span class="unread-badge" id="unread-count-badge"><%= unreadCount %></span></h3>
     <div class="side-panel-scroll" id="messages-preview">
       <p class="personal-empty">טוען...</p>
     </div>

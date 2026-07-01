@@ -1,26 +1,76 @@
 <%- include('../partials/header', {title: 'שיחה עם ' + (otherUser.display_name || otherUser.username)}) %>
 
-<div class="card">
-  <h1>שיחה עם <%= otherUser.display_name || otherUser.username %></h1>
-  <a href="/messages" class="btn secondary" style="margin-bottom:14px; display:inline-block;">חזרה להודעות</a>
-
-  <div class="thread-box">
-    <% if (thread.length === 0) { %>
-      <p class="empty-state">אין הודעות עדיין - שלח את הראשונה!</p>
-    <% } else { %>
-      <% thread.forEach(m => { %>
-        <div class="msg-bubble <%= m.mine ? 'msg-mine' : 'msg-theirs' %>">
-          <div class="msg-body"><%= m.body %></div>
-          <div class="msg-time"><%= m.created_at_str %></div>
-        </div>
-      <% }) %>
-    <% } %>
+<div class="chat-wrapper">
+  <div class="chat-header">
+    <a href="/messages" class="chat-back">←</a>
+    <div class="chat-avatar"><%= (otherUser.display_name || otherUser.username).charAt(0) %></div>
+    <div class="chat-header-info">
+      <div class="chat-header-name"><%= otherUser.display_name || otherUser.username %></div>
+      <% if (otherUser.role_title) { %><div class="chat-header-role"><%= otherUser.role_title %></div><% } %>
+    </div>
   </div>
 
-  <form method="POST" action="/messages/<%= otherUser.id %>" class="msg-form">
-    <textarea name="body" placeholder="כתוב הודעה..." required></textarea>
-    <button type="submit" class="btn">שלח</button>
-  </form>
+  <div class="chat-messages" id="chat-messages">
+    <% if (thread.length === 0) { %>
+      <div class="chat-empty">אין הודעות עדיין — שלח את הראשונה!</div>
+    <% } %>
+    <% let lastDate = ''; thread.forEach(m => {
+      const dateStr = m.created_at_str ? m.created_at_str.split(' ')[0] : '';
+    %>
+      <% if (dateStr && dateStr !== lastDate) { lastDate = dateStr; %>
+        <div class="chat-date-divider"><span><%= dateStr %></span></div>
+      <% } %>
+      <div class="chat-msg-row <%= m.mine ? 'chat-mine' : 'chat-theirs' %>">
+        <% if (!m.mine) { %>
+          <div class="chat-msg-avatar"><%= (otherUser.display_name || otherUser.username).charAt(0) %></div>
+        <% } %>
+        <div class="chat-bubble-wrap">
+          <div class="chat-bubble"><%= m.body %></div>
+          <div class="chat-time"><%= m.created_at_str ? m.created_at_str.split(' ')[1] || m.created_at_str : '' %></div>
+        </div>
+      </div>
+    <% }) %>
+  </div>
+
+  <div class="chat-input-bar">
+    <form method="POST" action="/messages/<%= otherUser.id %>" id="chat-form">
+      <textarea
+        id="chat-input"
+        name="body"
+        placeholder="כתוב הודעה... (Enter לשליחה, Shift+Enter לשורה חדשה)"
+        rows="1"
+        required></textarea>
+      <button type="submit" class="chat-send-btn" title="שלח">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="22" y1="2" x2="11" y2="13"></line>
+          <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+        </svg>
+      </button>
+    </form>
+  </div>
 </div>
+
+<script>
+  // גלילה לתחתית עם טעינה
+  const msgs = document.getElementById("chat-messages");
+  if (msgs) msgs.scrollTop = msgs.scrollHeight;
+
+  // Enter לשליחה, Shift+Enter לשורה חדשה
+  const input = document.getElementById("chat-input");
+  const form = document.getElementById("chat-form");
+  if (input && form) {
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        if (input.value.trim()) form.submit();
+      }
+    });
+    // גובה דינמי של תיבת הקלד
+    input.addEventListener("input", () => {
+      input.style.height = "auto";
+      input.style.height = Math.min(input.scrollHeight, 120) + "px";
+    });
+  }
+</script>
 
 <%- include('../partials/footer') %>

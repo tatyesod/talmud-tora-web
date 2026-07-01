@@ -372,14 +372,20 @@
 }
 
 .msg-preview-item {
-  padding: 7px 0;
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 8px 0;
   border-bottom: 1px solid rgba(255,255,255,0.08);
-  font-size: 0.85em;
+  text-decoration: none;
   color: #e9e2d0;
+  transition: background 0.15s;
+  border-radius: 6px;
 }
 .msg-preview-item:last-child { border-bottom: none; }
-.msg-preview-name { font-weight: 700; color: #c9974c; display: block; }
-.msg-preview-body { color: #b9c4cd; }
+.msg-preview-item:hover { background: rgba(255,255,255,0.06); }
+.msg-preview-name { font-weight: 700; color: #c9974c; display: block; font-size: 0.88em; }
+.msg-preview-body { color: #b9c4cd; font-size: 0.82em; }
 
 @media (max-width: 1650px) {
   .side-panel { display: none; }

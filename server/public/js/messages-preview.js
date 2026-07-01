@@ -1,29 +1,38 @@
 (function () {
   function loadPreview() {
     const el = document.getElementById("messages-preview");
+    const panel = document.getElementById("messages-panel");
+    const badge = document.getElementById("unread-count-badge");
     if (!el) return;
+
     fetch("/messages/recent/json")
       .then((r) => r.json())
       .then((msgs) => {
-        if (!msgs.length) {
-          el.innerHTML = '<p class="personal-empty">אין הודעות עדיין</p>';
+        // מציגים רק הודעות נכנסות שלא נקראו
+        const unread = msgs.filter((m) => !m.mine && m.unread);
+        if (panel) panel.style.display = unread.length > 0 ? "flex" : "none";
+        if (badge) badge.textContent = unread.length;
+
+        if (!unread.length) {
+          el.innerHTML = '<p class="personal-empty">אין הודעות חדשות</p>';
           return;
         }
         el.innerHTML = "";
-        msgs.forEach((m) => {
-          const div = document.createElement("a");
-          div.href = "/messages/" + m.otherId;
-          div.className = "msg-preview-item";
-          div.style.display = "block";
-          div.style.textDecoration = "none";
-          div.innerHTML = `<span class="msg-preview-name">${m.mine ? "אל " : ""}${m.otherName}</span><span class="msg-preview-body">${m.body}</span>`;
-          el.appendChild(div);
+        unread.forEach((m) => {
+          const a = document.createElement("a");
+          a.href = "/messages/" + m.otherId;
+          a.className = "msg-preview-item";
+          a.innerHTML = `
+            <span class="msg-preview-dot"></span>
+            <div>
+              <span class="msg-preview-name">${m.otherName}</span>
+              <span class="msg-preview-body">${m.body}</span>
+            </div>`;
+          el.appendChild(a);
         });
       })
-      .catch(() => {
-        el.innerHTML = '<p class="personal-empty">לא ניתן לטעון</p>';
-      });
+      .catch(() => {});
   }
   loadPreview();
-  setInterval(loadPreview, 20000);
+  setInterval(loadPreview, 15000);
 })();

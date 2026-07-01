@@ -32,6 +32,7 @@ router.get("/recent/json", (req, res) => {
       otherName,
       body: m.body.length > 40 ? m.body.slice(0, 40) + "..." : m.body,
       mine,
+      unread: !mine && !m.read_at,
     };
   });
   res.json(result);
