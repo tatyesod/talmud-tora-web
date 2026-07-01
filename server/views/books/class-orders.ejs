@@ -1,35 +1,35 @@
-<%- include('../partials/header', {title: 'הזמנות ספרים — ' + class_name}) %>
+<%- include('../partials/header', {title: 'הזמנות — ' + cls.name + ' ' + (cls.parallel||'')}) %>
 
 <div class="card">
   <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
-    <h1>הזמנות ספרים — <%= class_name %> | שנת <%= year %></h1>
+    <h1>הזמנות — <%= cls.name %> <%= cls.parallel %> &nbsp;|&nbsp; שנת <%= year %></h1>
     <div class="actions">
       <a href="/books?year=<%= encodeURIComponent(year) %>" class="btn secondary">חזרה</a>
-      <a href="/books/report/class?year=<%= encodeURIComponent(year) %>&class_name=<%= encodeURIComponent(class_name) %>" class="btn secondary">📥 ייצוא אקסל</a>
+      <a href="/books/report/class?year=<%= encodeURIComponent(year) %>&class_id=<%= cls.id %>" class="btn secondary">📥 ייצוא אקסל</a>
     </div>
   </div>
 
-  <% if (typeof req !== 'undefined' && req.query && req.query.saved) { %>
-    <div class="alert-success" style="background:#eef6ee; border:1px solid #bcd9bc; border-radius:8px; padding:10px 16px; margin-bottom:14px; color:#2d7a2d;">
-      ✅ ההזמנות נשמרו בהצלחה!
-    </div>
+  <% if (saved) { %>
+    <div style="background:#eef6ee; border:1px solid #bcd9bc; border-radius:8px; padding:10px 16px; margin-bottom:14px; color:#2d7a2d;">✅ ההזמנות נשמרו בהצלחה!</div>
   <% } %>
 
   <% if (students.length === 0) { %>
     <p class="empty-state">אין תלמידים פעילים בכיתה זו</p>
   <% } else { %>
-
+  <p style="color:var(--muted); font-size:0.88em; margin-bottom:10px;">
+    לחץ על תא לסימון/ביטול הזמנה. לחיצה על כותרת עמודה = מסמן/מבטל את כולם.
+  </p>
   <div style="overflow-x:auto;">
     <form method="POST" action="/books/class/save" id="orders-form">
       <input type="hidden" name="year" value="<%= year %>" />
-      <input type="hidden" name="class_name" value="<%= class_name %>" />
+      <input type="hidden" name="class_id" value="<%= cls.id %>" />
 
       <table class="books-table">
         <thead>
           <tr>
             <th class="student-col">תלמיד</th>
-            <% catalog.forEach(c => { %>
-              <th class="book-col" title="<%= c.publisher ? c.publisher : '' %>">
+            <% catalog.forEach((c, idx) => { %>
+              <th class="book-col" data-col="<%= idx %>" title="<%= c.publisher || '' %>">
                 <%= c.item_name %>
                 <div class="book-price"><%= c.price %> ₪</div>
               </th>
@@ -40,43 +40,36 @@
         <tbody>
           <% students.forEach(s => { %>
             <tr class="student-row" data-student="<%= s.id %>">
-              <td class="student-name">
-                <strong><%= s.first_name %> <%= s.last_name || s.family_last || '' %></strong>
-                <% if (s.parallel) { %><small class="text-muted"> (<%= s.parallel %>)</small><% } %>
-              </td>
+              <td class="student-name"><strong><%= s.first_name %> <%= s.last_name || s.family_last || '' %></strong></td>
               <% let rowTotal = 0; catalog.forEach(c => {
                 const checked = ordersMap[s.id] && ordersMap[s.id].has(c.id);
                 if (checked) rowTotal += c.price;
               %>
-                <td class="book-cell" onclick="toggleCell(this)">
-                  <input type="checkbox" name="orders" value="<%= s.id %>_<%= c.id %>"
-                    <%= checked ? 'checked' : '' %> />
+                <td class="book-cell <%= checked ? 'checked' : '' %>" onclick="toggleCell(this)">
+                  <input type="checkbox" name="orders" value="<%= s.id %>_<%= c.id %>" <%= checked ? 'checked' : '' %> />
                   <span class="check-mark"><%= checked ? '✓' : '' %></span>
                 </td>
               <% }) %>
-              <td class="row-total" data-base="0">
-                <%= rowTotal > 0 ? rowTotal : '' %>
-              </td>
+              <td class="row-total"><%= rowTotal > 0 ? rowTotal : '' %></td>
             </tr>
           <% }) %>
         </tbody>
         <tfoot>
           <tr>
-            <th>סה"כ מוזמנים</th>
+            <th>כמות מוזמנים</th>
             <% catalog.forEach(c => {
-              const count = students.filter(s => ordersMap[s.id] && ordersMap[s.id].has(c.id)).length;
+              const cnt = students.filter(s => ordersMap[s.id] && ordersMap[s.id].has(c.id)).length;
             %>
-              <th class="col-count"><%= count || '' %></th>
+              <th class="col-count"><%= cnt || '' %></th>
             <% }) %>
             <th id="grand-total">
-              <% const grand = students.reduce((sum, s) => sum + catalog.reduce((s2,c) => s2 + (ordersMap[s.id] && ordersMap[s.id].has(c.id) ? c.price : 0), 0), 0); %>
-              <%= grand > 0 ? grand : '' %>
+              <%= students.reduce((sum,s) => sum+catalog.reduce((s2,c) => s2+(ordersMap[s.id]&&ordersMap[s.id].has(c.id)?c.price:0),0),0) || '' %>
             </th>
           </tr>
         </tfoot>
       </table>
 
-      <div class="actions" style="margin-top:16px;">
+      <div class="actions" style="margin-top:16px; position:sticky; bottom:16px; background:var(--card-bg); padding:10px; border-radius:10px; box-shadow:0 2px 8px rgba(0,0,0,0.1);">
         <button type="submit" class="btn">💾 שמירת הזמנות</button>
         <a href="/books?year=<%= encodeURIComponent(year) %>" class="btn secondary">ביטול</a>
       </div>
@@ -86,28 +79,26 @@
 </div>
 
 <style>
-.books-table { border-collapse: collapse; min-width: 100%; font-size: 0.88em; }
-.books-table th, .books-table td { border: 1px solid var(--border); padding: 6px 8px; text-align: center; }
-.student-col { min-width: 160px; text-align: right !important; background: #f8f9fa; position: sticky; right: 0; z-index: 1; }
-.student-name { text-align: right !important; background: #fff; position: sticky; right: 0; }
-.book-col { min-width: 110px; max-width: 130px; font-size: 0.82em; background: #f0f4f8; vertical-align: bottom; }
-.book-price { font-weight: 700; color: var(--primary); font-size: 1em; margin-top: 2px; }
-.book-cell { cursor: pointer; user-select: none; font-size: 1.3em; color: var(--success); font-weight: 700; }
-.book-cell:hover { background: #e8f5e9; }
-.book-cell input[type="checkbox"] { display: none; }
+.books-table { border-collapse: collapse; min-width: 100%; font-size: 0.87em; }
+.books-table th, .books-table td { border: 1px solid var(--border); padding: 5px 7px; text-align: center; }
+.student-col { min-width: 160px; text-align: right !important; background: #f8f9fa; position: sticky; right: 0; z-index: 2; }
+.student-name { text-align: right !important; background: #fff; position: sticky; right: 0; z-index: 1; border-right: 2px solid #dee2e6 !important; }
+.book-col { min-width: 100px; max-width: 130px; font-size: 0.80em; background: #f0f4f8; vertical-align: bottom; cursor: pointer; }
+.book-col:hover { background: #dde8f0; }
+.book-price { font-weight: 700; color: var(--primary); font-size: 0.95em; margin-top: 2px; }
+.book-cell { cursor: pointer; user-select: none; font-size: 1.3em; color: #2e7d32; font-weight: 700; width: 42px; }
+.book-cell:hover { background: #e8f5e9 !important; }
 .book-cell.checked { background: #e8f5e9; }
-.total-col, .row-total { font-weight: 700; color: var(--primary-dark); min-width: 70px; }
+.book-cell input[type="checkbox"] { display: none; }
+.total-col, .row-total { font-weight: 700; color: var(--primary-dark); min-width: 65px; background: #f8f9fa; }
 tfoot th { background: #f0f4f8; font-weight: 700; }
-.col-count { color: #555; }
 </style>
 
 <script>
-const prices = {
-  <% catalog.forEach(c => { %>"<%= c.id %>": <%= c.price %>,<% }) %>
-};
+const prices = { <% catalog.forEach(c => { %>"<%= c.id %>": <%= c.price %>, <% }) %> };
 
 function toggleCell(td) {
-  const cb = td.querySelector("input[type=checkbox]");
+  const cb = td.querySelector("input");
   const mark = td.querySelector(".check-mark");
   cb.checked = !cb.checked;
   mark.textContent = cb.checked ? "✓" : "";
@@ -115,19 +106,14 @@ function toggleCell(td) {
   updateTotals();
 }
 
-// סימון כל עמודה בלחיצה על כותרת
 document.querySelectorAll('.book-col').forEach((th, idx) => {
-  th.style.cursor = 'pointer';
-  th.title = 'לחץ לסימון/ביטול כל העמודה';
   th.addEventListener('click', () => {
     const cells = document.querySelectorAll(`.student-row td.book-cell:nth-child(${idx + 2})`);
     const allChecked = [...cells].every(td => td.querySelector('input').checked);
     cells.forEach(td => {
-      const cb = td.querySelector('input');
-      const mark = td.querySelector('.check-mark');
-      cb.checked = !allChecked;
-      mark.textContent = !allChecked ? '✓' : '';
-      td.classList.toggle('checked', !allChecked);
+      const cb = td.querySelector('input'), mark = td.querySelector('.check-mark');
+      cb.checked = !allChecked; mark.textContent = cb.checked ? '✓' : '';
+      td.classList.toggle('checked', cb.checked);
     });
     updateTotals();
   });
@@ -137,22 +123,13 @@ function updateTotals() {
   let grand = 0;
   document.querySelectorAll('.student-row').forEach(row => {
     let total = 0;
-    row.querySelectorAll('.book-cell input:checked').forEach(cb => {
-      const cid = cb.value.split('_')[1];
-      total += prices[cid] || 0;
-    });
+    row.querySelectorAll('.book-cell input:checked').forEach(cb => { total += prices[cb.value.split('_')[1]] || 0; });
     grand += total;
-    const totCell = row.querySelector('.row-total');
-    if (totCell) totCell.textContent = total > 0 ? total : '';
+    row.querySelector('.row-total').textContent = total > 0 ? total : '';
   });
-  const gtEl = document.getElementById('grand-total');
-  if (gtEl) gtEl.textContent = grand > 0 ? grand : '';
+  const gt = document.getElementById('grand-total');
+  if (gt) gt.textContent = grand > 0 ? grand : '';
 }
-
-// סימון תאים קיימים
-document.querySelectorAll('.book-cell input:checked').forEach(cb => {
-  cb.closest('.book-cell').classList.add('checked');
-});
 </script>
 
 <%- include('../partials/footer') %>

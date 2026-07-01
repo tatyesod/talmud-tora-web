@@ -4,13 +4,13 @@
   <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
     <h1>📚 הזמנת ספרי לימוד</h1>
     <div class="actions">
-      <a href="/books/catalog?year=<%= encodeURIComponent(year) %>" class="btn secondary">⚙️ ניהול קטלוג</a>
+      <a href="/books/catalog?year=<%= encodeURIComponent(year) %>" class="btn secondary">⚙️ קטלוג ספרים</a>
       <a href="/books/report/families?year=<%= encodeURIComponent(year) %>" class="btn secondary">📊 דוח חיובים</a>
     </div>
   </div>
 
-  <div style="margin-bottom:18px;">
-    <form class="searchbar" method="GET" action="/books" style="display:inline-flex; gap:10px; align-items:center;">
+  <div style="margin-bottom:18px; display:flex; align-items:center; gap:14px;">
+    <form class="searchbar" method="GET" action="/books">
       <label><strong>שנת לימודים:</strong></label>
       <select name="year" onchange="this.form.submit()">
         <% years.forEach(y => { %>
@@ -20,37 +20,42 @@
     </form>
   </div>
 
-  <% if (classes.length === 0) { %>
-    <div class="empty-state">
-      אין קטלוג ספרים לשנת <%= year %>.<br/>
-      <a href="/books/catalog" class="btn" style="margin-top:12px;">הוסף קטלוג</a>
-    </div>
+  <% if (specificClasses.length === 0) { %>
+    <div class="empty-state">אין קטלוג ספרים לשנת <%= year %>.<br/><a href="/books/catalog" class="btn" style="margin-top:12px;">הוסף קטלוג</a></div>
   <% } else { %>
     <table>
       <thead><tr>
         <th>כיתה</th>
-        <th>תלמידים פעילים</th>
-        <th>תלמידים שהזמינו</th>
-        <th>פעולות</th>
+        <th>תלמידים</th>
+        <th>הזמינו</th>
+        <th>הזנת הזמנות</th>
+        <th>דוח לאקסל</th>
+        <th>מכתב הזמנה להורים</th>
+        <th>מכתב חיוב</th>
       </tr></thead>
       <tbody>
-        <% classes.forEach(cls => { %>
+        <% specificClasses.forEach(cls => {
+          const s = cls.id ? (stats[cls.id] || {students:0, ordered:0}) : {students:0, ordered:0};
+        %>
           <tr>
-            <td><strong><%= cls %></strong></td>
-            <td><%= stats[cls] ? stats[cls].students : 0 %></td>
-            <td>
-              <% const s = stats[cls] || {students:0, ordered:0}; %>
-              <span class="badge <%= s.ordered === 0 ? 'archive' : '' %>"><%= s.ordered %> / <%= s.students %></span>
-            </td>
-            <td>
-              <a href="/books/class?year=<%= encodeURIComponent(year) %>&class_name=<%= encodeURIComponent(cls) %>" class="btn small">✏️ הזן הזמנות</a>
-              <a href="/books/report/class?year=<%= encodeURIComponent(year) %>&class_name=<%= encodeURIComponent(cls) %>" class="btn small secondary">📥 דוח אקסל</a>
-              <a href="/books/letter?year=<%= encodeURIComponent(year) %>&class_name=<%= encodeURIComponent(cls) %>" class="btn small secondary" target="_blank">🖨️ מכתבים להורים</a>
-            </td>
+            <td><strong><%= cls.display %></strong></td>
+            <td><%= s.students %></td>
+            <td><span class="badge <%= s.ordered === 0 ? 'archive' : '' %>"><%= s.ordered %> / <%= s.students %></span></td>
+            <td><% if (cls.id) { %><a href="/books/class?year=<%= encodeURIComponent(year) %>&class_id=<%= cls.id %>" class="btn small">✏️ הזן</a><% } %></td>
+            <td><% if (cls.id) { %><a href="/books/report/class?year=<%= encodeURIComponent(year) %>&class_id=<%= cls.id %>" class="btn small secondary">📥 אקסל</a><% } %></td>
+            <td><% if (cls.id) { %><a href="/books/order-form?year=<%= encodeURIComponent(year) %>&class_id=<%= cls.id %>" class="btn small secondary" target="_blank">🖨️ הזמנה</a><% } %></td>
+            <td><% if (cls.id) { %><a href="/books/letter?year=<%= encodeURIComponent(year) %>&class_id=<%= cls.id %>" class="btn small secondary" target="_blank">💰 חיוב</a><% } %></td>
           </tr>
         <% }) %>
       </tbody>
     </table>
+
+    <div class="summary-panel" style="margin-top:16px; font-size:0.88em; color:var(--muted);">
+      📋 <strong>הסבר עמודות:</strong>
+      &nbsp; <span style="background:#e8f5e9; padding:2px 8px; border-radius:4px;">✏️ הזן</span> = סמן מה הוזמן לאחר קבלת הטפסים
+      &nbsp; <span style="background:#e3f2fd; padding:2px 8px; border-radius:4px;">🖨️ הזמנה</span> = מכתב לשליחה להורים עם checkboxes לסימון
+      &nbsp; <span style="background:#fff3e0; padding:2px 8px; border-radius:4px;">💰 חיוב</span> = מכתב חיוב לאחר עיבוד ההזמנות
+    </div>
   <% } %>
 </div>
 
