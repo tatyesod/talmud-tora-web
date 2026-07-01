@@ -19,7 +19,17 @@
   <h3>פרטים אישיים</h3>
   <table>
     <tr><th>כינוי</th><td><%= student.nickname || '' %></td><th>ת.ז</th><td><%= student.id_number || '' %></td></tr>
-    <tr><th>תאריך לידה לועזי</th><td><%= student.birth_date_civil_str || '' %></td><th>תאריך לידה עברי</th><td><%= student.birth_date_hebrew_str || '' %></td></tr>
+    <tr>
+      <th>תאריך לידה לועזי</th>
+      <td>
+        <%= student.birth_date_civil_str || '' %>
+        <% if (student.age != null) { %>
+          &nbsp;<span style="background:#e8f0f7; color:#2c5f7c; border-radius:10px; padding:2px 8px; font-size:0.85em; font-weight:700;">גיל: <%= student.age %></span>
+        <% } %>
+      </td>
+      <th>תאריך לידה עברי</th>
+      <td><%= student.birth_date_hebrew_str || '' %></td>
+    </tr>
     <tr>
       <th>כיתה</th><td><%- student.class_name ? `<a href="/classes/${student.class_id}">${student.class_name}</a>` : '' %></td>
       <th>מחזור</th><td><%= student.cohort_name || '' %></td>

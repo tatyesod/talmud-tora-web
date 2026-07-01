@@ -4,6 +4,17 @@ const db = require("../db");
 const hd = require("../hebrewDate");
 const { buildOrderBy } = require("../sortHelper");
 
+function calcAge(accessSerial) {
+  if (!accessSerial) return null;
+  const epoch = new Date(1899, 11, 30);
+  const date = new Date(epoch.getTime() + accessSerial * 86400000);
+  const today = new Date();
+  let age = today.getFullYear() - date.getFullYear();
+  const m = today.getMonth() - date.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < date.getDate())) age--;
+  return age;
+}
+
 function withDates(student) {
   if (!student) return student;
   return {
@@ -15,6 +26,7 @@ function withDates(student) {
     registration_date_str: hd.serialToGregorianString(student.registration_date),
     admission_date_str: hd.serialToGregorianString(student.admission_date),
     update_date_str: hd.serialToGregorianString(student.update_date),
+    age: calcAge(student.birth_date_civil),
   };
 }
 
