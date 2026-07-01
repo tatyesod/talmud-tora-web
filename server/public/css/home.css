@@ -312,6 +312,10 @@
 .nav-text { font-size: 0.95em; font-weight: 700; }
 .nav-sub { font-size: 0.7em; color: #b9c4cd; }
 
+.nav-card[draggable="true"]:active { cursor: grabbing; }
+.nav-card.dragging { opacity: 0.4; transform: scale(0.95); }
+.nav-card.drag-over { border-color: #c9974c !important; box-shadow: 0 0 0 2px #c9974c; transform: scale(1.04); }
+
 .home-footer {
   margin-top: 18px;
   color: #7c8a96;

@@ -1,26 +1,28 @@
 <%- include('../partials/header', {title: 'רשימת תלמידים מלא'}) %>
-
 <div class="card">
-  <h1>רשימת תלמידים מלא - ייצוא לאקסל</h1>
-  <p style="color:var(--muted);">כולל פרטי תלמיד, הורים, כתובת וטלפונים.</p>
-
-  <form method="GET" action="/reports/full-student-list/export">
+  <h1>רשימת תלמידים מלא</h1>
+  <form id="rep-form">
     <div class="form-grid">
       <div class="form-group">
         <label>סטטוס</label>
         <select name="status">
+          <option value="פעיל" selected>פעיל</option>
           <option value="">הכל</option>
-          <% statuses.forEach(s => { %>
-            <option value="<%= s.status %>"><%= s.status %></option>
-          <% }) %>
+          <option value="לא פעיל">לא פעיל</option>
+          <option value="ארכיון">ארכיון</option>
         </select>
       </div>
     </div>
-    <div class="actions" style="margin-top:14px;">
-      <button type="submit" class="btn">📊 ייצוא לאקסל</button>
-      <a href="/reports" class="btn secondary">חזרה לדוחות</a>
+    <div class="actions" style="margin-top:14px; display:flex; gap:10px; flex-wrap:wrap;">
+      <button type="button" onclick="goExcel()" class="btn">📥 ייצוא לאקסל</button>
+      <button type="button" onclick="goPDF()" class="btn secondary">🖨️ הדפסה / PDF</button>
+      <a href="/reports" class="btn secondary">חזרה</a>
     </div>
   </form>
 </div>
-
+<script>
+function params() { return new URLSearchParams(new FormData(document.getElementById('rep-form'))).toString(); }
+function goExcel() { window.location = '/reports/full-student-list/export?' + params(); }
+function goPDF() { window.open('/reports/print-view?type=full-student-list&' + params(), '_blank'); }
+</script>
 <%- include('../partials/footer') %>

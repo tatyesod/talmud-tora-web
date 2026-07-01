@@ -24,10 +24,16 @@
         </div>
       </div>
     </div>
-    <div class="actions" style="margin-top:14px;">
-      <button type="submit" class="btn">📥 ייצוא לאקסל</button>
+    <div class="actions" style="margin-top:14px; display:flex; gap:10px; flex-wrap:wrap;">
+      <button type="button" onclick="goExcel()" class="btn">📥 ייצוא לאקסל</button>
+      <button type="button" onclick="goPDF()" class="btn secondary">🖨️ הדפסה / PDF</button>
       <a href="/reports" class="btn secondary">חזרה</a>
     </div>
   </form>
+  <script>
+  function params() { return new URLSearchParams(new FormData(document.querySelector("form"))).toString(); }
+  function goExcel() { window.location = "/reports/families-report/export?" + params(); }
+  function goPDF() { window.open("/reports/print-view?type=families-report&" + params(), "_blank"); }
+  </script>
 </div>
 <%- include('../partials/footer') %>

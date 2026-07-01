@@ -54,7 +54,7 @@
       <% }) %>
     </div>
 
-    <div class="nav-grid">
+    <div class="nav-grid" id="nav-grid">
       <a href="/reports" class="nav-card" style="--d:1">
         <div class="nav-icon">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
@@ -248,5 +248,64 @@
   <script src="/js/presence.js"></script>
   <script src="/js/messages-preview.js"></script>
   <script src="/js/notifications.js"></script>
+  <script>
+  // ===== גרירת כרטיסי ניווט =====
+  (function() {
+    const grid = document.getElementById('nav-grid');
+    if (!grid) return;
+
+    // טעינת סדר שמור
+    const saved = localStorage.getItem('nav-order');
+    if (saved) {
+      try {
+        const order = JSON.parse(saved);
+        const cards = [...grid.children];
+        const presence = cards.find(c => c.classList.contains('nav-card-presence'));
+        order.forEach(href => {
+          const card = cards.find(c => c.getAttribute('href') === href);
+          if (card) grid.appendChild(card);
+        });
+        if (presence) grid.appendChild(presence);
+      } catch(e) {}
+    }
+
+    let dragSrc = null;
+
+    grid.querySelectorAll('.nav-card:not(.nav-card-presence)').forEach(card => {
+      card.setAttribute('draggable', 'true');
+      card.style.cursor = 'grab';
+
+      card.addEventListener('dragstart', e => {
+        dragSrc = card;
+        e.dataTransfer.effectAllowed = 'move';
+        setTimeout(() => card.classList.add('dragging'), 0);
+      });
+      card.addEventListener('dragend', () => {
+        card.classList.remove('dragging');
+        grid.querySelectorAll('.nav-card').forEach(c => c.classList.remove('drag-over'));
+        // שמירת הסדר
+        const order = [...grid.querySelectorAll('.nav-card[href]')].map(c => c.getAttribute('href'));
+        localStorage.setItem('nav-order', JSON.stringify(order));
+      });
+      card.addEventListener('dragover', e => {
+        e.preventDefault();
+        if (card !== dragSrc && !card.classList.contains('nav-card-presence')) {
+          grid.querySelectorAll('.nav-card').forEach(c => c.classList.remove('drag-over'));
+          card.classList.add('drag-over');
+        }
+      });
+      card.addEventListener('drop', e => {
+        e.preventDefault();
+        if (dragSrc && dragSrc !== card && !card.classList.contains('nav-card-presence')) {
+          const allCards = [...grid.children];
+          const srcIdx = allCards.indexOf(dragSrc);
+          const tgtIdx = allCards.indexOf(card);
+          if (srcIdx < tgtIdx) grid.insertBefore(dragSrc, card.nextSibling);
+          else grid.insertBefore(dragSrc, card);
+        }
+      });
+    });
+  })();
+  </script>
 </body>
 </html>

@@ -213,7 +213,8 @@ router.get("/families-report/export", async (req, res) => {
   const eldestClassStmt = db.prepare(`
     SELECT c.name AS class_name, c.parallel
     FROM students s LEFT JOIN classes c ON s.class_id = c.id
-    WHERE s.family_id = ? ORDER BY (s.birth_date_civil IS NULL), s.birth_date_civil ASC LIMIT 1
+    WHERE s.family_id = ? AND s.status='פעיל' AND c.id IS NOT NULL
+    ORDER BY c.name, c.parallel LIMIT 1
   `);
 
   const header = ["שם משפחה", "שם האב", "שם האם", "טלפון בית", "נייד אב", "נייד אם", "כתובת", "מס' ילדים פעילים", "כיתת האח הבכור"];
@@ -307,3 +308,45 @@ router.get("/health-declaration/view", (req, res) => {
 });
 
 module.exports = router;
+
+// ============ יצוא PDF — תצוגת הדפסה לדוחות קיימים ============
+router.get("/print-view", (req, res) => {
+  const { type, status, class_id } = req.query;
+  let classIds = class_id || [];
+  if (!Array.isArray(classIds)) classIds = [classIds];
+
+  let title = "", headers = [], rows = [];
+
+  if (type === "full-student-list") {
+    title = "רשימת תלמידים מלא";
+    headers = ["שם משפחה", "שם פרטי", "כיתה", "סטטוס", "טלפון בית", "נייד אב", "נייד אם", "כתובת"];
+    let sql = `SELECT s.last_name, s.first_name, c.name||' '||COALESCE(c.parallel,'') AS cls,
+      s.status, f.home_phone, f.father_mobile, f.mother_mobile, f.street||' '||COALESCE(f.house_number,'')||' '||COALESCE(f.city,'') AS addr
+      FROM students s LEFT JOIN classes c ON s.class_id=c.id LEFT JOIN families f ON s.family_id=f.id WHERE 1=1`;
+    const params = [];
+    if (status) { sql += " AND s.status=?"; params.push(status); }
+    if (classIds.length > 0) { sql += ` AND s.class_id IN (${classIds.map(()=>"?").join(",")})`; params.push(...classIds); }
+    sql += " ORDER BY c.name, c.parallel, s.last_name, s.first_name";
+    rows = db.prepare(sql).all(...params).map(r => [r.last_name, r.first_name, r.cls, r.status, r.home_phone, r.father_mobile, r.mother_mobile, r.addr]);
+
+  } else if (type === "families-report") {
+    title = "דוח משפחות";
+    headers = ["שם משפחה", "שם האב", "שם האם", "טלפון בית", "נייד אב", "נייד אם", "כתובת", "ילדים פעילים"];
+    let sql = `SELECT DISTINCT f.last_name, f.father_name, f.mother_name, f.home_phone, f.father_mobile, f.mother_mobile,
+      f.street||' '||COALESCE(f.house_number,'')||' '||COALESCE(f.city,'') AS addr,
+      (SELECT COUNT(*) FROM students s2 WHERE s2.family_id=f.id AND s2.status='פעיל') AS cnt
+      FROM families f JOIN students s ON s.family_id=f.id WHERE 1=1`;
+    const params = [];
+    if (status) { sql += " AND s.status=?"; params.push(status); }
+    if (classIds.length > 0) { sql += ` AND s.class_id IN (${classIds.map(()=>"?").join(",")})`; params.push(...classIds); }
+    sql += " ORDER BY f.last_name";
+    rows = db.prepare(sql).all(...params).map(r => [r.last_name, r.father_name, r.mother_name, r.home_phone, r.father_mobile, r.mother_mobile, r.addr, r.cnt]);
+
+  } else if (type === "grandparents") {
+    title = "רשימת סבים";
+    headers = ["שם", "כתובת", "עיר"];
+    rows = db.prepare("SELECT name, address, city FROM grandparents WHERE name IS NOT NULL ORDER BY name").all().map(r => [r.name, r.address, r.city]);
+  }
+
+  res.render("reports/print-view", { title, headers, rows });
+});

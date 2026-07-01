@@ -1,11 +1,10 @@
-<%- include('../partials/header', {title: 'רשימת סבים וכתובתם'}) %>
-
+<%- include('../partials/header', {title: 'רשימת סבים'}) %>
 <div class="card">
-  <h1>רשימת סבים וכתובתם - ייצוא לאקסל</h1>
-  <div class="actions">
-    <a href="/reports/grandparents-report/export" class="btn">📊 ייצוא לאקסל</a>
-    <a href="/reports" class="btn secondary">חזרה לדוחות</a>
+  <h1>רשימת סבים וכתובתם</h1>
+  <div class="actions" style="margin-top:14px; display:flex; gap:10px;">
+    <a href="/reports/grandparents-report/export" class="btn">📥 ייצוא לאקסל</a>
+    <a href="/reports/print-view?type=grandparents" class="btn secondary" target="_blank">🖨️ הדפסה / PDF</a>
+    <a href="/reports" class="btn secondary">חזרה</a>
   </div>
 </div>
-
 <%- include('../partials/footer') %>

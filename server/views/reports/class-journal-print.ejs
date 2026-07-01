@@ -6,7 +6,7 @@
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: Arial, 'Arial Hebrew', sans-serif; direction: rtl; }
-    @page { size: A4 landscape; margin: 8mm; }
+    @page { size: A4 portrait; margin: 8mm; }
     @media print { .no-print { display: none; } }
 
     .no-print { background: #2c5f7c; color: #fff; padding: 10px 16px; display:flex; gap:12px; align-items:center; }
@@ -98,13 +98,19 @@
 
   <%# ========= 2 טורים ========= %>
   <% } else if (fmt === '2col') { %>
-    <table class="journal">
+    <table class="journal" style="table-layout:fixed;">
+      <colgroup>
+        <col style="width:8mm">
+        <col style="width:40mm">
+        <col style="width:auto">
+        <col style="width:auto">
+      </colgroup>
       <thead>
         <tr>
-          <th style="width:8mm;">#</th>
-          <th style="min-width:32mm;">שם התלמיד</th>
-          <th style="width:60mm;"> </th>
-          <th style="width:60mm;"> </th>
+          <th>#</th>
+          <th>שם התלמיד</th>
+          <th> </th>
+          <th> </th>
         </tr>
       </thead>
       <tbody>

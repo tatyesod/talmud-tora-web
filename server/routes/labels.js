@@ -62,11 +62,19 @@ router.get("/print", (req, res) => {
     }));
 
   } else if (content_type === "teachers") {
-    const rows = db.prepare("SELECT first_name, last_name FROM teachers WHERE status='פעיל' ORDER BY last_name, first_name").all();
+    let sql = "SELECT first_name, last_name, street, house_number, city FROM teachers WHERE status='פעיל'";
+    const params = [];
+    if (class_id) {
+      sql += " AND id IN (SELECT teacher_id FROM teacher_classes WHERE class_id=?)";
+      params.push(class_id);
+    }
+    sql += " ORDER BY last_name, first_name";
+    const rows = db.prepare(sql).all(...params);
     items = rows.map(r => ({
-      line1: `${r.first_name || ""} ${r.last_name || ""}`,
-      line2: "",
-      line3: "",
+      line1: "לכבוד",
+      line2: "הרב " + (r.first_name || "") + " " + (r.last_name || ""),
+      line3: [r.street, r.house_number, r.city].filter(Boolean).join(" "),
+      isTeacher: true,
     }));
   }
 

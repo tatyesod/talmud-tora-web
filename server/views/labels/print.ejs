@@ -76,6 +76,15 @@
 
     .label.empty { /* blank label */ }
 
+    @font-face {
+      font-family: "Guttman Mantova";
+      /* fallback if font not installed */
+    }
+    .label.teacher { font-family: "Guttman Mantova", "FrankRuehlCLM", Arial, sans-serif; }
+    .label.teacher .label-line1 { font-size: 0.85em; font-weight: 400; color: #444; }
+    .label.teacher .label-line2 { font-size: 1em; font-weight: 700; }
+    .label.teacher .label-line3 { font-size: 0.85em; }
+
     .label-line1 { font-weight: 700; font-size: 1.1em; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
     .label-line2 { font-size: 0.95em; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
     .label-line3 { font-size: 0.9em; line-height: 1.2; color: #444; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
@@ -126,7 +135,7 @@ items.forEach((item, i) => {
     <% allRows.forEach(row => { %>
       <div class="label-row">
         <% row.forEach(item => { %>
-          <div class="label<%= !item ? ' empty' : '' %>">
+          <div class="label<%= !item ? ' empty' : item.isTeacher ? ' teacher' : '' %>">
             <% if (item) { %>
               <div class="label-line1"><%= item.line1 %></div>
               <% if (item.line2) { %><div class="label-line2"><%= item.line2 %></div><% } %>
