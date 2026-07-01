@@ -37,6 +37,7 @@ function withDates(t) {
     birth_date_civil_str: hd.serialToGregorianString(t.birth_date_civil),
     entry_date_str: hd.serialToGregorianString(t.entry_date),
     exit_date_str: hd.serialToGregorianString(t.exit_date),
+    spouse_birth_date_str: hd.serialToGregorianString(t.spouse_birth_date),
   };
 }
 

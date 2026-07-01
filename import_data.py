@@ -89,6 +89,10 @@ CREATE TABLE teachers (
     notes TEXT, status TEXT,
     entry_date INTEGER, update_date INTEGER, exit_date INTEGER,
     children_count INTEGER,
+    gender TEXT, health_fund TEXT, email TEXT,
+    children_count_total INTEGER, branch TEXT,
+    id_number_spouse TEXT, spouse_last_name TEXT, spouse_first_name TEXT,
+    spouse_birth_date INTEGER,
     FOREIGN KEY(chassidut_id) REFERENCES chassidut(id)
 );
 

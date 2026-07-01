@@ -65,6 +65,7 @@ const migrations = [
   "ALTER TABLE users ADD COLUMN phone TEXT",
   "ALTER TABLE users ADD COLUMN email TEXT",
   "ALTER TABLE users ADD COLUMN is_admin INTEGER DEFAULT 0",
+  "ALTER TABLE teachers ADD COLUMN spouse_birth_date INTEGER",
   "ALTER TABLE teacher_file ADD COLUMN file_path TEXT",
   "ALTER TABLE teacher_file ADD COLUMN file_name TEXT",
   "ALTER TABLE teachers ADD COLUMN children_count INTEGER",

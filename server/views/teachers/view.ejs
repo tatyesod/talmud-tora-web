@@ -16,20 +16,28 @@
 <div class="card">
   <h3>פרטים אישיים</h3>
   <table>
+    <tr><th>שם משפחה</th><td><%= teacher.last_name || '' %></td><th>שם פרטי</th><td><%= teacher.first_name || '' %></td></tr>
     <tr><th>ת.ז</th><td><%= teacher.id_number || '' %></td><th>תאריך לידה</th><td><%= teacher.birth_date_civil_str || '' %></td></tr>
     <tr><th>מין</th><td><%= teacher.gender || '' %></td><th>קופת חולים</th><td><%= teacher.health_fund || '' %></td></tr>
     <tr><th>נייד</th><td><%- phoneLink(teacher.mobile) %></td><th>טלפון בית</th><td><%- phoneLink(teacher.home_phone) %></td></tr>
     <tr><th>מייל</th><td><%- emailLink(teacher.email) %></td><th>סניף</th><td><%= teacher.branch || '' %></td></tr>
     <tr><th>כתובת</th><td colspan="3"><%= [teacher.street, teacher.house_number, teacher.city].filter(Boolean).join(' ') %></td></tr>
-    <tr><th>מס' ילדים</th><td><%= teacher.children_count_total != null ? teacher.children_count_total : (teacher.children_count != null ? teacher.children_count : '') %></td><th></th><td></td></tr>
+    <tr><th>מס' ילדים</th><td><%= teacher.children_count_total != null ? teacher.children_count_total : '' %></td><th>סטטוס</th><td><span class="badge <%= teacher.status !== 'פעיל' ? 'archive' : '' %>"><%= teacher.status || '' %></span></td></tr>
     <tr><th>הערות</th><td colspan="3"><%= teacher.notes || '' %></td></tr>
   </table>
 </div>
 
 <div class="card">
-  <h3>פרטי בן/בת זוג</h3>
+  <h3>פרטי בן/בת הזוג</h3>
   <table>
-    <tr><th>שם</th><td><%= teacher.spouse_first_name || '' %> <%= teacher.spouse_last_name || '' %></td><th>ת.ז בן/בת זוג</th><td><%= teacher.id_number_spouse || '' %></td></tr>
+    <tr>
+      <th>שם פרטי</th><td><%= teacher.spouse_first_name || '' %></td>
+      <th>שם משפחה</th><td><%= teacher.spouse_last_name || '' %></td>
+    </tr>
+    <tr>
+      <th>מספר זהות</th><td><%= teacher.id_number_spouse || '' %></td>
+      <th>תאריך לידה</th><td><%= teacher.spouse_birth_date_str || '' %></td>
+    </tr>
   </table>
 </div>
 

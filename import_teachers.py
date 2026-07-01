@@ -50,11 +50,18 @@ def parse_phone(v):
 
 def parse_date(v):
     if not v: return None
+    epoch = datetime.date(1899, 12, 30)
     if isinstance(v, (datetime.datetime, datetime.date)):
-        # convert to access-style serial (days since 1899-12-30)
-        epoch = datetime.date(1899, 12, 30)
         d = v.date() if hasattr(v, 'date') else v
         return (d - epoch).days
+    if isinstance(v, str):
+        v = v.strip()
+        for fmt in ('%Y-%m-%d', '%d/%m/%Y', '%d.%m.%Y'):
+            try:
+                d = datetime.datetime.strptime(v, fmt).date()
+                return (d - epoch).days
+            except ValueError:
+                continue
     return None
 
 count = 0
@@ -78,20 +85,21 @@ for row in ws.iter_rows(min_row=2, values_only=True):
     id_spouse = str(row[14]).strip() if row[14] else None
     sp_last   = row[15]
     sp_first  = row[16]
+    sp_birth  = parse_date(row[17]) if len(row) > 17 else None
 
     cur.execute("""
         INSERT INTO teachers (
             last_name, first_name, id_number, birth_date_civil,
             street, house_number, city, home_phone, mobile,
             gender, health_fund, email, children_count_total,
-            id_number_spouse, spouse_last_name, spouse_first_name,
+            id_number_spouse, spouse_last_name, spouse_first_name, spouse_birth_date,
             branch, status
-        ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+        ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
     """, (
         last_name, first_name, id_num, birth_date,
         street, house_num, city, phone, mobile,
         gender, health_fund, email, children,
-        id_spouse, sp_last, sp_first,
+        id_spouse, sp_last, sp_first, sp_birth,
         branch, 'פעיל'
     ))
     count += 1
