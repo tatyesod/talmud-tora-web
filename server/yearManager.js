@@ -9,8 +9,9 @@ const GRADE_ORDER = [
 function getCurrentYear() {
   const row = db.prepare("SELECT value FROM settings WHERE key = 'current_hebrew_year'").get();
   if (row) return row.value;
-  const num = hd.currentHebrewYearNumber();
-  const label = hd.formatHebrewYear(num);
+  // ברירת מחדל: תשפ"ז (5787) — ניתן לשנות ידנית דרך עמוד "שנת לימודים"
+  const label = 'תשפ"ז';
+  const num = 5787;
   db.prepare("INSERT INTO settings (key, value) VALUES ('current_hebrew_year', ?)").run(label);
   db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('current_hebrew_year_num', ?)").run(String(num));
   return label;

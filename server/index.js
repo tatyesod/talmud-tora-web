@@ -242,6 +242,18 @@ app.use((req, res) => {
 app.listen(PORT, () => {
   console.log(`מערכת תלמוד תורה פועלת על http://localhost:${PORT}`);
 
+  // וידוא שנת הלימודים תשפ"ז
+  try {
+    const db = require("./db");
+    const row = db.prepare("SELECT value FROM settings WHERE key = 'current_hebrew_year'").get();
+    if (!row || row.value === 'תשפ"ו') {
+      db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('current_hebrew_year', ?)").run('תשפ"ז');
+      db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('current_hebrew_year_num', ?)").run("5787");
+      console.log('שנת הלימודים עודכנה לתשפ"ז');
+    }
+  } catch (e) {}
+
+
   // גיבוי אוטומטי ל-seed.json כל לילה בחצות (מגן על הנתונים)
   function scheduleNightlyBackup() {
     const now = new Date();
