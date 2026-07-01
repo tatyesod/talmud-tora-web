@@ -127,7 +127,9 @@ router.get("/students/new", (req, res) => {
   const classes = db.prepare("SELECT id, name, parallel FROM classes ORDER BY name, parallel").all();
   const cohorts = db.prepare("SELECT id, name FROM cohorts ORDER BY name DESC").all();
   const families = db.prepare("SELECT id, last_name, father_name, sector FROM families ORDER BY last_name").all();
-  res.render("students/form", { student: {}, mode: "new", classes, cohorts, families });
+  const chassidut = db.prepare("SELECT id, name FROM chassidut ORDER BY name").all();
+  const yeshivot = db.prepare("SELECT id, name FROM yeshivot ORDER BY name").all();
+  res.render("students/form", { student: {}, mode: "new", classes, cohorts, families, chassidut, yeshivot });
 });
 
 const STUDENT_FIELDS = [
@@ -146,6 +148,26 @@ function normalizeField(col, value) {
 
 router.post("/students", (req, res) => {
   const body = req.body;
+
+  // יצירת משפחה חדשה אם המשתמש בחר "משפחה חדשה"
+  if (body.family_mode === "new") {
+    const famFields = [
+      "last_name","sector","father_name","father_id_number","father_email",
+      "mother_name","mother_id_number","mother_email",
+      "home_phone","father_mobile","mother_mobile",
+      "father_workplace","father_work_phone","mother_workplace","mother_work_phone",
+      "street","house_number","apartment","city","zip_code","notes"
+    ];
+    const famCols = famFields.filter(f => body["fam_"+f] !== undefined && body["fam_"+f] !== "");
+    const famVals = famCols.map(f => body["fam_"+f]);
+    if (famCols.length > 0) {
+      const famInfo = db.prepare(
+        `INSERT INTO families (${famCols.join(",")}) VALUES (${famCols.map(()=>"?").join(",")})`
+      ).run(...famVals);
+      body.family_id = famInfo.lastInsertRowid;
+    }
+  }
+
   const cols = STUDENT_FIELDS.filter((c) => c in body);
   const placeholders = cols.map(() => "?").join(",");
   const values = cols.map((c) => normalizeField(c, body[c]));

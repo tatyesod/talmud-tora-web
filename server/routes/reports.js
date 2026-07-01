@@ -192,21 +192,20 @@ router.get("/families-report/export", async (req, res) => {
   let classIds = req.query.class_id || [];
   if (!Array.isArray(classIds)) classIds = [classIds];
   const status = req.query.status || "";
+  const output = req.query.output || "excel";
 
   let sql = `
     SELECT DISTINCT f.id, f.last_name, f.father_name, f.mother_name, f.home_phone, f.father_mobile,
            f.mother_mobile, f.street, f.house_number, f.city,
            (SELECT COUNT(*) FROM students s2 WHERE s2.family_id = f.id AND s2.status='פעיל') AS active_children
     FROM families f
-    JOIN students s ON s.family_id = f.id
-    WHERE 1=1
+    WHERE EXISTS (
+      SELECT 1 FROM students s WHERE s.family_id = f.id
+      ${status ? "AND s.status = '" + status.replace(/'/g, "''") + "'" : ""}
+      ${classIds.length > 0 ? "AND s.class_id IN (" + classIds.map(() => "?").join(",") + ")" : ""}
+    )
   `;
-  const params = [];
-  if (status) { sql += " AND s.status = ?"; params.push(status); }
-  if (classIds.length > 0) {
-    sql += ` AND s.class_id IN (${classIds.map(() => "?").join(",")})`;
-    params.push(...classIds);
-  }
+  const params = [...classIds];
   sql += " ORDER BY f.last_name";
 
   const rows = db.prepare(sql).all(...params);
@@ -229,6 +228,11 @@ router.get("/families-report/export", async (req, res) => {
     r.home_phone || "", r.father_mobile || "", r.mother_mobile || "",
     buildAddress(r), r.active_children, eldestClass,
   ]);
+
+  if (output === "print") {
+    const header2 = ["שם משפחה", "שם האב", "שם האם", "טלפון בית", "נייד אב", "נייד אם", "כתובת", "ילדים פעילים", "כיתת הבכור"];
+    return res.render("reports/print-view", { title: "דוח משפחות", headers: header2, rows: data });
+  }
 
   await sendWorkbook(res, "דוח משפחות.xlsx", "משפחות", "דוח משפחות", header, data);
 });

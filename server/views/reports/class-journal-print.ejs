@@ -6,39 +6,47 @@
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: Arial, 'Arial Hebrew', sans-serif; direction: rtl; }
-    @page { size: A4 portrait; margin: 8mm; }
-    @media print { .no-print { display: none; } }
 
-    .no-print { background: #2c5f7c; color: #fff; padding: 10px 16px; display:flex; gap:12px; align-items:center; }
+    @page { size: A4 portrait; margin: 10mm; }
+    @media print { .no-print { display: none !important; } }
+
+    .no-print {
+      background: #2c5f7c; color: #fff; padding: 10px 16px;
+      display: flex; gap: 14px; align-items: center; font-size: 13px;
+    }
     .no-print button { background:#fff; color:#2c5f7c; border:none; border-radius:6px; padding:6px 14px; cursor:pointer; font-weight:700; }
     .no-print a { color:#fff; }
 
-    .page { padding: 0; }
+    .page { }
 
     /* כותרת */
-    .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2pt solid #333; padding-bottom: 4px; margin-bottom: 6px; }
-    .header-logo { height: 40px; }
+    .bsd { text-align: right; font-size: 8pt; margin-bottom: 2px; }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 2pt solid #333;
+      padding-bottom: 5px;
+      margin-bottom: 8px;
+    }
+    .header-right { text-align: right; font-size: 9pt; min-width: 70px; }
+    .date-line { border-bottom: 1pt solid #555; display: inline-block; min-width: 45px; }
     .header-center { text-align: center; flex: 1; }
-    .header-center .class-name { font-size: 13pt; font-weight: 700; }
-    .header-center .teacher { font-size: 10pt; }
-    .header-right { text-align: right; font-size: 9pt; min-width: 80px; }
-    .bsd { font-size: 8pt; text-align: left; margin-bottom: 2px; }
-    .date-line { border-bottom: 1pt solid #666; display: inline-block; min-width: 50px; margin-right: 4px; }
+    .logo { height: 38px; }
+    .class-name { font-size: 12pt; font-weight: 700; margin-top: 2px; }
 
     /* טבלה */
     table.journal { width: 100%; border-collapse: collapse; font-size: 8.5pt; }
-    table.journal th, table.journal td { border: 0.7pt solid #666; padding: 2px 3px; text-align: center; height: 8mm; }
+    table.journal th, table.journal td {
+      border: 0.7pt solid #666; padding: 2px 4px; text-align: center;
+    }
     table.journal th { background: #dde8f0; font-weight: 700; font-size: 8pt; }
-    table.journal td.num { width: 8mm; font-weight: 700; background: #f5f5f5; }
-    table.journal td.name { text-align: right; padding-right: 4px; min-width: 30mm; font-size: 8.5pt; white-space: nowrap; }
-    table.journal td.name-wide { text-align: right; padding-right: 4px; min-width: 40mm; }
+    td.num { width: 7mm; font-weight: 700; background: #f5f5f5; text-align: center; }
+    td.name { text-align: right; padding-right: 5px; white-space: nowrap; }
+    .col-narrow { width: 10mm; }
+    .col-wide { }
 
-    /* פורמטים ספציפיים */
-    .col-narrow { width: 9mm; }
-    .col-medium { width: 14mm; }
-    .col-wide { min-width: 60mm; }
-
-    .footer-date { font-size: 7pt; color: #888; margin-top: 6px; }
+    .footer-date { font-size: 7pt; color: #888; margin-top: 6px; text-align: left; }
   </style>
 </head>
 <body>
@@ -55,34 +63,36 @@
 
 <div class="page">
   <div class="bsd">בס"ד</div>
+
   <div class="header">
     <div class="header-right">
-      <div>יום: <span class="date-line"></span></div>
-      <div style="margin-top:4px;">תאריך: <span class="date-line"></span></div>
+      <div>יום:&nbsp;<span class="date-line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span></div>
+      <div style="margin-top:3px;">תאריך:&nbsp;<span class="date-line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span></div>
     </div>
     <div class="header-center">
-      <img src="/images/logo-reports.jpg" class="header-logo" alt="לוגו" />
-      <div class="class-name"><%= classRow ? classRow.name + (classRow.parallel ? " " + classRow.parallel : "") : "" %><% if (teacherName) { %> - <%= teacherName %><% } %></div>
+      <img src="/images/logo-reports.jpg" class="logo" alt="לוגו" />
+      <div class="class-name">
+        <%= classRow ? classRow.name + (classRow.parallel ? " " + classRow.parallel : "") : "" %>
+        <% if (teacherName) { %> - <%= teacherName %><% } %>
+      </div>
     </div>
-    <div style="min-width:80px;"></div>
+    <div style="min-width:70px;"></div>
   </div>
 
-  <%# ========= 7 טורים ========= %>
+  <%# === 7 טורים === %>
   <% if (fmt === '7col') { %>
     <table class="journal">
-      <thead>
-        <tr>
-          <th>#</th>
-          <th style="min-width:32mm;">שם התלמיד</th>
-          <th class="col-narrow">א</th>
-          <th class="col-narrow">ב</th>
-          <th class="col-narrow">ג</th>
-          <th class="col-narrow">ד</th>
-          <th class="col-narrow">ה</th>
-          <th class="col-narrow">ו</th>
-          <th class="col-narrow">ז</th>
-        </tr>
-      </thead>
+      <thead><tr>
+        <th class="col-narrow">#</th>
+        <th style="min-width:45mm; text-align:right; padding-right:5px;">שם התלמיד</th>
+        <th class="col-narrow">א</th>
+        <th class="col-narrow">ב</th>
+        <th class="col-narrow">ג</th>
+        <th class="col-narrow">ד</th>
+        <th class="col-narrow">ה</th>
+        <th class="col-narrow">ו</th>
+        <th class="col-narrow">ז</th>
+      </tr></thead>
       <tbody>
         <% students.forEach((s, i) => { %>
           <tr>
@@ -96,26 +106,24 @@
       </tbody>
     </table>
 
-  <%# ========= 2 טורים ========= %>
+  <%# === 2 טורים: שם (צר) + עמודה 1 + עמודה 2 (שוות) === %>
   <% } else if (fmt === '2col') { %>
     <table class="journal" style="table-layout:fixed;">
       <colgroup>
-        <col style="width:8mm">
-        <col style="width:40mm">
-        <col style="width:auto">
-        <col style="width:auto">
+        <col style="width:7mm">   <%# מספר %>
+        <col style="width:45mm">  <%# שם — צר %>
+        <col>                     <%# עמודה 1 — רחב שווה %>
+        <col>                     <%# עמודה 2 — רחב שווה %>
       </colgroup>
-      <thead>
-        <tr>
-          <th>#</th>
-          <th>שם התלמיד</th>
-          <th> </th>
-          <th> </th>
-        </tr>
-      </thead>
+      <thead><tr>
+        <th>#</th>
+        <th style="text-align:right; padding-right:5px;">שם התלמיד</th>
+        <th> </th>
+        <th> </th>
+      </tr></thead>
       <tbody>
         <% students.forEach((s, i) => { %>
-          <tr>
+          <tr style="height:8mm;">
             <td class="num"><%= i+1 %></td>
             <td class="name"><%= s.displayName %></td>
             <td></td>
@@ -125,19 +133,22 @@
       </tbody>
     </table>
 
-  <%# ========= טור הערות אחד ========= %>
+  <%# === טור הערות אחד === %>
   <% } else if (fmt === '1col') { %>
-    <table class="journal">
-      <thead>
-        <tr>
-          <th style="width:8mm;">#</th>
-          <th style="min-width:35mm;">שם התלמיד</th>
-          <th>הערות</th>
-        </tr>
-      </thead>
+    <table class="journal" style="table-layout:fixed;">
+      <colgroup>
+        <col style="width:7mm">
+        <col style="width:45mm">
+        <col>
+      </colgroup>
+      <thead><tr>
+        <th>#</th>
+        <th style="text-align:right; padding-right:5px;">שם התלמיד</th>
+        <th>הערות</th>
+      </tr></thead>
       <tbody>
         <% students.forEach((s, i) => { %>
-          <tr>
+          <tr style="height:8mm;">
             <td class="num"><%= i+1 %></td>
             <td class="name"><%= s.displayName %></td>
             <td></td>
@@ -146,16 +157,14 @@
       </tbody>
     </table>
 
-  <%# ========= משבצות ריקות (26 עמודות) ========= %>
+  <%# === משבצות ריקות (26 עמודות) === %>
   <% } else { %>
     <table class="journal">
-      <thead>
-        <tr>
-          <th style="width:8mm;">#</th>
-          <th style="min-width:32mm;">שם התלמיד</th>
-          <% for (let d=1; d<=26; d++) { %><th class="col-narrow" style="font-size:7pt;"><%= d %></th><% } %>
-        </tr>
-      </thead>
+      <thead><tr>
+        <th style="width:7mm;">#</th>
+        <th style="min-width:40mm; text-align:right; padding-right:5px;">שם התלמיד</th>
+        <% for (let d=1; d<=26; d++) { %><th class="col-narrow" style="font-size:7pt;"><%= d %></th><% } %>
+      </tr></thead>
       <tbody>
         <% students.forEach((s, i) => { %>
           <tr>

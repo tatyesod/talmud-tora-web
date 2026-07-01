@@ -1,7 +1,7 @@
 <%- include('../partials/header', {title: 'דוח משפחות'}) %>
 <div class="card">
   <h1>דוח משפחות — ייצוא לאקסל</h1>
-  <form method="GET" action="/reports/families-report/export">
+  <form id="rep-form" method="GET" action="/reports/families-report/export">
     <div class="form-grid">
       <div class="form-group">
         <label>סטטוס תלמיד</label>
@@ -25,15 +25,10 @@
       </div>
     </div>
     <div class="actions" style="margin-top:14px; display:flex; gap:10px; flex-wrap:wrap;">
-      <button type="button" onclick="goExcel()" class="btn">📥 ייצוא לאקסל</button>
-      <button type="button" onclick="goPDF()" class="btn secondary">🖨️ הדפסה / PDF</button>
+      <button type="submit" class="btn" formaction="/reports/families-report/export">📥 ייצוא לאקסל</button>
+      <button type="submit" class="btn secondary" formaction="/reports/families-report/export?output=print" onclick="this.form.target='_blank'">🖨️ הדפסה / PDF</button>
       <a href="/reports" class="btn secondary">חזרה</a>
     </div>
   </form>
-  <script>
-  function params() { return new URLSearchParams(new FormData(document.querySelector("form"))).toString(); }
-  function goExcel() { window.location = "/reports/families-report/export?" + params(); }
-  function goPDF() { window.open("/reports/print-view?type=families-report&" + params(), "_blank"); }
-  </script>
 </div>
 <%- include('../partials/footer') %>

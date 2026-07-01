@@ -4,6 +4,8 @@
   <h1><%= mode === 'new' ? 'הוספת תלמיד חדש' : 'עריכת תלמיד' %></h1>
 
   <form method="POST" action="<%= mode === 'new' ? '/students' : '/students/' + student.id + '?_method=PUT' %>">
+
+    <%# ======= פרטים אישיים ======= %>
     <fieldset>
       <legend>פרטים אישיים</legend>
       <div class="form-grid">
@@ -11,19 +13,19 @@
         <div class="form-group"><label>שם פרטי</label><input type="text" name="first_name" value="<%= student.first_name || '' %>" /></div>
         <div class="form-group"><label>כינוי</label><input type="text" name="nickname" value="<%= student.nickname || '' %>" /></div>
         <div class="form-group"><label>תעודת זהות</label><input type="text" name="id_number" value="<%= student.id_number || '' %>" /></div>
-        <div class="form-group"><label>תאריך לידה (לועזי)</label><input type="date" name="birth_date_civil" value="<%= student.birth_date_civil || '' %>" /></div>
+        <div class="form-group"><label>תאריך לידה</label><input type="date" name="birth_date_civil" value="<%= student.birth_date_civil || '' %>" /></div>
         <div class="form-group">
           <label>סטטוס</label>
           <select name="status">
-            <option value="">--</option>
-            <option value="פעיל" <%= student.status === 'פעיל' ? 'selected' : '' %>>פעיל</option>
+            <option value="פעיל" <%= student.status === 'פעיל' || !student.status ? 'selected' : '' %>>פעיל</option>
+            <option value="נרשם" <%= student.status === 'נרשם' ? 'selected' : '' %>>נרשם</option>
             <option value="לא פעיל" <%= student.status === 'לא פעיל' ? 'selected' : '' %>>לא פעיל</option>
             <option value="ארכיון" <%= student.status === 'ארכיון' ? 'selected' : '' %>>ארכיון</option>
-            <option value="נרשם" <%= student.status === 'נרשם' ? 'selected' : '' %>>נרשם</option>
             <option value="לא התקבל" <%= student.status === 'לא התקבל' ? 'selected' : '' %>>לא התקבל</option>
           </select>
         </div>
-        <div class="form-group"><label>הולך לבדו</label>
+        <div class="form-group">
+          <label>הולך לבדו</label>
           <select name="walks_alone">
             <option value="">--</option>
             <option value="כן" <%= student.walks_alone === 'כן' ? 'selected' : '' %>>כן</option>
@@ -37,8 +39,9 @@
       </div>
     </fieldset>
 
+    <%# ======= כיתה ומחזור ======= %>
     <fieldset>
-      <legend>כיתה, מחזור ומשפחה</legend>
+      <legend>כיתה ומחזור</legend>
       <div class="form-grid">
         <div class="form-group">
           <label>כיתה</label>
@@ -58,17 +61,67 @@
             <% }) %>
           </select>
         </div>
+        <div class="form-group"><label>תאריך רישום</label><input type="date" name="registration_date" value="<%= student.registration_date || '' %>" /></div>
+        <div class="form-group"><label>תאריך קבלה</label><input type="date" name="admission_date" value="<%= student.admission_date || '' %>" /></div>
+        <div class="form-group"><label>תאריך כניסה</label><input type="date" name="entry_date" value="<%= student.entry_date || '' %>" /></div>
+        <div class="form-group"><label>תאריך יציאה</label><input type="date" name="exit_date" value="<%= student.exit_date || '' %>" /></div>
+      </div>
+    </fieldset>
+
+    <%# ======= משפחה / הורים ======= %>
+    <fieldset>
+      <legend>משפחה / הורים</legend>
+
+      <% if (mode === 'new') { %>
+      <!-- בחירת משפחה קיימת או חדשה -->
+      <div style="display:flex; gap:20px; margin-bottom:16px; align-items:center;">
+        <label style="cursor:pointer; font-size:1em; font-weight:600;">
+          <input type="radio" name="family_mode" value="existing" id="fam-existing" checked style="width:auto; margin-left:6px;" />
+          בחר משפחה קיימת
+        </label>
+        <label style="cursor:pointer; font-size:1em; font-weight:600;">
+          <input type="radio" name="family_mode" value="new" id="fam-new" style="width:auto; margin-left:6px;" />
+          משפחה חדשה — מלא פרטים
+        </label>
+      </div>
+
+      <!-- בחירת משפחה קיימת -->
+      <div id="section-existing">
+        <div class="form-grid">
+          <div class="form-group">
+            <label>משפחה קיימת</label>
+            <select name="family_id" id="family_id_select" onchange="syncSectorFromFamily()">
+              <option value="">--</option>
+              <% families.forEach(f => { %>
+                <option value="<%= f.id %>" data-sector="<%= f.sector || '' %>"><%= f.last_name %><%= f.father_name ? ' — ' + f.father_name : '' %></option>
+              <% }) %>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>מגזר</label>
+            <select name="sector" id="sector_select">
+              <option value="">--</option>
+              <option value="ליטאי">ליטאי</option>
+              <option value="ספרדי">ספרדי</option>
+              <option value="תמני">תמני</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <% } else { %>
+      <!-- עריכה: רק שיוך משפחה -->
+      <div class="form-grid">
         <div class="form-group">
-          <label>משפחה (הורים)</label>
-          <select name="family_id" id="family_id_select" onchange="syncSectorFromFamily()">
+          <label>משפחה</label>
+          <select name="family_id" onchange="syncSectorFromFamily()">
             <option value="">--</option>
             <% families.forEach(f => { %>
-              <option value="<%= f.id %>" data-sector="<%= f.sector || '' %>" <%= String(student.family_id) === String(f.id) ? 'selected' : '' %>><%= f.last_name %><%= f.father_name ? ' - '+f.father_name : '' %></option>
+              <option value="<%= f.id %>" data-sector="<%= f.sector || '' %>" <%= String(student.family_id) === String(f.id) ? 'selected' : '' %>><%= f.last_name %><%= f.father_name ? ' — ' + f.father_name : '' %></option>
             <% }) %>
           </select>
         </div>
         <div class="form-group">
-          <label>מגזר (משויך למשפחה כולה)</label>
+          <label>מגזר</label>
           <select name="sector" id="sector_select">
             <option value="">--</option>
             <option value="ליטאי" <%= student.sector === 'ליטאי' ? 'selected' : '' %>>ליטאי</option>
@@ -76,11 +129,56 @@
             <option value="תמני" <%= student.sector === 'תמני' ? 'selected' : '' %>>תמני</option>
           </select>
         </div>
-        <div class="form-group"><label>תאריך כניסה</label><input type="date" name="entry_date" value="<%= student.entry_date || '' %>" /></div>
-        <div class="form-group"><label>תאריך יציאה</label><input type="date" name="exit_date" value="<%= student.exit_date || '' %>" /></div>
-        <div class="form-group"><label>תאריך רישום</label><input type="date" name="registration_date" value="<%= student.registration_date || '' %>" /></div>
-        <div class="form-group"><label>תאריך קבלה</label><input type="date" name="admission_date" value="<%= student.admission_date || '' %>" /></div>
       </div>
+      <% } %>
+
+      <!-- פרטי משפחה חדשה -->
+      <% if (mode === 'new') { %>
+      <div id="section-new-family" style="display:none;">
+
+        <h3 style="margin:14px 0 8px; color:var(--primary); font-size:1em;">פרטי האב</h3>
+        <div class="form-grid">
+          <div class="form-group"><label>שם משפחה</label><input type="text" name="fam_last_name" /></div>
+          <div class="form-group"><label>שם האב</label><input type="text" name="fam_father_name" /></div>
+          <div class="form-group"><label>ת.ז אב</label><input type="text" name="fam_father_id_number" /></div>
+          <div class="form-group"><label>נייד אב</label><input type="tel" name="fam_father_mobile" /></div>
+          <div class="form-group"><label>מייל אב</label><input type="email" name="fam_father_email" /></div>
+          <div class="form-group"><label>מקום עבודה אב</label><input type="text" name="fam_father_workplace" /></div>
+          <div class="form-group"><label>טל' עבודה אב</label><input type="tel" name="fam_father_work_phone" /></div>
+          <div class="form-group">
+            <label>מגזר</label>
+            <select name="fam_sector">
+              <option value="">--</option>
+              <option value="ליטאי">ליטאי</option>
+              <option value="ספרדי">ספרדי</option>
+              <option value="תמני">תמני</option>
+            </select>
+          </div>
+        </div>
+
+        <h3 style="margin:14px 0 8px; color:var(--primary); font-size:1em;">פרטי האם</h3>
+        <div class="form-grid">
+          <div class="form-group"><label>שם האם</label><input type="text" name="fam_mother_name" /></div>
+          <div class="form-group"><label>ת.ז אם</label><input type="text" name="fam_mother_id_number" /></div>
+          <div class="form-group"><label>נייד אם</label><input type="tel" name="fam_mother_mobile" /></div>
+          <div class="form-group"><label>מייל אם</label><input type="email" name="fam_mother_email" /></div>
+          <div class="form-group"><label>מקום עבודה אם</label><input type="text" name="fam_mother_workplace" /></div>
+          <div class="form-group"><label>טל' עבודה אם</label><input type="tel" name="fam_mother_work_phone" /></div>
+        </div>
+
+        <h3 style="margin:14px 0 8px; color:var(--primary); font-size:1em;">כתובת וקשר</h3>
+        <div class="form-grid">
+          <div class="form-group"><label>טלפון בית</label><input type="tel" name="fam_home_phone" /></div>
+          <div class="form-group"><label>רחוב</label><input type="text" name="fam_street" /></div>
+          <div class="form-group"><label>מספר</label><input type="text" name="fam_house_number" /></div>
+          <div class="form-group"><label>דירה</label><input type="text" name="fam_apartment" /></div>
+          <div class="form-group"><label>עיר</label><input type="text" name="fam_city" /></div>
+          <div class="form-group"><label>מיקוד</label><input type="text" name="fam_zip_code" /></div>
+          <div class="form-group full"><label>הערות</label><textarea name="fam_notes" rows="2"></textarea></div>
+        </div>
+
+      </div>
+      <% } %>
     </fieldset>
 
     <div class="actions">
@@ -91,13 +189,29 @@
 </div>
 
 <script>
+  // סנכרון מגזר ממשפחה קיימת
   function syncSectorFromFamily() {
     const famSel = document.getElementById('family_id_select');
     const sectorSel = document.getElementById('sector_select');
+    if (!famSel || !sectorSel) return;
     const opt = famSel.options[famSel.selectedIndex];
     const sector = opt ? opt.getAttribute('data-sector') : '';
     if (sector) sectorSel.value = sector;
   }
+
+  // החלפה בין משפחה קיימת/חדשה
+  const radios = document.querySelectorAll('input[name="family_mode"]');
+  const secExisting = document.getElementById('section-existing');
+  const secNew = document.getElementById('section-new-family');
+
+  function toggleFamilyMode() {
+    const mode = document.querySelector('input[name="family_mode"]:checked')?.value;
+    if (secExisting) secExisting.style.display = mode === 'existing' ? '' : 'none';
+    if (secNew) secNew.style.display = mode === 'new' ? '' : 'none';
+  }
+
+  radios.forEach(r => r.addEventListener('change', toggleFamilyMode));
+  toggleFamilyMode();
 </script>
 
 <%- include('../partials/footer') %>

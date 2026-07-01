@@ -2,44 +2,22 @@
 <html lang="he" dir="rtl">
 <head>
   <meta charset="UTF-8" />
-  <title>מדבקות — <%= clsLabel %></title>
+  <title>מדבקות</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
-    @page {
-      size: A4;
-      margin: 0;
-    }
+    @page { size: A4 portrait; margin: 0; }
 
-    body {
-      font-family: Arial, 'Arial Hebrew', sans-serif;
-      direction: rtl;
-      background: #fff;
-    }
+    body { font-family: Arial, 'Arial Hebrew', sans-serif; direction: rtl; background: #fff; }
 
     .no-print {
-      background: #2c5f7c;
-      color: #fff;
-      padding: 10px 16px;
-      display: flex;
-      gap: 12px;
-      align-items: center;
-      font-size: 14px;
+      background: #2c5f7c; color: #fff; padding: 10px 16px;
+      display: flex; gap: 12px; align-items: center; font-size: 14px;
     }
-    .no-print button {
-      background: #fff;
-      color: #2c5f7c;
-      border: none;
-      border-radius: 6px;
-      padding: 6px 16px;
-      cursor: pointer;
-      font-weight: 700;
-    }
-    .no-print a { color: #fff; }
-
+    .no-print button { background:#fff; color:#2c5f7c; border:none; border-radius:6px; padding:6px 16px; cursor:pointer; font-weight:700; }
+    .no-print a { color:#fff; }
     @media print { .no-print { display: none; } }
 
-    /* דף מדבקות */
     .label-page {
       width: 210mm;
       min-height: 297mm;
@@ -47,15 +25,12 @@
       padding-right: <%= fmt.pageMarginSide %>;
       padding-left: <%= fmt.pageMarginSide %>;
       page-break-after: always;
-      display: flex;
-      flex-direction: column;
-      gap: 0;
     }
     .label-page:last-child { page-break-after: auto; }
 
     .label-row {
       display: flex;
-      flex-direction: row-reverse; /* RTL: right to left */
+      flex-direction: row; /* RTL: right to left naturally */
       gap: 0;
     }
 
@@ -66,30 +41,19 @@
       display: flex;
       flex-direction: column;
       justify-content: center;
-      align-items: flex-end; /* RTL */
-      padding: 1.5mm 2.5mm;
-      /* border: 0.3pt dashed #ccc; */ /* uncomment to see label borders */
+      align-items: flex-start;
+      padding: 1.5mm 3mm;
       font-size: <%= fmt.fontSize %>;
       direction: rtl;
       text-align: right;
     }
 
-    .label.empty { /* blank label */ }
+    .label-line1 { font-size: 0.85em; color: #555; line-height: 1.2; width:100%; }
+    .label-line2 { font-weight: 700; font-size: 1.05em; line-height: 1.3; width:100%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .label-line3 { font-size: 0.88em; line-height: 1.2; width:100%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 
-    @font-face {
-      font-family: "Guttman Mantova";
-      /* fallback if font not installed */
-    }
-    .label.teacher { font-family: "Guttman Mantova", "FrankRuehlCLM", Arial, sans-serif; }
-    .label.teacher .label-line1 { font-size: 0.85em; font-weight: 400; color: #444; }
-    .label.teacher .label-line2 { font-size: 1em; font-weight: 700; }
-    .label.teacher .label-line3 { font-size: 0.85em; }
+    .label.teacher .label-line2 { font-family: "Guttman Mantova", "FrankRuehlCLM", Arial, sans-serif; }
 
-    .label-line1 { font-weight: 700; font-size: 1.1em; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
-    .label-line2 { font-size: 0.95em; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
-    .label-line3 { font-size: 0.9em; line-height: 1.2; color: #444; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
-
-    /* ברירת מחדל: הצג קווי מדבקה בעדינות */
     .show-borders .label { border: 0.3pt dashed #bbb; }
   </style>
 </head>
@@ -97,8 +61,8 @@
 
 <div class="no-print">
   <button onclick="window.print()">🖨️ הדפסה</button>
-  <span><strong><%= items.length %></strong> מדבקות | פורמט: TANEX <%= format %> (<%= fmt.perPage %> בדף)</span>
-  <label style="cursor:pointer; font-size:13px;">
+  <span><strong><%= items.length %></strong> מדבקות | TANEX <%= format %> (<%= fmt.perPage %> בדף)</span>
+  <label style="cursor:pointer;">
     <input type="checkbox" id="show-borders" style="margin-left:4px;" />
     הצג קווי מדבקה
   </label>
@@ -106,7 +70,6 @@
 </div>
 
 <%
-// חלוקה לדפים
 const pages = [];
 let current = [];
 items.forEach((item, i) => {
@@ -119,33 +82,32 @@ items.forEach((item, i) => {
 %>
 
 <% pages.forEach(page => { %>
-  <div class="label-page" id="page">
-    <%
-    // חלוקה לשורות
-    const allRows = [];
-    for (let r = 0; r < fmt.rows; r++) {
-      const rowItems = [];
-      for (let c = 0; c < fmt.cols; c++) {
-        const idx = r * fmt.cols + c;
-        rowItems.push(idx < page.length ? page[idx] : null);
-      }
-      allRows.push(rowItems);
+<div class="label-page">
+  <%
+  const allRows = [];
+  for (let r = 0; r < fmt.rows; r++) {
+    const rowItems = [];
+    for (let c = 0; c < fmt.cols; c++) {
+      const idx = r * fmt.cols + c;
+      rowItems.push(idx < page.length ? page[idx] : null);
     }
-    %>
-    <% allRows.forEach(row => { %>
-      <div class="label-row">
-        <% row.forEach(item => { %>
-          <div class="label<%= !item ? ' empty' : item.isTeacher ? ' teacher' : '' %>">
-            <% if (item) { %>
-              <div class="label-line1"><%= item.line1 %></div>
-              <% if (item.line2) { %><div class="label-line2"><%= item.line2 %></div><% } %>
-              <% if (item.line3) { %><div class="label-line3"><%= item.line3 %></div><% } %>
-            <% } %>
-          </div>
-        <% }) %>
-      </div>
-    <% }) %>
-  </div>
+    allRows.push(rowItems);
+  }
+  %>
+  <% allRows.forEach(row => { %>
+    <div class="label-row">
+      <% row.forEach(item => { %>
+        <div class="label<%= !item ? '' : item.isTeacher ? ' teacher' : '' %>">
+          <% if (item) { %>
+            <% if (item.line1) { %><div class="label-line1"><%= item.line1 %></div><% } %>
+            <div class="label-line2"><%= item.line2 %></div>
+            <% if (item.line3) { %><div class="label-line3"><%= item.line3 %></div><% } %>
+          <% } %>
+        </div>
+      <% }) %>
+    </div>
+  <% }) %>
+</div>
 <% }) %>
 
 <script>
