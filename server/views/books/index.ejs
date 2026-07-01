@@ -1,0 +1,57 @@
+<%- include('../partials/header', {title: 'הזמנת ספרים'}) %>
+
+<div class="card">
+  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+    <h1>📚 הזמנת ספרי לימוד</h1>
+    <div class="actions">
+      <a href="/books/catalog?year=<%= encodeURIComponent(year) %>" class="btn secondary">⚙️ ניהול קטלוג</a>
+      <a href="/books/report/families?year=<%= encodeURIComponent(year) %>" class="btn secondary">📊 דוח חיובים</a>
+    </div>
+  </div>
+
+  <div style="margin-bottom:18px;">
+    <form class="searchbar" method="GET" action="/books" style="display:inline-flex; gap:10px; align-items:center;">
+      <label><strong>שנת לימודים:</strong></label>
+      <select name="year" onchange="this.form.submit()">
+        <% years.forEach(y => { %>
+          <option value="<%= y %>" <%= y === year ? 'selected' : '' %>><%= y %></option>
+        <% }) %>
+      </select>
+    </form>
+  </div>
+
+  <% if (classes.length === 0) { %>
+    <div class="empty-state">
+      אין קטלוג ספרים לשנת <%= year %>.<br/>
+      <a href="/books/catalog" class="btn" style="margin-top:12px;">הוסף קטלוג</a>
+    </div>
+  <% } else { %>
+    <table>
+      <thead><tr>
+        <th>כיתה</th>
+        <th>תלמידים פעילים</th>
+        <th>תלמידים שהזמינו</th>
+        <th>פעולות</th>
+      </tr></thead>
+      <tbody>
+        <% classes.forEach(cls => { %>
+          <tr>
+            <td><strong><%= cls %></strong></td>
+            <td><%= stats[cls] ? stats[cls].students : 0 %></td>
+            <td>
+              <% const s = stats[cls] || {students:0, ordered:0}; %>
+              <span class="badge <%= s.ordered === 0 ? 'archive' : '' %>"><%= s.ordered %> / <%= s.students %></span>
+            </td>
+            <td>
+              <a href="/books/class?year=<%= encodeURIComponent(year) %>&class_name=<%= encodeURIComponent(cls) %>" class="btn small">✏️ הזן הזמנות</a>
+              <a href="/books/report/class?year=<%= encodeURIComponent(year) %>&class_name=<%= encodeURIComponent(cls) %>" class="btn small secondary">📥 דוח אקסל</a>
+              <a href="/books/letter?year=<%= encodeURIComponent(year) %>&class_name=<%= encodeURIComponent(cls) %>" class="btn small secondary" target="_blank">🖨️ מכתבים להורים</a>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  <% } %>
+</div>
+
+<%- include('../partials/footer') %>

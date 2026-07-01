@@ -234,6 +234,7 @@ app.use("/parent-comm", require("./routes/parent-comm"));
 app.use("/events", require("./routes/events"));
 app.use("/inventory", require("./routes/inventory"));
 app.use("/expenses", require("./routes/expenses"));
+app.use("/books", require("./routes/books"));
 
 app.use((req, res) => {
   res.status(404).render("404");

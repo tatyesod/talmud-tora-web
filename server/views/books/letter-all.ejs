@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <title>מכתבי ספרים — <%= class_name %></title>
+  <style>
+    body { font-family: 'Times New Roman', serif; margin: 0; padding: 0; font-size: 12pt; direction: rtl; }
+    .letter { max-width: 780px; margin: 0 auto; padding: 20px; page-break-after: always; }
+    .letter:last-child { page-break-after: auto; }
+    .letter-header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 14px; }
+    .logo { height: 70px; }
+    .address-block { font-size: 9pt; color: #444; text-align: left; }
+    .student-section { margin-bottom: 16px; border: 1px solid #ccc; border-radius: 4px; padding: 10px; }
+    .student-section h3 { margin: 0 0 6px; color: #2c5f7c; font-size: 11pt; }
+    table { width: 100%; border-collapse: collapse; font-size: 10pt; }
+    th, td { border: 1px solid #ccc; padding: 4px 8px; text-align: right; }
+    th { background: #f0f4f8; }
+    .total-row { font-weight: bold; }
+    .grand-total { font-weight: bold; margin-top: 10px; background: #f0f4f8; padding: 6px 12px; border-radius: 4px; }
+    .bsd { text-align: right; font-size: 9pt; }
+    @media print {
+      .no-print { display: none; }
+      .letter { padding: 15px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="no-print" style="padding:12px; background:#f0f4f8; margin-bottom:0; text-align:center;">
+  <strong>מכתבים ל-<%= allLetterData.length %> משפחות — <%= class_name %></strong>
+  <button onclick="window.print()" style="margin-right:16px; padding:8px 20px; background:#2c5f7c; color:#fff; border:none; border-radius:6px; cursor:pointer; font-size:13px;">🖨️ הדפסת כל המכתבים</button>
+  <a href="/books?year=<%= encodeURIComponent(year) %>">חזרה</a>
+</div>
+
+<% allLetterData.forEach(({ family, letterData }) => {
+  let grandTotal = letterData.reduce((s, ld) => s + ld.total, 0);
+%>
+<div class="letter">
+  <div class="bsd">בס"ד</div>
+  <div class="letter-header">
+    <img src="/images/logo-reports.jpg" class="logo" alt="לוגו" />
+    <div class="address-block">
+      <strong>תלמוד תורה החדש</strong><br/>
+      סוקולוב 5 \ נפחא 7 \ בן פתחיה 8, בני ברק<br/>
+      טל: 03-6185020 | E-MAIL: tatyesod@gmail.com
+    </div>
+  </div>
+
+  <p>לכב' הורי / משפחת <strong><%= family.last_name %></strong> &nbsp;|&nbsp; שנה"ל <%= year %></p>
+
+  <% letterData.forEach(ld => { %>
+    <div class="student-section">
+      <h3><%= ld.student.first_name %> — <%= ld.student.class_name %></h3>
+      <table>
+        <thead><tr><th>פריט</th><th>הוצאה</th><th>מחיר</th></tr></thead>
+        <tbody>
+          <% ld.items.forEach(item => { %>
+            <tr><td><%= item.item_name %></td><td><%= item.publisher||'' %></td><td><%= item.price %> ₪</td></tr>
+          <% }) %>
+          <tr class="total-row"><td colspan="2">סה"כ עבור <%= ld.student.first_name %></td><td><%= ld.total %> ₪</td></tr>
+        </tbody>
+      </table>
+    </div>
+  <% }) %>
+
+  <div class="grand-total">סה"כ לתשלום: <%= grandTotal %> ₪ &nbsp;&nbsp; □ בצ'יק &nbsp; □ במזומן</div>
+  <p style="margin-top:10px; font-size:10pt;">בברכה, <strong>ההנהלה</strong></p>
+</div>
+<% }) %>
+
+</body>
+</html>

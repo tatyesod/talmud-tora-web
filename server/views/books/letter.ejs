@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <title>מכתב ספרים</title>
+  <style>
+    body { font-family: 'Times New Roman', serif; max-width: 780px; margin: 0 auto; padding: 20px; font-size: 13pt; direction: rtl; }
+    .letter-header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 16px; }
+    .logo { height: 75px; }
+    .address-block { font-size: 10pt; color: #444; text-align: left; }
+    h2 { text-align: center; text-decoration: underline; margin: 12px 0; }
+    .student-section { margin-bottom: 20px; border: 1px solid #ccc; border-radius: 6px; padding: 12px; }
+    .student-section h3 { margin: 0 0 8px; border-bottom: 1px solid #eee; padding-bottom: 6px; color: #2c5f7c; }
+    table { width: 100%; border-collapse: collapse; font-size: 11pt; }
+    th, td { border: 1px solid #ccc; padding: 5px 10px; text-align: right; }
+    th { background: #f0f4f8; }
+    .total-row { font-weight: bold; background: #fafafa; }
+    .grand-total { font-size: 13pt; font-weight: bold; margin-top: 12px; text-align: left; background: #f0f4f8; padding: 8px 14px; border-radius: 4px; }
+    .footer-note { margin-top: 18px; font-size: 10pt; color: #555; border-top: 1px solid #eee; padding-top: 10px; }
+    .bsd { text-align: right; font-size: 10pt; }
+    @media print { .no-print { display: none; } }
+  </style>
+</head>
+<body>
+
+<div class="no-print" style="margin-bottom:16px;">
+  <button onclick="window.print()" style="padding:8px 18px; background:#2c5f7c; color:#fff; border:none; border-radius:6px; cursor:pointer; font-size:14px;">🖨️ הדפסה</button>
+  <a href="/books?year=<%= encodeURIComponent(year) %>" style="margin-right:10px;">חזרה</a>
+</div>
+
+<div class="bsd">בס"ד</div>
+
+<div class="letter-header">
+  <div>
+    <img src="/images/logo-reports.jpg" class="logo" alt="לוגו" />
+  </div>
+  <div class="address-block">
+    <strong>תלמוד תורה החדש</strong><br/>
+    סוקולוב 5 \ נפחא 7 \ בן פתחיה 8, בני ברק<br/>
+    טל: 03-6185020 | פקס: 03-6185030<br/>
+    E-MAIL: tatyesod@gmail.com
+  </div>
+</div>
+
+<p>לכב' הורי / משפחת <strong><%= family.last_name %></strong></p>
+<p>שלום רב,</p>
+<p>הנידון: <strong>הזמנת ספרי לימוד וכלי כתיבה לשנה"ל <%= year %></strong></p>
+<p>להלן פירוט הספרים שהוזמנו עבור ילדי משפחתכם. נבקש לשלם את הסכום המצוין במזומן או בצ'יק בלבד (לא ניתן בהו"ק).</p>
+
+<% let grandTotal = 0; letterData.forEach(ld => { grandTotal += ld.total; %>
+  <div class="student-section">
+    <h3><%= ld.student.first_name %> <%= ld.student.last_name || '' %> — <%= ld.student.class_name %></h3>
+    <table>
+      <thead><tr><th>פריט</th><th>הוצאה</th><th>מחיר</th></tr></thead>
+      <tbody>
+        <% ld.items.forEach(item => { %>
+          <tr><td><%= item.item_name %></td><td><%= item.publisher || '' %></td><td><%= item.price %> ₪</td></tr>
+        <% }) %>
+        <tr class="total-row"><td colspan="2">סה"כ עבור <%= ld.student.first_name %></td><td><%= ld.total %> ₪</td></tr>
+      </tbody>
+    </table>
+  </div>
+<% }) %>
+
+<div class="grand-total">סה"כ לתשלום: <%= grandTotal %> ₪</div>
+
+<p style="margin-top:14px;">אופן התשלום (אין אפשרות לשלם בהו"ק):</p>
+<p>□ בצ'יק &nbsp;&nbsp;&nbsp; □ במזומן (נא לצרף במדויק)</p>
+
+<div class="footer-note">
+  נבקש לשלוח את הטפסים והתשלום כמה שיותר מהר ולא להמתין ליום האחרון.<br/>
+  לשאלות ניתן לפנות למזכירות הת"ת.
+  <div style="margin-top:14px;">בברכה,<br/><strong>ההנהלה</strong></div>
+</div>
+
+</body>
+</html>

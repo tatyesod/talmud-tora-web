@@ -1,0 +1,69 @@
+<%- include('../partials/header', {title: 'קטלוג ספרים'}) %>
+
+<div class="card">
+  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+    <h1>⚙️ ניהול קטלוג ספרים</h1>
+    <a href="/books" class="btn secondary">חזרה להזמנות</a>
+  </div>
+
+  <form class="searchbar" method="GET" action="/books/catalog" style="margin-bottom:18px;">
+    <label><strong>שנה:</strong></label>
+    <select name="year" onchange="this.form.submit()">
+      <% years.forEach(y => { %>
+        <option value="<%= y %>" <%= y === year ? 'selected' : '' %>><%= y %></option>
+      <% }) %>
+      <option value="">-- שנה חדשה --</option>
+    </select>
+  </form>
+
+  <h3>הוספת פריט חדש</h3>
+  <form method="POST" action="/books/catalog" class="form-grid" style="margin-bottom:24px;">
+    <div class="form-group">
+      <label>שנה</label>
+      <input type="text" name="year_label" value="<%= year %>" required placeholder='תשפ"ז' />
+    </div>
+    <div class="form-group">
+      <label>כיתה</label>
+      <input type="text" name="class_name" list="class-list" required placeholder="כיתה א'" />
+      <datalist id="class-list">
+        <option value="כיתה א'"><option value="כיתה ב'"><option value="כיתה ג'">
+        <option value="כיתה ד'"><option value="כיתה ה'"><option value="כיתה ו'">
+        <option value="כיתה ז'"><option value="כיתה ח'">
+      </datalist>
+    </div>
+    <div class="form-group"><label>שם הפריט</label><input type="text" name="item_name" required /></div>
+    <div class="form-group"><label>הוצאה</label><input type="text" name="publisher" /></div>
+    <div class="form-group"><label>מחיר (₪)</label><input type="number" step="0.01" name="price" required /></div>
+    <div class="form-group">
+      <label><input type="checkbox" name="is_mandatory" style="width:auto; margin-left:6px;" /> חובה</label>
+    </div>
+    <div class="form-group full"><button type="submit" class="btn small">+ הוסף פריט</button></div>
+  </form>
+
+  <h3>קטלוג קיים — <%= year %> (<%= catalog.length %> פריטים)</h3>
+  <% if (catalog.length === 0) { %>
+    <p class="empty-state">אין פריטים בקטלוג לשנה זו</p>
+  <% } else { %>
+    <table>
+      <thead><tr><th>כיתה</th><th>פריט</th><th>הוצאה</th><th>מחיר</th><th>חובה</th><th></th></tr></thead>
+      <tbody>
+        <% catalog.forEach(c => { %>
+          <tr>
+            <td><%= c.class_name %></td>
+            <td><%= c.item_name %></td>
+            <td><%= c.publisher || '' %></td>
+            <td><%= c.price %> ₪</td>
+            <td><%= c.is_mandatory ? '✓' : '' %></td>
+            <td>
+              <form method="POST" action="/books/catalog/<%= c.id %>?_method=DELETE" onsubmit="return confirm('למחוק פריט זה?');" style="display:inline">
+                <button type="submit" class="btn small danger">מחק</button>
+              </form>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  <% } %>
+</div>
+
+<%- include('../partials/footer') %>
