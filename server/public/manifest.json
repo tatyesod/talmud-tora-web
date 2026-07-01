@@ -1,0 +1,26 @@
+{
+  "name": "תלמוד תורה החדש",
+  "short_name": "ת\"ת החדש",
+  "description": "מערכת ניהול תלמוד תורה החדש",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#080f1a",
+  "theme_color": "#0d1b2e",
+  "lang": "he",
+  "dir": "rtl",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "/images/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/images/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

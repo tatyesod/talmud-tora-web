@@ -1,4 +1,4 @@
-// סינון אוטומטי: בעת שינוי select - הגשה מיידית. בעת הקלדה ב-text - הגשה עם דיליי קצר (debounce)
+// סינון אוטומטי: select → הגשה מיידית. text → debounce 900ms (מספיק להקלדת שם מלא)
 document.addEventListener("DOMContentLoaded", () => {
   document.querySelectorAll("form.auto-filter").forEach((form) => {
     form.querySelectorAll("select").forEach((el) => {
@@ -8,7 +8,7 @@ document.addEventListener("DOMContentLoaded", () => {
     form.querySelectorAll('input[type="text"]').forEach((el) => {
       el.addEventListener("input", () => {
         clearTimeout(debounceTimer);
-        debounceTimer = setTimeout(() => form.submit(), 500);
+        debounceTimer = setTimeout(() => form.submit(), 900);
       });
     });
   });

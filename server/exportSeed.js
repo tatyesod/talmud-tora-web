@@ -4,7 +4,13 @@ const { DatabaseSync } = require("node:sqlite");
 const fs = require("fs");
 const path = require("path");
 
-const dbPath = path.join(__dirname, "data", "talmud-tora.db");
+// תמיכה בנתיב דינמי (Render Persistent Disk)
+const DATA_DIR = process.env.RENDER_PERSISTENT_DIR
+  ? process.env.RENDER_PERSISTENT_DIR
+  : path.join(__dirname, "data");
+
+const dbPath = path.join(DATA_DIR, "talmud-tora.db");
+// seed.json תמיד נשמר בתוך הקוד (server/data) — כדי שיעלה ל-GitHub כגיבוי
 const outPath = path.join(__dirname, "data", "seed.json");
 
 const db = new DatabaseSync(dbPath);
@@ -30,3 +36,7 @@ console.log(`נוצר קובץ seed: ${outPath}`);
 console.log("טבלאות:", Object.keys(seed.tables).map((k) => `${k}(${seed.tables[k].length})`).join(", "));
 
 db.close();
+
+module.exports = function exportSeedFn() {
+  // כבר רץ בטעינה — הייצוא בוצע. פונקציה זו לקריאות חוזרות
+};

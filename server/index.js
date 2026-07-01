@@ -207,4 +207,26 @@ app.use((req, res) => {
 
 app.listen(PORT, () => {
   console.log(`מערכת תלמוד תורה פועלת על http://localhost:${PORT}`);
+
+  // גיבוי אוטומטי ל-seed.json כל לילה בחצות (מגן על הנתונים)
+  function scheduleNightlyBackup() {
+    const now = new Date();
+    const next = new Date();
+    next.setHours(2, 0, 0, 0); // 2:00 לפנות בוקר
+    if (next <= now) next.setDate(next.getDate() + 1);
+    const msUntilNext = next - now;
+    const { execFile } = require("child_process");
+    function runExport() {
+      execFile(process.execPath, [path.join(__dirname, "exportSeed.js")], (err) => {
+        if (err) console.error("שגיאה בגיבוי אוטומטי:", err.message);
+        else console.log("[גיבוי אוטומטי] seed.json עודכן בהצלחה -", new Date().toLocaleString("he-IL"));
+      });
+    }
+    setTimeout(() => {
+      runExport();
+      setInterval(runExport, 24 * 60 * 60 * 1000);
+    }, msUntilNext);
+    console.log(`גיבוי אוטומטי מתוכנן בעוד ${Math.round(msUntilNext / 60000)} דקות`);
+  }
+  scheduleNightlyBackup();
 });

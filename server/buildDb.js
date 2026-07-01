@@ -22,9 +22,9 @@ function unlinkWithRetry(filePath, attempts = 20, delayMs = 300) {
   }
 }
 
-function buildDbFromSeed() {
+function buildDbFromSeed(customDbPath) {
   const dataDir = path.join(__dirname, "data");
-  const dbPath = path.join(dataDir, "talmud-tora.db");
+  const dbPath = customDbPath || path.join(dataDir, "talmud-tora.db");
   const seedPath = path.join(dataDir, "seed.json");
 
   if (!fs.existsSync(seedPath)) {
