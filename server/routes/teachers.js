@@ -30,6 +30,18 @@ const upload = multer({
   },
 });
 
+function calcAge(accessSerial) {
+  if (!accessSerial) return null;
+  // המרה מ-Access serial ל-JavaScript Date
+  const epoch = new Date(1899, 11, 30);
+  const date = new Date(epoch.getTime() + accessSerial * 86400000);
+  const today = new Date();
+  let age = today.getFullYear() - date.getFullYear();
+  const m = today.getMonth() - date.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < date.getDate())) age--;
+  return age;
+}
+
 function withDates(t) {
   if (!t) return t;
   return {
@@ -38,6 +50,8 @@ function withDates(t) {
     entry_date_str: hd.serialToGregorianString(t.entry_date),
     exit_date_str: hd.serialToGregorianString(t.exit_date),
     spouse_birth_date_str: hd.serialToGregorianString(t.spouse_birth_date),
+    age: calcAge(t.birth_date_civil),
+    spouse_age: calcAge(t.spouse_birth_date),
   };
 }
 

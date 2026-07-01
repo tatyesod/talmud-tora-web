@@ -16,19 +16,50 @@
 <div class="card">
   <h3>פרטים אישיים</h3>
   <table>
-    <tr><th>שם משפחה</th><td><%= teacher.last_name || '' %></td><th>שם פרטי</th><td><%= teacher.first_name || '' %></td></tr>
-    <tr><th>ת.ז</th><td><%= teacher.id_number || '' %></td><th>תאריך לידה</th><td><%= teacher.birth_date_civil_str || '' %></td></tr>
-    <tr><th>מין</th><td><%= teacher.gender || '' %></td><th>קופת חולים</th><td><%= teacher.health_fund || '' %></td></tr>
-    <tr><th>נייד</th><td><%- phoneLink(teacher.mobile) %></td><th>טלפון בית</th><td><%- phoneLink(teacher.home_phone) %></td></tr>
-    <tr><th>מייל</th><td><%- emailLink(teacher.email) %></td><th>סניף</th><td><%= teacher.branch || '' %></td></tr>
-    <tr><th>כתובת</th><td colspan="3"><%= [teacher.street, teacher.house_number, teacher.city].filter(Boolean).join(' ') %></td></tr>
-    <tr><th>מס' ילדים</th><td><%= teacher.children_count_total != null ? teacher.children_count_total : '' %></td><th>סטטוס</th><td><span class="badge <%= teacher.status !== 'פעיל' ? 'archive' : '' %>"><%= teacher.status || '' %></span></td></tr>
+    <tr>
+      <th>שם משפחה</th><td><strong><%= teacher.last_name || '' %></strong></td>
+      <th>שם פרטי</th><td><strong><%= teacher.first_name || '' %></strong></td>
+    </tr>
+    <tr>
+      <th>מספר זהות</th><td><%= teacher.id_number || '' %></td>
+      <th>מין</th><td><%= teacher.gender || '' %></td>
+    </tr>
+    <tr>
+      <th>תאריך לידה</th>
+      <td>
+        <%= teacher.birth_date_civil_str || '' %>
+        <% if (teacher.age != null) { %>
+          &nbsp;<span style="background:#e8f0f7; color:#2c5f7c; border-radius:10px; padding:2px 8px; font-size:0.85em; font-weight:700;">גיל: <%= teacher.age %></span>
+        <% } %>
+      </td>
+      <th>קופת חולים</th><td><%= teacher.health_fund || '' %></td>
+    </tr>
+    <tr>
+      <th>נייד</th><td><%- phoneLink(teacher.mobile) %></td>
+      <th>טלפון בית</th><td><%- phoneLink(teacher.home_phone) %></td>
+    </tr>
+    <tr>
+      <th>כתובת דוא"ל</th><td><%- emailLink(teacher.email) %></td>
+      <th>סניף</th><td><%= teacher.branch || '' %></td>
+    </tr>
+    <tr>
+      <th>כתובת</th>
+      <td colspan="3"><%= [teacher.street, teacher.house_number, teacher.city].filter(Boolean).join(' ') %></td>
+    </tr>
+    <tr>
+      <th>מס' ילדים</th><td><%= teacher.children_count_total != null ? teacher.children_count_total : '' %></td>
+      <th>סטטוס</th><td><span class="badge <%= teacher.status !== 'פעיל' ? 'archive' : '' %>"><%= teacher.status || '' %></span></td>
+    </tr>
     <tr><th>הערות</th><td colspan="3"><%= teacher.notes || '' %></td></tr>
   </table>
 </div>
 
 <div class="card">
   <h3>פרטי בן/בת הזוג</h3>
+  <% const hasSpouse = teacher.spouse_first_name || teacher.spouse_last_name || teacher.id_number_spouse; %>
+  <% if (!hasSpouse) { %>
+    <p class="empty-state">אין פרטי בן/בת זוג</p>
+  <% } else { %>
   <table>
     <tr>
       <th>שם פרטי</th><td><%= teacher.spouse_first_name || '' %></td>
@@ -36,9 +67,16 @@
     </tr>
     <tr>
       <th>מספר זהות</th><td><%= teacher.id_number_spouse || '' %></td>
-      <th>תאריך לידה</th><td><%= teacher.spouse_birth_date_str || '' %></td>
+      <th>תאריך לידה</th>
+      <td>
+        <%= teacher.spouse_birth_date_str || '' %>
+        <% if (teacher.spouse_age != null) { %>
+          &nbsp;<span style="background:#e8f0f7; color:#2c5f7c; border-radius:10px; padding:2px 8px; font-size:0.85em; font-weight:700;">גיל: <%= teacher.spouse_age %></span>
+        <% } %>
+      </td>
     </tr>
   </table>
+  <% } %>
 </div>
 
 <div class="card">
