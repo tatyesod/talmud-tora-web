@@ -56,6 +56,28 @@ if (!fs.existsSync(dbPath)) {
 db.exec("PRAGMA journal_mode = WAL;");
 db.exec("PRAGMA busy_timeout = 5000;");
 
+// מיגרציות אוטומטיות — מוסיף עמודות חדשות אם עדיין לא קיימות
+// (נדרש כשמסד הנתונים קיים מגרסה ישנה ולא נבנה מחדש)
+const migrations = [
+  "ALTER TABLE users ADD COLUMN force_password_change INTEGER DEFAULT 0",
+  "ALTER TABLE users ADD COLUMN full_name TEXT",
+  "ALTER TABLE users ADD COLUMN role_title TEXT",
+  "ALTER TABLE users ADD COLUMN phone TEXT",
+  "ALTER TABLE users ADD COLUMN email TEXT",
+  "ALTER TABLE users ADD COLUMN is_admin INTEGER DEFAULT 0",
+  "ALTER TABLE teachers ADD COLUMN children_count INTEGER",
+  "ALTER TABLE families ADD COLUMN father_email TEXT",
+  "ALTER TABLE families ADD COLUMN mother_email TEXT",
+];
+
+for (const sql of migrations) {
+  try {
+    db.exec(sql);
+  } catch (e) {
+    // עמודה כבר קיימת — מתעלמים מהשגיאה
+  }
+}
+
 function cleanShutdown() {
   try {
     db.exec("PRAGMA wal_checkpoint(TRUNCATE);");
