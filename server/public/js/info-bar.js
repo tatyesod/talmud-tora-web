@@ -101,3 +101,59 @@
       if (outEl) outEl.textContent = "לא זמין";
     });
 })();
+
+// ===== פרשת השבוע וצומות — API של Sefaria =====
+(function () {
+  const parashaEl = document.getElementById("parasha-value");
+  const fastEl    = document.getElementById("info-fast");
+  const fastVal   = document.getElementById("fast-value");
+
+  // מיפוי שמות צומות לעברית (למקרה ש-API מחזיר באנגלית)
+  const FAST_NAMES = {
+    "Fast of Gedaliah":   "צום גדליה",
+    "Fast of Esther":     "תענית אסתר",
+    "Asara B'Tevet":      "עשרה בטבת",
+    "17th of Tammuz":     "שבעה עשר בתמוז",
+    "9th of Av":          "תשעה באב",
+    "Yom Kippur":         "יום כיפור",
+    "Tzom Tammuz":        "שבעה עשר בתמוז",
+    "Tzom Gedaliah":      "צום גדליה",
+  };
+
+  fetch("https://www.sefaria.org/api/calendars?diaspora=1&lang=he", { cache: "force-cache" })
+    .then(r => r.json())
+    .then(data => {
+      const items = data.calendar_items || [];
+
+      // פרשת השבוע
+      const parasha = items.find(i =>
+        i.title?.en === "Parashat Hashavua" ||
+        i.title?.en?.includes("Parasha")
+      );
+      if (parashaEl) {
+        parashaEl.textContent = parasha?.displayValue?.he || "—";
+      }
+
+      // צום
+      const fast = items.find(i =>
+        i.category === "Fasts" ||
+        i.title?.en?.toLowerCase().includes("fast") ||
+        i.title?.en?.toLowerCase().includes("yom kippur") ||
+        i.title?.he?.includes("צום") ||
+        i.title?.he?.includes("תענית") ||
+        i.title?.en?.includes("Av") ||
+        i.title?.en?.includes("Tammuz") ||
+        i.title?.en?.includes("Tevet")
+      );
+
+      if (fast && fastEl && fastVal) {
+        const heName = fast.displayValue?.he || fast.title?.he ||
+                       FAST_NAMES[fast.title?.en] || fast.title?.en || "צום";
+        fastVal.textContent = heName;
+        fastEl.style.display = "";
+      }
+    })
+    .catch(() => {
+      if (parashaEl) parashaEl.textContent = "—";
+    });
+})();
