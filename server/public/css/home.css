@@ -368,7 +368,7 @@
   display: flex;
   flex-direction: column;
 }
-.side-panel-right { right: 16px; }
+.side-panel-right { right: 16px; max-height: calc(50vh - 60px); }
 .side-panel-left { left: 16px; }
 .side-panel h3 { color: #f7f1e3; font-size: 0.95em; margin: 0 0 10px; }
 .side-panel-scroll {
@@ -662,17 +662,14 @@
 .shared-task-item {
   display: flex;
   align-items: center;
-  gap: 8px;
-  background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 10px;
-  padding: 7px 12px;
-  font-size: 0.85em;
-  flex: 1 1 260px;
-  min-width: 200px;
-  max-width: 400px;
-  transition: border-color 0.2s;
+  gap: 6px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  padding: 7px 2px;
+  font-size: 0.82em;
+  width: 100%;
+  transition: opacity 0.2s;
 }
+.shared-task-item:last-child { border-bottom: none; }
 .shared-task-item.shared-task-done {
   opacity: 0.6;
   border-color: rgba(76,175,110,0.3);

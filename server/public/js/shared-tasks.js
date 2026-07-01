@@ -17,10 +17,9 @@
       <span class="shared-task-dot ${t.done ? 'done' : 'pending'}"></span>
       <span class="shared-task-title">${t.title}</span>
       <span class="shared-task-assign">${t.assigned_label || 'כולם'}</span>
-      <span class="shared-task-creator">${t.created_by_name || ''}</span>
       <div class="shared-task-actions">
         ${!t.done
-          ? `<button class="stbtn stbtn-done" onclick="sharedTaskDone(${t.id})">✓ בוצע</button>`
+          ? `<button class="stbtn stbtn-done" onclick="sharedTaskDone(${t.id})">✓</button>`
           : `<button class="stbtn stbtn-undo" onclick="sharedTaskUndone(${t.id})">↩</button>`}
         <button class="stbtn stbtn-del" onclick="sharedTaskDelete(${t.id})">✕</button>
       </div>`;
@@ -31,9 +30,12 @@
     fetch("/api/shared-tasks")
       .then(r => r.json())
       .then(tasks => {
+        listEl.style.display = "flex";
+        listEl.style.flexDirection = "column";
+        listEl.style.gap = "0";
         listEl.innerHTML = "";
         if (!tasks.length) {
-          listEl.innerHTML = '<span style="color:#7c8a96; font-size:0.85em;">אין משימות משותפות</span>';
+          listEl.innerHTML = '<span style="color:#7c8a96; font-size:0.82em;">אין משימות משותפות</span>';
           return;
         }
         tasks.forEach(t => listEl.appendChild(renderTask(t)));
