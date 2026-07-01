@@ -11,7 +11,7 @@
     </div>
   </div>
 
-  <div style="margin-bottom:18px; display:flex; align-items:center; gap:14px;">
+  <div style="margin-bottom:18px; display:flex; align-items:center; gap:14px; flex-wrap:wrap;">
     <form class="searchbar" method="GET" action="/books">
       <label><strong>שנת לימודים:</strong></label>
       <select name="year" onchange="this.form.submit()">
@@ -19,7 +19,23 @@
           <option value="<%= y %>" <%= y === year ? 'selected' : '' %>><%= y %></option>
         <% }) %>
       </select>
+      <input type="hidden" name="branch" value="<%= branch %>" />
     </form>
+
+    <form class="searchbar" method="GET" action="/books">
+      <label><strong>סניף:</strong></label>
+      <select name="branch" onchange="this.form.submit()">
+        <option value="">כל הסניפים</option>
+        <% branches.forEach(b => { %>
+          <option value="<%= b %>" <%= b === branch ? 'selected' : '' %>><%= b %></option>
+        <% }) %>
+      </select>
+      <input type="hidden" name="year" value="<%= year %>" />
+    </form>
+
+    <% if (branch) { %>
+      <a href="/books?year=<%= encodeURIComponent(year) %>" class="btn small secondary">✕ נקה סינון</a>
+    <% } %>
   </div>
 
   <% if (specificClasses.length === 0) { %>

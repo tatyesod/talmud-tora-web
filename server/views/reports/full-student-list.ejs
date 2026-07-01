@@ -12,6 +12,18 @@
           <option value="ארכיון">ארכיון</option>
         </select>
       </div>
+      <div class="form-group full">
+        <label>סינון לפי כיתה (ריק = כל הכיתות)</label>
+        <%- include('../partials/branch-filter', { branches }) %>
+        <div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:6px; max-height:160px; overflow-y:auto; border:1px solid var(--border); border-radius:8px; padding:10px;">
+          <% classes.forEach(c => { %>
+            <label data-branch-item="<%= c.branch || '' %>" style="min-width:120px; font-size:0.9em; cursor:pointer;">
+              <input type="checkbox" name="class_id" value="<%= c.id %>" style="width:auto; margin-left:4px;" />
+              <%= c.name %><%= c.parallel ? ' ' + c.parallel : '' %>
+            </label>
+          <% }) %>
+        </div>
+      </div>
     </div>
     <div class="actions" style="margin-top:14px; display:flex; gap:10px; flex-wrap:wrap;">
       <button type="button" onclick="goExcel()" class="btn">📥 ייצוא לאקסל</button>

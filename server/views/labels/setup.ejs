@@ -26,10 +26,11 @@
 
       <div class="form-group">
         <label>כיתה (ריק = כולם)</label>
-        <select name="class_id">
+        <%- include('../partials/branch-filter', { branches }) %>
+        <select name="class_id" data-branch-filter>
           <option value="">כל הכיתות</option>
           <% classes.forEach(c => { %>
-            <option value="<%= c.id %>"><%= c.name %><%= c.parallel ? ' ' + c.parallel : '' %></option>
+            <option value="<%= c.id %>" data-branch="<%= c.branch || '' %>"><%= c.name %><%= c.parallel ? ' ' + c.parallel : '' %></option>
           <% }) %>
         </select>
       </div>

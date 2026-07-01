@@ -98,9 +98,10 @@ router.get("/", (req, res) => {
 
 // ============ רשימת כיתות - ייצוא לאקסל ============
 router.get("/class-list", (req, res) => {
-  const classes = db.prepare("SELECT id, name, parallel, status FROM classes ORDER BY name, parallel").all();
+  const classes = db.prepare("SELECT id, name, parallel, status, branch FROM classes ORDER BY name, parallel").all();
   const statuses = db.prepare("SELECT DISTINCT status FROM students WHERE status IS NOT NULL ORDER BY status").all();
-  res.render("reports/class-list", { classes, statuses });
+  const branches = db.prepare("SELECT DISTINCT branch FROM classes WHERE branch IS NOT NULL ORDER BY branch").all().map(r=>r.branch);
+  res.render("reports/class-list", { classes, statuses, branches });
 });
 
 router.get("/class-list/export", async (req, res) => {
@@ -145,7 +146,9 @@ router.get("/class-list/export", async (req, res) => {
 // ============ רשימת תלמידים מלא - ייצוא לאקסל ============
 router.get("/full-student-list", (req, res) => {
   const statuses = db.prepare("SELECT DISTINCT status FROM students WHERE status IS NOT NULL ORDER BY status").all();
-  res.render("reports/full-student-list", { statuses });
+  const classes = db.prepare("SELECT id, name, parallel, branch FROM classes ORDER BY name, parallel").all();
+  const branches = db.prepare("SELECT DISTINCT branch FROM classes WHERE branch IS NOT NULL ORDER BY branch").all().map(r=>r.branch);
+  res.render("reports/full-student-list", { statuses, classes, branches });
 });
 
 router.get("/full-student-list/export", async (req, res) => {
@@ -184,8 +187,9 @@ router.get("/full-student-list/export", async (req, res) => {
 
 // ============ דוח משפחות - ייצוא לאקסל ============
 router.get("/families-report", (req, res) => {
-  const classes = db.prepare("SELECT id, name, parallel FROM classes ORDER BY name, parallel").all();
-  res.render("reports/families-report", { classes });
+  const classes = db.prepare("SELECT id, name, parallel, branch FROM classes ORDER BY name, parallel").all();
+  const branches = db.prepare("SELECT DISTINCT branch FROM classes WHERE branch IS NOT NULL ORDER BY branch").all().map(r=>r.branch);
+  res.render("reports/families-report", { classes, branches });
 });
 
 router.get("/families-report/export", async (req, res) => {
@@ -251,8 +255,9 @@ router.get("/grandparents-report/export", async (req, res) => {
 
 // ============ יומן כיתה (4 פורמטים) ============
 router.get("/class-journal", (req, res) => {
-  const classes = db.prepare("SELECT id, name, parallel FROM classes ORDER BY name, parallel").all();
-  res.render("reports/class-journal", { classes });
+  const classes = db.prepare("SELECT id, name, parallel, branch FROM classes ORDER BY name, parallel").all();
+  const branches = db.prepare("SELECT DISTINCT branch FROM classes WHERE branch IS NOT NULL ORDER BY branch").all().map(r=>r.branch);
+  res.render("reports/class-journal", { classes, branches });
 });
 
 router.get("/class-journal/view", (req, res) => {

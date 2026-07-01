@@ -39,21 +39,29 @@ router.get("/", (req, res) => {
   const years = db.prepare("SELECT DISTINCT year_label FROM book_catalog ORDER BY year_label DESC").all().map(r => r.year_label);
   const defaultYear = db.prepare("SELECT value FROM settings WHERE key='current_hebrew_year'").get()?.value || years[0] || 'תשפ"ז';
   const year = req.query.year || defaultYear;
+  const branch = req.query.branch || "";
 
-  // כיתות ספציפיות מהקטלוג
+  // סניפים קיימים
+  const branches = db.prepare("SELECT DISTINCT branch FROM classes WHERE branch IS NOT NULL ORDER BY branch").all().map(r => r.branch);
+
+  // כיתות ספציפיות מהקטלוג — עם סינון סניף
   const classNames = db.prepare("SELECT DISTINCT class_name FROM book_catalog WHERE year_label=? ORDER BY class_name").all(year).map(r => r.class_name);
 
   const specificClasses = [];
   for (const cn of classNames) {
-    const cls = db.prepare("SELECT id, name, parallel FROM classes WHERE name=? ORDER BY parallel").all(cn);
-    if (cls.length === 0) {
-      specificClasses.push({ id: null, name: cn, parallel: null, display: cn });
+    let sql = "SELECT id, name, parallel, branch FROM classes WHERE name=?";
+    const params = [cn];
+    if (branch) { sql += " AND branch=?"; params.push(branch); }
+    sql += " ORDER BY parallel";
+    const cls = db.prepare(sql).all(...params);
+    if (cls.length === 0 && !branch) {
+      specificClasses.push({ id: null, name: cn, parallel: null, display: cn, branch: null });
     } else {
       cls.forEach(c => specificClasses.push({ ...c, display: c.name + (c.parallel ? " " + c.parallel : "") }));
     }
   }
 
-  // סטטיסטיקה לכל כיתה ספציפית
+  // סטטיסטיקה
   const stats = {};
   for (const cls of specificClasses) {
     if (!cls.id) continue;
@@ -66,7 +74,7 @@ router.get("/", (req, res) => {
     stats[cls.id] = { students: students?.c || 0, ordered: ordered?.c || 0 };
   }
 
-  res.render("books/index", { year, years, specificClasses, stats });
+  res.render("books/index", { year, years, specificClasses, stats, branches, branch });
 });
 
 // ============ הזנת הזמנות לכיתה ספציפית ============

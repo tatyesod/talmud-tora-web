@@ -14,8 +14,9 @@ const FORMATS = {
 
 // דף בחירת הגדרות
 router.get("/", (req, res) => {
-  const classes = db.prepare("SELECT id, name, parallel FROM classes ORDER BY name, parallel").all();
-  res.render("labels/setup", { formats: FORMATS, classes });
+  const classes = db.prepare("SELECT id, name, parallel, branch FROM classes ORDER BY name, parallel").all();
+  const branches = db.prepare("SELECT DISTINCT branch FROM classes WHERE branch IS NOT NULL ORDER BY branch").all().map(r=>r.branch);
+  res.render("labels/setup", { formats: FORMATS, classes, branches });
 });
 
 // הפקת מדבקות
