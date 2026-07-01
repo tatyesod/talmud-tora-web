@@ -196,8 +196,14 @@ router.get("/students/:id", (req, res) => {
   if (!student) return res.status(404).render("404");
   const contacts = getEmergencyContacts(student.family_id);
   const siblings = student.family_id
-    ? db.prepare("SELECT id, first_name, last_name FROM students WHERE family_id = ? AND id != ?")
-        .all(student.family_id, student.id)
+    ? db.prepare(`
+        SELECT s.id, s.first_name, s.last_name, s.status,
+               c.name AS class_name, c.parallel
+        FROM students s
+        LEFT JOIN classes c ON s.class_id = c.id
+        WHERE s.family_id = ? AND s.id != ?
+        ORDER BY (s.birth_date_civil IS NULL), s.birth_date_civil ASC
+      `).all(student.family_id, student.id)
     : [];
   const studentFile = getStudentFile(student.id);
   const teachers = getClassTeachers(student.class_id);

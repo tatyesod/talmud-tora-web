@@ -90,7 +90,17 @@
   <h3>אחים/אחיות במערכת</h3>
   <table>
     <% siblings.forEach(s => { %>
-      <tr><td><a href="/students/<%= s.id %>"><%= s.first_name %> <%= s.last_name %></a></td></tr>
+      <tr>
+        <td><a href="/students/<%= s.id %>"><%= s.first_name %> <%= s.last_name %></a></td>
+        <td>
+          <% if (s.class_name) { %>
+            <span style="color:var(--primary); font-size:0.88em;"><%= s.class_name %><%= s.parallel ? ' ' + s.parallel : '' %></span>
+          <% } %>
+        </td>
+        <td>
+          <span class="badge <%= s.status !== 'פעיל' ? 'archive' : '' %>" style="font-size:0.8em;"><%= s.status || '' %></span>
+        </td>
+      </tr>
     <% }) %>
   </table>
 </div>
