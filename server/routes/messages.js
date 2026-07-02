@@ -5,7 +5,7 @@ const db = require("../db");
 function fmtTime(iso) {
   if (!iso) return "";
   const d = new Date(iso);
-  return d.toLocaleString("he-IL", { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit" });
+  return d.toLocaleString("he-IL", { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit", timeZone: "Asia/Jerusalem" });
 }
 
 router.get("/recent/json", (req, res) => {

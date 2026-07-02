@@ -42,7 +42,7 @@
             <td><%= t.id_number || '' %></td>
             <td><%- phoneLink(t.mobile) %></td>
             <td><%= t.chassidut_name || '' %></td>
-            <td><%= t.children_count != null ? t.children_count : '' %></td>
+            <td><%= t.children_count_display != null ? t.children_count_display : '' %></td>
             <td><span class="badge <%= t.status !== 'פעיל' ? 'archive' : '' %>"><%= t.status || '' %></span></td>
             <td><a href="/teachers/<%= t.id %>" class="btn small secondary">צפייה</a></td>
           </tr>

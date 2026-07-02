@@ -80,15 +80,18 @@ router.get("/", (req, res) => {
       id_number: "t.id_number",
       mobile: "t.mobile",
       chassidut: "ch.name",
-      children_count: "t.children_count",
+      children_count: "COALESCE(t.children_count, t.children_count_total)",
       status: "t.status",
     },
     "ORDER BY t.last_name, t.first_name"
   );
 
-  const teachers = db.prepare(sql).all(...params).map(withDates);
+  const teachers = db.prepare(sql).all(...params).map(withDates).map((t) => ({
+    ...t,
+    children_count_display: t.children_count != null ? t.children_count : t.children_count_total,
+  }));
   const statuses = db.prepare("SELECT DISTINCT status FROM teachers WHERE status IS NOT NULL ORDER BY status").all();
-  const totalChildren = teachers.reduce((sum, t) => sum + (t.children_count || 0), 0);
+  const totalChildren = teachers.reduce((sum, t) => sum + (t.children_count_display || 0), 0);
   res.render("teachers/list", { teachers, statuses, q: q || "", status: status || "", sort: req.query.sort || "", dir: req.query.dir || "", totalChildren });
 });
 
