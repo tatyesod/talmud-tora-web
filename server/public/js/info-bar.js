@@ -89,32 +89,10 @@
       if (outEl) outEl.textContent = "לא זמין";
     });
 
-  // --- פרשת השבוע וצומות ---
+  // --- פרשת השבוע (ממשיך להשתמש ב-Sefaria, שעובד טוב לזה) ---
   const parashaEl = document.getElementById("parasha-value");
   const fastEl    = document.getElementById("info-fast");
   const fastVal   = document.getElementById("fast-value");
-
-  // מיפוי מפורש לשם התצוגה המלא - תמיד "צום ..." (חוץ מיום כיפור, שנהוג לומר בלי המילה "צום")
-  const FAST_DISPLAY = {
-    "Tzom Gedaliah": "צום גדליה",
-    "Fast of Gedaliah": "צום גדליה",
-    "Ta'anit Esther": "צום תענית אסתר",
-    "Fast of Esther": "צום תענית אסתר",
-    "Asara B'Tevet": "צום עשרה בטבת",
-    "Tzom Tevet": "צום עשרה בטבת",
-    "17th of Tammuz": "צום י\"ז בתמוז",
-    "Tzom Tammuz": "צום י\"ז בתמוז",
-    "9th of Av": "צום ט' באב",
-    "Tisha B'Av": "צום ט' באב",
-    "Yom Kippur": "יום כיפור",
-  };
-
-  // מילות מפתח לזיהוי צום - עם גבולות מילה (\b) כדי לא לתפוס בטעות צירוף אותיות
-  // בתוך מילה אחרת (למשל "av" בתוך "Tavo" בפרשת "Ki Tavo" - זה היה הבאג המקורי)
-  const FAST_KEYWORDS = [
-    /\bfast\b/i, /yom kippur/i, /\btammuz\b/i, /\btevet\b/i,
-    /gedaliah/i, /esther/i, /\bav\b/i,
-  ];
 
   fetch("/api/jewish-calendar")
     .then(r => r.json())
@@ -122,23 +100,45 @@
       const items = data.calendar_items || [];
       const parasha = items.find(i => i.category === "Parasha" || i.title?.en === "Parashat Hashavua");
       if (parashaEl) parashaEl.textContent = parasha?.displayValue?.he || parashaEl.textContent;
-
-      // לעולם לא להשתמש בפריט של הפרשה עצמו כמועמד לצום - הגנה נוספת מעבר לגבולות המילה
-      const fast = items.find(i => {
-        if (parasha && i === parasha) return false;
-        if (i.category === "Fasts") return true;
-        const enTitle = i.title?.en || i.displayValue?.en || "";
-        return FAST_KEYWORDS.some(re => re.test(enTitle));
-      });
-      if (fast && fastEl && fastVal) {
-        const enTitle = fast.title?.en || fast.displayValue?.en || "";
-        const heVal = fast.title?.he || fast.displayValue?.he || enTitle;
-        fastVal.textContent = FAST_DISPLAY[enTitle] ||
-          (/^(צום|יום)/.test(heVal) ? heVal : ("צום " + heVal));
-        fastEl.style.display = "";
-      }
     })
     .catch(() => {});
+
+  // --- צום היום (Hebcal - זה ה-API הנכון לזיהוי ימי צום, עם שדות category/subcat מדויקים) ---
+  // מיפוי מפורש לשם התצוגה המלא - תמיד "צום ..." (חוץ מיום כיפור, שנהוג לומר בלי המילה "צום")
+  const FAST_DISPLAY = {
+    "Tzom Gedaliah": "צום גדליה",
+    "Ta'anit Esther": "צום תענית אסתר",
+    "Asara B'Tevet": "צום עשרה בטבת",
+    "Ta'anit Bechorot": "תענית בכורות",
+    "17th of Tammuz": "צום י\"ז בתמוז",
+    "Tzom Tammuz": "צום י\"ז בתמוז",
+    "9th of Av": "צום ט' באב",
+    "Tisha B'Av": "צום ט' באב",
+    "Yom Kippur": "יום כיפור",
+  };
+
+  (function loadFastDay() {
+    const now = new Date();
+    const pad = n => String(n).padStart(2, "0");
+    const dateStr = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
+    // mf=on - צומות קטנים (י"ז בתמוז, ט' באב, עשרה בטבת, גדליה, תענית אסתר)
+    // maj=on - חגים גדולים (כולל יום כיפור)
+    fetch(`https://www.hebcal.com/hebcal?cfg=json&v=1&mf=on&maj=on&start=${dateStr}&end=${dateStr}`)
+      .then(r => r.json())
+      .then(data => {
+        const items = data.items || [];
+        const fast = items.find(i =>
+          (i.category === "holiday" && i.subcat === "fast") || i.title === "Yom Kippur"
+        );
+        if (fast && fastEl && fastVal) {
+          const heVal = fast.hebrew || "";
+          fastVal.textContent = FAST_DISPLAY[fast.title] ||
+            (/^(צום|יום)/.test(heVal) ? heVal : ("צום " + heVal));
+          fastEl.style.display = "";
+        }
+      })
+      .catch(() => {});
+  })();
 
   // --- Fallback פרשה מחושב ---
   const PARSHIOT = [
