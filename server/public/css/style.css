@@ -545,3 +545,27 @@ legend { color: var(--primary-dark); font-weight: 700; padding: 0 8px; }
   background: var(--table-header, #e8ecf0);
   box-shadow: 0 1px 0 var(--border);
 }
+
+/* ===== כפתור גלילה למעלה ===== */
+#scroll-to-top {
+  position: fixed;
+  bottom: 80px;
+  left: 20px;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: var(--primary, #2c5f7c);
+  color: #fff;
+  border: none;
+  font-size: 1.3em;
+  cursor: pointer;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 3px 12px rgba(0,0,0,0.25);
+  z-index: 9000;
+  transition: opacity 0.2s, transform 0.2s;
+  opacity: 0.85;
+}
+#scroll-to-top:hover { opacity: 1; transform: translateY(-2px); }
+#scroll-to-top.visible { display: flex; }
