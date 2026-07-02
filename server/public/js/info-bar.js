@@ -1,4 +1,4 @@
-// רצועת מידע — כל הנתונים דרך proxy מקומי (עוקף חסימות אינטרנט כשר)
+// רצועת מידע — קריאה ישירה ל-APIs (כמו לפני השדרוג)
 
 (function () {
   const LAT = 32.0807, LON = 34.8338;
@@ -19,7 +19,7 @@
     const now = new Date();
     const pad = n => String(n).padStart(2, "0");
     const dateStr = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
-    fetch(`/api/proxy/hebcal?cfg=json&v=1&F=on&start=${dateStr}&end=${dateStr}`)
+    fetch(`https://www.hebcal.com/hebcal?cfg=json&v=1&F=on&start=${dateStr}&end=${dateStr}`)
       .then(r => r.json())
       .then(data => {
         const daf = (data.items||[]).find(i => i.category === "dafyomi");
@@ -33,7 +33,7 @@
   })();
 
   // --- מזג אוויר ---
-  fetch(`/api/proxy/weather?latitude=${LAT}&longitude=${LON}&current_weather=true`)
+  fetch(`https://api.open-meteo.com/v1/forecast?latitude=${LAT}&longitude=${LON}&current_weather=true`)
     .then(r => r.json())
     .then(data => {
       const el = document.getElementById("weather-temp");
@@ -43,7 +43,7 @@
     .catch(() => {});
 
   // --- זמני היום ---
-  fetch(`/api/proxy/zmanim?cfg=json&latitude=${LAT}&longitude=${LON}&tzid=Asia/Jerusalem`)
+  fetch(`https://www.hebcal.com/zmanim?cfg=json&latitude=${LAT}&longitude=${LON}&tzid=Asia/Jerusalem`)
     .then(r => r.json())
     .then(data => {
       const times = data.times || {};
@@ -65,7 +65,7 @@
     });
 
   // --- זמני שבת ---
-  fetch(`/api/proxy/shabbat?cfg=json&latitude=${LAT}&longitude=${LON}&tzid=Asia/Jerusalem&M=on&b=18`)
+  fetch(`https://www.hebcal.com/shabbat?cfg=json&latitude=${LAT}&longitude=${LON}&tzid=Asia/Jerusalem&M=on&b=18`)
     .then(r => r.json())
     .then(data => {
       const items = data.items || [];
@@ -89,7 +89,7 @@
       if (outEl) outEl.textContent = "לא זמין";
     });
 
-  // --- פרשת השבוע וצומות (Sefaria דרך proxy) ---
+  // --- פרשת השבוע וצומות ---
   const parashaEl = document.getElementById("parasha-value");
   const fastEl    = document.getElementById("info-fast");
   const fastVal   = document.getElementById("fast-value");
@@ -104,14 +104,8 @@
     .then(r => r.json())
     .then(data => {
       const items = data.calendar_items || [];
-
-      // פרשה
-      const parasha = items.find(i =>
-        i.category === "Parasha" || i.title?.en === "Parashat Hashavua"
-      );
+      const parasha = items.find(i => i.category === "Parasha" || i.title?.en === "Parashat Hashavua");
       if (parashaEl) parashaEl.textContent = parasha?.displayValue?.he || parashaEl.textContent;
-
-      // צום
       const fast = items.find(i =>
         i.category === "Fasts" ||
         ["fast","yom kippur","tammuz","tevet","gedaliah","esther","av"].some(k =>
@@ -125,7 +119,7 @@
     })
     .catch(() => {});
 
-  // --- Fallback פרשה מחושב (אם API לא זמין) ---
+  // --- Fallback פרשה מחושב ---
   const PARSHIOT = [
     "בראשית","נח","לך לך","וירא","חיי שרה","תולדות","ויצא","וישלח","וישב","מקץ",
     "ויגש","ויחי","שמות","וארא","בא","בשלח","יתרו","משפטים","תרומה","תצוה",
@@ -135,8 +129,7 @@
     "כי תבוא","נצבים-וילך","האזינו"
   ];
   const ANCHOR_MS = new Date("2025-10-18").getTime();
-  const WEEK_MS   = 7 * 24 * 60 * 60 * 1000;
-
+  const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
   setTimeout(() => {
     if (!parashaEl || (parashaEl.textContent !== "טוען..." && parashaEl.textContent !== "—")) return;
     const now = new Date();
