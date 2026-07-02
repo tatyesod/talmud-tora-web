@@ -2,6 +2,80 @@ const express = require("express");
 const router = express.Router();
 const db = require("../db");
 const { calcAllFamiliesTuition } = require("../tuitionCalc");
+const ExcelJS = require("exceljs");
+const fs = require("fs");
+const path = require("path");
+
+const LOGO_PATH = path.join(__dirname, "..", "public", "images", "logo-reports.jpg");
+const LOGO_EXT = "jpeg";
+
+async function sendWorkbook(res, filename, sheetName, reportTitle, headerRow, dataRows) {
+  const wb = new ExcelJS.Workbook();
+  wb.creator = "מערכת ניהול תלמוד תורה החדש";
+  const ws = wb.addWorksheet(sheetName, { views: [{ rightToLeft: true }] });
+
+  const lastCol = headerRow.length;
+
+  ws.mergeCells(1, 1, 1, Math.max(1, lastCol - 1));
+  const titleCell = ws.getCell(1, 1);
+  titleCell.value = "תלמוד תורה החדש";
+  titleCell.font = { size: 16, bold: true, color: { argb: "FF2C5F7C" } };
+  titleCell.alignment = { horizontal: "right", vertical: "middle" };
+  ws.getRow(1).height = 28;
+
+  ws.mergeCells(2, 1, 2, Math.max(1, lastCol - 1));
+  const subtitleCell = ws.getCell(2, 1);
+  subtitleCell.value = reportTitle;
+  subtitleCell.font = { size: 12, bold: true, color: { argb: "FF555555" } };
+  subtitleCell.alignment = { horizontal: "right", vertical: "middle" };
+
+  ws.mergeCells(3, 1, 3, Math.max(1, lastCol - 1));
+  const dateCell = ws.getCell(3, 1);
+  dateCell.value = `הופק בתאריך: ${new Date().toLocaleDateString("he-IL")}`;
+  dateCell.font = { size: 9, italic: true, color: { argb: "FF888888" } };
+  dateCell.alignment = { horizontal: "right", vertical: "middle" };
+
+  if (fs.existsSync(LOGO_PATH)) {
+    try {
+      const imageId = wb.addImage({ filename: LOGO_PATH, extension: LOGO_EXT });
+      ws.addImage(imageId, { tl: { col: lastCol - 1, row: 0 }, ext: { width: 68, height: 59 } });
+    } catch (e) {
+      // אם הוספת התמונה נכשלת, ממשיכים בלי לוגו (לא קריטי)
+    }
+  }
+
+  ws.addRow([]);
+
+  const headerRowIdx = 5;
+  const headerExcelRow = ws.getRow(headerRowIdx);
+  headerRow.forEach((h, i) => { headerExcelRow.getCell(i + 1).value = h; });
+  headerExcelRow.font = { bold: true, color: { argb: "FFFFFFFF" } };
+  headerExcelRow.eachCell((cell) => {
+    cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF2C5F7C" } };
+    cell.alignment = { horizontal: "right", vertical: "middle" };
+    cell.border = { bottom: { style: "thin" } };
+  });
+  headerExcelRow.height = 20;
+
+  dataRows.forEach((row) => {
+    const r = ws.addRow(row);
+    r.alignment = { horizontal: "right" };
+  });
+
+  ws.columns.forEach((col, i) => {
+    let maxLen = (headerRow[i] || "").toString().length;
+    dataRows.forEach((row) => {
+      const v = row[i] != null ? String(row[i]) : "";
+      if (v.length > maxLen) maxLen = v.length;
+    });
+    col.width = Math.min(Math.max(maxLen + 3, 12), 40);
+  });
+
+  res.setHeader("Content-Disposition", `attachment; filename="${encodeURIComponent(filename)}"`);
+  res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+  await wb.xlsx.write(res);
+  res.end();
+}
 
 router.get("/", (req, res) => {
   const categories = db.prepare("SELECT * FROM categories ORDER BY id").all();
@@ -29,6 +103,21 @@ router.get("/", (req, res) => {
   const grandTotal = familiesTuition.reduce((sum, f) => sum + f.netTotal, 0);
 
   res.render("tuition/list", { categories, discounts, classesByCategory, familiesTuition, grandTotal });
+});
+
+// --- ייצוא חישוב שכר לימוד לפי משפחה לאקסל ---
+router.get("/export", async (req, res) => {
+  const familiesTuition = calcAllFamiliesTuition();
+  const header = ["משפחה", "אב", "מס' ילדים", "סכום מלא", "הנחה", "סכום לתשלום"];
+  const data = familiesTuition.map((f) => [
+    f.last_name || "",
+    f.father_name || "",
+    f.activeCount,
+    f.grossTotal,
+    `${f.discountPercent}%${f.discountAmount ? ` (-${f.discountAmount} ₪)` : ""}`,
+    f.netTotal,
+  ]);
+  await sendWorkbook(res, "חישוב שכר לימוד לפי משפחה.xlsx", "שכר לימוד", "חישוב שכר לימוד לפי משפחה", header, data);
 });
 
 // ============ קטגוריות שכר לימוד - עריכה ============
