@@ -157,3 +157,40 @@
       if (parashaEl) parashaEl.textContent = "—";
     });
 })();
+
+// ===== Fallback: חישוב פרשה מקומי אם ה-API לא זמין =====
+(function() {
+  // טבלת פרשות לשנת תשפ"ו (דיאספורה) — שבתות מ-18/10/2025
+  const PARSHIOT_5786 = [
+    "בראשית","נח","לך לך","וירא","חיי שרה","תולדות","ויצא","וישלח","וישב","מקץ",
+    "ויגש","ויחי","שמות","וארא","בא","בשלח","יתרו","משפטים","תרומה","תצוה",
+    "כי תשא","ויקהל-פקודי","ויקרא","צו","שמיני","תזריע-מצרע","אחרי מות-קדושים",
+    "אמור","בהר-בחוקותי","במדבר","נשא","בהעלותך","שלח","קרח","חקת","בלק",
+    "פינחס","מטות-מסעי","דברים","ואתחנן","עקב","ראה","שופטים","כי תצא",
+    "כי תבוא","נצבים-וילך","האזינו"
+  ];
+  // שבת בראשית תשפ"ו = 18 אוק' 2025 (ms)
+  const ANCHOR = new Date("2025-10-18").getTime();
+  const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+
+  function getLocalParasha() {
+    const now = new Date();
+    // מצא את שבת השבוע (יום שני-שישי → שבת הבאה; שבת → השבת הזו)
+    const dow = now.getDay(); // 0=א', 6=ש'
+    const daysToShabbat = dow === 6 ? 0 : 6 - dow;
+    const shabbat = new Date(now.getTime() + daysToShabbat * 24 * 60 * 60 * 1000);
+    shabbat.setHours(0,0,0,0);
+    const weeks = Math.round((shabbat.getTime() - ANCHOR) / WEEK_MS);
+    if (weeks < 0 || weeks >= PARSHIOT_5786.length) return null;
+    return PARSHIOT_5786[weeks];
+  }
+
+  // ממתין לטעינת הדף ומגדיר fallback אחרי 3 שניות
+  setTimeout(() => {
+    const el = document.getElementById("parasha-value");
+    if (el && (el.textContent === "טוען..." || el.textContent === "—")) {
+      const p = getLocalParasha();
+      if (p) el.textContent = "פ' " + p;
+    }
+  }, 3000);
+})();

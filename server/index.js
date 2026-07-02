@@ -249,6 +249,27 @@ app.use("/expenses", require("./routes/expenses"));
 app.use("/books", require("./routes/books"));
 app.use("/labels", require("./routes/labels"));
 
+// ===== Proxy לנתוני לוח שנה יהודי (Sefaria) =====
+app.get("/api/jewish-calendar", async (req, res) => {
+  try {
+    const https = require("https");
+    const url = "https://www.sefaria.org/api/calendars?diaspora=1&lang=he";
+    const data = await new Promise((resolve, reject) => {
+      https.get(url, { headers: { "User-Agent": "TalmudToraApp/1.0" } }, (r) => {
+        let body = "";
+        r.on("data", d => body += d);
+        r.on("end", () => {
+          try { resolve(JSON.parse(body)); } catch(e) { reject(e); }
+        });
+      }).on("error", reject);
+    });
+    res.setHeader("Cache-Control", "public, max-age=1800"); // cache חצי שעה
+    res.json(data);
+  } catch(e) {
+    res.status(502).json({ calendar_items: [] });
+  }
+});
+
 // ===== API — משימות משותפות =====
 app.get("/api/shared-tasks", (req, res) => {
   const db = require("./db");
