@@ -196,7 +196,7 @@
   </aside>
 
   <!-- פאנל ימי הולדת לתלמידים — מתחת למשימות שלי, צד ימין -->
-  <aside class="side-panel side-panel-right birthday-mini-panel" style="top:auto; bottom:424px; max-height:150px; width:280px;">
+  <aside class="side-panel side-panel-right birthday-mini-panel" style="top:auto; bottom:568px; max-height:130px; width:280px;">
     <h3 class="birthday-mini-title">שהשמחה במעונם – תלמידים</h3>
     <div class="side-panel-scroll">
       <% if (studentBirthdays.length === 0) { %>
@@ -207,6 +207,25 @@
             <li class="birthday-item birthday-today">
               <a href="<%= b.href %>" class="birthday-name"><%= b.name %></a>
               <% if (b.subLabel) { %><span class="birthday-sub"><%= b.subLabel %></span><% } %>
+              <span class="birthday-hebrew"><%= b.hebrewStr %></span>
+            </li>
+          <% }) %>
+        </ul>
+      <% } %>
+    </div>
+  </aside>
+
+  <!-- פאנל ימי הולדת לצוות — מתחת לחלונית התלמידים, צד ימין -->
+  <aside class="side-panel side-panel-right birthday-mini-panel" style="top:auto; bottom:424px; max-height:130px; width:280px;">
+    <h3 class="birthday-mini-title">שהשמחה במעונם – צוות</h3>
+    <div class="side-panel-scroll">
+      <% if (teacherBirthdays.length === 0) { %>
+        <p class="birthday-empty">אין ימי הולדת היום</p>
+      <% } else { %>
+        <ul class="birthday-list">
+          <% teacherBirthdays.forEach(b => { %>
+            <li class="birthday-item birthday-today">
+              <a href="<%= b.href %>" class="birthday-name"><%= b.name %></a>
               <span class="birthday-hebrew"><%= b.hebrewStr %></span>
             </li>
           <% }) %>
@@ -286,25 +305,6 @@
       <p class="personal-empty">טוען...</p>
     </div>
     <a href="/messages" class="btn small secondary" style="width:100%; text-align:center; margin-top:8px;">כל ההודעות</a>
-  </aside>
-
-  <!-- פאנל ימי הולדת לצוות — מתחת לצ'אטים, צד שמאל -->
-  <aside class="side-panel side-panel-left birthday-mini-panel" style="top:auto; bottom:90px; max-height:180px; width:250px;">
-    <h3 class="birthday-mini-title">שהשמחה במעונם – צוות</h3>
-    <div class="side-panel-scroll">
-      <% if (teacherBirthdays.length === 0) { %>
-        <p class="birthday-empty">אין ימי הולדת היום</p>
-      <% } else { %>
-        <ul class="birthday-list">
-          <% teacherBirthdays.forEach(b => { %>
-            <li class="birthday-item birthday-today">
-              <a href="<%= b.href %>" class="birthday-name"><%= b.name %></a>
-              <span class="birthday-hebrew"><%= b.hebrewStr %></span>
-            </li>
-          <% }) %>
-        </ul>
-      <% } %>
-    </div>
   </aside>
 
   <div class="info-bar" id="info-bar">
