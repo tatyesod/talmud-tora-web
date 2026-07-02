@@ -525,3 +525,23 @@ legend { color: var(--primary-dark); font-weight: 700; padding: 0 8px; }
 }
 .email-link::before { content: "✉️ "; font-size: 0.85em; }
 .email-link:hover { text-decoration: underline; color: var(--primary-dark); }
+
+/* ===== כותרת טבלה קפואה בגלילה ===== */
+.table-scroll-wrap {
+  overflow-x: auto;
+  overflow-y: auto;
+  max-height: 75vh;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+}
+.table-scroll-wrap table {
+  border-collapse: collapse;
+  width: 100%;
+}
+.table-scroll-wrap thead th {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--table-header, #e8ecf0);
+  box-shadow: 0 1px 0 var(--border);
+}

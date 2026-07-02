@@ -31,7 +31,7 @@ function withDates(student) {
 }
 
 const STUDENT_SELECT = `
-  SELECT s.*, c.name AS class_name, c.branch AS branch, co.name AS cohort_name,
+  SELECT s.*, c.name AS class_name, c.parallel AS class_parallel, c.branch AS branch, co.name AS cohort_name,
          f.last_name AS family_last_name, f.father_name, f.mother_name, f.sector,
          f.home_phone, f.father_mobile, f.mother_mobile,
          f.street, f.house_number, f.apartment, f.city

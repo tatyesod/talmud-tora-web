@@ -30,7 +30,7 @@
   <% if (families.length === 0) { %>
     <div class="empty-state">לא נמצאו משפחות</div>
   <% } else { %>
-    <table>
+    <div class="table-scroll-wrap"><table>
       <thead><tr>
         <th><a href="<%= sortUrl('last_name') %>">שם משפחה<%= sortIndicator('last_name') %></a></th>
         <th><a href="<%= sortUrl('sector') %>">מגזר<%= sortIndicator('sector') %></a></th>
@@ -54,7 +54,7 @@
           </tr>
         <% }) %>
       </tbody>
-    </table>
+    </table></div>
     <p style="color:var(--muted); margin-top:10px;">סה"כ <%= families.length %> משפחות</p>
   <% } %>
 </div>
