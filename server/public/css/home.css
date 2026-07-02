@@ -19,7 +19,7 @@
   position: absolute;
   border-radius: 50%;
   filter: blur(60px);
-  opacity: 0.28;
+  opacity: 0.15;
   animation: float 18s ease-in-out infinite;
 }
 .orb1 {
@@ -41,6 +41,7 @@
   top: 40%; left: 50%;
   animation-duration: 30s;
   animation-delay: -12s;
+  opacity: 0.08;
 }
 
 @keyframes float {
@@ -61,12 +62,12 @@
     radial-gradient(1px 1px at 60px 250px, rgba(255,255,255,0.3), transparent);
   background-repeat: repeat;
   background-size: 450px 450px;
-  opacity: 0.6;
+  opacity: 0.32;
   animation: twinkle 6s ease-in-out infinite alternate;
 }
 @keyframes twinkle {
-  from { opacity: 0.3; }
-  to { opacity: 0.7; }
+  from { opacity: 0.18; }
+  to { opacity: 0.4; }
 }
 
 .home-topbar {
@@ -353,7 +354,7 @@
   padding: 1px 0;
 }
 
-/* ===== עוגן פאנלי צד - עמודה גמישה שלא יכולה לחפוף לעצמה ===== */
+/* ===== עוגן פאנלי צד - שני פאנלים בלבד: טאבים בימין, הודעות בשמאל ===== */
 .side-dock {
   position: fixed;
   top: 90px;
@@ -362,14 +363,13 @@
   z-index: 6;
   display: flex;
   flex-direction: column;
-  gap: 12px;
 }
 .side-dock-right { right: 16px; }
 .side-dock-left { left: 16px; width: 250px; }
 
 .side-panel {
   width: 100%;
-  background: rgba(14, 28, 44, 0.90);
+  background: rgba(14, 28, 44, 0.88);
   backdrop-filter: blur(10px);
   border: 1px solid rgba(201,151,76,0.25);
   border-radius: 16px;
@@ -379,23 +379,83 @@
   box-sizing: border-box;
   overflow: hidden;
 }
-/* פאנלים "גמישים" (משימות שלי / משימות משותפות) - מתחלקים בשווה בשטח הפנוי */
-.side-dock-flex {
-  flex: 1 1 0;
-  min-height: 90px;
-}
-/* פאנלים "קבועים" (ימי הולדת) - גובה מוגבל, לא גדלים */
-.side-dock-fixed {
-  flex: 0 0 auto;
-  max-height: 130px;
-}
+.dock-tabs-panel { height: 480px; max-height: 100%; }
+.dock-single-panel { height: 420px; max-height: 100%; }
 
-.side-panel h3 { color: #f7f1e3; font-size: 0.95em; margin: 0 0 10px; flex-shrink: 0; }
+.side-panel h3 {
+  color: #f7f1e3;
+  font-size: 0.95em;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  margin: 0 0 10px;
+  padding-bottom: 8px;
+  flex-shrink: 0;
+  border-bottom: 1px solid rgba(201,151,76,0.22);
+}
 .side-panel-scroll {
   overflow-y: auto;
   flex: 1;
   min-height: 0;
 }
+
+/* ===== טאבים בפאנל הצד המאוחד ===== */
+.dock-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(201,151,76,0.22);
+  flex-shrink: 0;
+}
+.dock-tab {
+  flex: 1;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  color: #8ba3b8;
+  font-size: 0.78em;
+  font-weight: 600;
+  padding: 7px 4px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  white-space: nowrap;
+}
+.dock-tab:hover { background: rgba(255,255,255,0.06); color: #d8e0e6; }
+.dock-tab.active {
+  background: rgba(201,151,76,0.18);
+  border-color: rgba(201,151,76,0.45);
+  color: #f7f1e3;
+}
+.dock-tab-badge {
+  display: inline-block;
+  background: #e05555;
+  color: #fff;
+  border-radius: 8px;
+  font-size: 0.85em;
+  font-weight: 700;
+  padding: 0 5px;
+  margin-right: 2px;
+}
+.dock-tab-badge-gold {
+  background: #c9974c;
+}
+
+.dock-tab-content {
+  display: none;
+  flex: 1;
+  min-height: 0;
+  flex-direction: column;
+}
+.dock-tab-content.active { display: flex; }
+
+.birthday-tab-heading {
+  color: #c9974c;
+  font-size: 0.82em;
+  font-weight: 700;
+  margin: 4px 0 6px;
+  text-align: center;
+}
+.birthday-tab-heading:first-child { margin-top: 0; }
 
 .msg-preview-item {
   display: flex;
@@ -738,18 +798,7 @@
 .stbtn-undo { background: rgba(255,255,255,0.1); color: #ccc; }
 .stbtn-del  { background: rgba(220,80,80,0.2); color: #e07070; }
 
-/* ===== חלוניות "שהשמחה במעונם" - ימי הולדת (בתוך פאנלי הצד) ===== */
-.birthday-mini-panel {
-  z-index: 5;
-}
-.birthday-mini-title {
-  color: #f7f1e3;
-  font-size: 1.15em;
-  font-weight: 800;
-  margin: 0 0 8px;
-  letter-spacing: 0.2px;
-  text-align: center;
-}
+/* ===== "שהשמחה במעונם" - ימי הולדת (בתוך טאב בפאנל הצד) ===== */
 .birthday-empty {
   color: #7c8a96;
   font-size: 0.85em;

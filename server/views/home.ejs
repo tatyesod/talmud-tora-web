@@ -165,113 +165,114 @@
     <p class="home-footer">© כל הזכויות שמורות לתלמוד תורה החדש</p>
   </main>
 
-  <!-- עוגן פאנלי צד ימין - מסודר כעמודה גמישה שלא יכולה לחפוף לעצמה -->
+  <!-- עוגן פאנל צד ימין - פאנל אחד עם טאבים במקום 4 חלוניות נפרדות -->
   <div class="side-dock side-dock-right">
-    <!-- המשימות שלי -->
-    <aside class="side-panel side-dock-flex">
-      <h3>📝 המשימות שלי</h3>
-      <div class="side-panel-scroll">
-        <% if (myTasks.length === 0) { %>
-          <p class="personal-empty">אין משימות פתוחות</p>
-        <% } else { %>
-          <ul class="task-list">
-            <% myTasks.forEach(t => { %>
-              <li class="task-item <%= t.done ? 'task-done' : '' %>">
-                <form method="POST" action="/tasks/<%= t.id %>/toggle" style="display:inline">
-                  <button type="submit" class="task-check"><%= t.done ? '☑' : '☐' %></button>
-                </form>
-                <span class="task-title"><%= t.title %></span>
-                <% if (t.due_date_str) { %><span class="task-due"><%= t.due_date_str %></span><% } %>
-                <form method="POST" action="/tasks/<%= t.id %>?_method=DELETE" style="display:inline">
-                  <button type="submit" class="task-delete">✕</button>
-                </form>
-              </li>
-            <% }) %>
-          </ul>
-        <% } %>
-      </div>
-      <form method="POST" action="/tasks" class="task-add-form">
-        <input type="text" name="title" placeholder="משימה חדשה..." required />
-        <input type="date" name="due_date" />
-        <button type="submit" class="btn small">+ הוסף</button>
-      </form>
-    </aside>
-
-    <!-- משימות משותפות — מיד מתחת למשימות האישיות -->
-    <aside class="side-panel side-dock-flex">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-        <h3 style="margin:0; font-size:0.92em;">📋 משימות משותפות</h3>
-        <button onclick="openAddSharedTask()" style="
-          background:rgba(201,151,76,0.25); border:1px solid rgba(201,151,76,0.5);
-          color:#f7f1e3; border-radius:7px; padding:4px 11px; cursor:pointer; font-size:0.82em; font-weight:600;">+ הוסף</button>
+    <aside class="side-panel dock-tabs-panel">
+      <div class="dock-tabs" role="tablist">
+        <button type="button" class="dock-tab active" data-tab="tasks">📝 משימות שלי<% const openTasks = myTasks.filter(t => !t.done).length; if (openTasks > 0) { %> <span class="dock-tab-badge"><%= openTasks %></span><% } %></button>
+        <button type="button" class="dock-tab" data-tab="shared">📋 משותפות</button>
+        <button type="button" class="dock-tab" data-tab="birthdays">🎉 ימי הולדת<% const bdayCount = studentBirthdays.length + teacherBirthdays.length; if (bdayCount > 0) { %> <span class="dock-tab-badge dock-tab-badge-gold"><%= bdayCount %></span><% } %></button>
       </div>
 
-      <!-- טופס הוספה — גדול וברור -->
-      <div id="shared-task-form" style="display:none; margin-bottom:10px;">
-        <input id="shared-task-title" type="text" placeholder="תיאור המשימה..."
-          style="width:100%; padding:10px 12px; border-radius:8px; margin-bottom:7px;
-                 border:1.5px solid rgba(201,151,76,0.5); background:rgba(255,255,255,0.12);
-                 color:#f7f1e3; font-size:1em; font-weight:500; direction:rtl;" />
-        <div style="display:flex; gap:6px;">
-          <select id="shared-task-assign" style="
-            flex:1; padding:8px 8px; border-radius:8px; border:1px solid rgba(255,255,255,0.25);
-            background:rgba(15,28,46,0.97); color:#f0e9d8; font-size:0.88em;">
-            <option value="כולם">→ כולם</option>
-            <% if (typeof allUsers !== 'undefined') allUsers.forEach(u => { %>
-              <option value="<%= u.display_name || u.username %>">→ <%= u.display_name || u.username %></option>
-            <% }) %>
-          </select>
-          <button onclick="submitSharedTask()" style="
-            background:#2c5f7c; color:#fff; border:none; border-radius:8px;
-            padding:8px 12px; cursor:pointer; font-size:0.88em; font-weight:600;">שמור</button>
-          <button onclick="closeAddSharedTask()" style="
-            background:rgba(255,255,255,0.1); color:#bbb; border:none; border-radius:8px;
-            padding:8px 10px; cursor:pointer; font-size:0.88em;">✕</button>
+      <!-- טאב: המשימות שלי -->
+      <div class="dock-tab-content active" data-tab-content="tasks">
+        <div class="side-panel-scroll">
+          <% if (myTasks.length === 0) { %>
+            <p class="personal-empty">אין משימות פתוחות</p>
+          <% } else { %>
+            <ul class="task-list">
+              <% myTasks.forEach(t => { %>
+                <li class="task-item <%= t.done ? 'task-done' : '' %>">
+                  <form method="POST" action="/tasks/<%= t.id %>/toggle" style="display:inline">
+                    <button type="submit" class="task-check"><%= t.done ? '☑' : '☐' %></button>
+                  </form>
+                  <span class="task-title"><%= t.title %></span>
+                  <% if (t.due_date_str) { %><span class="task-due"><%= t.due_date_str %></span><% } %>
+                  <form method="POST" action="/tasks/<%= t.id %>?_method=DELETE" style="display:inline">
+                    <button type="submit" class="task-delete">✕</button>
+                  </form>
+                </li>
+              <% }) %>
+            </ul>
+          <% } %>
+        </div>
+        <form method="POST" action="/tasks" class="task-add-form">
+          <input type="text" name="title" placeholder="משימה חדשה..." required />
+          <input type="date" name="due_date" />
+          <button type="submit" class="btn small">+ הוסף</button>
+        </form>
+      </div>
+
+      <!-- טאב: משימות משותפות -->
+      <div class="dock-tab-content" data-tab-content="shared">
+        <div style="display:flex; justify-content:flex-end; margin-bottom:8px;">
+          <button onclick="openAddSharedTask()" style="
+            background:rgba(201,151,76,0.25); border:1px solid rgba(201,151,76,0.5);
+            color:#f7f1e3; border-radius:7px; padding:4px 11px; cursor:pointer; font-size:0.82em; font-weight:600;">+ הוסף</button>
+        </div>
+
+        <!-- טופס הוספה — גדול וברור -->
+        <div id="shared-task-form" style="display:none; margin-bottom:10px;">
+          <input id="shared-task-title" type="text" placeholder="תיאור המשימה..."
+            style="width:100%; padding:10px 12px; border-radius:8px; margin-bottom:7px;
+                   border:1.5px solid rgba(201,151,76,0.5); background:rgba(255,255,255,0.12);
+                   color:#f7f1e3; font-size:1em; font-weight:500; direction:rtl;" />
+          <div style="display:flex; gap:6px;">
+            <select id="shared-task-assign" style="
+              flex:1; padding:8px 8px; border-radius:8px; border:1px solid rgba(255,255,255,0.25);
+              background:rgba(15,28,46,0.97); color:#f0e9d8; font-size:0.88em;">
+              <option value="כולם">→ כולם</option>
+              <% if (typeof allUsers !== 'undefined') allUsers.forEach(u => { %>
+                <option value="<%= u.display_name || u.username %>">→ <%= u.display_name || u.username %></option>
+              <% }) %>
+            </select>
+            <button onclick="submitSharedTask()" style="
+              background:#2c5f7c; color:#fff; border:none; border-radius:8px;
+              padding:8px 12px; cursor:pointer; font-size:0.88em; font-weight:600;">שמור</button>
+            <button onclick="closeAddSharedTask()" style="
+              background:rgba(255,255,255,0.1); color:#bbb; border:none; border-radius:8px;
+              padding:8px 10px; cursor:pointer; font-size:0.88em;">✕</button>
+          </div>
+        </div>
+
+        <!-- רשימת משימות משותפות -->
+        <div id="shared-tasks-list" class="side-panel-scroll">
+          <span style="color:#7c8a96; font-size:0.85em;">טוען...</span>
         </div>
       </div>
 
-      <!-- רשימת משימות משותפות -->
-      <div id="shared-tasks-list" class="side-panel-scroll" style="flex:1;">
-        <span style="color:#7c8a96; font-size:0.85em;">טוען...</span>
-      </div>
-    </aside>
+      <!-- טאב: שהשמחה במעונם -->
+      <div class="dock-tab-content" data-tab-content="birthdays">
+        <div class="side-panel-scroll">
+          <h4 class="birthday-tab-heading">תלמידים</h4>
+          <% if (studentBirthdays.length === 0) { %>
+            <p class="birthday-empty">אין ימי הולדת היום</p>
+          <% } else { %>
+            <ul class="birthday-list">
+              <% studentBirthdays.forEach(b => { %>
+                <li class="birthday-item birthday-today">
+                  <a href="<%= b.href %>" class="birthday-name"><%= b.name %></a>
+                  <% if (b.subLabel) { %><span class="birthday-sub"><%= b.subLabel %></span><% } %>
+                  <span class="birthday-hebrew"><%= b.hebrewStr %></span>
+                </li>
+              <% }) %>
+            </ul>
+          <% } %>
 
-    <!-- שהשמחה במעונם – תלמידים -->
-    <aside class="side-panel side-dock-fixed birthday-mini-panel">
-      <h3 class="birthday-mini-title">שהשמחה במעונם – תלמידים</h3>
-      <div class="side-panel-scroll">
-        <% if (studentBirthdays.length === 0) { %>
-          <p class="birthday-empty">אין ימי הולדת היום</p>
-        <% } else { %>
-          <ul class="birthday-list">
-            <% studentBirthdays.forEach(b => { %>
-              <li class="birthday-item birthday-today">
-                <a href="<%= b.href %>" class="birthday-name"><%= b.name %></a>
-                <% if (b.subLabel) { %><span class="birthday-sub"><%= b.subLabel %></span><% } %>
-                <span class="birthday-hebrew"><%= b.hebrewStr %></span>
-              </li>
-            <% }) %>
-          </ul>
-        <% } %>
-      </div>
-    </aside>
-
-    <!-- שהשמחה במעונם – צוות -->
-    <aside class="side-panel side-dock-fixed birthday-mini-panel">
-      <h3 class="birthday-mini-title">שהשמחה במעונם – צוות</h3>
-      <div class="side-panel-scroll">
-        <% if (teacherBirthdays.length === 0) { %>
-          <p class="birthday-empty">אין ימי הולדת היום</p>
-        <% } else { %>
-          <ul class="birthday-list">
-            <% teacherBirthdays.forEach(b => { %>
-              <li class="birthday-item birthday-today">
-                <a href="<%= b.href %>" class="birthday-name"><%= b.name %></a>
-                <span class="birthday-hebrew"><%= b.hebrewStr %></span>
-              </li>
-            <% }) %>
-          </ul>
-        <% } %>
+          <h4 class="birthday-tab-heading">צוות</h4>
+          <% if (teacherBirthdays.length === 0) { %>
+            <p class="birthday-empty">אין ימי הולדת היום</p>
+          <% } else { %>
+            <ul class="birthday-list">
+              <% teacherBirthdays.forEach(b => { %>
+                <li class="birthday-item birthday-today">
+                  <a href="<%= b.href %>" class="birthday-name"><%= b.name %></a>
+                  <span class="birthday-hebrew"><%= b.hebrewStr %></span>
+                </li>
+              <% }) %>
+            </ul>
+          <% } %>
+        </div>
       </div>
     </aside>
   </div>
@@ -303,7 +304,7 @@
 
   <!-- עוגן פאנל צד שמאל -->
   <div class="side-dock side-dock-left">
-    <aside class="side-panel side-dock-flex">
+    <aside class="side-panel dock-single-panel">
       <h3>💬 הודעות<% if (unreadCount > 0) { %> <span class="unread-badge" id="unread-count-badge"><%= unreadCount %></span><% } %></h3>
       <div class="side-panel-scroll" id="messages-preview">
         <p class="personal-empty">טוען...</p>
@@ -422,6 +423,34 @@
           if (srcIdx < tgtIdx) grid.insertBefore(dragSrc, card.nextSibling);
           else grid.insertBefore(dragSrc, card);
         }
+      });
+    });
+  })();
+
+  // ===== מעבר בין טאבים בפאנל הצד (משימות / משותפות / ימי הולדת) =====
+  (function() {
+    const tabsPanel = document.querySelector('.dock-tabs-panel');
+    if (!tabsPanel) return;
+    const tabs = tabsPanel.querySelectorAll('.dock-tab');
+    const contents = tabsPanel.querySelectorAll('.dock-tab-content');
+
+    // זוכר את הטאב האחרון שנבחר, לנוחות בין ביקורים
+    const saved = localStorage.getItem('dock-active-tab');
+    if (saved) {
+      const savedTab = tabsPanel.querySelector(`.dock-tab[data-tab="${saved}"]`);
+      if (savedTab) activateTab(saved);
+    }
+
+    function activateTab(name) {
+      tabs.forEach(t => t.classList.toggle('active', t.getAttribute('data-tab') === name));
+      contents.forEach(c => c.classList.toggle('active', c.getAttribute('data-tab-content') === name));
+    }
+
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        const name = tab.getAttribute('data-tab');
+        activateTab(name);
+        localStorage.setItem('dock-active-tab', name);
       });
     });
   })();
