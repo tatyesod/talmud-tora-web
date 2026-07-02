@@ -50,6 +50,21 @@
   </style>
 </head>
 <body>
+<%
+  /* ===== התאמה אוטומטית לעמוד אחד =====
+     מחשבים גובה שורה כך שכל הרשומות ייכנסו בדיוק לעמוד A4 אחד:
+     יותר תלמידים -> שורות נמוכות יותר, פחות תלמידים -> שורות גבוהות יותר (התפרסות יחסית). */
+  const rowsCount = Math.max(students.length, 1);
+  const AVAILABLE_BODY_HEIGHT_MM = 232; // גובה זמין לגוף הטבלה בעמוד A4 עם השוליים/כותרת/פוטר הקיימים
+  let rowHeightMM = AVAILABLE_BODY_HEIGHT_MM / rowsCount;
+  rowHeightMM = Math.max(5, Math.min(rowHeightMM, 16));
+  // כשיש הרבה תלמידים והשורות נהיות נמוכות - מקטינים מעט את הפונט כדי שהטקסט לא ייחתך
+  const journalFontSize = rowHeightMM < 6.5 ? '7pt' : (rowHeightMM < 8.5 ? '7.8pt' : '8.5pt');
+
+  /* רוחב עמודת השם בדוח 7 הטורים - מינימלי ביחס לאורך השמות, כך שהיתרה מתחלקת בין 7 הטורים */
+  const maxNameLen = students.reduce((m, s) => Math.max(m, (s.displayName || '').length), 4);
+  const nameColWidthMM = Math.min(45, Math.max(18, Math.round(maxNameLen * 2.3) + 8));
+%>
 
 <div class="no-print">
   <button onclick="window.print()">🖨️ הדפסה</button>
@@ -81,26 +96,25 @@
 
   <%# === 7 טורים === %>
   <% if (fmt === '7col') { %>
-    <table class="journal">
+    <table class="journal" style="table-layout:fixed; font-size:<%= journalFontSize %>;">
+      <colgroup>
+        <col style="width:7mm">                     <%# מספר %>
+        <col style="width:<%= nameColWidthMM %>mm">  <%# שם — מינימלי לפי אורך השמות %>
+        <col><col><col><col><col><col><col>          <%# 7 טורים שווים - מקבלים את כל היתרה %>
+      </colgroup>
       <thead><tr>
-        <th class="col-narrow">#</th>
-        <th style="min-width:45mm; text-align:right; padding-right:5px;">שם התלמיד</th>
-        <th class="col-narrow">א</th>
-        <th class="col-narrow">ב</th>
-        <th class="col-narrow">ג</th>
-        <th class="col-narrow">ד</th>
-        <th class="col-narrow">ה</th>
-        <th class="col-narrow">ו</th>
-        <th class="col-narrow">ז</th>
+        <th>#</th>
+        <th style="text-align:right; padding-right:5px;">שם התלמיד</th>
+        <th></th><th></th><th></th><th></th><th></th><th></th><th></th>
       </tr></thead>
       <tbody>
         <% students.forEach((s, i) => { %>
-          <tr>
+          <tr style="height:<%= rowHeightMM %>mm;">
             <td class="num"><%= i+1 %></td>
             <td class="name"><%= s.displayName %></td>
-            <td class="col-narrow"></td><td class="col-narrow"></td><td class="col-narrow"></td>
-            <td class="col-narrow"></td><td class="col-narrow"></td><td class="col-narrow"></td>
-            <td class="col-narrow"></td>
+            <td></td><td></td><td></td>
+            <td></td><td></td><td></td>
+            <td></td>
           </tr>
         <% }) %>
       </tbody>
@@ -108,10 +122,10 @@
 
   <%# === 2 טורים: שם (צר) + עמודה 1 + עמודה 2 (שוות) === %>
   <% } else if (fmt === '2col') { %>
-    <table class="journal" style="table-layout:fixed;">
+    <table class="journal" style="table-layout:fixed; font-size:<%= journalFontSize %>;">
       <colgroup>
         <col style="width:7mm">   <%# מספר %>
-        <col style="width:45mm">  <%# שם — צר %>
+        <col style="width:<%= nameColWidthMM %>mm">  <%# שם — מינימלי לפי אורך השמות %>
         <col>                     <%# עמודה 1 — רחב שווה %>
         <col>                     <%# עמודה 2 — רחב שווה %>
       </colgroup>
@@ -123,7 +137,7 @@
       </tr></thead>
       <tbody>
         <% students.forEach((s, i) => { %>
-          <tr style="height:8mm;">
+          <tr style="height:<%= rowHeightMM %>mm;">
             <td class="num"><%= i+1 %></td>
             <td class="name"><%= s.displayName %></td>
             <td></td>
@@ -135,10 +149,10 @@
 
   <%# === טור הערות אחד === %>
   <% } else if (fmt === '1col') { %>
-    <table class="journal" style="table-layout:fixed;">
+    <table class="journal" style="table-layout:fixed; font-size:<%= journalFontSize %>;">
       <colgroup>
         <col style="width:7mm">
-        <col style="width:45mm">
+        <col style="width:<%= nameColWidthMM %>mm">
         <col>
       </colgroup>
       <thead><tr>
@@ -148,7 +162,7 @@
       </tr></thead>
       <tbody>
         <% students.forEach((s, i) => { %>
-          <tr style="height:8mm;">
+          <tr style="height:<%= rowHeightMM %>mm;">
             <td class="num"><%= i+1 %></td>
             <td class="name"><%= s.displayName %></td>
             <td></td>
@@ -159,15 +173,15 @@
 
   <%# === משבצות ריקות (26 עמודות) === %>
   <% } else { %>
-    <table class="journal">
+    <table class="journal" style="font-size:<%= journalFontSize %>;">
       <thead><tr>
         <th style="width:7mm;">#</th>
         <th style="min-width:40mm; text-align:right; padding-right:5px;">שם התלמיד</th>
-        <% for (let d=1; d<=26; d++) { %><th class="col-narrow" style="font-size:7pt;"><%= d %></th><% } %>
+        <% for (let d=1; d<=26; d++) { %><th class="col-narrow"></th><% } %>
       </tr></thead>
       <tbody>
         <% students.forEach((s, i) => { %>
-          <tr>
+          <tr style="height:<%= rowHeightMM %>mm;">
             <td class="num"><%= i+1 %></td>
             <td class="name"><%= s.displayName %></td>
             <% for (let d=1; d<=26; d++) { %><td class="col-narrow"></td><% } %>
