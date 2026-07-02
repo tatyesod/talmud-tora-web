@@ -217,6 +217,19 @@ function israelTodayYMD() {
   return { year: Number(map.year), month: Number(map.month), day: Number(map.day) };
 }
 
+// מחזיר את השעה הנוכחית (0-23) לפי שעון ישראל - משמש למשל לברכת "בוקר טוב" / "ערב טוב" בדף הבית
+function israelHour() {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Asia/Jerusalem",
+    hour: "2-digit",
+    hour12: false,
+  }).formatToParts(new Date());
+  const hourPart = parts.find((p) => p.type === "hour");
+  let h = Number(hourPart.value);
+  if (h === 24) h = 0; // בחלק מהסביבות חצות מוצג כ-"24" במקום "00"
+  return h;
+}
+
 function todayAccessSerial() {
   const { year, month, day } = israelTodayYMD();
   const abs = gregorianToAbsolute(year, month, day);
@@ -306,4 +319,5 @@ module.exports = {
   hebrewPartsToAbsolute,
   daysInHebrewMonth,
   isHebrewLeapYear,
+  israelHour,
 };

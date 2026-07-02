@@ -183,8 +183,16 @@ app.get("/", (req, res) => {
   const currentYear = yearManager.getCurrentYear();
   const hebrewDateToday = hd.serialToHebrewString(hd.todayAccessSerial());
   const dayNames = ["ראשון", "שני", "שלישי", "רביעי", "חמישי", "שישי", "שבת"];
-  const dayName = dayNames[new Date().getDay()];
-  const hour = new Date().getHours();
+  const { year: todayY, month: todayM, day: todayD } = (() => {
+    const parts = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Asia/Jerusalem", year: "numeric", month: "2-digit", day: "2-digit",
+    }).formatToParts(new Date());
+    const map = {};
+    parts.forEach((p) => { map[p.type] = p.value; });
+    return { year: Number(map.year), month: Number(map.month), day: Number(map.day) };
+  })();
+  const dayName = dayNames[new Date(todayY, todayM - 1, todayD).getDay()];
+  const hour = hd.israelHour();
   let greeting;
   if (hour >= 5 && hour < 12) greeting = "בוקר טוב";
   else if (hour >= 12 && hour < 17) greeting = "צהריים טובים";
