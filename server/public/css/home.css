@@ -76,7 +76,10 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 8px 24px;
+  padding: 10px 24px;
+  background: rgba(8, 20, 34, 0.55);
+  border-bottom: 1px solid rgba(201,151,76,0.28);
+  backdrop-filter: blur(6px);
 }
 .bsd { color: #d7c9a8; font-size: 0.9em; opacity: 0.8; }
 .btn-logout {
@@ -154,6 +157,33 @@
   text-shadow: 0 2px 18px rgba(201,151,76,0.4);
   animation: appear 0.8s ease-out 0.15s both;
 }
+.home-title-divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin: 6px auto 10px;
+  width: 220px;
+  animation: appear 0.8s ease-out 0.22s both;
+}
+.home-title-divider::before,
+.home-title-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(201,151,76,0.7));
+}
+.home-title-divider::after {
+  background: linear-gradient(90deg, rgba(201,151,76,0.7), transparent);
+}
+.home-title-ornament {
+  width: 7px;
+  height: 7px;
+  background: #c9974c;
+  transform: rotate(45deg);
+  box-shadow: 0 0 8px rgba(201,151,76,0.7);
+  flex-shrink: 0;
+}
 .home-subtitle {
   color: #c9974c;
   font-size: 1em;
@@ -191,6 +221,7 @@
 .stat-pill {
   background: rgba(255,255,255,0.08);
   border: 1px solid rgba(201,151,76,0.4);
+  border-top: 2px solid rgba(201,151,76,0.65);
   border-radius: 14px;
   padding: 10px 20px;
   min-width: 105px;
@@ -369,9 +400,10 @@
 
 .side-panel {
   width: 100%;
-  background: rgba(14, 28, 44, 0.88);
+  background: linear-gradient(165deg, rgba(24, 42, 62, 0.92), rgba(12, 24, 40, 0.90));
   backdrop-filter: blur(10px);
   border: 1px solid rgba(201,151,76,0.25);
+  border-top: 2px solid rgba(201,151,76,0.5);
   border-radius: 16px;
   padding: 14px 16px;
   display: flex;

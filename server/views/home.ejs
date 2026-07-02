@@ -34,6 +34,7 @@
     </div>
 
     <h1 class="home-title">תלמוד תורה החדש</h1>
+    <div class="home-title-divider"><span class="home-title-ornament"></span></div>
     <p class="home-subtitle">מערכת ניהול דיגיטלית</p>
     <p class="home-greeting"><span class="greeting-word"><%= greeting %>,</span> <strong><%= fullName %></strong></p>
 
@@ -167,15 +168,21 @@
 
   <!-- עוגן פאנל צד ימין - פאנל אחד עם טאבים במקום 4 חלוניות נפרדות -->
   <div class="side-dock side-dock-right">
-    <aside class="side-panel dock-tabs-panel">
+    <aside class="side-panel dock-tabs-panel" data-has-birthdays="<%= (studentBirthdays.length + teacherBirthdays.length) > 0 ? '1' : '0' %>">
+      <%
+        const openTasks = myTasks.filter(t => !t.done).length;
+        const bdayCount = studentBirthdays.length + teacherBirthdays.length;
+        // אם יש היום מישהו לחגוג - זה הדבר הראשון שרואים, לא צריך ללחוץ כדי לגלות
+        const defaultTab = bdayCount > 0 ? 'birthdays' : 'tasks';
+      %>
       <div class="dock-tabs" role="tablist">
-        <button type="button" class="dock-tab active" data-tab="tasks">📝 משימות שלי<% const openTasks = myTasks.filter(t => !t.done).length; if (openTasks > 0) { %> <span class="dock-tab-badge"><%= openTasks %></span><% } %></button>
-        <button type="button" class="dock-tab" data-tab="shared">📋 משותפות</button>
-        <button type="button" class="dock-tab" data-tab="birthdays">🎉 ימי הולדת<% const bdayCount = studentBirthdays.length + teacherBirthdays.length; if (bdayCount > 0) { %> <span class="dock-tab-badge dock-tab-badge-gold"><%= bdayCount %></span><% } %></button>
+        <button type="button" class="dock-tab <%= defaultTab === 'tasks' ? 'active' : '' %>" data-tab="tasks">📝 משימות שלי<% if (openTasks > 0) { %> <span class="dock-tab-badge"><%= openTasks %></span><% } %></button>
+        <button type="button" class="dock-tab <%= defaultTab === 'shared' ? 'active' : '' %>" data-tab="shared">📋 משותפות</button>
+        <button type="button" class="dock-tab <%= defaultTab === 'birthdays' ? 'active' : '' %>" data-tab="birthdays">🎉 ימי הולדת<% if (bdayCount > 0) { %> <span class="dock-tab-badge dock-tab-badge-gold"><%= bdayCount %></span><% } %></button>
       </div>
 
       <!-- טאב: המשימות שלי -->
-      <div class="dock-tab-content active" data-tab-content="tasks">
+      <div class="dock-tab-content <%= defaultTab === 'tasks' ? 'active' : '' %>" data-tab-content="tasks">
         <div class="side-panel-scroll">
           <% if (myTasks.length === 0) { %>
             <p class="personal-empty">אין משימות פתוחות</p>
@@ -204,7 +211,7 @@
       </div>
 
       <!-- טאב: משימות משותפות -->
-      <div class="dock-tab-content" data-tab-content="shared">
+      <div class="dock-tab-content <%= defaultTab === 'shared' ? 'active' : '' %>" data-tab-content="shared">
         <div style="display:flex; justify-content:flex-end; margin-bottom:8px;">
           <button onclick="openAddSharedTask()" style="
             background:rgba(201,151,76,0.25); border:1px solid rgba(201,151,76,0.5);
@@ -242,7 +249,7 @@
       </div>
 
       <!-- טאב: שהשמחה במעונם -->
-      <div class="dock-tab-content" data-tab-content="birthdays">
+      <div class="dock-tab-content <%= defaultTab === 'birthdays' ? 'active' : '' %>" data-tab-content="birthdays">
         <div class="side-panel-scroll">
           <h4 class="birthday-tab-heading">תלמידים</h4>
           <% if (studentBirthdays.length === 0) { %>
@@ -434,9 +441,11 @@
     const tabs = tabsPanel.querySelectorAll('.dock-tab');
     const contents = tabsPanel.querySelectorAll('.dock-tab-content');
 
-    // זוכר את הטאב האחרון שנבחר, לנוחות בין ביקורים
+    // זוכר את הטאב האחרון שנבחר, לנוחות בין ביקורים -
+    // אבל אם יש היום ימי הולדת, זה תמיד מנצח את ההעדפה השמורה (מידע רגיש לזמן)
+    const hasBirthdaysToday = tabsPanel.getAttribute('data-has-birthdays') === '1';
     const saved = localStorage.getItem('dock-active-tab');
-    if (saved) {
+    if (saved && !hasBirthdaysToday) {
       const savedTab = tabsPanel.querySelector(`.dock-tab[data-tab="${saved}"]`);
       if (savedTab) activateTab(saved);
     }
