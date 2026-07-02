@@ -28,6 +28,9 @@
       <th>תאריך לידה</th>
       <td>
         <%= teacher.birth_date_civil_str || '' %>
+        <% if (teacher.birth_date_hebrew_str) { %>
+          <span style="color:var(--muted); font-size:0.9em;">(<%= teacher.birth_date_hebrew_str %>)</span>
+        <% } %>
         <% if (teacher.age != null) { %>
           &nbsp;<span style="background:#e8f0f7; color:#2c5f7c; border-radius:10px; padding:2px 8px; font-size:0.85em; font-weight:700;">גיל: <%= teacher.age %></span>
         <% } %>
@@ -70,6 +73,9 @@
       <th>תאריך לידה</th>
       <td>
         <%= teacher.spouse_birth_date_str || '' %>
+        <% if (teacher.spouse_birth_date_hebrew_str) { %>
+          <span style="color:var(--muted); font-size:0.9em;">(<%= teacher.spouse_birth_date_hebrew_str %>)</span>
+        <% } %>
         <% if (teacher.spouse_age != null) { %>
           &nbsp;<span style="background:#e8f0f7; color:#2c5f7c; border-radius:10px; padding:2px 8px; font-size:0.85em; font-weight:700;">גיל: <%= teacher.spouse_age %></span>
         <% } %>

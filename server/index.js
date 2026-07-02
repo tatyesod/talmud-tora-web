@@ -205,9 +205,40 @@ app.get("/", (req, res) => {
 
   const allUsers = db.prepare("SELECT id, username, display_name FROM users ORDER BY display_name").all();
 
+  const { upcomingBirthdays, daysAwayLabel } = require("./birthdays");
+  const studentBirthdayRows = db
+    .prepare(`
+      SELECT s.id, s.first_name, s.last_name, s.birth_date_civil, c.name AS class_name, c.parallel AS class_parallel
+      FROM students s
+      LEFT JOIN classes c ON s.class_id = c.id
+      WHERE s.status = 'פעיל' AND s.birth_date_civil IS NOT NULL
+    `)
+    .all()
+    .map((s) => ({
+      id: s.id,
+      name: [s.first_name, s.last_name].filter(Boolean).join(" "),
+      subLabel: [s.class_name, s.class_parallel].filter(Boolean).join(" "),
+      birth_date_civil: s.birth_date_civil,
+      href: `/students/${s.id}`,
+    }));
+  const studentBirthdays = upcomingBirthdays(studentBirthdayRows).map((b) => ({ ...b, daysLabel: daysAwayLabel(b.daysAway) }));
+
+  const teacherBirthdayRows = db
+    .prepare(`SELECT id, first_name, last_name, birth_date_civil FROM teachers WHERE status = 'פעיל' AND birth_date_civil IS NOT NULL`)
+    .all()
+    .map((t) => ({
+      id: t.id,
+      name: [t.first_name, t.last_name].filter(Boolean).join(" "),
+      subLabel: "",
+      birth_date_civil: t.birth_date_civil,
+      href: `/teachers/${t.id}`,
+    }));
+  const teacherBirthdays = upcomingBirthdays(teacherBirthdayRows).map((b) => ({ ...b, daysLabel: daysAwayLabel(b.daysAway) }));
+
   res.render("home", {
     stats, branchStats, monthlyTotal, currentYear, hebrewDateToday, dayName,
     myTasks, unreadCount, greeting, fullName, allUsers,
+    studentBirthdays, teacherBirthdays,
   });
 });
 

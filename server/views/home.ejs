@@ -56,6 +56,47 @@
 
     <div class="nav-section-divider"></div>
 
+    <% if (studentBirthdays.length > 0 || teacherBirthdays.length > 0) { %>
+    <div class="birthday-section">
+      <h2 class="birthday-section-title">🎂 שהשמחה במעונם</h2>
+      <div class="birthday-boxes">
+        <div class="birthday-box">
+          <h3 class="birthday-box-title">ימי הולדת לתלמידים</h3>
+          <% if (studentBirthdays.length === 0) { %>
+            <p class="birthday-empty">אין ימי הולדת קרובים</p>
+          <% } else { %>
+            <ul class="birthday-list">
+              <% studentBirthdays.forEach(b => { %>
+                <li class="birthday-item <%= b.daysAway === 0 ? 'birthday-today' : '' %>">
+                  <a href="<%= b.href %>" class="birthday-name"><%= b.name %></a>
+                  <% if (b.subLabel) { %><span class="birthday-sub"><%= b.subLabel %></span><% } %>
+                  <span class="birthday-hebrew"><%= b.hebrewStr %></span>
+                  <span class="birthday-when"><%= b.daysLabel %></span>
+                </li>
+              <% }) %>
+            </ul>
+          <% } %>
+        </div>
+        <div class="birthday-box">
+          <h3 class="birthday-box-title">ימי הולדת למלמדים ועובדים</h3>
+          <% if (teacherBirthdays.length === 0) { %>
+            <p class="birthday-empty">אין ימי הולדת קרובים</p>
+          <% } else { %>
+            <ul class="birthday-list">
+              <% teacherBirthdays.forEach(b => { %>
+                <li class="birthday-item <%= b.daysAway === 0 ? 'birthday-today' : '' %>">
+                  <a href="<%= b.href %>" class="birthday-name"><%= b.name %></a>
+                  <span class="birthday-hebrew"><%= b.hebrewStr %></span>
+                  <span class="birthday-when"><%= b.daysLabel %></span>
+                </li>
+              <% }) %>
+            </ul>
+          <% } %>
+        </div>
+      </div>
+    </div>
+    <% } %>
+
     <div class="nav-grid" id="nav-grid">
       <a href="/reports" class="nav-card" style="--d:1">
         <div class="nav-icon">

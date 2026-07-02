@@ -47,9 +47,11 @@ function withDates(t) {
   return {
     ...t,
     birth_date_civil_str: hd.serialToGregorianString(t.birth_date_civil),
+    birth_date_hebrew_str: hd.serialToHebrewString(t.birth_date_civil),
     entry_date_str: hd.serialToGregorianString(t.entry_date),
     exit_date_str: hd.serialToGregorianString(t.exit_date),
     spouse_birth_date_str: hd.serialToGregorianString(t.spouse_birth_date),
+    spouse_birth_date_hebrew_str: hd.serialToHebrewString(t.spouse_birth_date),
     age: calcAge(t.birth_date_civil),
     spouse_age: calcAge(t.spouse_birth_date),
   };
@@ -210,6 +212,7 @@ router.get("/:id/edit", (req, res) => {
     teacher: {
       ...teacher,
       birth_date_civil: hd.serialToInputDate(teacher.birth_date_civil),
+      birth_date_hebrew_str: hd.serialToHebrewString(teacher.birth_date_civil),
       entry_date: hd.serialToInputDate(teacher.entry_date),
       exit_date: hd.serialToInputDate(teacher.exit_date),
     },

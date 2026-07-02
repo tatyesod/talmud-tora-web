@@ -243,6 +243,41 @@ function formatHebrewYear(num) {
   return hebrewNumeral(num % 1000);
 }
 
+// --- עזרים לחישוב ימי הולדת עבריים (משמשים בעמוד הבית) ---
+
+// מחזיר {day, month, year} עבריים עבור serial נתון (חסר -> null)
+function serialToHebrewParts(serial) {
+  if (serial === null || serial === undefined || serial === "") return null;
+  const abs = accessSerialToAbsolute(Number(serial));
+  return absoluteToHebrew(abs);
+}
+
+// המספר האבסולוטי (ליניארי) של היום הנוכחי - משמש להשוואת תאריכים
+function todayAbsolute() {
+  const now = new Date();
+  return gregorianToAbsolute(now.getFullYear(), now.getMonth() + 1, now.getDate());
+}
+
+// {day, month, year} עבריים של היום הנוכחי
+function todayHebrewParts() {
+  return absoluteToHebrew(todayAbsolute());
+}
+
+// עוטף את hebrewToAbsolute הפנימי לשימוש חיצוני
+function hebrewPartsToAbsolute(year, month, day) {
+  return hebrewToAbsolute(year, month, day);
+}
+
+// מספר הימים במרכיב חודש עברי נתון בשנה נתונה (לצורך "הצמדה" ליום האחרון אם חסר)
+function daysInHebrewMonth(month, year) {
+  return daysInHebMonth(month, year);
+}
+
+// האם שנה עברית נתונה מעוברת
+function isHebrewLeapYear(year) {
+  return hebrewLeapYear(year);
+}
+
 module.exports = {
   serialToGregorianString,
   serialToHebrewString,
@@ -251,4 +286,10 @@ module.exports = {
   todayAccessSerial,
   currentHebrewYearNumber,
   formatHebrewYear,
+  serialToHebrewParts,
+  todayAbsolute,
+  todayHebrewParts,
+  hebrewPartsToAbsolute,
+  daysInHebrewMonth,
+  isHebrewLeapYear,
 };

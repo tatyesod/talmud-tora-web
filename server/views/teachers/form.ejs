@@ -9,7 +9,13 @@
         <div class="form-group"><label>שם משפחה</label><input type="text" name="last_name" value="<%= teacher.last_name || '' %>" /></div>
         <div class="form-group"><label>שם פרטי</label><input type="text" name="first_name" value="<%= teacher.first_name || '' %>" /></div>
         <div class="form-group"><label>תעודת זהות</label><input type="text" name="id_number" value="<%= teacher.id_number || '' %>" /></div>
-        <div class="form-group"><label>תאריך לידה</label><input type="date" name="birth_date_civil" value="<%= teacher.birth_date_civil || '' %>" /></div>
+        <div class="form-group">
+          <label>תאריך לידה</label>
+          <input type="date" name="birth_date_civil" value="<%= teacher.birth_date_civil || '' %>" />
+          <% if (typeof teacher.birth_date_hebrew_str !== 'undefined' && teacher.birth_date_hebrew_str) { %>
+            <small style="color:var(--muted);">תאריך עברי (לפי הערך השמור): <%= teacher.birth_date_hebrew_str %></small>
+          <% } %>
+        </div>
         <div class="form-group">
           <label>חסידות</label>
           <select name="chassidut_id">
