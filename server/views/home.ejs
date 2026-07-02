@@ -56,47 +56,6 @@
 
     <div class="nav-section-divider"></div>
 
-    <% if (studentBirthdays.length > 0 || teacherBirthdays.length > 0) { %>
-    <div class="birthday-section">
-      <h2 class="birthday-section-title">🎂 שהשמחה במעונם</h2>
-      <div class="birthday-boxes">
-        <div class="birthday-box">
-          <h3 class="birthday-box-title">ימי הולדת לתלמידים</h3>
-          <% if (studentBirthdays.length === 0) { %>
-            <p class="birthday-empty">אין ימי הולדת קרובים</p>
-          <% } else { %>
-            <ul class="birthday-list">
-              <% studentBirthdays.forEach(b => { %>
-                <li class="birthday-item <%= b.daysAway === 0 ? 'birthday-today' : '' %>">
-                  <a href="<%= b.href %>" class="birthday-name"><%= b.name %></a>
-                  <% if (b.subLabel) { %><span class="birthday-sub"><%= b.subLabel %></span><% } %>
-                  <span class="birthday-hebrew"><%= b.hebrewStr %></span>
-                  <span class="birthday-when"><%= b.daysLabel %></span>
-                </li>
-              <% }) %>
-            </ul>
-          <% } %>
-        </div>
-        <div class="birthday-box">
-          <h3 class="birthday-box-title">ימי הולדת למלמדים ועובדים</h3>
-          <% if (teacherBirthdays.length === 0) { %>
-            <p class="birthday-empty">אין ימי הולדת קרובים</p>
-          <% } else { %>
-            <ul class="birthday-list">
-              <% teacherBirthdays.forEach(b => { %>
-                <li class="birthday-item <%= b.daysAway === 0 ? 'birthday-today' : '' %>">
-                  <a href="<%= b.href %>" class="birthday-name"><%= b.name %></a>
-                  <span class="birthday-hebrew"><%= b.hebrewStr %></span>
-                  <span class="birthday-when"><%= b.daysLabel %></span>
-                </li>
-              <% }) %>
-            </ul>
-          <% } %>
-        </div>
-      </div>
-    </div>
-    <% } %>
-
     <div class="nav-grid" id="nav-grid">
       <a href="/reports" class="nav-card" style="--d:1">
         <div class="nav-icon">
@@ -236,6 +195,26 @@
     </form>
   </aside>
 
+  <!-- פאנל ימי הולדת לתלמידים — מתחת למשימות שלי, צד ימין -->
+  <aside class="side-panel side-panel-right birthday-mini-panel" style="top:auto; bottom:424px; max-height:150px; width:280px;">
+    <h3 class="birthday-mini-title">שהשמחה במעונם – תלמידים</h3>
+    <div class="side-panel-scroll">
+      <% if (studentBirthdays.length === 0) { %>
+        <p class="birthday-empty">אין ימי הולדת היום</p>
+      <% } else { %>
+        <ul class="birthday-list">
+          <% studentBirthdays.forEach(b => { %>
+            <li class="birthday-item birthday-today">
+              <a href="<%= b.href %>" class="birthday-name"><%= b.name %></a>
+              <% if (b.subLabel) { %><span class="birthday-sub"><%= b.subLabel %></span><% } %>
+              <span class="birthday-hebrew"><%= b.hebrewStr %></span>
+            </li>
+          <% }) %>
+        </ul>
+      <% } %>
+    </div>
+  </aside>
+
   <!-- פאנל משימות משותפות — מתחת למשימות האישיות, צד ימין -->
   <aside class="side-panel side-panel-right" style="top:auto; bottom:90px; max-height:320px; width:280px;">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
@@ -307,6 +286,25 @@
       <p class="personal-empty">טוען...</p>
     </div>
     <a href="/messages" class="btn small secondary" style="width:100%; text-align:center; margin-top:8px;">כל ההודעות</a>
+  </aside>
+
+  <!-- פאנל ימי הולדת לצוות — מתחת לצ'אטים, צד שמאל -->
+  <aside class="side-panel side-panel-left birthday-mini-panel" style="top:auto; bottom:90px; max-height:180px; width:250px;">
+    <h3 class="birthday-mini-title">שהשמחה במעונם – צוות</h3>
+    <div class="side-panel-scroll">
+      <% if (teacherBirthdays.length === 0) { %>
+        <p class="birthday-empty">אין ימי הולדת היום</p>
+      <% } else { %>
+        <ul class="birthday-list">
+          <% teacherBirthdays.forEach(b => { %>
+            <li class="birthday-item birthday-today">
+              <a href="<%= b.href %>" class="birthday-name"><%= b.name %></a>
+              <span class="birthday-hebrew"><%= b.hebrewStr %></span>
+            </li>
+          <% }) %>
+        </ul>
+      <% } %>
+    </div>
   </aside>
 
   <div class="info-bar" id="info-bar">

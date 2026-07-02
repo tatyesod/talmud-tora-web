@@ -203,9 +203,23 @@ function serialToHebrewString(serial) {
   return `${hebrewNumeral(h.day)} ${monthName} ${hebrewNumeral(h.year % 1000)}`;
 }
 
+// מחזיר {year, month, day} של התאריך הנוכחי לפי שעון ישראל (Asia/Jerusalem),
+// כדי שהמעבר ליום הבא יקרה ב-00:00 שעון ישראל ולא לפי אזור הזמן של השרת (בד"כ UTC).
+function israelTodayYMD() {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Jerusalem",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(new Date());
+  const map = {};
+  parts.forEach((p) => { map[p.type] = p.value; });
+  return { year: Number(map.year), month: Number(map.month), day: Number(map.day) };
+}
+
 function todayAccessSerial() {
-  const now = new Date();
-  const abs = gregorianToAbsolute(now.getFullYear(), now.getMonth() + 1, now.getDate());
+  const { year, month, day } = israelTodayYMD();
+  const abs = gregorianToAbsolute(year, month, day);
   return absoluteToAccessSerial(abs);
 }
 
@@ -252,10 +266,10 @@ function serialToHebrewParts(serial) {
   return absoluteToHebrew(abs);
 }
 
-// המספר האבסולוטי (ליניארי) של היום הנוכחי - משמש להשוואת תאריכים
+// המספר האבסולוטי (ליניארי) של היום הנוכחי לפי שעון ישראל - משמש להשוואת תאריכים
 function todayAbsolute() {
-  const now = new Date();
-  return gregorianToAbsolute(now.getFullYear(), now.getMonth() + 1, now.getDate());
+  const { year, month, day } = israelTodayYMD();
+  return gregorianToAbsolute(year, month, day);
 }
 
 // {day, month, year} עבריים של היום הנוכחי

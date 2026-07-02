@@ -718,42 +718,16 @@
 .stbtn-undo { background: rgba(255,255,255,0.1); color: #ccc; }
 .stbtn-del  { background: rgba(220,80,80,0.2); color: #e07070; }
 
-/* ===== חלונית "שהשמחה במעונם" - ימי הולדת ===== */
-.birthday-section {
-  margin-bottom: 22px;
-  animation: appear 0.8s ease-out 0.52s both;
+/* ===== חלוניות "שהשמחה במעונם" - ימי הולדת (בתוך פאנלי הצד) ===== */
+.birthday-mini-panel {
+  z-index: 5;
 }
-.birthday-section-title {
-  text-align: center;
+.birthday-mini-title {
   color: #f7f1e3;
   font-size: 1.15em;
   font-weight: 800;
-  margin: 0 0 12px;
+  margin: 0 0 8px;
   letter-spacing: 0.2px;
-}
-.birthday-boxes {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 14px;
-  max-width: 900px;
-  margin: 0 auto;
-}
-@media (max-width: 750px) {
-  .birthday-boxes { grid-template-columns: 1fr; }
-}
-.birthday-box {
-  background: rgba(255,255,255,0.06);
-  border: 1px solid rgba(201,151,76,0.35);
-  border-radius: 16px;
-  padding: 14px 16px;
-  backdrop-filter: blur(8px);
-  box-shadow: 0 2px 12px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.06);
-}
-.birthday-box-title {
-  color: #c9974c;
-  font-size: 0.88em;
-  font-weight: 700;
-  margin: 0 0 10px;
   text-align: center;
 }
 .birthday-empty {
@@ -769,23 +743,17 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
-  max-height: 220px;
-  overflow-y: auto;
 }
 .birthday-item {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 6px 10px;
-  padding: 7px 10px;
-  border-radius: 10px;
-  background: rgba(255,255,255,0.03);
-  border: 1px solid rgba(255,255,255,0.08);
-  font-size: 0.85em;
-}
-.birthday-item.birthday-today {
+  gap: 4px 8px;
+  padding: 6px 9px;
+  border-radius: 9px;
   background: rgba(201,151,76,0.18);
-  border-color: rgba(201,151,76,0.55);
+  border: 1px solid rgba(201,151,76,0.5);
+  font-size: 0.82em;
 }
 .birthday-name {
   color: #f7f1e3;
@@ -794,11 +762,4 @@
 }
 .birthday-name:hover { text-decoration: underline; }
 .birthday-sub { color: #8ba3b8; font-size: 0.88em; }
-.birthday-hebrew { color: #b9c4cd; font-size: 0.88em; }
-.birthday-when {
-  margin-right: auto;
-  color: #7ed99a;
-  font-weight: 700;
-  font-size: 0.85em;
-}
-.birthday-item.birthday-today .birthday-when { color: #f0d090; }
+.birthday-hebrew { color: #b9c4cd; font-size: 0.85em; }
