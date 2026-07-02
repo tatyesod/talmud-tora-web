@@ -6,6 +6,14 @@
   <title>תלמוד תורה החדש - מערכת ניהול</title>
   <link rel="stylesheet" href="/css/style.css" />
   <link rel="stylesheet" href="/css/home.css" />
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="apple-touch-icon" href="/images/icon-192.png" />
+  <link rel="icon" href="/images/icon-192.png" />
+  <meta name="theme-color" content="#0d1b2e" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="ת״ת החדש" />
 </head>
 <body class="home-body">
 
@@ -462,6 +470,13 @@
       });
     });
   })();
+
+  // רישום Service Worker - נדרש כדי שהדפדפן יאפשר התקנה כאפליקציה (PWA)
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js').catch(() => {});
+    });
+  }
   </script>
 </body>
 </html>
