@@ -394,12 +394,15 @@
   z-index: 6;
   display: flex;
   flex-direction: column;
+  overflow-y: auto;   /* אם עדיין אין מספיק מקום - כל העמודה גוללת יחד, לעולם לא חופפת */
+  overflow-x: hidden;
 }
 .side-dock-right { right: 16px; }
 .side-dock-left { left: 16px; width: 250px; }
 
 .side-panel {
   width: 100%;
+  flex-shrink: 0;
   background: linear-gradient(165deg, rgba(24, 42, 62, 0.92), rgba(12, 24, 40, 0.90));
   backdrop-filter: blur(10px);
   border: 1px solid rgba(201,151,76,0.25);
@@ -411,7 +414,7 @@
   box-sizing: border-box;
   overflow: hidden;
 }
-.dock-tabs-panel { height: 480px; max-height: 100%; }
+.dock-tabs-panel { height: 320px; max-height: 100%; }
 .dock-single-panel { height: 420px; max-height: 100%; }
 
 .side-panel h3 {
@@ -468,9 +471,6 @@
   padding: 0 5px;
   margin-right: 2px;
 }
-.dock-tab-badge-gold {
-  background: #c9974c;
-}
 
 .dock-tab-content {
   display: none;
@@ -480,14 +480,8 @@
 }
 .dock-tab-content.active { display: flex; }
 
-.birthday-tab-heading {
-  color: #c9974c;
-  font-size: 0.82em;
-  font-weight: 700;
-  margin: 4px 0 6px;
-  text-align: center;
-}
-.birthday-tab-heading:first-child { margin-top: 0; }
+/* חלוניות ימי הולדת - קבועות, תמיד גלויות מתחת לפאנל המשימות */
+.dock-birthday-panel { height: 130px; margin-top: 12px; }
 
 .msg-preview-item {
   display: flex;

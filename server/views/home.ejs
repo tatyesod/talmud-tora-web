@@ -166,23 +166,19 @@
     <p class="home-footer">© כל הזכויות שמורות לתלמוד תורה החדש</p>
   </main>
 
-  <!-- עוגן פאנל צד ימין - פאנל אחד עם טאבים במקום 4 חלוניות נפרדות -->
+  <!-- עוגן פאנל צד ימין - טאבים למשימות + שתי חלוניות קבועות לימי הולדת -->
   <div class="side-dock side-dock-right">
-    <aside class="side-panel dock-tabs-panel" data-has-birthdays="<%= (studentBirthdays.length + teacherBirthdays.length) > 0 ? '1' : '0' %>">
+    <aside class="side-panel dock-tabs-panel">
       <%
         const openTasks = myTasks.filter(t => !t.done).length;
-        const bdayCount = studentBirthdays.length + teacherBirthdays.length;
-        // אם יש היום מישהו לחגוג - זה הדבר הראשון שרואים, לא צריך ללחוץ כדי לגלות
-        const defaultTab = bdayCount > 0 ? 'birthdays' : 'tasks';
       %>
       <div class="dock-tabs" role="tablist">
-        <button type="button" class="dock-tab <%= defaultTab === 'tasks' ? 'active' : '' %>" data-tab="tasks">📝 משימות שלי<% if (openTasks > 0) { %> <span class="dock-tab-badge"><%= openTasks %></span><% } %></button>
-        <button type="button" class="dock-tab <%= defaultTab === 'shared' ? 'active' : '' %>" data-tab="shared">📋 משותפות</button>
-        <button type="button" class="dock-tab <%= defaultTab === 'birthdays' ? 'active' : '' %>" data-tab="birthdays">🎉 ימי הולדת<% if (bdayCount > 0) { %> <span class="dock-tab-badge dock-tab-badge-gold"><%= bdayCount %></span><% } %></button>
+        <button type="button" class="dock-tab active" data-tab="tasks">📝 משימות שלי<% if (openTasks > 0) { %> <span class="dock-tab-badge"><%= openTasks %></span><% } %></button>
+        <button type="button" class="dock-tab" data-tab="shared">📋 משותפות</button>
       </div>
 
       <!-- טאב: המשימות שלי -->
-      <div class="dock-tab-content <%= defaultTab === 'tasks' ? 'active' : '' %>" data-tab-content="tasks">
+      <div class="dock-tab-content active" data-tab-content="tasks">
         <div class="side-panel-scroll">
           <% if (myTasks.length === 0) { %>
             <p class="personal-empty">אין משימות פתוחות</p>
@@ -211,7 +207,7 @@
       </div>
 
       <!-- טאב: משימות משותפות -->
-      <div class="dock-tab-content <%= defaultTab === 'shared' ? 'active' : '' %>" data-tab-content="shared">
+      <div class="dock-tab-content" data-tab-content="shared">
         <div style="display:flex; justify-content:flex-end; margin-bottom:8px;">
           <button onclick="openAddSharedTask()" style="
             background:rgba(201,151,76,0.25); border:1px solid rgba(201,151,76,0.5);
@@ -247,39 +243,44 @@
           <span style="color:#7c8a96; font-size:0.85em;">טוען...</span>
         </div>
       </div>
+    </aside>
 
-      <!-- טאב: שהשמחה במעונם -->
-      <div class="dock-tab-content <%= defaultTab === 'birthdays' ? 'active' : '' %>" data-tab-content="birthdays">
-        <div class="side-panel-scroll">
-          <h4 class="birthday-tab-heading">תלמידים</h4>
-          <% if (studentBirthdays.length === 0) { %>
-            <p class="birthday-empty">אין ימי הולדת היום</p>
-          <% } else { %>
-            <ul class="birthday-list">
-              <% studentBirthdays.forEach(b => { %>
-                <li class="birthday-item birthday-today">
-                  <a href="<%= b.href %>" class="birthday-name"><%= b.name %></a>
-                  <% if (b.subLabel) { %><span class="birthday-sub"><%= b.subLabel %></span><% } %>
-                  <span class="birthday-hebrew"><%= b.hebrewStr %></span>
-                </li>
-              <% }) %>
-            </ul>
-          <% } %>
+    <!-- שהשמחה במעונם – תלמידים - חלונית קבועה, תמיד גלויה -->
+    <aside class="side-panel dock-birthday-panel">
+      <h3>שהשמחה במעונם – תלמידים</h3>
+      <div class="side-panel-scroll">
+        <% if (studentBirthdays.length === 0) { %>
+          <p class="birthday-empty">אין ימי הולדת היום</p>
+        <% } else { %>
+          <ul class="birthday-list">
+            <% studentBirthdays.forEach(b => { %>
+              <li class="birthday-item birthday-today">
+                <a href="<%= b.href %>" class="birthday-name"><%= b.name %></a>
+                <% if (b.subLabel) { %><span class="birthday-sub"><%= b.subLabel %></span><% } %>
+                <span class="birthday-hebrew"><%= b.hebrewStr %></span>
+              </li>
+            <% }) %>
+          </ul>
+        <% } %>
+      </div>
+    </aside>
 
-          <h4 class="birthday-tab-heading">צוות</h4>
-          <% if (teacherBirthdays.length === 0) { %>
-            <p class="birthday-empty">אין ימי הולדת היום</p>
-          <% } else { %>
-            <ul class="birthday-list">
-              <% teacherBirthdays.forEach(b => { %>
-                <li class="birthday-item birthday-today">
-                  <a href="<%= b.href %>" class="birthday-name"><%= b.name %></a>
-                  <span class="birthday-hebrew"><%= b.hebrewStr %></span>
-                </li>
-              <% }) %>
-            </ul>
-          <% } %>
-        </div>
+    <!-- שהשמחה במעונם – צוות - חלונית קבועה, תמיד גלויה -->
+    <aside class="side-panel dock-birthday-panel">
+      <h3>שהשמחה במעונם – צוות</h3>
+      <div class="side-panel-scroll">
+        <% if (teacherBirthdays.length === 0) { %>
+          <p class="birthday-empty">אין ימי הולדת היום</p>
+        <% } else { %>
+          <ul class="birthday-list">
+            <% teacherBirthdays.forEach(b => { %>
+              <li class="birthday-item birthday-today">
+                <a href="<%= b.href %>" class="birthday-name"><%= b.name %></a>
+                <span class="birthday-hebrew"><%= b.hebrewStr %></span>
+              </li>
+            <% }) %>
+          </ul>
+        <% } %>
       </div>
     </aside>
   </div>
@@ -434,25 +435,23 @@
     });
   })();
 
-  // ===== מעבר בין טאבים בפאנל הצד (משימות / משותפות / ימי הולדת) =====
+  // ===== מעבר בין טאבים בפאנל הצד (משימות שלי / משותפות) =====
   (function() {
     const tabsPanel = document.querySelector('.dock-tabs-panel');
     if (!tabsPanel) return;
     const tabs = tabsPanel.querySelectorAll('.dock-tab');
     const contents = tabsPanel.querySelectorAll('.dock-tab-content');
 
-    // זוכר את הטאב האחרון שנבחר, לנוחות בין ביקורים -
-    // אבל אם יש היום ימי הולדת, זה תמיד מנצח את ההעדפה השמורה (מידע רגיש לזמן)
-    const hasBirthdaysToday = tabsPanel.getAttribute('data-has-birthdays') === '1';
-    const saved = localStorage.getItem('dock-active-tab');
-    if (saved && !hasBirthdaysToday) {
-      const savedTab = tabsPanel.querySelector(`.dock-tab[data-tab="${saved}"]`);
-      if (savedTab) activateTab(saved);
-    }
-
     function activateTab(name) {
       tabs.forEach(t => t.classList.toggle('active', t.getAttribute('data-tab') === name));
       contents.forEach(c => c.classList.toggle('active', c.getAttribute('data-tab-content') === name));
+    }
+
+    // זוכר את הטאב האחרון שנבחר, לנוחות בין ביקורים
+    const saved = localStorage.getItem('dock-active-tab');
+    if (saved) {
+      const savedTab = tabsPanel.querySelector(`.dock-tab[data-tab="${saved}"]`);
+      if (savedTab) activateTab(saved);
     }
 
     tabs.forEach(tab => {
