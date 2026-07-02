@@ -109,6 +109,13 @@
     "Yom Kippur": "יום כיפור",
   };
 
+  // מילות מפתח לזיהוי צום - עם גבולות מילה (\b) כדי לא לתפוס בטעות צירוף אותיות
+  // בתוך מילה אחרת (למשל "av" בתוך "Tavo" בפרשת "Ki Tavo" - זה היה הבאג המקורי)
+  const FAST_KEYWORDS = [
+    /\bfast\b/i, /yom kippur/i, /\btammuz\b/i, /\btevet\b/i,
+    /gedaliah/i, /esther/i, /\bav\b/i,
+  ];
+
   fetch("/api/jewish-calendar")
     .then(r => r.json())
     .then(data => {
@@ -116,12 +123,18 @@
       const parasha = items.find(i => i.category === "Parasha" || i.title?.en === "Parashat Hashavua");
       if (parashaEl) parashaEl.textContent = parasha?.displayValue?.he || parashaEl.textContent;
 
-      // רק לפי קטגוריית "Fasts" המדויקת - לא לפי חיפוש מילות מפתח בטקסט,
-      // כדי לא לתפוס בטעות שם פרשה שמכיל צירוף אותיות דומה (למשל "Ki Tavo" מכיל "av").
-      const fast = items.find(i => i.category === "Fasts");
+      // לעולם לא להשתמש בפריט של הפרשה עצמו כמועמד לצום - הגנה נוספת מעבר לגבולות המילה
+      const fast = items.find(i => {
+        if (parasha && i === parasha) return false;
+        if (i.category === "Fasts") return true;
+        const enTitle = i.title?.en || i.displayValue?.en || "";
+        return FAST_KEYWORDS.some(re => re.test(enTitle));
+      });
       if (fast && fastEl && fastVal) {
         const enTitle = fast.title?.en || fast.displayValue?.en || "";
-        fastVal.textContent = FAST_DISPLAY[enTitle] || ("צום " + (fast.title?.he || fast.displayValue?.he || enTitle));
+        const heVal = fast.title?.he || fast.displayValue?.he || enTitle;
+        fastVal.textContent = FAST_DISPLAY[enTitle] ||
+          (/^(צום|יום)/.test(heVal) ? heVal : ("צום " + heVal));
         fastEl.style.display = "";
       }
     })
