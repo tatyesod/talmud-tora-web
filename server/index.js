@@ -83,6 +83,8 @@ app.use((req, res, next) => {
 });
 
 function requireLogin(req, res, next) {
+  // דלג על נתיבי proxy ציבוריים
+  if (req.path.startsWith("/api/proxy") || req.path.startsWith("/api/jewish-calendar")) return next();
   if (req.session.userId) return next();
   return res.redirect("/login");
 }
@@ -149,6 +151,10 @@ app.post("/logout", (req, res) => {
 app.get("/logout-get", (req, res) => {
   req.session.destroy(() => res.redirect("/login"));
 });
+
+// נתיבי proxy ציבוריים — לא דורשים התחברות
+app.use("/api/proxy", (req, res, next) => next());
+app.use("/api/jewish-calendar", (req, res, next) => next());
 
 app.use(requireLogin);
 app.use(checkForcePasswordChange);
