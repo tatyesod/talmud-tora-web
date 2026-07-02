@@ -249,6 +249,52 @@ app.use("/expenses", require("./routes/expenses"));
 app.use("/books", require("./routes/books"));
 app.use("/labels", require("./routes/labels"));
 
+
+// ===== Proxy endpoints — כל ה-APIs החיצוניים (עוקפים חסימות אינטרנט כשר) =====
+(function() {
+  const https = require("https");
+
+  async function proxyFetch(url, res) {
+    try {
+      const data = await new Promise((resolve, reject) => {
+        https.get(url, { headers: { "User-Agent": "TalmudToraApp/1.0" } }, (r) => {
+          let body = "";
+          r.on("data", d => body += d);
+          r.on("end", () => { try { resolve(JSON.parse(body)); } catch(e) { reject(e); } });
+        }).on("error", reject);
+      });
+      res.setHeader("Cache-Control", "public, max-age=1800");
+      res.json(data);
+    } catch(e) {
+      res.status(502).json({});
+    }
+  }
+
+  // דף יומי + לוח עברי
+  app.get("/api/proxy/hebcal", (req, res) => {
+    const q = new URLSearchParams(req.query).toString();
+    proxyFetch("https://www.hebcal.com/hebcal?" + q, res);
+  });
+
+  // מזג אוויר
+  app.get("/api/proxy/weather", (req, res) => {
+    const q = new URLSearchParams(req.query).toString();
+    proxyFetch("https://api.open-meteo.com/v1/forecast?" + q, res);
+  });
+
+  // זמני היום
+  app.get("/api/proxy/zmanim", (req, res) => {
+    const q = new URLSearchParams(req.query).toString();
+    proxyFetch("https://www.hebcal.com/zmanim?" + q, res);
+  });
+
+  // זמני שבת
+  app.get("/api/proxy/shabbat", (req, res) => {
+    const q = new URLSearchParams(req.query).toString();
+    proxyFetch("https://www.hebcal.com/shabbat?" + q, res);
+  });
+})();
+
 // ===== Proxy לנתוני לוח שנה יהודי (Sefaria) =====
 app.get("/api/jewish-calendar", async (req, res) => {
   try {
