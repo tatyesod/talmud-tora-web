@@ -1,16 +1,12 @@
-<%# branch-filter partial
-  params: branches (array), filterId (id of select element to filter)
-  Usage: <%- include('../partials/branch-filter', { branches, filterId: 'class-select' }) %>
-%>
 <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
   <label style="font-weight:600; white-space:nowrap;">סינון סניף:</label>
   <select id="branch-filter-select" style="min-width:160px;">
     <option value="">כל הסניפים</option>
-    <% branches.forEach(b => { %>
+    <% branches.forEach(function(b) { %>
       <option value="<%= b %>"><%= b %></option>
-    <% }) %>
+    <% }); %>
   </select>
-  <span style="color:var(--muted); font-size:0.85em;">← בחר סניף לסינון הכיתות</span>
+  <span style="color:var(--muted); font-size:0.85em;">בחר סניף לסינון הכיתות</span>
 </div>
 <script src="/js/branch-filter.js"></script>
 <script>
