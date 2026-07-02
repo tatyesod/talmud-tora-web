@@ -353,28 +353,48 @@
   padding: 1px 0;
 }
 
-/* פאנלי צד קבועים - ללא צורך בגלילת העמוד */
-.side-panel {
+/* ===== עוגן פאנלי צד - עמודה גמישה שלא יכולה לחפוף לעצמה ===== */
+.side-dock {
   position: fixed;
   top: 90px;
-  width: 250px;
-  max-height: calc(100vh - 180px);
+  bottom: 16px;
+  width: 280px;
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.side-dock-right { right: 16px; }
+.side-dock-left { left: 16px; width: 250px; }
+
+.side-panel {
+  width: 100%;
   background: rgba(14, 28, 44, 0.90);
   backdrop-filter: blur(10px);
   border: 1px solid rgba(201,151,76,0.25);
   border-radius: 16px;
   padding: 14px 16px;
-  z-index: 6;
   display: flex;
   flex-direction: column;
+  box-sizing: border-box;
+  overflow: hidden;
 }
-.side-panel-right { right: 16px; max-height: calc(50vh - 60px); }
-.side-panel-left { left: 16px; }
-.side-panel h3 { color: #f7f1e3; font-size: 0.95em; margin: 0 0 10px; }
+/* פאנלים "גמישים" (משימות שלי / משימות משותפות) - מתחלקים בשווה בשטח הפנוי */
+.side-dock-flex {
+  flex: 1 1 0;
+  min-height: 90px;
+}
+/* פאנלים "קבועים" (ימי הולדת) - גובה מוגבל, לא גדלים */
+.side-dock-fixed {
+  flex: 0 0 auto;
+  max-height: 130px;
+}
+
+.side-panel h3 { color: #f7f1e3; font-size: 0.95em; margin: 0 0 10px; flex-shrink: 0; }
 .side-panel-scroll {
   overflow-y: auto;
   flex: 1;
-  min-height: 30px;
+  min-height: 0;
 }
 
 .msg-preview-item {
@@ -394,7 +414,7 @@
 .msg-preview-body { color: #b9c4cd; font-size: 0.82em; }
 
 @media (max-width: 1650px) {
-  .side-panel { display: none; }
+  .side-dock { display: none; }
 }
 
 @media (max-width: 600px) {
