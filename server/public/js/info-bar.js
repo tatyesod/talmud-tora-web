@@ -94,10 +94,19 @@
   const fastEl    = document.getElementById("info-fast");
   const fastVal   = document.getElementById("fast-value");
 
-  const FAST_NAMES = {
-    "Fast of Gedaliah": "צום גדליה", "Fast of Esther": "תענית אסתר",
-    "Asara B'Tevet": "עשרה בטבת", "17th of Tammuz": "שבעה עשר בתמוז",
-    "9th of Av": "תשעה באב", "Yom Kippur": "יום כיפור",
+  // מיפוי מפורש לשם התצוגה המלא - תמיד "צום ..." (חוץ מיום כיפור, שנהוג לומר בלי המילה "צום")
+  const FAST_DISPLAY = {
+    "Tzom Gedaliah": "צום גדליה",
+    "Fast of Gedaliah": "צום גדליה",
+    "Ta'anit Esther": "צום תענית אסתר",
+    "Fast of Esther": "צום תענית אסתר",
+    "Asara B'Tevet": "צום עשרה בטבת",
+    "Tzom Tevet": "צום עשרה בטבת",
+    "17th of Tammuz": "צום י\"ז בתמוז",
+    "Tzom Tammuz": "צום י\"ז בתמוז",
+    "9th of Av": "צום ט' באב",
+    "Tisha B'Av": "צום ט' באב",
+    "Yom Kippur": "יום כיפור",
   };
 
   fetch("/api/jewish-calendar")
@@ -106,14 +115,13 @@
       const items = data.calendar_items || [];
       const parasha = items.find(i => i.category === "Parasha" || i.title?.en === "Parashat Hashavua");
       if (parashaEl) parashaEl.textContent = parasha?.displayValue?.he || parashaEl.textContent;
-      const fast = items.find(i =>
-        i.category === "Fasts" ||
-        ["fast","yom kippur","tammuz","tevet","gedaliah","esther","av"].some(k =>
-          i.title?.en?.toLowerCase().includes(k))
-      );
+
+      // רק לפי קטגוריית "Fasts" המדויקת - לא לפי חיפוש מילות מפתח בטקסט,
+      // כדי לא לתפוס בטעות שם פרשה שמכיל צירוף אותיות דומה (למשל "Ki Tavo" מכיל "av").
+      const fast = items.find(i => i.category === "Fasts");
       if (fast && fastEl && fastVal) {
-        fastVal.textContent = fast.displayValue?.he || fast.title?.he ||
-                              FAST_NAMES[fast.title?.en] || fast.displayValue?.en || "צום";
+        const enTitle = fast.title?.en || fast.displayValue?.en || "";
+        fastVal.textContent = FAST_DISPLAY[enTitle] || ("צום " + (fast.title?.he || fast.displayValue?.he || enTitle));
         fastEl.style.display = "";
       }
     })
