@@ -201,10 +201,10 @@ router.get("/report/families", async (req, res) => {
 
   const wb = new ExcelJS.Workbook();
   const ws = wb.addWorksheet("חיובים", { views: [{ rightToLeft: true }] });
-  addExcelHeader(wb, ws, "", `חיובי הזמנת ספרים ${year}`, 7);
+  addExcelHeader(wb, ws, "", `חיובי הזמנת ספרים ${year}`, 8);
   addLogo(wb, ws, 6, 0);
 
-  const hr = ws.addRow(["שם משפחה", "שם האב", "טלפון", "ילד/כיתה", "ספרים שהוזמנו", "סה\"כ ₪", "שולם"]);
+  const hr = ws.addRow(["שם משפחה", "שם האב", "טלפון", "ילד/כיתה", "ספרים שהוזמנו", "סה\"כ ₪", "שולם ₪", "יתרה ₪"]);
   hr.eachCell(cell => {
     cell.font = { bold: true, color: { argb: "FFFFFFFF" } };
     cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF2C5F7C" } };
@@ -212,6 +212,7 @@ router.get("/report/families", async (req, res) => {
   });
 
   let grandTotal = 0;
+  let grandPaid = 0;
   for (const fam of families) {
     const items = db.prepare(`
       SELECT bc.item_name, bc.price, s.first_name, c.name||' '||COALESCE(c.parallel,'') AS class_label
@@ -222,21 +223,84 @@ router.get("/report/families", async (req, res) => {
 
     const total = items.reduce((s, i) => s + i.price, 0);
     grandTotal += total;
+    const paidRow = db.prepare("SELECT COALESCE(SUM(amount),0) s FROM book_payments WHERE year_label=? AND family_id=?").get(year, fam.id);
+    const paid = paidRow.s;
+    grandPaid += paid;
     const childClass = [...new Set(items.map(i => `${i.first_name} (${i.class_label.trim()})`))].join(", ");
     const detail = items.map(i => `${i.item_name} — ${i.price}₪`).join("\n");
-    const row = ws.addRow([fam.last_name, fam.father_name || "", fam.father_mobile || fam.home_phone || "", childClass, detail, total, ""]);
+    const row = ws.addRow([fam.last_name, fam.father_name || "", fam.father_mobile || fam.home_phone || "", childClass, detail, total, paid, Math.round((total - paid) * 100) / 100]);
     row.getCell(5).alignment = { wrapText: true };
     row.height = Math.max(18, items.length * 14);
     row.alignment = { horizontal: "right" };
   }
-  const sr = ws.addRow(["", "", "", "", "סה\"כ כולל", grandTotal, ""]);
+  const sr = ws.addRow(["", "", "", "", "סה\"כ כולל", grandTotal, grandPaid, Math.round((grandTotal - grandPaid) * 100) / 100]);
   sr.font = { bold: true };
 
-  [15, 18, 14, 30, 50, 12, 12].forEach((w, i) => { ws.getColumn(i + 1).width = w; });
+  [15, 18, 14, 30, 50, 12, 12, 12].forEach((w, i) => { ws.getColumn(i + 1).width = w; });
 
   res.setHeader("Content-Disposition", `attachment; filename="${encodeURIComponent(`חיובים-ספרים-${year}.xlsx`)}"`);
   res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
   await wb.xlsx.write(res); res.end();
+});
+
+// ============ תשלומים בפועל להזמנת ספרים ============
+router.get("/payments", (req, res) => {
+  const { year, branch } = req.query;
+  if (!year) return res.redirect("/books");
+
+  const families = db.prepare(`
+    SELECT DISTINCT f.id, f.last_name, f.father_name, f.home_phone, f.father_mobile
+    FROM families f JOIN students s ON s.family_id=f.id
+    JOIN book_orders bo ON bo.student_id=s.id
+    LEFT JOIN classes c ON s.class_id=c.id
+    WHERE bo.year_label=? ${branch ? "AND c.branch=?" : ""}
+    ORDER BY f.last_name
+  `).all(...(branch ? [year, branch] : [year]));
+
+  const familiesData = families.map((fam) => {
+    const items = db.prepare(`
+      SELECT bc.item_name, bc.price, s.first_name, c.name||' '||COALESCE(c.parallel,'') AS class_label
+      FROM book_orders bo JOIN book_catalog bc ON bo.catalog_id=bc.id
+      JOIN students s ON bo.student_id=s.id LEFT JOIN classes c ON s.class_id=c.id
+      WHERE bo.year_label=? AND s.family_id=? ORDER BY s.first_name, bc.sort_order
+    `).all(year, fam.id);
+    const total = items.reduce((s, i) => s + i.price, 0);
+    const childClass = [...new Set(items.map(i => `${i.first_name} (${(i.class_label || "").trim()})`))].join(", ");
+
+    const payments = db.prepare(`
+      SELECT * FROM book_payments WHERE year_label=? AND family_id=? ORDER BY payment_date, id
+    `).all(year, fam.id);
+    const paid = payments.reduce((s, p) => s + p.amount, 0);
+
+    return { ...fam, childClass, total, payments, paid, balance: Math.round((total - paid) * 100) / 100 };
+  });
+
+  const grandTotal = familiesData.reduce((s, f) => s + f.total, 0);
+  const grandPaid = familiesData.reduce((s, f) => s + f.paid, 0);
+
+  const branches = db.prepare("SELECT DISTINCT branch FROM classes WHERE branch IS NOT NULL AND branch<>'' ORDER BY branch").all().map(r => r.branch);
+
+  res.render("books/payments", { year, branch: branch || "", branches, familiesData, grandTotal, grandPaid });
+});
+
+router.post("/payments/add", (req, res) => {
+  const { year, family_id, amount, method, payment_date, notes, branch } = req.body;
+  const amt = parseFloat(amount);
+  if (year && family_id && amt > 0) {
+    db.prepare(`
+      INSERT INTO book_payments (year_label, family_id, amount, method, payment_date, notes, created_by, created_at)
+      VALUES (?,?,?,?,?,?,?,?)
+    `).run(year, family_id, amt, method || "מזומן", payment_date || null, notes || null, req.currentUser.id, new Date().toISOString());
+  }
+  res.redirect(`/books/payments?year=${encodeURIComponent(year)}${branch ? `&branch=${encodeURIComponent(branch)}` : ""}`);
+});
+
+router.post("/payments/:id/delete", (req, res) => {
+  const payment = db.prepare("SELECT * FROM book_payments WHERE id=?").get(req.params.id);
+  db.prepare("DELETE FROM book_payments WHERE id=?").run(req.params.id);
+  const { year, branch } = req.query;
+  const y = year || (payment ? payment.year_label : "");
+  res.redirect(`/books/payments?year=${encodeURIComponent(y)}${branch ? `&branch=${encodeURIComponent(branch)}` : ""}`);
 });
 
 // ============ מכתב הזמנה להורים (checkboxes ריקים) ============

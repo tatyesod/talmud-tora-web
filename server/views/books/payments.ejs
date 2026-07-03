@@ -1,0 +1,115 @@
+<%- include('../partials/header', {title: 'תשלומים — הזמנת ספרים'}) %>
+
+<div class="card">
+  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+    <h1>💳 תשלומים — הזמנת ספרים <%= year %></h1>
+    <div class="actions">
+      <a href="/books?year=<%= encodeURIComponent(year) %>" class="btn secondary">חזרה</a>
+      <a href="/books/report/families?year=<%= encodeURIComponent(year) %>" class="btn secondary">📥 ייצוא אקסל</a>
+    </div>
+  </div>
+
+  <div style="margin-bottom:16px; display:flex; align-items:center; gap:14px; flex-wrap:wrap;">
+    <form class="searchbar" method="GET" action="/books/payments">
+      <label><strong>סניף:</strong></label>
+      <select name="branch" onchange="this.form.submit()">
+        <option value="">כל הסניפים</option>
+        <% branches.forEach(b => { %>
+          <option value="<%= b %>" <%= b === branch ? 'selected' : '' %>><%= b %></option>
+        <% }) %>
+      </select>
+      <input type="hidden" name="year" value="<%= year %>" />
+    </form>
+  </div>
+
+  <div style="display:flex; gap:14px; flex-wrap:wrap; margin-bottom:18px;">
+    <div style="background:linear-gradient(135deg,#eef3f8,#f5f3ee); border:1px solid #b8cfe0; border-radius:10px; padding:12px 22px; min-width:150px;">
+      <div style="font-size:1.4em; font-weight:800; color:#2c5f7c;"><%= grandTotal.toLocaleString() %> ₪</div>
+      <div style="color:var(--muted); font-size:0.85em;">סה"כ לגבייה</div>
+    </div>
+    <div style="background:linear-gradient(135deg,#eef6ee,#f5f3ee); border:1px solid #bcd9bc; border-radius:10px; padding:12px 22px; min-width:150px;">
+      <div style="font-size:1.4em; font-weight:800; color:#2d7a4f;"><%= grandPaid.toLocaleString() %> ₪</div>
+      <div style="color:var(--muted); font-size:0.85em;">שולם בפועל</div>
+    </div>
+    <div style="background:linear-gradient(135deg,#fbeeee,#f5f3ee); border:1px solid #e0b8b8; border-radius:10px; padding:12px 22px; min-width:150px;">
+      <div style="font-size:1.4em; font-weight:800; color:#c0392b;"><%= (grandTotal - grandPaid).toLocaleString() %> ₪</div>
+      <div style="color:var(--muted); font-size:0.85em;">יתרה לגבייה</div>
+    </div>
+  </div>
+
+  <% if (familiesData.length === 0) { %>
+    <p class="empty-state">אין הזמנות ספרים לשנה זו</p>
+  <% } else { %>
+  <div style="overflow-x:auto;">
+    <table>
+      <thead><tr>
+        <th>משפחה</th>
+        <th>ילד/כיתה</th>
+        <th>סה"כ לתשלום</th>
+        <th>שולם</th>
+        <th>יתרה</th>
+        <th>תשלומים שנרשמו</th>
+        <th>הוספת תשלום</th>
+      </tr></thead>
+      <tbody>
+        <% familiesData.forEach(fam => { %>
+          <tr>
+            <td><strong><%= fam.last_name %></strong><br/><span style="color:var(--muted); font-size:0.85em;"><%= fam.father_name || '' %></span></td>
+            <td style="font-size:0.88em;"><%= fam.childClass %></td>
+            <td><%= fam.total.toLocaleString() %> ₪</td>
+            <td style="color:#2d7a4f; font-weight:600;"><%= fam.paid.toLocaleString() %> ₪</td>
+            <td style="font-weight:700; <%= fam.balance > 0 ? 'color:#c0392b;' : 'color:#2d7a4f;' %>">
+              <%= fam.balance.toLocaleString() %> ₪
+              <% if (fam.balance <= 0) { %> ✅<% } %>
+            </td>
+            <td style="font-size:0.85em;">
+              <% if (fam.payments.length === 0) { %>
+                <span style="color:var(--muted);">אין תשלומים</span>
+              <% } else { %>
+                <ul style="margin:0; padding-right:16px;">
+                  <% fam.payments.forEach(p => { %>
+                    <li>
+                      <%= p.amount.toLocaleString() %> ₪ &middot; <%= p.method %>
+                      <% if (p.payment_date) { %> &middot; <%= p.payment_date %><% } %>
+                      <form method="POST" action="/books/payments/<%= p.id %>/delete?year=<%= encodeURIComponent(year) %>&branch=<%= encodeURIComponent(branch) %>" style="display:inline;" onsubmit="return confirm('למחוק תשלום זה?');">
+                        <button type="submit" style="background:none; border:none; color:#c0392b; cursor:pointer; font-size:0.9em;">✕</button>
+                      </form>
+                    </li>
+                  <% }) %>
+                </ul>
+              <% } %>
+            </td>
+            <td>
+              <button type="button" class="btn small secondary" onclick="toggleForm(<%= fam.id %>)">+ הוסף</button>
+              <form method="POST" action="/books/payments/add" id="payform-<%= fam.id %>" style="display:none; margin-top:8px; min-width:180px;">
+                <input type="hidden" name="year" value="<%= year %>" />
+                <input type="hidden" name="branch" value="<%= branch %>" />
+                <input type="hidden" name="family_id" value="<%= fam.id %>" />
+                <input type="number" name="amount" step="0.01" min="0" placeholder="סכום ₪" required style="width:100%; margin-bottom:6px;" />
+                <select name="method" style="width:100%; margin-bottom:6px;">
+                  <option value="מזומן">מזומן</option>
+                  <option value="שיק">שיק</option>
+                  <option value="העברה בנקאית">העברה בנקאית</option>
+                  <option value="אשראי">אשראי</option>
+                  <option value="אחר">אחר</option>
+                </select>
+                <input type="date" name="payment_date" style="width:100%; margin-bottom:6px;" />
+                <button type="submit" class="btn small">שמור תשלום</button>
+              </form>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+  <% } %>
+</div>
+
+<script>
+  function toggleForm(famId) {
+    const el = document.getElementById('payform-' + famId);
+    el.style.display = el.style.display === 'none' ? 'block' : 'none';
+  }
+</script>
+
+<%- include('../partials/footer') %>

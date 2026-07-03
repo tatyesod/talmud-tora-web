@@ -120,6 +120,12 @@ const migrations = [
     FOREIGN KEY(catalog_id) REFERENCES book_catalog(id),
     UNIQUE(year_label, student_id, catalog_id)
   )`,
+  `CREATE TABLE IF NOT EXISTS book_payments (
+    id INTEGER PRIMARY KEY, year_label TEXT NOT NULL, family_id INTEGER NOT NULL,
+    amount REAL NOT NULL DEFAULT 0, method TEXT NOT NULL DEFAULT 'מזומן',
+    payment_date TEXT, notes TEXT, created_by INTEGER, created_at TEXT,
+    FOREIGN KEY(family_id) REFERENCES families(id)
+  )`,
 ];
 
 for (const sql of migrations) {
