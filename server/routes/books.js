@@ -418,6 +418,15 @@ router.delete("/catalog/:id", (req, res) => {
   res.redirect(`/books/catalog?year=${encodeURIComponent(row?.year_label || "")}`);
 });
 
+router.put("/catalog/:id", (req, res) => {
+  const { class_name, item_name, publisher, price, is_mandatory, year_label } = req.body;
+  db.prepare(`
+    UPDATE book_catalog SET class_name=?, item_name=?, publisher=?, price=?, is_mandatory=?
+    WHERE id=?
+  `).run(class_name, item_name, publisher || "", parseFloat(price) || 0, is_mandatory === "on" ? 1 : 0, req.params.id);
+  res.redirect(`/books/catalog?year=${encodeURIComponent(year_label || "")}`);
+});
+
 
 // ============ מחירון בסיס ============
 router.get("/prices", (req, res) => {
