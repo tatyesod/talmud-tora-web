@@ -29,6 +29,7 @@
   <% if (prices.length === 0) { %>
     <p class="empty-state">אין פריטים במחירון</p>
   <% } else { %>
+    <div class="table-scroll-wrap">
     <table>
       <thead><tr><th>שם הפריט</th><th>הוצאה</th><th>מחיר</th><th>הערות</th><th>עדכון מחיר</th><th></th></tr></thead>
       <tbody>
@@ -54,6 +55,7 @@
         <% }) %>
       </tbody>
     </table>
+    </div>
   <% } %>
 </div>
 

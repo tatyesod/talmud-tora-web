@@ -165,7 +165,8 @@ legend { color: var(--primary-dark); font-weight: 700; padding: 0 8px; }
   background: #fff;
   border-radius: 12px;
   box-shadow: 0 2px 12px rgba(0,0,0,0.1);
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 .chat-header {
   display: flex;
@@ -175,6 +176,9 @@ legend { color: var(--primary-dark); font-weight: 700; padding: 0 8px; }
   background: #f8f9fa;
   border-bottom: 1px solid #e0e0e0;
   flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  z-index: 4;
 }
 .chat-back {
   font-size: 1.3em;
@@ -289,6 +293,11 @@ legend { color: var(--primary-dark); font-weight: 700; padding: 0 8px; }
 }
 .chat-input-bar form {
   display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.chat-input-row {
+  display: flex;
   align-items: flex-end;
   gap: 10px;
   background: #fff;
@@ -297,9 +306,42 @@ legend { color: var(--primary-dark); font-weight: 700; padding: 0 8px; }
   padding: 8px 8px 8px 16px;
   transition: box-shadow 0.2s;
 }
-.chat-input-bar form:focus-within {
+.chat-input-row:focus-within {
   box-shadow: 0 1px 4px rgba(26,115,232,0.3);
   border-color: #1a73e8;
+}
+.chat-attach-btn {
+  background: none;
+  border: none;
+  font-size: 1.35em;
+  line-height: 1;
+  cursor: pointer;
+  flex-shrink: 0;
+  color: #5f6368;
+  padding: 4px 2px;
+  transition: color 0.15s;
+}
+.chat-attach-btn:hover { color: #1a73e8; }
+.chat-attachment-preview {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #eef3fb;
+  border: 1px solid #c6d9f5;
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 0.85em;
+  color: #1a4d8f;
+  width: fit-content;
+  max-width: 100%;
+}
+.chat-attachment-preview button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #c0392b;
+  font-size: 1em;
+  flex-shrink: 0;
 }
 #chat-input {
   flex: 1;
@@ -329,6 +371,23 @@ legend { color: var(--primary-dark); font-weight: 700; padding: 0 8px; }
 }
 .chat-send-btn:hover { background: #1557b0; }
 .chat-send-btn svg { width: 16px; height: 16px; stroke: #fff; }
+
+.chat-attachment-img {
+  max-width: 240px;
+  max-height: 240px;
+  border-radius: 12px;
+  display: block;
+  cursor: pointer;
+}
+.chat-attachment-file {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: inherit;
+  text-decoration: underline;
+  font-size: 0.95em;
+}
+.chat-bubble-caption { margin-top: 6px; }
 
 /* נקודה ירוקה בתצוגת הודעה חדשה */
 .msg-preview-dot {

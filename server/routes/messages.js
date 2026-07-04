@@ -1,6 +1,33 @@
 const express = require("express");
 const router = express.Router();
 const db = require("../db");
+const multer = require("multer");
+const path = require("path");
+const fs = require("fs");
+
+// הגדרת multer להעלאת קבצים מצורפים בצ'אט (תמונות/מסמכים)
+const DATA_DIR = process.env.RENDER_PERSISTENT_DIR || path.join(__dirname, "..");
+const uploadDir = path.join(DATA_DIR, "uploads", "messages");
+if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, uploadDir),
+  filename: (req, file, cb) => {
+    const ts = Date.now();
+    const safe = Buffer.from(file.originalname, "latin1").toString("utf8");
+    cb(null, `${req.currentUser.id}_${ts}_${safe}`);
+  },
+});
+const upload = multer({
+  storage,
+  limits: { fileSize: 15 * 1024 * 1024 }, // 15MB מקסימום
+  fileFilter: (req, file, cb) => {
+    const allowed = [".pdf", ".doc", ".docx", ".jpg", ".jpeg", ".png", ".gif", ".webp", ".xls", ".xlsx"];
+    const ext = path.extname(file.originalname).toLowerCase();
+    cb(null, allowed.includes(ext));
+  },
+});
+const IMAGE_EXTS = [".jpg", ".jpeg", ".png", ".gif", ".webp"];
 
 function fmtTime(iso) {
   if (!iso) return "";
@@ -28,7 +55,11 @@ router.get("/recent/json", (req, res) => {
     return {
       otherId: u.id,
       otherName: u.display_name || u.username,
-      body: lastMsg ? (lastMsg.body.length > 35 ? lastMsg.body.slice(0, 35) + "..." : lastMsg.body) : null,
+      body: lastMsg
+        ? (lastMsg.body && lastMsg.body.length > 0
+            ? (lastMsg.body.length > 35 ? lastMsg.body.slice(0, 35) + "..." : lastMsg.body)
+            : (lastMsg.attachment_type === "image" ? "📷 תמונה" : lastMsg.attachment_path ? "📎 קובץ מצורף" : null))
+        : null,
       mine: lastMsg ? lastMsg.sender_id === myId : false,
       unread: unreadCount > 0,
       unreadCount,
@@ -85,11 +116,25 @@ router.get("/:userId", (req, res) => {
   res.render("messages/thread", { otherUser, thread });
 });
 
-router.post("/:userId", (req, res) => {
+router.post("/:userId", upload.single("attachment"), (req, res) => {
   const { body } = req.body;
-  if (body && body.trim()) {
-    db.prepare("INSERT INTO messages (sender_id, recipient_id, body, created_at) VALUES (?,?,?,?)").run(
-      req.currentUser.id, req.params.userId, body.trim(), new Date().toISOString()
+  const hasText = body && body.trim();
+  const file = req.file;
+
+  if (hasText || file) {
+    let attachmentPath = null, attachmentName = null, attachmentType = null;
+    if (file) {
+      attachmentPath = `/uploads/messages/${file.filename}`;
+      attachmentName = Buffer.from(file.originalname, "latin1").toString("utf8");
+      const ext = path.extname(attachmentName).toLowerCase();
+      attachmentType = IMAGE_EXTS.includes(ext) ? "image" : "file";
+    }
+    db.prepare(`
+      INSERT INTO messages (sender_id, recipient_id, body, created_at, attachment_path, attachment_name, attachment_type)
+      VALUES (?,?,?,?,?,?,?)
+    `).run(
+      req.currentUser.id, req.params.userId, hasText ? body.trim() : "", new Date().toISOString(),
+      attachmentPath, attachmentName, attachmentType
     );
   }
   res.redirect(`/messages/${req.params.userId}`);

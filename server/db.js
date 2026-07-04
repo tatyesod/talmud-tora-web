@@ -126,6 +126,9 @@ const migrations = [
     payment_date TEXT, notes TEXT, created_by INTEGER, created_at TEXT,
     FOREIGN KEY(family_id) REFERENCES families(id)
   )`,
+  "ALTER TABLE messages ADD COLUMN attachment_path TEXT",
+  "ALTER TABLE messages ADD COLUMN attachment_name TEXT",
+  "ALTER TABLE messages ADD COLUMN attachment_type TEXT",
 ];
 
 for (const sql of migrations) {

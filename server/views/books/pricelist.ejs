@@ -24,6 +24,7 @@
   </form>
 
   <h3>מחירון נוכחי (<%= items.length %> פריטים)</h3>
+  <div class="table-scroll-wrap">
   <table>
     <thead><tr><th>שם הפריט</th><th>הוצאה</th><th>מחיר</th><th>עדכון אחרון</th><th></th></tr></thead>
     <tbody>
@@ -48,6 +49,7 @@
       <% }) %>
     </tbody>
   </table>
+  </div>
 </div>
 
 <%- include('../partials/footer') %>

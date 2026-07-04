@@ -25,7 +25,20 @@
           <div class="chat-msg-avatar"><%= (otherUser.display_name || otherUser.username).charAt(0) %></div>
         <% } %>
         <div class="chat-bubble-wrap">
-          <div class="chat-bubble"><%= m.body %></div>
+          <div class="chat-bubble">
+            <% if (m.attachment_path) { %>
+              <% if (m.attachment_type === 'image') { %>
+                <a href="<%= m.attachment_path %>" target="_blank" rel="noopener">
+                  <img src="<%= m.attachment_path %>" alt="תמונה מצורפת" class="chat-attachment-img" />
+                </a>
+              <% } else { %>
+                <a href="<%= m.attachment_path %>" target="_blank" rel="noopener" class="chat-attachment-file">
+                  📎 <%= m.attachment_name || 'קובץ מצורף' %>
+                </a>
+              <% } %>
+            <% } %>
+            <% if (m.body) { %><div class="<%= m.attachment_path ? 'chat-bubble-caption' : '' %>"><%= m.body %></div><% } %>
+          </div>
           <div class="chat-time"><%= m.created_at_str ? m.created_at_str.split(' ')[1] || m.created_at_str : '' %></div>
         </div>
       </div>
@@ -33,19 +46,27 @@
   </div>
 
   <div class="chat-input-bar">
-    <form method="POST" action="/messages/<%= otherUser.id %>" id="chat-form">
-      <textarea
-        id="chat-input"
-        name="body"
-        placeholder="כתוב הודעה... (Enter לשליחה, Shift+Enter לשורה חדשה)"
-        rows="1"
-        required></textarea>
-      <button type="submit" class="chat-send-btn" title="שלח">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <line x1="22" y1="2" x2="11" y2="13"></line>
-          <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-        </svg>
-      </button>
+    <form method="POST" action="/messages/<%= otherUser.id %>" id="chat-form" enctype="multipart/form-data">
+      <div id="chat-attachment-preview" class="chat-attachment-preview" style="display:none;">
+        <span id="chat-attachment-name"></span>
+        <button type="button" id="chat-attachment-remove" title="הסר קובץ">✕</button>
+      </div>
+      <div class="chat-input-row">
+        <button type="button" id="chat-attach-btn" class="chat-attach-btn" title="צרף קובץ או תמונה">📎</button>
+        <input type="file" id="chat-attachment" name="attachment"
+          accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.gif,.webp,.xls,.xlsx" style="display:none" />
+        <textarea
+          id="chat-input"
+          name="body"
+          placeholder="כתוב הודעה... (Enter לשליחה, Shift+Enter לשורה חדשה)"
+          rows="1"></textarea>
+        <button type="submit" class="chat-send-btn" title="שלח">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="22" y1="2" x2="11" y2="13"></line>
+            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+          </svg>
+        </button>
+      </div>
     </form>
   </div>
 </div>
@@ -55,20 +76,45 @@
   const msgs = document.getElementById("chat-messages");
   if (msgs) msgs.scrollTop = msgs.scrollHeight;
 
-  // Enter לשליחה, Shift+Enter לשורה חדשה
   const input = document.getElementById("chat-input");
   const form = document.getElementById("chat-form");
+  const attachBtn = document.getElementById("chat-attach-btn");
+  const attachInput = document.getElementById("chat-attachment");
+  const attachPreview = document.getElementById("chat-attachment-preview");
+  const attachName = document.getElementById("chat-attachment-name");
+  const attachRemove = document.getElementById("chat-attachment-remove");
+
+  if (attachBtn && attachInput) {
+    attachBtn.addEventListener("click", () => attachInput.click());
+    attachInput.addEventListener("change", () => {
+      if (attachInput.files && attachInput.files[0]) {
+        attachName.textContent = "📎 " + attachInput.files[0].name;
+        attachPreview.style.display = "flex";
+      }
+    });
+    attachRemove.addEventListener("click", () => {
+      attachInput.value = "";
+      attachPreview.style.display = "none";
+    });
+  }
+
+  // Enter לשליחה, Shift+Enter לשורה חדשה. אפשר לשלוח גם קובץ בלי טקסט.
   if (input && form) {
     input.addEventListener("keydown", (e) => {
       if (e.key === "Enter" && !e.shiftKey) {
         e.preventDefault();
-        if (input.value.trim()) form.submit();
+        const hasFile = attachInput && attachInput.files && attachInput.files.length > 0;
+        if (input.value.trim() || hasFile) form.submit();
       }
     });
     // גובה דינמי של תיבת הקלד
     input.addEventListener("input", () => {
       input.style.height = "auto";
       input.style.height = Math.min(input.scrollHeight, 120) + "px";
+    });
+    form.addEventListener("submit", (e) => {
+      const hasFile = attachInput && attachInput.files && attachInput.files.length > 0;
+      if (!input.value.trim() && !hasFile) e.preventDefault();
     });
   }
 </script>

@@ -19,7 +19,7 @@
   <p style="color:var(--muted); font-size:0.88em; margin-bottom:10px;">
     לחץ על תא לסימון/ביטול הזמנה. לחיצה על כותרת עמודה = מסמן/מבטל את כולם.
   </p>
-  <div style="overflow-x:auto;">
+  <div class="table-scroll-wrap" style="overflow-x:auto;">
     <form method="POST" action="/books/class/save" id="orders-form">
       <input type="hidden" name="year" value="<%= year %>" />
       <input type="hidden" name="class_id" value="<%= cls.id %>" />
