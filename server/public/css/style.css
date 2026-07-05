@@ -264,6 +264,7 @@ legend { color: var(--primary-dark); font-weight: 700; padding: 0 8px; }
   border-radius: 16px;
   font-size: 0.89em;
   line-height: 1.4;
+  width: fit-content;
   max-width: 100%;
   word-break: break-word;
   white-space: pre-wrap;
