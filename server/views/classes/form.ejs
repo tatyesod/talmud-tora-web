@@ -5,6 +5,7 @@
     <h1><%= mode === 'new' ? 'הוספת כיתה חדשה' : 'עריכת כיתה' %></h1>
     <% if (mode === 'edit') { %>
       <div style="display:flex; gap:8px;">
+        <a href="/classes/<%= classRow.id %>" class="btn small secondary">👁️ צפייה בכיתה</a>
         <% if (prevId) { %><a href="/classes/<%= prevId %>/edit" class="btn small secondary">→ הקודמת</a><% } %>
         <% if (nextId) { %><a href="/classes/<%= nextId %>/edit" class="btn small secondary">הבאה ←</a><% } %>
       </div>
@@ -13,6 +14,11 @@
   <% if (typeof conflict !== 'undefined' && conflict) { %>
     <div style="background:#fdecea; border:1px solid #f5c6cb; color:#a94442; border-radius:8px; padding:10px 16px; margin-bottom:14px;">
       ⚠️ מישהו אחר עדכן את הכיתה הזו בינתיים. הנתונים המוצגים כאן הם המעודכנים ביותר — יש לבדוק ולבצע שוב את השינוי לפני שמירה חוזרת.
+    </div>
+  <% } %>
+  <% if (typeof saved !== 'undefined' && saved) { %>
+    <div style="background:#e8f5e9; border:1px solid #a5d6a7; color:#2e7d32; border-radius:8px; padding:10px 16px; margin-bottom:14px;">
+      ✅ נשמר בהצלחה.
     </div>
   <% } %>
   <p style="color:var(--muted); font-size:0.9em;">

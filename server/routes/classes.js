@@ -112,7 +112,7 @@ router.get("/:id/edit", (req, res) => {
   res.render("classes/form", {
     classRow, mode: "edit", categories, conflict: req.query.conflict === "1",
     teacherAssignments, allTeachers, teacherAssignError: req.query.teacherAssignError || null,
-    prevId, nextId,
+    prevId, nextId, saved: req.query.saved === "1",
   });
 });
 
@@ -154,7 +154,7 @@ router.put("/:id", (req, res) => {
   const values = [...cols.map((c) => (body[c] === "" ? null : body[c])), new Date().toISOString()];
   values.push(req.params.id);
   db.prepare(`UPDATE classes SET ${setClause} WHERE id = ?`).run(...values);
-  res.redirect(`/classes/${req.params.id}`);
+  res.redirect(`/classes/${req.params.id}/edit?saved=1`);
 });
 
 router.delete("/:id", (req, res) => {
