@@ -130,6 +130,7 @@ const migrations = [
   "ALTER TABLE messages ADD COLUMN attachment_name TEXT",
   "ALTER TABLE messages ADD COLUMN attachment_type TEXT",
   "ALTER TABLE messages ADD COLUMN reply_to_id INTEGER",
+  "UPDATE classes SET transfer_number = parallel WHERE (transfer_number IS NULL OR transfer_number = '') AND parallel IS NOT NULL AND parallel != ''",
 ];
 
 for (const sql of migrations) {

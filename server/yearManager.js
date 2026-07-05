@@ -37,11 +37,17 @@ function getSnapshot(id) {
 function findTargetClass(currentClass) {
   if (!currentClass) return { archive: false, classId: null }; // אין כיתה - לא נוגעים
 
+  // "מעבר לכיתה (בהעלאת שנה)" - אם הוגדר, זו המקבילה שאליה עוברים בהעלאת שנה
+  // (למשל כדי לאפשר "מכינה א'1 -> מכינה ב'2"); אם ריק, ברירת המחדל היא אותה מקבילה כמו היום
+  const targetParallel = (currentClass.transfer_number !== null && currentClass.transfer_number !== undefined && currentClass.transfer_number !== "")
+    ? currentClass.transfer_number
+    : currentClass.parallel;
+
   // עדיין לא נכנסו -> מכינה א' לפי מקבילה
   if (currentClass.name && currentClass.name.startsWith("עדיין לא נכנסו")) {
     const target = db
       .prepare("SELECT id FROM classes WHERE name = ? AND parallel = ? AND status = 'פעיל' LIMIT 1")
-      .get("מכינה א'", currentClass.parallel);
+      .get("מכינה א'", targetParallel);
     if (target) return { archive: false, classId: target.id };
     const fallback = db
       .prepare("SELECT id FROM classes WHERE name = ? AND status = 'פעיל' ORDER BY parallel LIMIT 1")
@@ -60,7 +66,7 @@ function findTargetClass(currentClass) {
   const nextName = GRADE_ORDER[idx + 1];
   const target = db
     .prepare("SELECT id FROM classes WHERE name = ? AND parallel = ? AND status = 'פעיל' LIMIT 1")
-    .get(nextName, currentClass.parallel);
+    .get(nextName, targetParallel);
   if (target) return { archive: false, classId: target.id };
 
   const fallback = db

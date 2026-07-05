@@ -2,12 +2,20 @@
 
 <div class="card">
   <h1><%= mode === 'new' ? 'הוספת כיתה חדשה' : 'עריכת כיתה' %></h1>
+  <p style="color:var(--muted); font-size:0.9em;">
+    השדה "מעבר לכיתה (בהעלאת שנה)" קובע לאיזו מקבילה יעברו תלמידי הכיתה הזו בתהליך העלאת שנה,
+    אם רוצים חריגה מהמעבר האוטומטי (אותו מספר מקבילה בכיתה הבאה). לדוגמה: אם ב"מכינה א'1" יוגדר כאן
+    "2", תלמידי הכיתה הזו יעברו ל"מכינה ב'2" ולא ל"מכינה ב'1". להשארה במעבר הרגיל - יש להשאיר ריק.
+  </p>
   <form method="POST" action="<%= mode === 'new' ? '/classes' : '/classes/' + classRow.id + '?_method=PUT' %>">
     <div class="form-grid">
       <div class="form-group"><label>שם הכיתה</label><input type="text" name="name" value="<%= classRow.name || '' %>" required /></div>
       <div class="form-group"><label>מקבילה</label><input type="text" name="parallel" value="<%= classRow.parallel || '' %>" /></div>
       <div class="form-group"><label>מספר כיתה</label><input type="text" name="class_number" value="<%= classRow.class_number || '' %>" /></div>
-      <div class="form-group"><label>מספר להעברה</label><input type="text" name="transfer_number" value="<%= classRow.transfer_number || '' %>" /></div>
+      <div class="form-group">
+        <label>מעבר לכיתה (בהעלאת שנה)</label>
+        <input type="text" name="transfer_number" value="<%= classRow.transfer_number || '' %>" placeholder="ברירת מחדל: אותה מקבילה" />
+      </div>
       <div class="form-group">
         <label>סניף</label>
         <select name="branch">
