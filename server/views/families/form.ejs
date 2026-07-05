@@ -2,7 +2,13 @@
 
 <div class="card">
   <h1>עריכת משפחת <%= family.last_name %></h1>
+  <% if (typeof conflict !== 'undefined' && conflict) { %>
+    <div style="background:#fdecea; border:1px solid #f5c6cb; color:#a94442; border-radius:8px; padding:10px 16px; margin-bottom:14px;">
+      ⚠️ מישהו אחר עדכן את כרטיס המשפחה הזה בינתיים. הנתונים המוצגים כאן הם המעודכנים ביותר — יש לבדוק ולבצע שוב את השינוי לפני שמירה חוזרת.
+    </div>
+  <% } %>
   <form method="POST" action="/families/<%= family.id %>?_method=PUT">
+    <input type="hidden" name="updated_at" value="<%= family.updated_at || '' %>" />
     <fieldset>
       <legend>מגזר</legend>
       <div class="form-grid">

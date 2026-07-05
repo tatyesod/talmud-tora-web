@@ -3,7 +3,14 @@
 <div class="card">
   <h1><%= mode === 'new' ? 'הוספת תלמיד חדש' : 'עריכת תלמיד' %></h1>
 
+  <% if (typeof conflict !== 'undefined' && conflict) { %>
+    <div style="background:#fdecea; border:1px solid #f5c6cb; color:#a94442; border-radius:8px; padding:10px 16px; margin-bottom:14px;">
+      ⚠️ מישהו אחר עדכן את הכרטיס הזה בינתיים, אחרי שפתחת אותו לעריכה. הנתונים המוצגים כאן עכשיו הם המעודכנים ביותר — יש לבדוק אותם ולבצע שוב את השינוי הרצוי לפני שמירה חוזרת.
+    </div>
+  <% } %>
+
   <form method="POST" action="<%= mode === 'new' ? '/students' : '/students/' + student.id + '?_method=PUT' %>">
+    <% if (mode === 'edit') { %><input type="hidden" name="updated_at" value="<%= student.updated_at || '' %>" /><% } %>
 
     <%# ======= פרטים אישיים ======= %>
     <fieldset>

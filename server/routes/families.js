@@ -4,6 +4,7 @@ const db = require("../db");
 const hd = require("../hebrewDate");
 const { calcFamilyTuition } = require("../tuitionCalc");
 const { buildOrderBy } = require("../sortHelper");
+const { checkNoConflict } = require("../concurrency");
 
 router.get("/", (req, res) => {
   const { q, sector, branch } = req.query;
@@ -89,7 +90,7 @@ router.get("/:id", (req, res) => {
 router.get("/:id/edit", (req, res) => {
   const family = db.prepare("SELECT * FROM families WHERE id = ?").get(req.params.id);
   if (!family) return res.status(404).render("404");
-  res.render("families/form", { family });
+  res.render("families/form", { family, conflict: req.query.conflict === "1" });
 });
 
 const FAMILY_FIELDS = [
@@ -102,9 +103,12 @@ const FAMILY_FIELDS = [
 
 router.put("/:id", (req, res) => {
   const body = req.body;
+  if (!checkNoConflict("families", req.params.id, body.updated_at)) {
+    return res.redirect(`/families/${req.params.id}/edit?conflict=1`);
+  }
   const cols = FAMILY_FIELDS.filter((c) => c in body);
-  const setClause = cols.map((c) => `${c} = ?`).join(", ");
-  const values = cols.map((c) => (body[c] === "" ? null : body[c]));
+  const setClause = [...cols.map((c) => `${c} = ?`), "updated_at = ?"].join(", ");
+  const values = [...cols.map((c) => (body[c] === "" ? null : body[c])), new Date().toISOString()];
   values.push(req.params.id);
   db.prepare(`UPDATE families SET ${setClause} WHERE id = ?`).run(...values);
   res.redirect(`/families/${req.params.id}`);

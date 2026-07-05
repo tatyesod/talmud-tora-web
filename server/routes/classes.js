@@ -3,6 +3,7 @@ const router = express.Router();
 const db = require("../db");
 const hd = require("../hebrewDate");
 const { buildOrderBy } = require("../sortHelper");
+const { checkNoConflict } = require("../concurrency");
 
 router.get("/", (req, res) => {
   const { branch } = req.query;
@@ -91,14 +92,17 @@ router.get("/:id/edit", (req, res) => {
   const classRow = db.prepare("SELECT * FROM classes WHERE id = ?").get(req.params.id);
   if (!classRow) return res.status(404).render("404");
   const categories = db.prepare("SELECT id, name FROM categories ORDER BY id").all();
-  res.render("classes/form", { classRow, mode: "edit", categories });
+  res.render("classes/form", { classRow, mode: "edit", categories, conflict: req.query.conflict === "1" });
 });
 
 router.put("/:id", (req, res) => {
   const body = req.body;
+  if (!checkNoConflict("classes", req.params.id, body.updated_at)) {
+    return res.redirect(`/classes/${req.params.id}/edit?conflict=1`);
+  }
   const cols = CLASS_FIELDS.filter((c) => c in body);
-  const setClause = cols.map((c) => `${c} = ?`).join(", ");
-  const values = cols.map((c) => (body[c] === "" ? null : body[c]));
+  const setClause = [...cols.map((c) => `${c} = ?`), "updated_at = ?"].join(", ");
+  const values = [...cols.map((c) => (body[c] === "" ? null : body[c])), new Date().toISOString()];
   values.push(req.params.id);
   db.prepare(`UPDATE classes SET ${setClause} WHERE id = ?`).run(...values);
   res.redirect(`/classes/${req.params.id}`);
@@ -153,17 +157,22 @@ router.get("/cohorts/:id/edit", (req, res) => {
       end_day: endParts.day, end_month: endParts.month, end_year: endParts.year,
     },
     mode: "edit",
+    conflict: req.query.conflict === "1",
   });
 });
 
 router.put("/cohorts/:id", (req, res) => {
   const body = req.body;
-  const cols = [...COHORT_FIELDS.filter((c) => c in body), "from_date", "to_date"];
+  if (!checkNoConflict("cohorts", req.params.id, body.updated_at)) {
+    return res.redirect(`/classes/cohorts/${req.params.id}/edit?conflict=1`);
+  }
+  const cols = [...COHORT_FIELDS.filter((c) => c in body), "from_date", "to_date", "updated_at"];
   const setClause = cols.map((c) => `${c} = ?`).join(", ");
   const values = [
     ...COHORT_FIELDS.filter((c) => c in body).map((c) => body[c] || null),
     hebrewFieldsToSerial(body.start_day, body.start_month, body.start_year),
     hebrewFieldsToSerial(body.end_day, body.end_month, body.end_year),
+    new Date().toISOString(),
   ];
   values.push(req.params.id);
   db.prepare(`UPDATE cohorts SET ${setClause} WHERE id = ?`).run(...values);

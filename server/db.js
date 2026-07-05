@@ -131,6 +131,14 @@ const migrations = [
   "ALTER TABLE messages ADD COLUMN attachment_type TEXT",
   "ALTER TABLE messages ADD COLUMN reply_to_id INTEGER",
   "UPDATE classes SET transfer_number = parallel WHERE (transfer_number IS NULL OR transfer_number = '') AND parallel IS NOT NULL AND parallel != ''",
+  "ALTER TABLE students ADD COLUMN updated_at TEXT",
+  "ALTER TABLE families ADD COLUMN updated_at TEXT",
+  "ALTER TABLE classes ADD COLUMN updated_at TEXT",
+  "ALTER TABLE cohorts ADD COLUMN updated_at TEXT",
+  "UPDATE students SET updated_at = datetime('now') WHERE updated_at IS NULL",
+  "UPDATE families SET updated_at = datetime('now') WHERE updated_at IS NULL",
+  "UPDATE classes SET updated_at = datetime('now') WHERE updated_at IS NULL",
+  "UPDATE cohorts SET updated_at = datetime('now') WHERE updated_at IS NULL",
 ];
 
 for (const sql of migrations) {

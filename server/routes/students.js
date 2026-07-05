@@ -3,6 +3,7 @@ const router = express.Router();
 const db = require("../db");
 const hd = require("../hebrewDate");
 const { buildOrderBy } = require("../sortHelper");
+const { checkNoConflict } = require("../concurrency");
 
 function calcAge(accessSerial) {
   if (!accessSerial) return null;
@@ -230,15 +231,18 @@ router.get("/students/:id/edit", (req, res) => {
       registration_date: hd.serialToInputDate(student.registration_date),
       admission_date: hd.serialToInputDate(student.admission_date),
     },
-    mode: "edit", classes, cohorts, families,
+    mode: "edit", classes, cohorts, families, conflict: req.query.conflict === "1",
   });
 });
 
 router.put("/students/:id", (req, res) => {
   const body = req.body;
+  if (!checkNoConflict("students", req.params.id, body.updated_at)) {
+    return res.redirect(`/students/${req.params.id}/edit?conflict=1`);
+  }
   const cols = STUDENT_FIELDS.filter((c) => c in body);
-  const setClause = cols.map((c) => `${c} = ?`).join(", ");
-  const values = cols.map((c) => normalizeField(c, body[c]));
+  const setClause = [...cols.map((c) => `${c} = ?`), "updated_at = ?"].join(", ");
+  const values = [...cols.map((c) => normalizeField(c, body[c])), new Date().toISOString()];
   values.push(req.params.id);
   db.prepare(`UPDATE students SET ${setClause} WHERE id = ?`).run(...values);
   if (body.family_id && body.sector) {

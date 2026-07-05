@@ -2,12 +2,18 @@
 
 <div class="card">
   <h1><%= mode === 'new' ? 'הוספת מחזור חדש' : 'עריכת מחזור' %></h1>
+  <% if (typeof conflict !== 'undefined' && conflict) { %>
+    <div style="background:#fdecea; border:1px solid #f5c6cb; color:#a94442; border-radius:8px; padding:10px 16px; margin-bottom:14px;">
+      ⚠️ מישהו אחר עדכן את המחזור הזה בינתיים. הנתונים המוצגים כאן הם המעודכנים ביותר — יש לבדוק ולבצע שוב את השינוי לפני שמירה חוזרת.
+    </div>
+  <% } %>
   <p style="color:var(--muted); font-size:0.9em;">
     "מחזור" קובע טווח תאריכי לידה (לפי לוח עברי) שמשייך תלמיד למחזור מסוים בעת הרישום.
     כברירת מחדל המחזורים נקבעו מא' תמוז עד ל' סיון של השנה שלאחר מכן — ניתן לשנות כל
     מחזור בנפרד לטווח אחר לפי הצורך.
   </p>
   <form method="POST" action="<%= mode === 'new' ? '/classes/cohorts' : '/classes/cohorts/' + cohort.id + '?_method=PUT' %>">
+    <% if (mode === 'edit') { %><input type="hidden" name="updated_at" value="<%= cohort.updated_at || '' %>" /><% } %>
     <div class="form-grid">
       <div class="form-group"><label>שם המחזור</label><input type="text" name="name" value="<%= cohort.name || '' %>" required /></div>
       <div class="form-group">

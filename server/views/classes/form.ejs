@@ -2,12 +2,18 @@
 
 <div class="card">
   <h1><%= mode === 'new' ? 'הוספת כיתה חדשה' : 'עריכת כיתה' %></h1>
+  <% if (typeof conflict !== 'undefined' && conflict) { %>
+    <div style="background:#fdecea; border:1px solid #f5c6cb; color:#a94442; border-radius:8px; padding:10px 16px; margin-bottom:14px;">
+      ⚠️ מישהו אחר עדכן את הכיתה הזו בינתיים. הנתונים המוצגים כאן הם המעודכנים ביותר — יש לבדוק ולבצע שוב את השינוי לפני שמירה חוזרת.
+    </div>
+  <% } %>
   <p style="color:var(--muted); font-size:0.9em;">
     השדה "מעבר לכיתה (בהעלאת שנה)" קובע לאיזו מקבילה יעברו תלמידי הכיתה הזו בתהליך העלאת שנה,
     אם רוצים חריגה מהמעבר האוטומטי (אותו מספר מקבילה בכיתה הבאה). לדוגמה: אם ב"מכינה א'1" יוגדר כאן
     "2", תלמידי הכיתה הזו יעברו ל"מכינה ב'2" ולא ל"מכינה ב'1". להשארה במעבר הרגיל - יש להשאיר ריק.
   </p>
   <form method="POST" action="<%= mode === 'new' ? '/classes' : '/classes/' + classRow.id + '?_method=PUT' %>">
+    <% if (mode === 'edit') { %><input type="hidden" name="updated_at" value="<%= classRow.updated_at || '' %>" /><% } %>
     <div class="form-grid">
       <div class="form-group"><label>שם הכיתה</label><input type="text" name="name" value="<%= classRow.name || '' %>" required /></div>
       <div class="form-group"><label>מקבילה</label><input type="text" name="parallel" value="<%= classRow.parallel || '' %>" /></div>

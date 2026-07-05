@@ -1,3 +1,6 @@
 node_modules/
 .env
 *.log
+server/data/talmud-tora.db
+server/data/talmud-tora.db-shm
+server/data/talmud-tora.db-wal
