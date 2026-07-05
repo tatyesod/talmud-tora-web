@@ -31,7 +31,6 @@
         <th>שיבוץ בוקר</th>
         <th>שיבוץ אחה"צ</th>
         <th><a href="<%= sortUrl('mobile') %>">טלפון<%= sortIndicator('mobile') %></a></th>
-        <th><a href="<%= sortUrl('chassidut') %>">חסידות<%= sortIndicator('chassidut') %></a></th>
         <th><a href="<%= sortUrl('children_count') %>">מס' ילדים<%= sortIndicator('children_count') %></a></th>
         <th><a href="<%= sortUrl('status') %>">סטטוס<%= sortIndicator('status') %></a></th>
         <th></th>
@@ -47,7 +46,6 @@
             <td style="font-size:0.85em;"><%= t.morning_classes || '' %></td>
             <td style="font-size:0.85em;"><%= t.afternoon_classes || '' %></td>
             <td><%- phoneLink(t.mobile || t.home_phone) %></td>
-            <td><%= t.chassidut_name || '' %></td>
             <td><%= t.children_count_display != null ? t.children_count_display : '' %></td>
             <td><span class="badge <%= t.status !== 'פעיל' ? 'archive' : '' %>"><%= t.status || '' %></span></td>
             <td><a href="/teachers/<%= t.id %>" class="btn small secondary">צפייה</a></td>
