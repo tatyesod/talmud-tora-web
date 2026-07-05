@@ -230,12 +230,27 @@ router.get("/:id/edit", (req, res) => {
       exit_date: hd.serialToInputDate(teacher.exit_date),
     },
     mode: "edit", chassidut, allClasses, assignments,
+    assignError: req.query.assignError || null,
   });
 });
 
 router.post("/:id/classes", (req, res) => {
   const { class_id, role } = req.body;
   if (class_id) {
+    // מניעת שיבוץ כפול לאותה כיתה באותה משמרת (בוקר/אחה"צ) - לא רלוונטי לתפקיד "עוזר"
+    if (role === "בוקר" || role === 'אחה"צ') {
+      const existing = db.prepare(`
+        SELECT t.id, t.first_name, t.last_name FROM teacher_classes tc
+        JOIN teachers t ON tc.teacher_id = t.id
+        WHERE tc.class_id = ? AND tc.role = ? AND tc.teacher_id != ?
+      `).get(class_id, role, req.params.id);
+      if (existing) {
+        const cls = db.prepare("SELECT name, parallel FROM classes WHERE id = ?").get(class_id);
+        const className = [cls?.name, cls?.parallel].filter(Boolean).join(" ");
+        const msg = `הכיתה ${className} כבר משובצת ל${role} עם ${existing.first_name || ""} ${existing.last_name || ""}. לא ניתן לשבץ מלמד נוסף לאותה כיתה באותה משמרת.`;
+        return res.redirect(`/teachers/${req.params.id}/edit?assignError=${encodeURIComponent(msg)}`);
+      }
+    }
     db.prepare("INSERT INTO teacher_classes (class_id, teacher_id, role) VALUES (?,?,?)").run(
       class_id, req.params.id, role || null
     );

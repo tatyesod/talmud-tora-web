@@ -56,6 +56,11 @@
 <% if (mode === 'edit') { %>
 <div class="card">
   <h3>שיבוץ לכיתות</h3>
+  <% if (assignError) { %>
+    <div style="background:#fdecea; border:1px solid #f5c6cb; color:#a94442; border-radius:8px; padding:10px 16px; margin-bottom:14px;">
+      ⚠️ <%= assignError %>
+    </div>
+  <% } %>
   <% if (assignments.length === 0) { %>
     <p class="empty-state">המלמד אינו משובץ לאף כיתה</p>
   <% } else { %>
