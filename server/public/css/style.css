@@ -280,6 +280,9 @@ legend { color: var(--primary-dark); font-weight: 700; padding: 0 8px; }
   color: #202124;
   border-bottom-left-radius: 4px;
 }
+.chat-bubble a { color: inherit; text-decoration: underline; word-break: break-all; }
+.chat-mine .chat-bubble a { color: #fff; }
+.chat-theirs .chat-bubble a { color: #1a73e8; }
 .chat-time {
   font-size: 0.7em;
   color: #9aa0a6;

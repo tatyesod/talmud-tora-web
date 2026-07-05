@@ -37,7 +37,7 @@
                 </a>
               <% } %>
             <% } %>
-            <% if (m.body) { %><div class="<%= m.attachment_path ? 'chat-bubble-caption' : '' %>"><%= m.body %></div><% } %>
+            <% if (m.body) { %><div class="<%= m.attachment_path ? 'chat-bubble-caption' : '' %>"><%- linkify(m.body) %></div><% } %>
           </div>
           <div class="chat-time"><%= m.created_at_str ? m.created_at_str.split(' ')[1] || m.created_at_str : '' %></div>
         </div>
