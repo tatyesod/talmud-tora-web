@@ -3,7 +3,7 @@
 <div class="card">
   <h1><%= mode === 'new' ? 'הוספת מחזור חדש' : 'עריכת מחזור' %></h1>
   <p style="color:var(--muted); font-size:0.9em;">
-    "מחזור" קובע טווח תאריכי לידה (לפי שנה עברית) שמשייך תלמיד למחזור מסוים בעת הרישום.
+    "מחזור" קובע טווח תאריכי לידה (לפי לוח עברי) שמשייך תלמיד למחזור מסוים בעת הרישום.
     כברירת מחדל המחזורים נקבעו מא' תמוז עד ל' סיון של השנה שלאחר מכן — ניתן לשנות כל
     מחזור בנפרד לטווח אחר לפי הצורך.
   </p>
@@ -18,9 +18,56 @@
           <option value="ארכיון" <%= cohort.status === 'ארכיון' ? 'selected' : '' %>>ארכיון</option>
         </select>
       </div>
-      <div class="form-group"><label>מתאריך (תחילת טווח לידה)</label><input type="date" name="from_date" value="<%= cohort.from_date || '' %>" /></div>
-      <div class="form-group"><label>עד תאריך (סוף טווח לידה)</label><input type="date" name="to_date" value="<%= cohort.to_date || '' %>" /></div>
     </div>
+
+    <% const hebMonths = [
+      {v:7, n:"תשרי"}, {v:8, n:"חשון"}, {v:9, n:"כסלו"}, {v:10, n:"טבת"}, {v:11, n:"שבט"},
+      {v:12, n:"אדר / אדר א'"}, {v:13, n:"אדר ב'"}, {v:1, n:"ניסן"}, {v:2, n:"אייר"},
+      {v:3, n:"סיון"}, {v:4, n:"תמוז"}, {v:5, n:"אב"}, {v:6, n:"אלול"},
+    ]; %>
+
+    <h3 style="margin-top:20px;">תחילת טווח לידה (ברירת מחדל: א' תמוז)</h3>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>יום</label>
+        <select name="start_day">
+          <% for (let d = 1; d <= 30; d++) { %>
+            <option value="<%= d %>" <%= Number(cohort.start_day) === d ? 'selected' : '' %>><%= d %></option>
+          <% } %>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>חודש</label>
+        <select name="start_month">
+          <% hebMonths.forEach(m => { %>
+            <option value="<%= m.v %>" <%= Number(cohort.start_month) === m.v ? 'selected' : '' %>><%= m.n %></option>
+          <% }) %>
+        </select>
+      </div>
+      <div class="form-group"><label>שנה עברית</label><input type="number" name="start_year" value="<%= cohort.start_year %>" required /></div>
+    </div>
+
+    <h3 style="margin-top:20px;">סוף טווח לידה (ברירת מחדל: ל' סיון, שנה אחרי)</h3>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>יום</label>
+        <select name="end_day">
+          <% for (let d = 1; d <= 30; d++) { %>
+            <option value="<%= d %>" <%= Number(cohort.end_day) === d ? 'selected' : '' %>><%= d %></option>
+          <% } %>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>חודש</label>
+        <select name="end_month">
+          <% hebMonths.forEach(m => { %>
+            <option value="<%= m.v %>" <%= Number(cohort.end_month) === m.v ? 'selected' : '' %>><%= m.n %></option>
+          <% }) %>
+        </select>
+      </div>
+      <div class="form-group"><label>שנה עברית</label><input type="number" name="end_year" value="<%= cohort.end_year %>" required /></div>
+    </div>
+
     <div class="actions" style="margin-top:14px;">
       <button type="submit" class="btn">שמירה</button>
       <a href="/classes" class="btn secondary">ביטול</a>

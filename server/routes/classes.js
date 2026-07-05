@@ -52,8 +52,8 @@ router.get("/", (req, res) => {
     .all()
     .map((c) => ({
       ...c,
-      from_date_str: hd.serialToGregorianString(c.from_date),
-      to_date_str: hd.serialToGregorianString(c.to_date),
+      from_date_str: hd.serialToHebrewString(c.from_date),
+      to_date_str: hd.serialToHebrewString(c.to_date),
     }));
 
   res.render("classes/list", {
@@ -104,22 +104,32 @@ router.delete("/:id", (req, res) => {
 
 // ============ מחזורים - הוספה/עריכה/מחיקה ============
 router.get("/cohorts/new", (req, res) => {
-  res.render("classes/cohort-form", { cohort: {}, mode: "new" });
+  const currentYear = hd.currentHebrewYearNumber();
+  res.render("classes/cohort-form", {
+    cohort: {
+      start_day: 1, start_month: 4, start_year: currentYear,
+      end_day: 30, end_month: 3, end_year: currentYear + 1,
+    },
+    mode: "new",
+  });
 });
 
-const COHORT_FIELDS = ["name", "status", "from_date", "to_date"];
-const COHORT_DATE_FIELDS = ["from_date", "to_date"];
+const COHORT_FIELDS = ["name", "status"];
 
-function normalizeCohortField(col, value) {
-  if (value === undefined || value === "") return null;
-  if (COHORT_DATE_FIELDS.includes(col)) return hd.gregorianStringToSerial(value);
-  return value;
+function hebrewFieldsToSerial(day, month, year) {
+  if (!day || !month || !year) return null;
+  const abs = hd.hebrewPartsToAbsolute(parseInt(year, 10), parseInt(month, 10), parseInt(day, 10));
+  return hd.absoluteToAccessSerial(abs);
 }
 
 router.post("/cohorts", (req, res) => {
   const body = req.body;
-  const cols = COHORT_FIELDS.filter((c) => c in body);
-  const values = cols.map((c) => normalizeCohortField(c, body[c]));
+  const cols = [...COHORT_FIELDS.filter((c) => c in body), "from_date", "to_date"];
+  const values = [
+    ...COHORT_FIELDS.filter((c) => c in body).map((c) => body[c] || null),
+    hebrewFieldsToSerial(body.start_day, body.start_month, body.start_year),
+    hebrewFieldsToSerial(body.end_day, body.end_month, body.end_year),
+  ];
   db.prepare(`INSERT INTO cohorts (${cols.join(",")}) VALUES (${cols.map(() => "?").join(",")})`).run(...values);
   res.redirect("/classes");
 });
@@ -127,11 +137,13 @@ router.post("/cohorts", (req, res) => {
 router.get("/cohorts/:id/edit", (req, res) => {
   const cohort = db.prepare("SELECT * FROM cohorts WHERE id = ?").get(req.params.id);
   if (!cohort) return res.status(404).render("404");
+  const startParts = hd.serialToHebrewParts(cohort.from_date) || { day: 1, month: 4, year: hd.currentHebrewYearNumber() };
+  const endParts = hd.serialToHebrewParts(cohort.to_date) || { day: 30, month: 3, year: hd.currentHebrewYearNumber() + 1 };
   res.render("classes/cohort-form", {
     cohort: {
       ...cohort,
-      from_date: hd.serialToInputDate(cohort.from_date),
-      to_date: hd.serialToInputDate(cohort.to_date),
+      start_day: startParts.day, start_month: startParts.month, start_year: startParts.year,
+      end_day: endParts.day, end_month: endParts.month, end_year: endParts.year,
     },
     mode: "edit",
   });
@@ -139,9 +151,13 @@ router.get("/cohorts/:id/edit", (req, res) => {
 
 router.put("/cohorts/:id", (req, res) => {
   const body = req.body;
-  const cols = COHORT_FIELDS.filter((c) => c in body);
+  const cols = [...COHORT_FIELDS.filter((c) => c in body), "from_date", "to_date"];
   const setClause = cols.map((c) => `${c} = ?`).join(", ");
-  const values = cols.map((c) => normalizeCohortField(c, body[c]));
+  const values = [
+    ...COHORT_FIELDS.filter((c) => c in body).map((c) => body[c] || null),
+    hebrewFieldsToSerial(body.start_day, body.start_month, body.start_year),
+    hebrewFieldsToSerial(body.end_day, body.end_month, body.end_year),
+  ];
   values.push(req.params.id);
   db.prepare(`UPDATE cohorts SET ${setClause} WHERE id = ?`).run(...values);
   res.redirect("/classes");

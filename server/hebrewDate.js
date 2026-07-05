@@ -320,4 +320,6 @@ module.exports = {
   daysInHebrewMonth,
   isHebrewLeapYear,
   israelHour,
+  absoluteToAccessSerial,
+  hebrewNumeral,
 };
