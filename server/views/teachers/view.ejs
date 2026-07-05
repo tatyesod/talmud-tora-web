@@ -1,5 +1,47 @@
 <%- include('../partials/header', {title: (teacher.first_name||'')+' '+(teacher.last_name||'')}) %>
 
+<% if (prevTeacherId) { %>
+  <a href="/teachers/<%= prevTeacherId %>" class="teacher-nav-arrow teacher-nav-prev" title="המלמד הקודם">›</a>
+<% } %>
+<% if (nextTeacherId) { %>
+  <a href="/teachers/<%= nextTeacherId %>" class="teacher-nav-arrow teacher-nav-next" title="המלמד הבא">‹</a>
+<% } %>
+
+<style>
+.teacher-nav-arrow {
+  position: fixed;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: #fff;
+  border: 1px solid var(--border);
+  box-shadow: 0 2px 10px rgba(0,0,0,0.18);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.8em;
+  font-weight: 700;
+  color: var(--primary);
+  text-decoration: none;
+  z-index: 50;
+  transition: background 0.15s, transform 0.15s;
+  line-height: 1;
+}
+.teacher-nav-arrow:hover {
+  background: var(--primary);
+  color: #fff;
+  text-decoration: none;
+  transform: translateY(-50%) scale(1.08);
+}
+.teacher-nav-prev { right: 14px; }
+.teacher-nav-next { left: 14px; }
+@media (max-width: 900px) {
+  .teacher-nav-arrow { width: 38px; height: 38px; font-size: 1.4em; }
+}
+</style>
+
 <div class="card">
   <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:10px;">
     <h1><%= teacher.first_name %> <%= teacher.last_name %> <span class="badge <%= teacher.status !== 'פעיל' ? 'archive' : '' %>"><%= teacher.status || '' %></span></h1>
