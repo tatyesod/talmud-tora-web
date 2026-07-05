@@ -131,7 +131,8 @@ router.get("/:userId", (req, res) => {
 
 router.post("/:userId", upload.single("attachment"), (req, res) => {
   const { body, reply_to_id } = req.body;
-  const hasText = body && body.trim();
+  let cleanBody = body ? body.replace(/\n{3,}/g, "\n\n").trim() : "";
+  const hasText = cleanBody.length > 0;
   const file = req.file;
 
   if (hasText || file) {
@@ -146,7 +147,7 @@ router.post("/:userId", upload.single("attachment"), (req, res) => {
       INSERT INTO messages (sender_id, recipient_id, body, created_at, attachment_path, attachment_name, attachment_type, reply_to_id)
       VALUES (?,?,?,?,?,?,?,?)
     `).run(
-      req.currentUser.id, req.params.userId, hasText ? body.trim() : "", new Date().toISOString(),
+      req.currentUser.id, req.params.userId, hasText ? cleanBody : "", new Date().toISOString(),
       attachmentPath, attachmentName, attachmentType, reply_to_id ? parseInt(reply_to_id) : null
     );
   }

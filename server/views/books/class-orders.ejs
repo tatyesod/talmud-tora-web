@@ -46,7 +46,12 @@
           <% students.forEach(s => { %>
             <tr class="student-row" data-student="<%= s.id %>">
               <td class="student-name">
-                <strong><%= s.last_name || s.family_last || '' %> <%= s.first_name %></strong>
+                <div class="student-name-row">
+                  <strong><%= s.last_name || s.family_last || '' %> <%= s.first_name %></strong>
+                  <% if (s.family_id) { %>
+                    <a href="/books/payments?year=<%= encodeURIComponent(year) %>#fam-<%= s.family_id %>" class="student-pay-link" title="מעבר לתשלום המשפחה">💳</a>
+                  <% } %>
+                </div>
                 <% const addr = [s.street, s.house_number].filter(Boolean).join(' '); %>
                 <% if (addr) { %><div class="student-address"><%= addr %></div><% } %>
               </td>
@@ -102,6 +107,9 @@
 .student-col { min-width: 190px; max-width: 240px; text-align: right !important; background: #f8f9fa; position: sticky; right: 0; z-index: 2; }
 .student-name { max-width: 240px; text-align: right !important; background: #fff; position: sticky; right: 0; z-index: 1; border-right: 2px solid #dee2e6 !important; }
 .student-address { font-size: 0.85em; color: var(--muted); font-weight: 400; margin-top: 2px; }
+.student-name-row { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+.student-pay-link { text-decoration: none; font-size: 1em; opacity: 0.7; flex-shrink: 0; }
+.student-pay-link:hover { opacity: 1; }
 .book-col { min-width: 100px; max-width: 130px; font-size: 0.80em; background: #f0f4f8; vertical-align: bottom; cursor: pointer; }
 .book-col:hover { background: #dde8f0; }
 .book-price { font-weight: 700; color: var(--primary); font-size: 0.95em; margin-top: 2px; }

@@ -89,11 +89,12 @@ app.use((req, res, next) => {
   };
   res.locals.linkify = (text) => {
     if (!text) return "";
+    const collapsed = String(text).replace(/\n{3,}/g, "\n\n");
     const escapeHtml = (s) => String(s)
       .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
       .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
     const urlPattern = /((?:https?:\/\/|www\.)[^\s<>"']+)/gi;
-    return String(text).split(urlPattern).map((part, i) => {
+    return collapsed.split(urlPattern).map((part, i) => {
       if (i % 2 === 1) {
         // חלק זוגי-אי הוא כתובת אתר שנתפסה ע"י ה-regex
         let href = part.replace(/[.,;:!?)\]]+$/, ""); // מסיר סימני פיסוק שדבוקים בסוף
