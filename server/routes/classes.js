@@ -92,7 +92,56 @@ router.get("/:id/edit", (req, res) => {
   const classRow = db.prepare("SELECT * FROM classes WHERE id = ?").get(req.params.id);
   if (!classRow) return res.status(404).render("404");
   const categories = db.prepare("SELECT id, name FROM categories ORDER BY id").all();
-  res.render("classes/form", { classRow, mode: "edit", categories, conflict: req.query.conflict === "1" });
+
+  const teacherAssignments = db
+    .prepare(`
+      SELECT tc.id AS assignment_id, tc.role, t.id AS teacher_id, t.first_name, t.last_name
+      FROM teacher_classes tc JOIN teachers t ON tc.teacher_id = t.id
+      WHERE tc.class_id = ?
+      ORDER BY CASE tc.role WHEN 'בוקר' THEN 1 WHEN 'אחה"צ' THEN 2 WHEN 'עוזר' THEN 3 ELSE 4 END
+    `)
+    .all(req.params.id);
+  const allTeachers = db.prepare("SELECT id, first_name, last_name FROM teachers ORDER BY last_name, first_name").all();
+
+  // ניווט חצים בין כיתות - לפי אותו סדר כמו ברשימת הכיתות (שם, מקבילה)
+  const orderedIds = db.prepare("SELECT id FROM classes ORDER BY name, parallel").all().map((r) => r.id);
+  const curIdx = orderedIds.findIndex((id) => String(id) === String(req.params.id));
+  const prevId = curIdx > 0 ? orderedIds[curIdx - 1] : null;
+  const nextId = curIdx >= 0 && curIdx < orderedIds.length - 1 ? orderedIds[curIdx + 1] : null;
+
+  res.render("classes/form", {
+    classRow, mode: "edit", categories, conflict: req.query.conflict === "1",
+    teacherAssignments, allTeachers, teacherAssignError: req.query.teacherAssignError || null,
+    prevId, nextId,
+  });
+});
+
+router.post("/:id/teachers", (req, res) => {
+  const { teacher_id, role } = req.body;
+  if (teacher_id) {
+    if (role === "בוקר" || role === 'אחה"צ') {
+      const existing = db.prepare(`
+        SELECT t.id, t.first_name, t.last_name FROM teacher_classes tc
+        JOIN teachers t ON tc.teacher_id = t.id
+        WHERE tc.class_id = ? AND tc.role = ? AND tc.teacher_id != ?
+      `).get(req.params.id, role, teacher_id);
+      if (existing) {
+        const msg = `הכיתה כבר משובצת ל${role} עם ${existing.first_name || ""} ${existing.last_name || ""}. לא ניתן לשבץ מלמד נוסף לאותה כיתה באותה משמרת.`;
+        return res.redirect(`/classes/${req.params.id}/edit?teacherAssignError=${encodeURIComponent(msg)}`);
+      }
+    }
+    db.prepare("INSERT INTO teacher_classes (class_id, teacher_id, role) VALUES (?,?,?)").run(
+      req.params.id, teacher_id, role || null
+    );
+  }
+  res.redirect(`/classes/${req.params.id}/edit`);
+});
+
+router.delete("/:id/teachers/:assignmentId", (req, res) => {
+  db.prepare("DELETE FROM teacher_classes WHERE id = ? AND class_id = ?").run(
+    req.params.assignmentId, req.params.id
+  );
+  res.redirect(`/classes/${req.params.id}/edit`);
 });
 
 router.put("/:id", (req, res) => {

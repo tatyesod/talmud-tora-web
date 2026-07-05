@@ -2,7 +2,7 @@
 
 <div class="card">
   <h1><%= request.subject %> <span class="badge <%= request.status !== 'סגור' ? '' : 'archive' %>"><%= request.status %></span></h1>
-  <a href="/parent-comm/requests" class="btn secondary" style="margin-bottom:14px; display:inline-block;">חזרה לרשימה</a>
+  <a href="javascript:history.back()" class="btn secondary" style="margin-bottom:14px; display:inline-block;">חזרה לרשימה</a>
 
   <table>
     <tr><th>משפחה</th><td><%= request.family_last_name || '' %></td></tr>

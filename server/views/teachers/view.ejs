@@ -50,7 +50,7 @@
       <form method="POST" action="/teachers/<%= teacher.id %>?_method=DELETE" onsubmit="return confirm('האם למחוק?');" style="display:inline">
         <button type="submit" class="btn danger">מחיקה</button>
       </form>
-      <a href="/teachers" class="btn secondary">חזרה לרשימה</a>
+      <a href="javascript:history.back()" class="btn secondary">חזרה לרשימה</a>
     </div>
   </div>
 </div>

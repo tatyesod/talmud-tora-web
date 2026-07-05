@@ -1,7 +1,15 @@
 <%- include('../partials/header', {title: mode === 'new' ? 'כיתה חדשה' : 'עריכת כיתה'}) %>
 
 <div class="card">
-  <h1><%= mode === 'new' ? 'הוספת כיתה חדשה' : 'עריכת כיתה' %></h1>
+  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+    <h1><%= mode === 'new' ? 'הוספת כיתה חדשה' : 'עריכת כיתה' %></h1>
+    <% if (mode === 'edit') { %>
+      <div style="display:flex; gap:8px;">
+        <% if (prevId) { %><a href="/classes/<%= prevId %>/edit" class="btn small secondary">→ הקודמת</a><% } %>
+        <% if (nextId) { %><a href="/classes/<%= nextId %>/edit" class="btn small secondary">הבאה ←</a><% } %>
+      </div>
+    <% } %>
+  </div>
   <% if (typeof conflict !== 'undefined' && conflict) { %>
     <div style="background:#fdecea; border:1px solid #f5c6cb; color:#a94442; border-radius:8px; padding:10px 16px; margin-bottom:14px;">
       ⚠️ מישהו אחר עדכן את הכיתה הזו בינתיים. הנתונים המוצגים כאן הם המעודכנים ביותר — יש לבדוק ולבצע שוב את השינוי לפני שמירה חוזרת.
@@ -51,9 +59,64 @@
     </div>
     <div class="actions" style="margin-top:14px;">
       <button type="submit" class="btn">שמירה</button>
-      <a href="/classes" class="btn secondary">ביטול</a>
+      <a href="javascript:history.back()" class="btn secondary">ביטול</a>
     </div>
   </form>
 </div>
+
+<% if (mode === 'edit') { %>
+<div class="card">
+  <h3>שיבוץ מלמדים</h3>
+  <p style="color:var(--muted); font-size:0.85em;">
+    זהו אותו שיבוץ שמופיע בכרטיס המלמד ("שיבוץ לכיתות") — עדכון כאן או שם משפיע על אותו מקום בדיוק.
+  </p>
+  <% if (teacherAssignError) { %>
+    <div style="background:#fdecea; border:1px solid #f5c6cb; color:#a94442; border-radius:8px; padding:10px 16px; margin-bottom:14px;">
+      ⚠️ <%= teacherAssignError %>
+    </div>
+  <% } %>
+  <% if (teacherAssignments.length === 0) { %>
+    <p class="empty-state">אין עדיין מלמדים משובצים לכיתה זו</p>
+  <% } else { %>
+    <table>
+      <thead><tr><th>מלמד</th><th>תפקיד</th><th></th></tr></thead>
+      <tbody>
+        <% teacherAssignments.forEach(a => { %>
+          <tr>
+            <td><a href="/teachers/<%= a.teacher_id %>"><%= a.last_name || '' %> <%= a.first_name %></a></td>
+            <td><%= a.role || '' %></td>
+            <td>
+              <form method="POST" action="/classes/<%= classRow.id %>/teachers/<%= a.assignment_id %>?_method=DELETE" onsubmit="return confirm('להסיר שיבוץ זה?');" style="display:inline">
+                <button type="submit" class="btn small danger">הסר</button>
+              </form>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  <% } %>
+
+  <form method="POST" action="/classes/<%= classRow.id %>/teachers" class="form-grid" style="margin-top:14px;">
+    <div class="form-group">
+      <label>הוספת שיבוץ - מלמד</label>
+      <select name="teacher_id" required>
+        <option value="">בחר מלמד</option>
+        <% allTeachers.forEach(t => { %>
+          <option value="<%= t.id %>"><%= t.last_name || '' %> <%= t.first_name %></option>
+        <% }) %>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>תפקיד</label>
+      <select name="role">
+        <option value="בוקר">בוקר</option>
+        <option value='אחה"צ'>אחה"צ</option>
+        <option value="עוזר">עוזר</option>
+      </select>
+    </div>
+    <div class="form-group"><button type="submit" class="btn small" style="margin-top:22px;">+ הוסף שיבוץ</button></div>
+  </form>
+</div>
+<% } %>
 
 <%- include('../partials/footer') %>
