@@ -45,7 +45,11 @@
         <tbody>
           <% students.forEach(s => { %>
             <tr class="student-row" data-student="<%= s.id %>">
-              <td class="student-name"><strong><%= s.first_name %> <%= s.last_name || s.family_last || '' %></strong></td>
+              <td class="student-name">
+                <strong><%= s.last_name || s.family_last || '' %> <%= s.first_name %></strong>
+                <% const addr = [s.street, s.house_number].filter(Boolean).join(' '); %>
+                <% if (addr) { %><div class="student-address"><%= addr %></div><% } %>
+              </td>
               <% let rowTotal = 0; catalog.forEach(c => {
                 const checked = ordersMap[s.id] && ordersMap[s.id].has(c.id);
                 if (checked) rowTotal += c.price;
@@ -95,8 +99,9 @@
 }
 .books-table { border-collapse: collapse; font-size: 0.87em; }
 .books-table th, .books-table td { border: 1px solid var(--border); padding: 5px 7px; text-align: center; }
-.student-col { min-width: 160px; max-width: 200px; text-align: right !important; background: #f8f9fa; position: sticky; right: 0; z-index: 2; }
-.student-name { max-width: 200px; text-align: right !important; background: #fff; position: sticky; right: 0; z-index: 1; border-right: 2px solid #dee2e6 !important; }
+.student-col { min-width: 190px; max-width: 240px; text-align: right !important; background: #f8f9fa; position: sticky; right: 0; z-index: 2; }
+.student-name { max-width: 240px; text-align: right !important; background: #fff; position: sticky; right: 0; z-index: 1; border-right: 2px solid #dee2e6 !important; }
+.student-address { font-size: 0.85em; color: var(--muted); font-weight: 400; margin-top: 2px; }
 .book-col { min-width: 100px; max-width: 130px; font-size: 0.80em; background: #f0f4f8; vertical-align: bottom; cursor: pointer; }
 .book-col:hover { background: #dde8f0; }
 .book-price { font-weight: 700; color: var(--primary); font-size: 0.95em; margin-top: 2px; }

@@ -90,7 +90,8 @@ router.get("/class", (req, res) => {
   ).all(year, cls.name);
 
   const students = db.prepare(`
-    SELECT s.id, s.first_name, s.last_name, f.last_name AS family_last
+    SELECT s.id, s.first_name, s.last_name, f.last_name AS family_last,
+           f.street, f.house_number, f.city
     FROM students s LEFT JOIN families f ON s.family_id=f.id
     WHERE s.class_id=? AND s.status='פעיל' ORDER BY s.last_name, s.first_name
   `).all(class_id);
