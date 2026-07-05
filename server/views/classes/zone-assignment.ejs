@@ -1,0 +1,99 @@
+<%- include('../partials/header', {title: 'שיבוץ עדיין לא נכנסו לפי אזור', wide: true}) %>
+
+<div class="card">
+  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+    <h1>שיבוץ אוטומטי — "עדיין לא נכנסו" לפי אזור מגורים</h1>
+    <a href="/classes" class="btn small secondary">← חזרה לכיתות</a>
+  </div>
+
+  <p class="muted" style="margin-top:6px;">
+    הכלי בודק את כתובת המשפחה של כל תלמיד בכיתת "עדיין לא נכנסו" (בכל מקבילה), ומציע שיבוץ למקבילה 1-4 לפי אזור המגורים
+    (אזורים 1-2 = סניף סוקולוב, אזורים 3-4 = סניף בן פתחיה). שום דבר לא משתנה עד שתלחץ על "בצע שיבוץ" למטה.
+  </p>
+
+  <% if (typeof done !== 'undefined' || (req.query && req.query.done)) { %>
+    <div style="background:#e8f5e9; border:1px solid #a5d6a7; color:#2e7d32; border-radius:8px; padding:10px 16px; margin:10px 0;">
+      ✅ השיבוץ בוצע בהצלחה.
+    </div>
+  <% } %>
+
+  <div style="display:flex; gap:16px; flex-wrap:wrap; margin:16px 0;">
+    <div class="summary-panel"><div class="summary-num"><%= summary.total %></div><div class="summary-text">סה"כ תלמידים</div></div>
+    <div class="summary-panel" style="background:#fff3e0;"><div class="summary-num"><%= summary.needs_move %></div><div class="summary-text">דורשים שיבוץ מחדש</div></div>
+    <div class="summary-panel" style="background:#e8f5e9;"><div class="summary-num"><%= summary.already_correct %></div><div class="summary-text">כבר במקבילה הנכונה</div></div>
+    <div class="summary-panel" style="background:#fdecea;"><div class="summary-num"><%= summary.unmatched %></div><div class="summary-text">רחוב לא מזוהה - ידני</div></div>
+    <% if (summary.missing_class > 0) { %>
+      <div class="summary-panel" style="background:#fdecea;"><div class="summary-num"><%= summary.missing_class %></div><div class="summary-text">חסרה כיתת יעד במערכת</div></div>
+    <% } %>
+  </div>
+
+  <% if (summary.missing_class > 0) { %>
+    <div style="background:#fdecea; border:1px solid #f5c6cb; color:#a94442; border-radius:8px; padding:10px 16px; margin-bottom:16px;">
+      ⚠️ חסרות כיתות "עדיין לא נכנסו" עם חלק מהמקבילות (1-4) במערכת. יש ליצור אותן דרך "כיתה חדשה" (עם השם "עדיין לא נכנסו" והמקבילה המתאימה) לפני שאפשר לשבץ את כל התלמידים.
+    </div>
+  <% } %>
+
+  <form method="POST" action="/classes/zone-assignment/apply" id="zone-form">
+    <div class="table-scroll-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th></th>
+            <th>תלמיד</th>
+            <th>רחוב</th>
+            <th>מקבילה נוכחית</th>
+            <th>אזור מחושב</th>
+            <th>סניף</th>
+            <th>מקבילה מוצעת</th>
+            <th>סטטוס</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% rows.forEach(r => { %>
+            <tr>
+              <td>
+                <% if (r.status === 'needs_move') { %>
+                  <input type="checkbox" class="row-check" checked />
+                  <input type="hidden" name="student_id" value="<%= r.id %>" />
+                  <input type="hidden" name="target_class_id" value="<%= r.target_class_id %>" />
+                <% } %>
+              </td>
+              <td class="nowrap-cell"><%= r.last_name || '' %> <%= r.first_name %></td>
+              <td class="nowrap-cell"><%= [r.street, r.house_number].filter(Boolean).join(' ') || '—' %></td>
+              <td><%= r.current_parallel || '—' %></td>
+              <td><%= r.zone || '—' %></td>
+              <td><%= r.branch || '—' %></td>
+              <td><%= r.zone || '—' %></td>
+              <td>
+                <% if (r.status === 'already_correct') { %><span style="color:#2e7d32;">✅ תקין</span>
+                <% } else if (r.status === 'needs_move') { %><span style="color:#e65100;">↪️ יעבור</span>
+                <% } else if (r.status === 'missing_class') { %><span style="color:#a94442;">⚠️ חסרה כיתת יעד</span>
+                <% } else { %><span style="color:#a94442;">❓ רחוב לא מזוהה</span>
+                <% } %>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+
+    <% if (summary.needs_move > 0) { %>
+      <div style="margin-top:16px;">
+        <button type="submit" class="btn" onclick="return confirm('לשבץ מחדש ' + document.querySelectorAll('.row-check:checked').length + ' תלמידים לפי האזור המחושב?')">
+          💾 בצע שיבוץ ל-<%= summary.needs_move %> תלמידים
+        </button>
+      </div>
+    <% } %>
+  </form>
+</div>
+
+<script>
+  document.querySelectorAll('.row-check').forEach((cb) => {
+    cb.addEventListener('change', () => {
+      const hiddenInputs = cb.parentElement.querySelectorAll('input[type=hidden]');
+      hiddenInputs.forEach((h) => h.disabled = !cb.checked);
+    });
+  });
+</script>
+
+<%- include('../partials/footer') %>

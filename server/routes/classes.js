@@ -152,6 +152,71 @@ router.delete("/cohorts/:id", (req, res) => {
   res.redirect("/classes");
 });
 
+// ============ שיבוץ אוטומטי לכיתות "עדיין לא נכנסו" לפי אזור מגורים ============
+const { getZoneForAddress } = require("../streetZones");
+
+router.get("/zone-assignment", (req, res) => {
+  const students = db.prepare(`
+    SELECT s.id, s.first_name, s.last_name, s.class_id,
+           c.parallel AS current_parallel,
+           f.street, f.house_number, f.city
+    FROM students s
+    JOIN classes c ON s.class_id = c.id
+    LEFT JOIN families f ON s.family_id = f.id
+    WHERE c.name = 'עדיין לא נכנסו' AND s.status = 'פעיל'
+    ORDER BY s.last_name, s.first_name
+  `).all();
+
+  const targetClassesByParallel = {};
+  [1, 2, 3, 4].forEach((p) => {
+    targetClassesByParallel[p] = db
+      .prepare("SELECT id, parallel, branch FROM classes WHERE name = 'עדיין לא נכנסו' AND parallel = ? AND status = 'פעיל' LIMIT 1")
+      .get(String(p));
+  });
+
+  const rows = students.map((s) => {
+    const result = getZoneForAddress(s.street, s.house_number);
+    let targetClass = null, status = "unmatched";
+    if (result) {
+      targetClass = targetClassesByParallel[result.zone];
+      if (!targetClass) status = "missing_class";
+      else if (targetClass.id === s.class_id) status = "already_correct";
+      else status = "needs_move";
+    }
+    return {
+      ...s,
+      zone: result ? result.zone : null,
+      branch: result ? result.branch : null,
+      target_class_id: targetClass ? targetClass.id : null,
+      status,
+    };
+  });
+
+  const summary = {
+    total: rows.length,
+    needs_move: rows.filter((r) => r.status === "needs_move").length,
+    already_correct: rows.filter((r) => r.status === "already_correct").length,
+    unmatched: rows.filter((r) => r.status === "unmatched").length,
+    missing_class: rows.filter((r) => r.status === "missing_class").length,
+  };
+
+  res.render("classes/zone-assignment", { rows, summary });
+});
+
+router.post("/zone-assignment/apply", (req, res) => {
+  let studentIds = req.body.student_id || [];
+  if (!Array.isArray(studentIds)) studentIds = [studentIds];
+  let targetIds = req.body.target_class_id || [];
+  if (!Array.isArray(targetIds)) targetIds = [targetIds];
+
+  const update = db.prepare("UPDATE students SET class_id = ? WHERE id = ?");
+  studentIds.forEach((sid, i) => {
+    if (targetIds[i]) update.run(targetIds[i], sid);
+  });
+
+  res.redirect("/classes/zone-assignment?done=1");
+});
+
 // --- צפייה בכיתה (תמיד אחרון, כדי לא להתנגש עם /new ו-/cohorts) ---
 router.get("/:id", (req, res) => {
   const classRow = db

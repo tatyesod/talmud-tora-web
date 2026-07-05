@@ -3,7 +3,10 @@
 <div class="card">
   <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
     <h1>כיתות</h1>
-    <a href="/classes/new" class="btn">+ כיתה חדשה</a>
+    <div style="display:flex; gap:10px;">
+      <a href="/classes/zone-assignment" class="btn secondary">🗺️ שיבוץ "עדיין לא נכנסו" לפי אזור</a>
+      <a href="/classes/new" class="btn">+ כיתה חדשה</a>
+    </div>
   </div>
 
   <% if (selectedClassIds.length > 0) { %>
