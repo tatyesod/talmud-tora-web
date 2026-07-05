@@ -20,7 +20,7 @@ function getDiscountPercent(activeChildrenCount) {
 function calcFamilyTuition(familyId) {
   const children = db
     .prepare(`
-      SELECT s.id, s.first_name, s.last_name, c.name AS class_name,
+      SELECT s.id, s.first_name, s.last_name, c.name AS class_name, c.parallel AS class_parallel,
              cat.name AS category_name, cat.price
       FROM students s
       LEFT JOIN classes c ON s.class_id = c.id

@@ -87,7 +87,7 @@
         <% tuition.children.forEach(c => { %>
           <tr>
             <td><a href="/students/<%= c.id %>"><%= c.first_name %> <%= c.last_name %></a></td>
-            <td><%= c.class_name || '' %></td>
+            <td><%= [c.class_name, c.class_parallel].filter(Boolean).join('') %></td>
             <td><%= c.category_name || '' %></td>
             <td><%= c.price != null ? c.price.toLocaleString()+' ₪' : '—' %></td>
           </tr>

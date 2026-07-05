@@ -12,7 +12,7 @@
       <img src="/images/logo-reports.jpg" alt="לוגו" style="height:60px;" />
     </div>
     <table style="width:100%;">
-      <tr><td class="label">שם התלמיד</td><td><strong><%= student.full_name %></strong></td><td class="label">כיתה</td><td><%= student.class_name || '' %></td></tr>
+      <tr><td class="label">שם התלמיד</td><td><strong><%= student.full_name %></strong></td><td class="label">כיתה</td><td><%= [student.class_name, student.class_parallel].filter(Boolean).join('') %></td></tr>
       <tr><td class="label">ת.ז</td><td><%= student.id_number || '' %></td><td class="label">תאריך לידה</td><td><%= student.birth_date_civil_str || '' %> (<%= student.birth_date_hebrew_str || '' %>)</td></tr>
       <tr><td class="label">קופת חולים</td><td><%= student.health_fund || '' %></td><td class="label">הולך לבדו</td><td><%= student.walks_alone || '' %></td></tr>
       <tr><td class="label" colspan="1">אלרגיות</td><td colspan="3"><%= student.allergies || '' %></td></tr>

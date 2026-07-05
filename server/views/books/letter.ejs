@@ -49,7 +49,7 @@
 
 <% let grandTotal = 0; letterData.forEach(ld => { grandTotal += ld.total; %>
   <div class="student-section">
-    <h3><%= ld.student.first_name %> <%= ld.student.last_name || '' %> — <%= ld.student.class_name %></h3>
+    <h3><%= ld.student.first_name %> <%= ld.student.last_name || '' %> — <%= [ld.student.class_name, ld.student.class_parallel].filter(Boolean).join('') %></h3>
     <table>
       <thead><tr><th>פריט</th><th>הוצאה</th><th>מחיר</th></tr></thead>
       <tbody>

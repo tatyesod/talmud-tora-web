@@ -328,7 +328,7 @@ router.get("/letter", (req, res) => {
 
   if (family_id) {
     const family = db.prepare("SELECT * FROM families WHERE id=?").get(family_id);
-    const students = db.prepare("SELECT s.*, c.name AS class_name FROM students s LEFT JOIN classes c ON s.class_id=c.id WHERE s.family_id=? AND s.status='פעיל'").all(family_id);
+    const students = db.prepare("SELECT s.*, c.name AS class_name, c.parallel AS class_parallel FROM students s LEFT JOIN classes c ON s.class_id=c.id WHERE s.family_id=? AND s.status='פעיל'").all(family_id);
     const letterData = students.map(s => {
       const catalog = db.prepare("SELECT * FROM book_catalog WHERE year_label=? AND class_name=? ORDER BY sort_order").all(year, s.class_name);
       const orderSet = new Set(db.prepare("SELECT catalog_id FROM book_orders WHERE year_label=? AND student_id=?").all(year, s.id).map(o => o.catalog_id));
@@ -346,7 +346,7 @@ router.get("/letter", (req, res) => {
     const allLetterData = [];
     for (const fid of famIds) {
       const family = db.prepare("SELECT * FROM families WHERE id=?").get(fid);
-      const students = db.prepare("SELECT s.*, c.name AS class_name FROM students s LEFT JOIN classes c ON s.class_id=c.id WHERE s.family_id=? AND s.status='פעיל'").all(fid);
+      const students = db.prepare("SELECT s.*, c.name AS class_name, c.parallel AS class_parallel FROM students s LEFT JOIN classes c ON s.class_id=c.id WHERE s.family_id=? AND s.status='פעיל'").all(fid);
       const letterData = students.map(s => {
         const catalog = db.prepare("SELECT * FROM book_catalog WHERE year_label=? AND class_name=? ORDER BY sort_order").all(year, s.class_name);
         const orderSet = new Set(db.prepare("SELECT catalog_id FROM book_orders WHERE year_label=? AND student_id=?").all(year, s.id).map(o => o.catalog_id));
