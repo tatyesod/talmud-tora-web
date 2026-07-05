@@ -31,7 +31,7 @@
       <td><%= student.birth_date_hebrew_str || '' %></td>
     </tr>
     <tr>
-      <th>כיתה</th><td><%- student.class_name ? `<a href="/classes/${student.class_id}">${student.class_name}</a>` : '' %></td>
+      <th>כיתה</th><td><%- student.class_name ? `<a href="/classes/${student.class_id}">${student.class_name}${student.class_parallel || ''}</a>` : '' %></td>
       <th>מחזור</th><td><%= student.cohort_name || '' %></td>
     </tr>
     <tr><th>הולך לבדו</th><td><%= student.walks_alone || '' %></td><th>קופת חולים</th><td><%= student.health_fund || '' %></td></tr>
