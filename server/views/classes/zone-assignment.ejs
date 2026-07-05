@@ -40,6 +40,7 @@
           <tr>
             <th></th>
             <th>תלמיד</th>
+            <th>סטטוס תלמיד</th>
             <th>רחוב</th>
             <th>מקבילה נוכחית</th>
             <th>אזור מחושב</th>
@@ -59,6 +60,7 @@
                 <% } %>
               </td>
               <td class="nowrap-cell"><%= r.last_name || '' %> <%= r.first_name %></td>
+              <td><%= r.status || '' %></td>
               <td class="nowrap-cell"><%= [r.street, r.house_number].filter(Boolean).join(' ') || '—' %></td>
               <td><%= r.current_parallel || '—' %></td>
               <td><%= r.zone || '—' %></td>

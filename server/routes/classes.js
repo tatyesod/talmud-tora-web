@@ -157,13 +157,13 @@ const { getZoneForAddress } = require("../streetZones");
 
 router.get("/zone-assignment", (req, res) => {
   const students = db.prepare(`
-    SELECT s.id, s.first_name, s.last_name, s.class_id,
+    SELECT s.id, s.first_name, s.last_name, s.class_id, s.status,
            c.parallel AS current_parallel,
            f.street, f.house_number, f.city
     FROM students s
     JOIN classes c ON s.class_id = c.id
     LEFT JOIN families f ON s.family_id = f.id
-    WHERE c.name LIKE 'עדיין לא נכנסו%' AND s.status = 'פעיל'
+    WHERE c.name LIKE 'עדיין לא נכנסו%' AND s.status NOT IN ('ארכיון', 'לא התקבל')
     ORDER BY s.last_name, s.first_name
   `).all();
 
