@@ -138,7 +138,11 @@ function promoteYear() {
 
   // 3. תלמידים ללא כיתה (אחים קטנים) - לא נוגעים, נשארים ללא כיתה בסטטוס לא פעיל כפי שהם
 
-  // 4. העלאת מספר השנה
+  // 4. איפוס שדה "מעבר לכיתה (בהעלאת שנה)" בכל הכיתות - החריגות שהוגדרו היו רלוונטיות
+  //    להעלאת השנה הזו בלבד; לשנה הבאה חוזרים לברירת המחדל (אותה מקבילה), אלא אם יוגדר מחדש בכוונה
+  db.prepare("UPDATE classes SET transfer_number = NULL").run();
+
+  // 5. העלאת מספר השנה
   const newNum = currentNum + 1;
   const newLabel = hd.formatHebrewYear(newNum);
   db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('current_hebrew_year', ?)").run(newLabel);
