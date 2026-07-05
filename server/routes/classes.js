@@ -47,7 +47,7 @@ router.get("/", (req, res) => {
   const cohorts = db
     .prepare(`
       SELECT co.*, (SELECT COUNT(*) FROM students s WHERE s.cohort_id = co.id) AS count
-      FROM cohorts co ORDER BY co.name DESC
+      FROM cohorts co ORDER BY co.to_date DESC, co.from_date DESC
     `)
     .all()
     .map((c) => ({
@@ -157,7 +157,7 @@ const { getZoneForAddress } = require("../streetZones");
 
 router.get("/zone-assignment", (req, res) => {
   const cohortId = req.query.cohort_id || "";
-  const cohorts = db.prepare("SELECT id, name FROM cohorts ORDER BY name DESC").all();
+  const cohorts = db.prepare("SELECT id, name FROM cohorts ORDER BY to_date DESC, from_date DESC").all();
 
   let students;
   if (cohortId) {

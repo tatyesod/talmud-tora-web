@@ -123,7 +123,7 @@ router.get("/students", (req, res) => {
 
   const students = db.prepare(sql).all(...params).map(withDates);
   const classes = db.prepare("SELECT id, name, parallel FROM classes ORDER BY name, parallel").all();
-  const cohorts = db.prepare("SELECT id, name FROM cohorts ORDER BY name DESC").all();
+  const cohorts = db.prepare("SELECT id, name FROM cohorts ORDER BY to_date DESC, from_date DESC").all();
   const statuses = db.prepare("SELECT DISTINCT status FROM students WHERE status IS NOT NULL ORDER BY status").all();
 
   res.render("students/list", {
@@ -137,7 +137,7 @@ router.get("/students", (req, res) => {
 // --- הוספה ---
 router.get("/students/new", (req, res) => {
   const classes = db.prepare("SELECT id, name, parallel FROM classes ORDER BY name, parallel").all();
-  const cohorts = db.prepare("SELECT id, name FROM cohorts ORDER BY name DESC").all();
+  const cohorts = db.prepare("SELECT id, name FROM cohorts ORDER BY to_date DESC, from_date DESC").all();
   const families = db.prepare("SELECT id, last_name, father_name, sector FROM families ORDER BY last_name").all();
   const chassidut = db.prepare("SELECT id, name FROM chassidut ORDER BY name").all();
   const yeshivot = db.prepare("SELECT id, name FROM yeshivot ORDER BY name").all();
@@ -218,7 +218,7 @@ router.get("/students/:id/edit", (req, res) => {
   `).get(req.params.id);
   if (!student) return res.status(404).render("404");
   const classes = db.prepare("SELECT id, name, parallel FROM classes ORDER BY name, parallel").all();
-  const cohorts = db.prepare("SELECT id, name FROM cohorts ORDER BY name DESC").all();
+  const cohorts = db.prepare("SELECT id, name FROM cohorts ORDER BY to_date DESC, from_date DESC").all();
   const families = db.prepare("SELECT id, last_name, father_name, sector FROM families ORDER BY last_name").all();
   res.render("students/form", {
     student: {
