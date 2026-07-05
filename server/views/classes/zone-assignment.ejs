@@ -11,7 +11,7 @@
     (אזורים 1-2 = סניף סוקולוב, אזורים 3-4 = סניף בן פתחיה). שום דבר לא משתנה עד שתלחץ על "בצע שיבוץ" למטה.
   </p>
 
-  <% if (typeof done !== 'undefined' || (req.query && req.query.done)) { %>
+  <% if (done) { %>
     <div style="background:#e8f5e9; border:1px solid #a5d6a7; color:#2e7d32; border-radius:8px; padding:10px 16px; margin:10px 0;">
       ✅ השיבוץ בוצע בהצלחה.
     </div>

@@ -200,7 +200,7 @@ router.get("/zone-assignment", (req, res) => {
     missing_class: rows.filter((r) => r.status === "missing_class").length,
   };
 
-  res.render("classes/zone-assignment", { rows, summary });
+  res.render("classes/zone-assignment", { rows, summary, done: req.query.done === "1" });
 });
 
 router.post("/zone-assignment/apply", (req, res) => {
