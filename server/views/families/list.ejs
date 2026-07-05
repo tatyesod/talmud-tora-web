@@ -33,9 +33,9 @@
     <div class="table-scroll-wrap"><table>
       <thead><tr>
         <th><a href="<%= sortUrl('last_name') %>">שם משפחה<%= sortIndicator('last_name') %></a></th>
-        <th><a href="<%= sortUrl('sector') %>">מגזר<%= sortIndicator('sector') %></a></th>
         <th><a href="<%= sortUrl('father_name') %>">שם האב<%= sortIndicator('father_name') %></a></th>
         <th><a href="<%= sortUrl('mother_name') %>">שם האם<%= sortIndicator('mother_name') %></a></th>
+        <th><a href="<%= sortUrl('sector') %>">מגזר<%= sortIndicator('sector') %></a></th>
         <th><a href="<%= sortUrl('home_phone') %>">טלפון בית<%= sortIndicator('home_phone') %></a></th>
         <th>נייד אב</th>
         <th>נייד אם</th>
@@ -47,9 +47,9 @@
         <% families.forEach(f => { %>
           <tr>
             <td class="nowrap-cell"><a href="/families/<%= f.id %>"><%= f.last_name || '' %></a></td>
-            <td><%= f.sector || '' %></td>
             <td class="nowrap-cell"><%= f.father_name || '' %></td>
             <td class="nowrap-cell"><%= f.mother_name || '' %></td>
+            <td><%= f.sector || '' %></td>
             <td><%- phoneLink(f.home_phone) %></td>
             <td><%- phoneLink(f.father_mobile) %></td>
             <td><%- phoneLink(f.mother_mobile) %></td>
