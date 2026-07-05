@@ -53,7 +53,7 @@
             <td><%- phoneLink(f.home_phone) %></td>
             <td><%- phoneLink(f.father_mobile) %></td>
             <td><%- phoneLink(f.mother_mobile) %></td>
-            <td><%= [f.street, f.house_number, f.city].filter(Boolean).join(' ') %></td>
+            <td class="nowrap-cell"><%= [f.street, f.house_number, f.city].filter(Boolean).join(' ') %></td>
             <td><a href="/families/<%= f.id %>" class="btn small secondary">צפייה</a></td>
           </tr>
         <% }) %>

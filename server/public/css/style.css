@@ -96,6 +96,7 @@ table { width: 100%; border-collapse: collapse; }
 th, td { padding: 8px 10px; border-bottom: 1px solid var(--border); text-align: right; }
 th { background: #efe9da; color: var(--primary-dark); }
 tr:hover { background: #faf8f3; }
+.nowrap-cell { white-space: nowrap; }
 
 .form-grid {
   display: grid;
