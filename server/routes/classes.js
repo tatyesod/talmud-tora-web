@@ -44,17 +44,24 @@ router.get("/", (req, res) => {
   const classes = db.prepare(sql).all(...params);
   const filteredTotal = classes.reduce((sum, c) => sum + c.active_count, 0);
 
-  const cohorts = db
+  const cohortsRaw = db
     .prepare(`
       SELECT co.*, (SELECT COUNT(*) FROM students s WHERE s.cohort_id = co.id) AS count
       FROM cohorts co ORDER BY co.to_date DESC, co.from_date DESC
     `)
-    .all()
-    .map((c) => ({
-      ...c,
-      from_date_str: hd.serialToHebrewString(c.from_date),
-      to_date_str: hd.serialToHebrewString(c.to_date),
-    }));
+    .all();
+
+  // מספור אוטומטי עולה לפי סדר כרונולוגי (המחזור הכי ישן = מספר 1)
+  const chronological = [...cohortsRaw].sort((a, b) => (a.from_date || 0) - (b.from_date || 0));
+  const numberByCohortId = {};
+  chronological.forEach((c, i) => { numberByCohortId[c.id] = i + 1; });
+
+  const cohorts = cohortsRaw.map((c) => ({
+    ...c,
+    from_date_str: hd.serialToHebrewString(c.from_date),
+    to_date_str: hd.serialToHebrewString(c.to_date),
+    cohort_number: hd.hebrewNumeral(numberByCohortId[c.id]),
+  }));
 
   res.render("classes/list", {
     classes, cohorts, branch: branch || "", sort: req.query.sort || "", dir: req.query.dir || "",

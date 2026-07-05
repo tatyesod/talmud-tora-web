@@ -79,12 +79,13 @@
     <p class="empty-state">לא נמצאו מחזורים</p>
   <% } else { %>
     <table>
-      <thead><tr><th>מחזור</th><th>טווח תאריכי לידה</th><th>סטטוס</th><th>מס' תלמידים</th><th></th></tr></thead>
+      <thead><tr><th>מחזור</th><th>טווח תאריכי לידה</th><th>מס' מחזור</th><th>סטטוס</th><th>מס' תלמידים</th><th></th></tr></thead>
       <tbody>
         <% cohorts.forEach(c => { %>
           <tr>
             <td><%= c.name %></td>
             <td><%= (c.from_date_str || c.to_date_str) ? (c.from_date_str || '?') + ' – ' + (c.to_date_str || '?') : '' %></td>
+            <td><strong>מחזור <%= c.cohort_number %></strong></td>
             <td><span class="badge <%= c.status !== 'פעיל' ? 'archive' : '' %>"><%= c.status || '' %></span></td>
             <td><%= c.count %></td>
             <td>
