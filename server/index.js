@@ -7,6 +7,14 @@ const hd = require("./hebrewDate");
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// גרסת נכסים (CSS/JS) - מחושבת פעם אחת בהפעלת השרת, כך שכל פריסה חדשה (Render)
+// מכריחה את הדפדפן למשוך קבצי עיצוב/סקריפט טריים במקום גרסה שמורה בקאש.
+const ASSET_VERSION = Date.now();
+app.use((req, res, next) => {
+  res.locals.assetVersion = ASSET_VERSION;
+  next();
+});
+
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
 

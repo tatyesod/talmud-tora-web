@@ -77,6 +77,10 @@
   if (msgs) msgs.scrollTop = msgs.scrollHeight;
 
   const input = document.getElementById("chat-input");
+  // הצבת הסמן בתיבת הכתיבה בכל טעינה - כולל אחרי שליחת הודעה (רענון עמוד),
+  // כדי שאפשר יהיה להמשיך להקליד ברצף בלי ללחוץ שוב על התיבה.
+  if (input) input.focus();
+
   const form = document.getElementById("chat-form");
   const attachBtn = document.getElementById("chat-attach-btn");
   const attachInput = document.getElementById("chat-attachment");
