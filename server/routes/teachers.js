@@ -61,7 +61,14 @@ router.get("/", (req, res) => {
   const { q } = req.query;
   const status = req.query.status !== undefined ? req.query.status : "פעיל";
   let sql = `
-    SELECT t.*, ch.name AS chassidut_name FROM teachers t
+    SELECT t.*, ch.name AS chassidut_name,
+      (SELECT GROUP_CONCAT(c.name || COALESCE(' '||c.parallel,''), ', ')
+       FROM teacher_classes tc JOIN classes c ON tc.class_id=c.id
+       WHERE tc.teacher_id=t.id AND tc.role='בוקר') AS morning_classes,
+      (SELECT GROUP_CONCAT(c.name || COALESCE(' '||c.parallel,''), ', ')
+       FROM teacher_classes tc JOIN classes c ON tc.class_id=c.id
+       WHERE tc.teacher_id=t.id AND tc.role='אחה"צ') AS afternoon_classes
+    FROM teachers t
     LEFT JOIN chassidut ch ON t.chassidut_id = ch.id WHERE 1=1
   `;
   const params = [];
@@ -154,13 +161,7 @@ router.get("/:id", (req, res) => {
     .all(req.params.id)
     .map((f) => ({ ...f, entry_date_str: hd.serialToGregorianString(f.entry_date) }));
 
-  // ניווט הקודם/הבא - לפי אותו סדר אלפביתי שמוצג ברשימת המלמדים
-  const allIds = db.prepare("SELECT id FROM teachers ORDER BY last_name, first_name, id").all().map((r) => r.id);
-  const idx = allIds.indexOf(Number(req.params.id));
-  const prevTeacherId = idx > 0 ? allIds[idx - 1] : null;
-  const nextTeacherId = idx >= 0 && idx < allIds.length - 1 ? allIds[idx + 1] : null;
-
-  res.render("teachers/view", { teacher, classes, attendance, attendanceSummary, file, prevTeacherId, nextTeacherId });
+  res.render("teachers/view", { teacher, classes, attendance, attendanceSummary, file });
 });
 
 router.post("/:id/attendance", (req, res) => {

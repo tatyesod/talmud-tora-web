@@ -1,4 +1,4 @@
-<%- include('../partials/header', {title: 'מלמדים ועובדים'}) %>
+<%- include('../partials/header', {title: 'מלמדים ועובדים', wide: true}) %>
 
 <div class="card">
   <h1>מלמדים ועובדים</h1>
@@ -27,20 +27,26 @@
       <thead><tr>
         <th><a href="<%= sortUrl('last_name') %>">שם משפחה<%= sortIndicator('last_name') %></a></th>
         <th><a href="<%= sortUrl('first_name') %>">שם פרטי<%= sortIndicator('first_name') %></a></th>
-        <th><a href="<%= sortUrl('id_number') %>">ת.ז<%= sortIndicator('id_number') %></a></th>
-        <th><a href="<%= sortUrl('mobile') %>">נייד<%= sortIndicator('mobile') %></a></th>
+        <th>כתובת</th>
+        <th>שיבוץ בוקר</th>
+        <th>שיבוץ אחה"צ</th>
+        <th><a href="<%= sortUrl('mobile') %>">טלפון<%= sortIndicator('mobile') %></a></th>
         <th><a href="<%= sortUrl('chassidut') %>">חסידות<%= sortIndicator('chassidut') %></a></th>
         <th><a href="<%= sortUrl('children_count') %>">מס' ילדים<%= sortIndicator('children_count') %></a></th>
         <th><a href="<%= sortUrl('status') %>">סטטוס<%= sortIndicator('status') %></a></th>
         <th></th>
       </tr></thead>
       <tbody>
-        <% teachers.forEach(t => { %>
+        <% teachers.forEach(t => {
+          const address = [t.street, t.house_number].filter(Boolean).join(' ') + (t.city ? (', ' + t.city) : '');
+        %>
           <tr>
             <td><a href="/teachers/<%= t.id %>"><%= t.last_name || '' %></a></td>
             <td><%= t.first_name || '' %></td>
-            <td><%= t.id_number || '' %></td>
-            <td><%- phoneLink(t.mobile) %></td>
+            <td style="font-size:0.88em;"><%= address.trim().replace(/^,\s*/, '') || '' %></td>
+            <td style="font-size:0.85em;"><%= t.morning_classes || '' %></td>
+            <td style="font-size:0.85em;"><%= t.afternoon_classes || '' %></td>
+            <td><%- phoneLink(t.mobile || t.home_phone) %></td>
             <td><%= t.chassidut_name || '' %></td>
             <td><%= t.children_count_display != null ? t.children_count_display : '' %></td>
             <td><span class="badge <%= t.status !== 'פעיל' ? 'archive' : '' %>"><%= t.status || '' %></span></td>
