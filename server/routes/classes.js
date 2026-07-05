@@ -163,14 +163,14 @@ router.get("/zone-assignment", (req, res) => {
     FROM students s
     JOIN classes c ON s.class_id = c.id
     LEFT JOIN families f ON s.family_id = f.id
-    WHERE c.name = 'עדיין לא נכנסו' AND s.status = 'פעיל'
+    WHERE c.name LIKE 'עדיין לא נכנסו%' AND s.status = 'פעיל'
     ORDER BY s.last_name, s.first_name
   `).all();
 
   const targetClassesByParallel = {};
   [1, 2, 3, 4].forEach((p) => {
     targetClassesByParallel[p] = db
-      .prepare("SELECT id, parallel, branch FROM classes WHERE name = 'עדיין לא נכנסו' AND parallel = ? AND status = 'פעיל' LIMIT 1")
+      .prepare("SELECT id, parallel, branch FROM classes WHERE name LIKE 'עדיין לא נכנסו%' AND parallel = ? AND status = 'פעיל' LIMIT 1")
       .get(String(p));
   });
 
