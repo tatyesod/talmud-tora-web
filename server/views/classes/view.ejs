@@ -1,6 +1,6 @@
-<%- include('../partials/header', {title: classRow.name}) %>
+<%- include('../partials/header', {title: classRow.name, wide: true}) %>
 
-<div class="card">
+<div class="card class-sticky-top">
   <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:10px;">
     <h1>כיתה: <%= classRow.name %><%= classRow.parallel ? ' ('+classRow.parallel+')' : '' %></h1>
     <div class="actions">
@@ -54,22 +54,49 @@
   <% if (students.length === 0) { %>
     <p class="empty-state">אין תלמידים בכיתה זו</p>
   <% } else { %>
+    <div class="table-scroll-wrap">
     <table>
-      <thead><tr><th>שם משפחה</th><th>שם פרטי</th><th>ת.ז</th><th>סטטוס</th><th></th></tr></thead>
+      <thead><tr>
+        <th>שם משפחה</th>
+        <th>שם כינוי</th>
+        <th>כתובת</th>
+        <th>מגזר</th>
+        <th>טלפון ראשי</th>
+        <th>טלפון אב</th>
+        <th>טלפון אם</th>
+        <th>סטטוס</th>
+        <th></th>
+      </tr></thead>
       <tbody>
-        <% students.forEach(s => { %>
+        <% students.forEach(s => {
+          const address = [s.street, s.house_number].filter(Boolean).join(' ') + (s.city ? (', ' + s.city) : '');
+        %>
           <tr>
             <td><%= s.last_name || '' %></td>
-            <td><%= s.first_name || '' %></td>
-            <td><%= s.id_number || '' %></td>
+            <td><%= s.nickname || s.first_name || '' %></td>
+            <td><%= address.trim().replace(/^,\s*/, '') || '' %></td>
+            <td><%= s.sector || '' %></td>
+            <td><%- phoneLink(s.home_phone) %></td>
+            <td><%- phoneLink(s.father_mobile) %></td>
+            <td><%- phoneLink(s.mother_mobile) %></td>
             <td><span class="badge <%= s.status !== 'פעיל' ? 'archive' : '' %>"><%= s.status || '' %></span></td>
             <td><a href="/students/<%= s.id %>" class="btn small secondary">צפייה</a></td>
           </tr>
         <% }) %>
       </tbody>
     </table>
+    </div>
     <p style="color:var(--muted); margin-top:10px;">סה"כ <%= students.length %> תלמידים</p>
   <% } %>
 </div>
+
+<style>
+.class-sticky-top {
+  position: sticky;
+  top: 66px;
+  z-index: 15;
+  background: var(--card-bg);
+}
+</style>
 
 <%- include('../partials/footer') %>

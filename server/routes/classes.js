@@ -163,7 +163,14 @@ router.get("/:id", (req, res) => {
   if (!classRow) return res.status(404).render("404");
 
   const students = db
-    .prepare("SELECT * FROM students WHERE class_id = ? ORDER BY last_name, first_name")
+    .prepare(`
+      SELECT s.*, f.sector, f.home_phone, f.father_mobile, f.mother_mobile,
+             f.street, f.house_number, f.city
+      FROM students s
+      LEFT JOIN families f ON s.family_id = f.id
+      WHERE s.class_id = ?
+      ORDER BY s.last_name, s.first_name
+    `)
     .all(req.params.id);
 
   const teachers = db
