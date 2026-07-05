@@ -130,7 +130,6 @@ const migrations = [
   "ALTER TABLE messages ADD COLUMN attachment_name TEXT",
   "ALTER TABLE messages ADD COLUMN attachment_type TEXT",
   "ALTER TABLE messages ADD COLUMN reply_to_id INTEGER",
-  "UPDATE classes SET transfer_number = parallel WHERE (transfer_number IS NULL OR transfer_number = '') AND parallel IS NOT NULL AND parallel != ''",
   "ALTER TABLE students ADD COLUMN updated_at TEXT",
   "ALTER TABLE families ADD COLUMN updated_at TEXT",
   "ALTER TABLE classes ADD COLUMN updated_at TEXT",
@@ -147,6 +146,20 @@ for (const sql of migrations) {
   } catch (e) {
     // עמודה כבר קיימת — מתעלמים מהשגיאה
   }
+}
+
+// ניקוי חד-פעמי: השדה "מעבר לכיתה" התמלא בעבר אוטומטית בערך המקבילה הקיים,
+// אבל הוחלט שברירת המחדל האמיתית תהיה ריק (ואז המערכת מניחה "אותה מקבילה").
+// דגל ב-settings מבטיח שהניקוי הזה ירוץ פעם אחת בלבד, ולא ימחק ידנית ערכים
+// שמנהל יגדיר בעתיד בכוונה.
+try {
+  const alreadyCleared = db.prepare("SELECT value FROM settings WHERE key = 'transfer_number_cleared_once'").get();
+  if (!alreadyCleared) {
+    db.exec("UPDATE classes SET transfer_number = NULL");
+    db.prepare("INSERT INTO settings (key, value) VALUES ('transfer_number_cleared_once', '1')").run();
+  }
+} catch (e) {
+  // אם טבלת settings עדיין לא קיימת בשלב הזה - מתעלמים, זה ירוץ בהפעלה הבאה
 }
 
 function cleanShutdown() {
