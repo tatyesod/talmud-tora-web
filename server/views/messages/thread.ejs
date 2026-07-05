@@ -20,12 +20,18 @@
       <% if (dateStr && dateStr !== lastDate) { lastDate = dateStr; %>
         <div class="chat-date-divider"><span><%= dateStr %></span></div>
       <% } %>
-      <div class="chat-msg-row <%= m.mine ? 'chat-mine' : 'chat-theirs' %>">
+      <div class="chat-msg-row <%= m.mine ? 'chat-mine' : 'chat-theirs' %>" data-msg-id="<%= m.id %>">
         <% if (!m.mine) { %>
           <div class="chat-msg-avatar"><%= (otherUser.display_name || otherUser.username).charAt(0) %></div>
         <% } %>
         <div class="chat-bubble-wrap">
           <div class="chat-bubble">
+            <% if (m.replyTo) { %>
+              <div class="chat-reply-quote" onclick="scrollToMsg(<%= m.replyTo.id %>)">
+                <div class="chat-reply-quote-name"><%= m.replyTo.mine ? 'אני' : (otherUser.display_name || otherUser.username) %></div>
+                <div class="chat-reply-quote-text"><%= m.replyTo.preview %></div>
+              </div>
+            <% } %>
             <% if (m.attachment_path) { %>
               <% if (m.attachment_type === 'image') { %>
                 <a href="<%= m.attachment_path %>" target="_blank" rel="noopener">
@@ -39,7 +45,13 @@
             <% } %>
             <% if (m.body) { %><div class="<%= m.attachment_path ? 'chat-bubble-caption' : '' %>"><%- linkify(m.body) %></div><% } %>
           </div>
-          <div class="chat-time"><%= m.created_at_str ? m.created_at_str.split(' ')[1] || m.created_at_str : '' %></div>
+          <div class="chat-msg-meta">
+            <button type="button" class="chat-reply-btn" title="השב"
+              data-msg-id="<%= m.id %>"
+              data-name="<%= m.mine ? 'אני' : (otherUser.display_name || otherUser.username) %>"
+              data-text="<%= m.body ? m.body.slice(0,80) : (m.attachment_type==='image' ? '📷 תמונה' : m.attachment_path ? '📎 קובץ מצורף' : '') %>">↩︎</button>
+            <div class="chat-time"><%= m.created_at_str ? m.created_at_str.split(' ')[1] || m.created_at_str : '' %></div>
+          </div>
         </div>
       </div>
     <% }) %>
@@ -47,6 +59,15 @@
 
   <div class="chat-input-bar">
     <form method="POST" action="/messages/<%= otherUser.id %>" id="chat-form" enctype="multipart/form-data">
+      <div id="chat-reply-preview" class="chat-reply-preview" style="display:none;">
+        <div class="chat-reply-preview-bar"></div>
+        <div class="chat-reply-preview-content">
+          <div id="chat-reply-preview-name" class="chat-reply-preview-name"></div>
+          <div id="chat-reply-preview-text" class="chat-reply-preview-text"></div>
+        </div>
+        <button type="button" id="chat-reply-cancel" title="בטל תגובה">✕</button>
+      </div>
+      <input type="hidden" name="reply_to_id" id="chat-reply-to-id" value="" />
       <div id="chat-attachment-preview" class="chat-attachment-preview" style="display:none;">
         <span id="chat-attachment-name"></span>
         <button type="button" id="chat-attachment-remove" title="הסר קובץ">✕</button>
@@ -101,6 +122,43 @@
       attachPreview.style.display = "none";
     });
   }
+
+  // --- תגובה להודעה (Reply) ---
+  const replyPreview = document.getElementById("chat-reply-preview");
+  const replyName = document.getElementById("chat-reply-preview-name");
+  const replyText = document.getElementById("chat-reply-preview-text");
+  const replyToIdInput = document.getElementById("chat-reply-to-id");
+  const replyCancel = document.getElementById("chat-reply-cancel");
+
+  window.startReply = function (msgId, name, text) {
+    replyToIdInput.value = msgId;
+    replyName.textContent = name;
+    replyText.textContent = text || "";
+    replyPreview.style.display = "flex";
+    if (input) input.focus();
+  };
+
+  document.querySelectorAll(".chat-reply-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      startReply(btn.dataset.msgId, btn.dataset.name, btn.dataset.text);
+    });
+  });
+
+  if (replyCancel) {
+    replyCancel.addEventListener("click", () => {
+      replyToIdInput.value = "";
+      replyPreview.style.display = "none";
+    });
+  }
+
+  window.scrollToMsg = function (msgId) {
+    const el = document.querySelector('[data-msg-id="' + msgId + '"]');
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      el.classList.add("chat-highlight");
+      setTimeout(() => el.classList.remove("chat-highlight"), 1200);
+    }
+  };
 
   // Enter לשליחה, Shift+Enter לשורה חדשה. אפשר לשלוח גם קובץ בלי טקסט.
   if (input && form) {

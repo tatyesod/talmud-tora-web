@@ -113,11 +113,24 @@ router.get("/:userId", (req, res) => {
     .all(myId, otherId, otherId, myId)
     .map((m) => ({ ...m, created_at_str: fmtTime(m.created_at), mine: m.sender_id === myId }));
 
+  const byId = {};
+  thread.forEach((m) => { byId[m.id] = m; });
+  thread.forEach((m) => {
+    if (m.reply_to_id && byId[m.reply_to_id]) {
+      const orig = byId[m.reply_to_id];
+      m.replyTo = {
+        id: orig.id,
+        mine: orig.mine,
+        preview: orig.body ? orig.body.slice(0, 80) : (orig.attachment_type === "image" ? "📷 תמונה" : orig.attachment_path ? "📎 קובץ מצורף" : ""),
+      };
+    }
+  });
+
   res.render("messages/thread", { otherUser, thread });
 });
 
 router.post("/:userId", upload.single("attachment"), (req, res) => {
-  const { body } = req.body;
+  const { body, reply_to_id } = req.body;
   const hasText = body && body.trim();
   const file = req.file;
 
@@ -130,11 +143,11 @@ router.post("/:userId", upload.single("attachment"), (req, res) => {
       attachmentType = IMAGE_EXTS.includes(ext) ? "image" : "file";
     }
     db.prepare(`
-      INSERT INTO messages (sender_id, recipient_id, body, created_at, attachment_path, attachment_name, attachment_type)
-      VALUES (?,?,?,?,?,?,?)
+      INSERT INTO messages (sender_id, recipient_id, body, created_at, attachment_path, attachment_name, attachment_type, reply_to_id)
+      VALUES (?,?,?,?,?,?,?,?)
     `).run(
       req.currentUser.id, req.params.userId, hasText ? body.trim() : "", new Date().toISOString(),
-      attachmentPath, attachmentName, attachmentType
+      attachmentPath, attachmentName, attachmentType, reply_to_id ? parseInt(reply_to_id) : null
     );
   }
   res.redirect(`/messages/${req.params.userId}`);

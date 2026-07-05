@@ -26,34 +26,35 @@
   <% if (class_id && students.length > 0) { %>
     <div class="card" style="background:var(--card-alt);">
       <h3>הוספת חידוש</h3>
-      <form method="POST" action="/books/renewals" class="form-grid">
+      <div id="renewal-error" style="<%= typeof error !== 'undefined' && error ? '' : 'display:none;' %> background:#fdecea; border:1px solid #f5c6cb; color:#a94442; border-radius:8px; padding:10px 16px; margin-bottom:12px;">⚠️ נא למלא תלמיד, שם ספר ומחיר</div>
+      <form method="POST" action="/books/renewals" class="form-grid" id="renewal-form">
         <input type="hidden" name="year" value="<%= year %>" />
         <input type="hidden" name="class_id" value="<%= class_id %>" />
         <div class="form-group">
           <label>תלמיד</label>
-          <select name="student_id" required>
+          <select name="student_id" id="renewal-student">
             <option value="">בחר תלמיד...</option>
             <% students.forEach(s => { %>
-              <option value="<%= s.id %>"><%= s.first_name %> <%= s.last_name || s.family_last || '' %></option>
+              <option value="<%= s.id %>"><%= s.last_name || s.family_last || '' %> <%= s.first_name %></option>
             <% }) %>
           </select>
         </div>
         <div class="form-group">
           <label>ספר לחידוש</label>
-          <input type="text" name="item_name" list="price-list" required placeholder="בחר מהמחירון או הקלד חופשי" />
+          <input type="text" name="item_name" id="renewal-item" list="price-list" placeholder="בחר מהמחירון או הקלד חופשי" />
           <datalist id="price-list">
             <% prices.forEach(p => { %><option value="<%= p.item_name %>"><% }) %>
           </datalist>
         </div>
         <div class="form-group">
           <label>מחיר (₪)</label>
-          <input type="number" name="price" step="0.01" id="price-input" required />
+          <input type="number" name="price" step="0.01" id="price-input" />
         </div>
         <div class="form-group">
           <label>הערות</label>
           <input type="text" name="notes" placeholder="לדוגמה: ספר בלוי, אבד..." />
         </div>
-        <div class="form-group full"><button type="submit" class="btn small">+ הוסף חידוש</button></div>
+        <div class="form-group full"><button type="submit" class="btn small" id="renewal-submit">+ הוסף חידוש</button></div>
       </form>
     </div>
 
@@ -65,7 +66,7 @@
         <tbody>
           <% extras.forEach(e => { %>
             <tr>
-              <td><%= e.first_name %> <%= e.last_name || '' %></td>
+              <td><%= e.last_name || '' %> <%= e.first_name %></td>
               <td><%= e.item_name %></td>
               <td><%= e.price %> ₪</td>
               <td><%= e.notes || '' %></td>
@@ -103,6 +104,28 @@ if (nameInput && priceInput) {
   nameInput.addEventListener('change', () => {
     const p = priceMap[nameInput.value];
     if (p) priceInput.value = p;
+  });
+}
+
+// ולידציה מפורשת עם הודעת שגיאה ברורה, כדי שהכפתור לעולם לא "יידום" בלי הסבר
+const renewalForm = document.getElementById('renewal-form');
+const renewalError = document.getElementById('renewal-error');
+if (renewalForm) {
+  renewalForm.addEventListener('submit', (e) => {
+    const studentSel = document.getElementById('renewal-student');
+    const itemInput = document.getElementById('renewal-item');
+    const missing = [];
+    if (!studentSel.value) missing.push('תלמיד');
+    if (!itemInput.value.trim()) missing.push('שם הספר');
+    if (!priceInput.value || isNaN(parseFloat(priceInput.value))) missing.push('מחיר');
+    if (missing.length > 0) {
+      e.preventDefault();
+      renewalError.textContent = '⚠️ נא למלא: ' + missing.join(', ');
+      renewalError.style.display = 'block';
+      renewalError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else {
+      renewalError.style.display = 'none';
+    }
   });
 }
 </script>

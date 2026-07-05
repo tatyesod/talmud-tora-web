@@ -471,12 +471,15 @@ router.get("/renewals", (req, res) => {
   }
   const prices = db.prepare("SELECT * FROM book_prices ORDER BY item_name").all();
   const extras = class_id ? db.prepare(`SELECT e.*, s.first_name, s.last_name FROM book_order_extras e JOIN students s ON e.student_id=s.id WHERE e.year_label=? AND s.class_id=? ORDER BY s.last_name, e.item_name`).all(activeYear, class_id) : [];
-  res.render("books/renewals", { year: activeYear, classes, class_id: class_id||'', students, prices, extras });
+  res.render("books/renewals", { year: activeYear, classes, class_id: class_id||'', students, prices, extras, error: req.query.error||'' });
 });
 
 router.post("/renewals", (req, res) => {
   const { year, student_id, item_name, price, notes } = req.body;
   const class_id = req.body.class_id;
+  if (!student_id || !item_name || !String(item_name).trim() || price === undefined || price === '' || isNaN(parseFloat(price))) {
+    return res.redirect(`/books/renewals?year=${encodeURIComponent(year)}&class_id=${class_id}&error=1`);
+  }
   db.prepare("INSERT INTO book_order_extras (year_label, student_id, item_name, price, notes, created_at) VALUES (?,?,?,?,?,?)").run(year, student_id, item_name, parseFloat(price)||0, notes||'', new Date().toISOString());
   res.redirect(`/books/renewals?year=${encodeURIComponent(year)}&class_id=${class_id}`);
 });

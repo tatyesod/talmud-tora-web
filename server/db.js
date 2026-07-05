@@ -129,6 +129,7 @@ const migrations = [
   "ALTER TABLE messages ADD COLUMN attachment_path TEXT",
   "ALTER TABLE messages ADD COLUMN attachment_name TEXT",
   "ALTER TABLE messages ADD COLUMN attachment_type TEXT",
+  "ALTER TABLE messages ADD COLUMN reply_to_id INTEGER",
 ];
 
 for (const sql of migrations) {
