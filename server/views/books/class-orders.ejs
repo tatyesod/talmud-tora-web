@@ -16,11 +16,6 @@
   <% if (students.length === 0) { %>
     <p class="empty-state">אין תלמידים פעילים בכיתה זו</p>
   <% } else { %>
-  <div class="orders-save-bar">
-    <button type="submit" form="orders-form" class="btn">💾 שמירת הזמנות</button>
-    <a href="/books?year=<%= encodeURIComponent(year) %>" class="btn secondary">ביטול</a>
-  </div>
-
   <p style="color:var(--muted); font-size:0.88em; margin-bottom:10px;">
     לחץ על תא לסימון/ביטול הזמנה. לחיצה על כותרת עמודה = מסמן/מבטל את כולם.
   </p>
@@ -73,30 +68,21 @@
           </tr>
         </tfoot>
       </table>
+
+      <div class="actions" style="margin-top:16px; position:sticky; bottom:16px; background:var(--card-bg); padding:10px; border-radius:10px; box-shadow:0 2px 8px rgba(0,0,0,0.1);">
+        <button type="submit" class="btn">💾 שמירת הזמנות</button>
+        <a href="/books?year=<%= encodeURIComponent(year) %>" class="btn secondary">ביטול</a>
+      </div>
     </form>
   </div>
   <% } %>
 </div>
 
 <style>
-.orders-save-bar {
-  position: sticky;
-  top: 66px;
-  z-index: 20;
-  display: flex;
-  gap: 10px;
-  background: var(--card-bg);
-  padding: 10px 14px;
-  border-radius: 10px;
-  border: 1px solid var(--border);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-  margin-bottom: 14px;
-  width: fit-content;
-}
-.books-table { border-collapse: collapse; min-width: 100%; font-size: 0.87em; }
+.books-table { border-collapse: collapse; font-size: 0.87em; }
 .books-table th, .books-table td { border: 1px solid var(--border); padding: 5px 7px; text-align: center; }
-.student-col { min-width: 160px; text-align: right !important; background: #f8f9fa; position: sticky; right: 0; z-index: 2; }
-.student-name { text-align: right !important; background: #fff; position: sticky; right: 0; z-index: 1; border-right: 2px solid #dee2e6 !important; }
+.student-col { min-width: 160px; max-width: 200px; text-align: right !important; background: #f8f9fa; position: sticky; right: 0; z-index: 2; }
+.student-name { max-width: 200px; text-align: right !important; background: #fff; position: sticky; right: 0; z-index: 1; border-right: 2px solid #dee2e6 !important; }
 .book-col { min-width: 100px; max-width: 130px; font-size: 0.80em; background: #f0f4f8; vertical-align: bottom; cursor: pointer; }
 .book-col:hover { background: #dde8f0; }
 .book-price { font-weight: 700; color: var(--primary); font-size: 0.95em; margin-top: 2px; }
