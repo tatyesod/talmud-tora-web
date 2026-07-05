@@ -241,6 +241,20 @@ router.get("/families-report/export", async (req, res) => {
   await sendWorkbook(res, "דוח משפחות.xlsx", "משפחות", "דוח משפחות", header, data);
 });
 
+// ============ רשימת רחובות ייחודית - ייצוא לאקסל ============
+router.get("/streets-export", async (req, res) => {
+  const rows = db.prepare(`
+    SELECT f.street, f.city, COUNT(*) AS family_count
+    FROM families f
+    WHERE f.street IS NOT NULL AND TRIM(f.street) != ''
+    GROUP BY f.street, f.city
+    ORDER BY f.street
+  `).all();
+  const header = ["רחוב", "עיר", "מס' משפחות ברחוב זה"];
+  const data = rows.map((r) => [r.street || "", r.city || "", r.family_count]);
+  await sendWorkbook(res, "רשימת רחובות.xlsx", "רחובות", "רשימת רחובות ייחודית", header, data);
+});
+
 // ============ רשימת סבים וכתובתם - ייצוא לאקסל ============
 router.get("/grandparents-report", (req, res) => {
   res.render("reports/grandparents-report");
