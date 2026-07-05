@@ -161,7 +161,13 @@ router.get("/:id", (req, res) => {
     .all(req.params.id)
     .map((f) => ({ ...f, entry_date_str: hd.serialToGregorianString(f.entry_date) }));
 
-  res.render("teachers/view", { teacher, classes, attendance, attendanceSummary, file });
+  // ניווט הקודם/הבא - לפי אותו סדר אלפביתי שמוצג ברשימת המלמדים
+  const allIds = db.prepare("SELECT id FROM teachers ORDER BY last_name, first_name, id").all().map((r) => r.id);
+  const idx = allIds.indexOf(Number(req.params.id));
+  const prevTeacherId = idx > 0 ? allIds[idx - 1] : null;
+  const nextTeacherId = idx >= 0 && idx < allIds.length - 1 ? allIds[idx + 1] : null;
+
+  res.render("teachers/view", { teacher, classes, attendance, attendanceSummary, file, prevTeacherId, nextTeacherId });
 });
 
 router.post("/:id/attendance", (req, res) => {
