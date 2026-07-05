@@ -11,6 +11,22 @@
     (אזורים 1-2 = סניף סוקולוב, אזורים 3-4 = סניף בן פתחיה). שום דבר לא משתנה עד שתלחץ על "בצע שיבוץ" למטה.
   </p>
 
+  <form method="GET" action="/classes/zone-assignment" style="display:flex; align-items:center; gap:10px; margin:14px 0;">
+    <label style="margin:0;">מצב:</label>
+    <select name="cohort_id" onchange="this.form.submit()">
+      <option value="">כיתות "עדיין לא נכנסו" הקיימות (העברה בין מקבילות)</option>
+      <% cohorts.forEach(c => { %>
+        <option value="<%= c.id %>" <%= String(cohortId) === String(c.id) ? 'selected' : '' %>>שיוך ראשוני למחזור: <%= c.name %></option>
+      <% }) %>
+    </select>
+  </form>
+
+  <% if (cohortId) { %>
+    <div style="background:#e3f2fd; border:1px solid #90caf9; color:#1565c0; border-radius:8px; padding:10px 16px; margin-bottom:10px;">
+      מצב שיוך ראשוני למחזור — בביצוע השיבוץ, התלמידים גם ישויכו לכיתת "עדיין לא נכנסו" המתאימה וגם יסומנו כסטטוס "לא פעיל".
+    </div>
+  <% } %>
+
   <% if (done) { %>
     <div style="background:#e8f5e9; border:1px solid #a5d6a7; color:#2e7d32; border-radius:8px; padding:10px 16px; margin:10px 0;">
       ✅ השיבוץ בוצע בהצלחה.
@@ -34,6 +50,8 @@
   <% } %>
 
   <form method="POST" action="/classes/zone-assignment/apply" id="zone-form">
+    <input type="hidden" name="cohort_id" value="<%= cohortId %>" />
+    <input type="hidden" name="set_inactive" value="<%= cohortId ? '1' : '0' %>" />
     <div class="table-scroll-wrap">
       <table>
         <thead>
@@ -43,6 +61,7 @@
             <th>סטטוס תלמיד</th>
             <th>רחוב</th>
             <th>מקבילה נוכחית</th>
+            <th>כיתה נוכחית</th>
             <th>אזור מחושב</th>
             <th>סניף</th>
             <th>מקבילה מוצעת</th>
@@ -63,6 +82,7 @@
               <td><%= r.status || '' %></td>
               <td class="nowrap-cell"><%= [r.street, r.house_number].filter(Boolean).join(' ') || '—' %></td>
               <td><%= r.current_parallel || '—' %></td>
+              <td><%= r.current_class_name || '—' %></td>
               <td><%= r.zone || '—' %></td>
               <td><%= r.branch || '—' %></td>
               <td><%= r.zone || '—' %></td>
@@ -82,7 +102,7 @@
     <% if (summary.needs_move > 0) { %>
       <div style="margin-top:16px;">
         <button type="submit" class="btn" onclick="return confirm('לשבץ מחדש ' + document.querySelectorAll('.row-check:checked').length + ' תלמידים לפי האזור המחושב?')">
-          💾 בצע שיבוץ ל-<%= summary.needs_move %> תלמידים
+          💾 בצע שיבוץ ל-<%= summary.needs_move %> תלמידים<%= cohortId ? ' (יסומנו כ"לא פעיל")' : '' %>
         </button>
       </div>
     <% } %>

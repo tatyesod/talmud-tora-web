@@ -156,16 +156,33 @@ router.delete("/cohorts/:id", (req, res) => {
 const { getZoneForAddress } = require("../streetZones");
 
 router.get("/zone-assignment", (req, res) => {
-  const students = db.prepare(`
-    SELECT s.id, s.first_name, s.last_name, s.class_id, s.status,
-           c.parallel AS current_parallel,
-           f.street, f.house_number, f.city
-    FROM students s
-    JOIN classes c ON s.class_id = c.id
-    LEFT JOIN families f ON s.family_id = f.id
-    WHERE c.name LIKE 'עדיין לא נכנסו%' AND s.status NOT IN ('ארכיון', 'לא התקבל')
-    ORDER BY s.last_name, s.first_name
-  `).all();
+  const cohortId = req.query.cohort_id || "";
+  const cohorts = db.prepare("SELECT id, name FROM cohorts ORDER BY name DESC").all();
+
+  let students;
+  if (cohortId) {
+    students = db.prepare(`
+      SELECT s.id, s.first_name, s.last_name, s.class_id, s.status,
+             c.parallel AS current_parallel, c.name AS current_class_name,
+             f.street, f.house_number, f.city
+      FROM students s
+      LEFT JOIN classes c ON s.class_id = c.id
+      LEFT JOIN families f ON s.family_id = f.id
+      WHERE s.cohort_id = ? AND s.status NOT IN ('ארכיון', 'לא התקבל')
+      ORDER BY s.last_name, s.first_name
+    `).all(cohortId);
+  } else {
+    students = db.prepare(`
+      SELECT s.id, s.first_name, s.last_name, s.class_id, s.status,
+             c.parallel AS current_parallel, c.name AS current_class_name,
+             f.street, f.house_number, f.city
+      FROM students s
+      JOIN classes c ON s.class_id = c.id
+      LEFT JOIN families f ON s.family_id = f.id
+      WHERE c.name LIKE 'עדיין לא נכנסו%' AND s.status NOT IN ('ארכיון', 'לא התקבל')
+      ORDER BY s.last_name, s.first_name
+    `).all();
+  }
 
   const targetClassesByParallel = {};
   [1, 2, 3, 4].forEach((p) => {
@@ -200,7 +217,10 @@ router.get("/zone-assignment", (req, res) => {
     missing_class: rows.filter((r) => r.status === "missing_class").length,
   };
 
-  res.render("classes/zone-assignment", { rows, summary, done: req.query.done === "1" });
+  res.render("classes/zone-assignment", {
+    rows, summary, cohorts, cohortId,
+    done: req.query.done === "1",
+  });
 });
 
 router.post("/zone-assignment/apply", (req, res) => {
@@ -208,13 +228,20 @@ router.post("/zone-assignment/apply", (req, res) => {
   if (!Array.isArray(studentIds)) studentIds = [studentIds];
   let targetIds = req.body.target_class_id || [];
   if (!Array.isArray(targetIds)) targetIds = [targetIds];
+  const setInactive = req.body.set_inactive === "1";
+  const cohortId = req.body.cohort_id || "";
 
-  const update = db.prepare("UPDATE students SET class_id = ? WHERE id = ?");
+  const updateWithStatus = db.prepare("UPDATE students SET class_id = ?, status = 'לא פעיל' WHERE id = ?");
+  const updateClassOnly = db.prepare("UPDATE students SET class_id = ? WHERE id = ?");
   studentIds.forEach((sid, i) => {
-    if (targetIds[i]) update.run(targetIds[i], sid);
+    if (targetIds[i]) {
+      if (setInactive) updateWithStatus.run(targetIds[i], sid);
+      else updateClassOnly.run(targetIds[i], sid);
+    }
   });
 
-  res.redirect("/classes/zone-assignment?done=1");
+  const qs = cohortId ? `cohort_id=${encodeURIComponent(cohortId)}&done=1` : "done=1";
+  res.redirect(`/classes/zone-assignment?${qs}`);
 });
 
 // --- צפייה בכיתה (תמיד אחרון, כדי לא להתנגש עם /new ו-/cohorts) ---
