@@ -1,7 +1,10 @@
 <%- include('../partials/header', {title: 'מלמדים ועובדים', wide: true}) %>
 
 <div class="card">
-  <h1>מלמדים ועובדים</h1>
+  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+    <h1>מלמדים ועובדים</h1>
+    <a href="/teachers/monthly-reports" class="btn secondary">📊 מעקב דוחות חודשיים</a>
+  </div>
   <p style="color:var(--muted); font-size:0.9em; margin-top:-8px;">
     סך הכל ילדים בבית (לפי הרשימה המוצגת): <strong style="color:var(--primary-dark);"><%= totalChildren %></strong>
     — שימושי לחישוב תקציב חלוקת מתנות

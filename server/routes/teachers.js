@@ -30,6 +30,17 @@ const upload = multer({
   },
 });
 
+const HEBREW_GREGORIAN_MONTHS = [
+  "ינואר", "פברואר", "מרץ", "אפריל", "מאי", "יוני",
+  "יולי", "אוגוסט", "ספטמבר", "אוקטובר", "נובמבר", "דצמבר",
+];
+function formatMonthLabel(monthLabel) {
+  if (!monthLabel) return "";
+  const [y, m] = monthLabel.split("-");
+  const idx = parseInt(m, 10) - 1;
+  return `${HEBREW_GREGORIAN_MONTHS[idx] || m} ${y}`;
+}
+
 function calcAge(accessSerial) {
   if (!accessSerial) return null;
   // המרה מ-Access serial ל-JavaScript Date
@@ -132,6 +143,31 @@ router.post("/", (req, res) => {
   res.redirect(`/teachers/${info.lastInsertRowid}`);
 });
 
+router.get("/monthly-reports", (req, res) => {
+  const month = req.query.month || new Date().toISOString().slice(0, 7);
+  const teachers = db.prepare("SELECT id, first_name, last_name FROM teachers ORDER BY last_name, first_name").all();
+  const reportsForMonth = db.prepare("SELECT * FROM teacher_monthly_reports WHERE month_label = ?").all(month);
+  const reportByTeacher = {};
+  reportsForMonth.forEach((r) => { reportByTeacher[r.teacher_id] = r; });
+
+  const rows = teachers.map((t) => {
+    const r = reportByTeacher[t.id];
+    return {
+      teacher_id: t.id,
+      teacher_name: `${t.last_name || ""} ${t.first_name || ""}`.trim(),
+      submitted: !!r,
+      submitted_date_str: r && r.submitted_date ? new Date(r.submitted_date).toLocaleDateString("he-IL") : "",
+      file_path: r ? r.file_path : null,
+      file_name: r ? r.file_name : null,
+    };
+  });
+
+  const submittedCount = rows.filter((r) => r.submitted).length;
+  res.render("teachers/monthly-reports", {
+    month, monthDisplay: formatMonthLabel(month), rows, submittedCount, total: rows.length,
+  });
+});
+
 router.get("/:id", (req, res) => {
   const teacher = withDates(
     db.prepare(`
@@ -161,13 +197,24 @@ router.get("/:id", (req, res) => {
     .all(req.params.id)
     .map((f) => ({ ...f, entry_date_str: hd.serialToGregorianString(f.entry_date) }));
 
+  const monthlyReports = db
+    .prepare("SELECT * FROM teacher_monthly_reports WHERE teacher_id = ? ORDER BY month_label DESC")
+    .all(req.params.id)
+    .map((r) => ({
+      ...r,
+      month_display: formatMonthLabel(r.month_label),
+      submitted_date_str: r.submitted_date ? new Date(r.submitted_date).toLocaleDateString("he-IL") : "",
+      is_image: r.file_name && /\.(jpg|jpeg|png)$/i.test(r.file_name),
+      is_pdf: r.file_name && /\.pdf$/i.test(r.file_name),
+    }));
+
   // ניווט הקודם/הבא - לפי אותו סדר אלפביתי שמוצג ברשימת המלמדים
   const allIds = db.prepare("SELECT id FROM teachers ORDER BY last_name, first_name, id").all().map((r) => r.id);
   const idx = allIds.indexOf(Number(req.params.id));
   const prevTeacherId = idx > 0 ? allIds[idx - 1] : null;
   const nextTeacherId = idx >= 0 && idx < allIds.length - 1 ? allIds[idx + 1] : null;
 
-  res.render("teachers/view", { teacher, classes, attendance, attendanceSummary, file, prevTeacherId, nextTeacherId });
+  res.render("teachers/view", { teacher, classes, attendance, attendanceSummary, file, monthlyReports, prevTeacherId, nextTeacherId });
 });
 
 router.post("/:id/attendance", (req, res) => {
@@ -195,6 +242,27 @@ router.post("/:id/file", upload.single("attachment"), (req, res) => {
     file_path,
     file_name
   );
+  res.redirect(`/teachers/${req.params.id}`);
+});
+
+// ============ דוחות חודשיים ============
+
+router.post("/:id/monthly-report", upload.single("attachment"), (req, res) => {
+  const { month_label, submitted_date, notes } = req.body;
+  const file_path = req.file ? `/uploads/teachers/${req.file.filename}` : null;
+  const file_name = req.file ? Buffer.from(req.file.originalname, "latin1").toString("utf8") : null;
+  db.prepare(`
+    INSERT INTO teacher_monthly_reports (teacher_id, month_label, submitted_date, file_path, file_name, notes, created_at)
+    VALUES (?,?,?,?,?,?,?)
+  `).run(
+    req.params.id, month_label, submitted_date || new Date().toISOString().slice(0, 10),
+    file_path, file_name, notes || null, new Date().toISOString()
+  );
+  res.redirect(`/teachers/${req.params.id}`);
+});
+
+router.delete("/:id/monthly-report/:reportId", (req, res) => {
+  db.prepare("DELETE FROM teacher_monthly_reports WHERE id = ? AND teacher_id = ?").run(req.params.reportId, req.params.id);
   res.redirect(`/teachers/${req.params.id}`);
 });
 

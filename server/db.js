@@ -139,6 +139,16 @@ const migrations = [
   "UPDATE classes SET updated_at = datetime('now') WHERE updated_at IS NULL",
   "UPDATE cohorts SET updated_at = datetime('now') WHERE updated_at IS NULL",
   "ALTER TABLE maintenance_requests ADD COLUMN branch TEXT",
+  `CREATE TABLE IF NOT EXISTS teacher_monthly_reports (
+    id INTEGER PRIMARY KEY,
+    teacher_id INTEGER NOT NULL,
+    month_label TEXT NOT NULL,
+    submitted_date TEXT,
+    file_path TEXT,
+    file_name TEXT,
+    notes TEXT,
+    created_at TEXT
+  )`,
 ];
 
 for (const sql of migrations) {

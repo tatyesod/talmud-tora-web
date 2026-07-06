@@ -245,4 +245,84 @@
   </form>
 </div>
 
+<div class="card">
+  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+    <h3>דוחות חודשיים</h3>
+    <a href="/teachers/monthly-reports" class="btn small secondary">📊 מעקב הגשות לכל המלמדים</a>
+  </div>
+  <p style="color:var(--muted); font-size:0.85em;">תיעוד הגשת הדוח החודשי של המלמד, כולל תאריך הגשה וסריקת הדוח לצפייה מקוונת (בלי צורך להוריד).</p>
+
+  <% if (monthlyReports.length === 0) { %>
+    <p class="empty-state">אין עדיין דוחות חודשיים רשומים</p>
+  <% } else { %>
+    <table>
+      <thead><tr><th>חודש</th><th>תאריך הגשה</th><th>הערות</th><th>קובץ</th><th></th></tr></thead>
+      <tbody>
+        <% monthlyReports.forEach(r => { %>
+          <tr>
+            <td><strong><%= r.month_display %></strong></td>
+            <td><%= r.submitted_date_str %></td>
+            <td><%= r.notes || '' %></td>
+            <td>
+              <% if (r.file_path) { %>
+                <button type="button" class="btn small secondary" onclick="togglePreview('preview-<%= r.id %>')">👁️ תצוגה מקדימה</button>
+                <a href="<%= r.file_path %>" target="_blank" class="btn small secondary">📎 <%= r.file_name || 'פתיחה' %></a>
+              <% } else { %>
+                <span style="color:var(--muted); font-size:0.85em;">— אין קובץ סרוק —</span>
+              <% } %>
+            </td>
+            <td>
+              <form method="POST" action="/teachers/<%= teacher.id %>/monthly-report/<%= r.id %>?_method=DELETE"
+                    onsubmit="return confirm('למחוק רשומה זו?');" style="display:inline">
+                <button type="submit" class="btn small danger">מחק</button>
+              </form>
+            </td>
+          </tr>
+          <% if (r.file_path) { %>
+            <tr id="preview-<%= r.id %>" style="display:none;">
+              <td colspan="5">
+                <% if (r.is_image) { %>
+                  <img src="<%= r.file_path %>" alt="תצוגה מקדימה" style="max-width:100%; max-height:600px; border:1px solid var(--border); border-radius:8px;" />
+                <% } else if (r.is_pdf) { %>
+                  <iframe src="<%= r.file_path %>" style="width:100%; height:600px; border:1px solid var(--border); border-radius:8px;"></iframe>
+                <% } else { %>
+                  <p class="empty-state">אין תצוגה מקדימה זמינה לסוג קובץ זה - יש לפתוח את הקובץ.</p>
+                <% } %>
+              </td>
+            </tr>
+          <% } %>
+        <% }) %>
+      </tbody>
+    </table>
+  <% } %>
+
+  <form method="POST" action="/teachers/<%= teacher.id %>/monthly-report"
+        enctype="multipart/form-data" class="form-grid" style="margin-top:16px;">
+    <div class="form-group">
+      <label>חודש הדוח</label>
+      <input type="month" name="month_label" required />
+    </div>
+    <div class="form-group">
+      <label>תאריך הגשה בפועל</label>
+      <input type="date" name="submitted_date" />
+    </div>
+    <div class="form-group full"><label>הערות</label><input type="text" name="notes" placeholder="לדוגמה: הוגש באיחור" /></div>
+    <div class="form-group full">
+      <label>סריקת הדוח (PDF או תמונה)</label>
+      <input type="file" name="attachment" accept=".pdf,.jpg,.jpeg,.png"
+             style="padding:6px; border:1px solid var(--border); border-radius:8px; width:100%;" />
+    </div>
+    <div class="form-group full">
+      <button type="submit" class="btn small">✅ רישום הגשת דוח חודשי</button>
+    </div>
+  </form>
+</div>
+
+<script>
+  function togglePreview(id) {
+    const el = document.getElementById(id);
+    el.style.display = el.style.display === 'none' ? '' : 'none';
+  }
+</script>
+
 <%- include('../partials/footer') %>
