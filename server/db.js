@@ -149,6 +149,20 @@ const migrations = [
     notes TEXT,
     created_at TEXT
   )`,
+  `CREATE TABLE IF NOT EXISTS supplier_orders (
+    id INTEGER PRIMARY KEY,
+    supplier_id INTEGER NOT NULL,
+    created_by INTEGER NOT NULL,
+    description TEXT NOT NULL,
+    amount REAL,
+    notes TEXT,
+    status TEXT DEFAULT 'ממתין לאישור',
+    rejection_reason TEXT,
+    approved_by INTEGER,
+    approved_at TEXT,
+    sent_at TEXT,
+    created_at TEXT
+  )`,
 ];
 
 for (const sql of migrations) {

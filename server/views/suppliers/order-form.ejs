@@ -1,0 +1,37 @@
+<%- include('../partials/header', {title: 'הזמנה חדשה'}) %>
+
+<div class="card">
+  <h1>הזמנה חדשה מספק</h1>
+  <p style="color:var(--muted); font-size:0.9em;">
+    ההזמנה תישלח לאישור המנהל. לאחר האישור תקבל הודעה בצ'אט ותוכל לשלוח אותה בפועל לספק במייל.
+  </p>
+  <form method="POST" action="/suppliers/orders" class="form-grid">
+    <div class="form-group full">
+      <label>ספק</label>
+      <select name="supplier_id" required>
+        <option value="">בחר ספק...</option>
+        <% suppliers.forEach(s => { %>
+          <option value="<%= s.id %>" <%= String(preselectedSupplierId) === String(s.id) ? 'selected' : '' %>><%= s.name %></option>
+        <% }) %>
+      </select>
+    </div>
+    <div class="form-group full">
+      <label>תיאור ההזמנה (מה מזמינים)</label>
+      <textarea name="description" rows="4" required placeholder="לדוגמה: 20 חבילות דפי A4, 5 קרטוני עטים..."></textarea>
+    </div>
+    <div class="form-group">
+      <label>עלות משוערת (₪, אופציונלי)</label>
+      <input type="number" name="amount" step="0.01" />
+    </div>
+    <div class="form-group full">
+      <label>הערות נוספות</label>
+      <textarea name="notes" rows="2"></textarea>
+    </div>
+    <div class="form-group full">
+      <button type="submit" class="btn">שליחה לאישור המנהל</button>
+      <a href="/suppliers/orders" class="btn secondary">ביטול</a>
+    </div>
+  </form>
+</div>
+
+<%- include('../partials/footer') %>

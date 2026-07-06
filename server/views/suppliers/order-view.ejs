@@ -1,0 +1,61 @@
+<%- include('../partials/header', {title: 'הזמנה'}) %>
+
+<div class="card">
+  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+    <h1>הזמנה מ<%= order.supplier_name %></h1>
+    <a href="/suppliers/orders" class="btn secondary">← חזרה להזמנות</a>
+  </div>
+
+  <table style="margin-top:10px;">
+    <tr><th style="width:180px;">ספק</th><td><a href="/suppliers/<%= order.supplier_id %>"><%= order.supplier_name %></a></td></tr>
+    <tr><th>תיאור</th><td><%= order.description %></td></tr>
+    <% if (order.amount) { %><tr><th>עלות משוערת</th><td><%= order.amount %> ₪</td></tr><% } %>
+    <% if (order.notes) { %><tr><th>הערות</th><td><%= order.notes %></td></tr><% } %>
+    <tr><th>נוצר ע"י</th><td><%= order.creator_name || '' %></td></tr>
+    <tr><th>סטטוס</th>
+      <td>
+        <% if (order.status === 'ממתין לאישור') { %><span style="color:#e65100;">⏳ ממתין לאישור</span>
+        <% } else if (order.status === 'אושר') { %><span style="color:#2e7d32;">✅ אושר ע"י <%= order.approver_name || '' %></span>
+        <% } else if (order.status === 'נדחה') { %>
+          <span style="color:#a94442;">❌ נדחה ע"י <%= order.approver_name || '' %></span>
+          <% if (order.rejection_reason) { %><div style="color:#a94442; font-size:0.9em;">סיבה: <%= order.rejection_reason %></div><% } %>
+        <% } else { %><span style="color:#1565c0;">📨 נשלח לספק</span>
+        <% } %>
+      </td>
+    </tr>
+  </table>
+
+  <div class="actions" style="margin-top:20px;">
+    <% if (isAdmin && order.status === 'ממתין לאישור') { %>
+      <form method="POST" action="/suppliers/orders/<%= order.id %>/approve" style="display:inline">
+        <button type="submit" class="btn">✅ אישור ההזמנה</button>
+      </form>
+      <button type="button" class="btn danger" onclick="document.getElementById('reject-box').style.display='flex'">❌ דחיית ההזמנה</button>
+    <% } %>
+
+    <% if (order.status === 'אושר') { %>
+      <% if (mailtoLink) { %>
+        <a href="<%= mailtoLink %>" class="btn">📧 שליחה במייל לספק</a>
+      <% } else { %>
+        <span style="color:var(--muted); font-size:0.85em;">לא הוגדר מייל לספק זה — אפשר לשלוח ידנית</span>
+      <% } %>
+      <form method="POST" action="/suppliers/orders/<%= order.id %>/mark-sent" style="display:inline">
+        <button type="submit" class="btn secondary">✔️ סמן כ"נשלח לספק"</button>
+      </form>
+    <% } %>
+  </div>
+
+  <div id="reject-box" style="display:none; margin-top:16px; gap:10px; align-items:flex-end;">
+    <form method="POST" action="/suppliers/orders/<%= order.id %>/reject" class="form-grid" style="width:100%;">
+      <div class="form-group full">
+        <label>סיבת הדחייה (אופציונלי)</label>
+        <input type="text" name="rejection_reason" />
+      </div>
+      <div class="form-group full">
+        <button type="submit" class="btn danger">אישור דחייה</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<%- include('../partials/footer') %>

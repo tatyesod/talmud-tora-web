@@ -63,6 +63,32 @@
       <% }) %>
     </div>
 
+    <% if (isAdmin && pendingOrders && pendingOrders.length > 0) { %>
+      <div class="card" style="background:#fff3e0; border:1px solid #ffcc80; margin:14px auto; max-width:900px; text-align:right;">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+          <h3 style="margin:0;">📦 הזמנות ממתינות לאישור (<%= pendingOrders.length %>)</h3>
+          <a href="/suppliers/orders?status=<%= encodeURIComponent('ממתין לאישור') %>" class="btn small secondary">כל ההזמנות</a>
+        </div>
+        <table style="margin-top:10px;">
+          <tbody>
+            <% pendingOrders.forEach(o => { %>
+              <tr>
+                <td><strong><%= o.supplier_name %></strong></td>
+                <td><%= o.description %></td>
+                <td style="color:var(--muted); font-size:0.85em;"><%= o.creator_name || '' %></td>
+                <td>
+                  <form method="POST" action="/suppliers/orders/<%= o.id %>/approve" style="display:inline">
+                    <button type="submit" class="btn small">✅ אישור</button>
+                  </form>
+                  <a href="/suppliers/orders/<%= o.id %>" class="btn small secondary">פרטים</a>
+                </td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    <% } %>
+
     <div class="nav-section-divider"></div>
 
     <div class="nav-grid" id="nav-grid">
@@ -126,7 +152,7 @@
         <div class="nav-icon">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
         </div>
-        <div class="nav-text">ספקים</div>
+        <div class="nav-text">ספקים והזמנות</div>
         <div class="nav-sub">פרטי קשר והזמנות</div>
       </a>
 

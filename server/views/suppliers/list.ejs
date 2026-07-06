@@ -1,9 +1,12 @@
-<%- include('../partials/header', {title: 'ספקים'}) %>
+<%- include('../partials/header', {title: 'ספקים והזמנות'}) %>
 
 <div class="card">
   <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
-    <h1>ספקים</h1>
-    <a href="/suppliers/new" class="btn">+ ספק חדש</a>
+    <h1>ספקים והזמנות</h1>
+    <div style="display:flex; gap:10px;">
+      <a href="/suppliers/orders" class="btn secondary">📦 הזמנות</a>
+      <a href="/suppliers/new" class="btn">+ ספק חדש</a>
+    </div>
   </div>
   <form class="searchbar auto-filter" method="GET" action="/suppliers">
     <input type="text" name="q" placeholder="חיפוש לפי שם, איש קשר, טלפון, מייל..." value="<%= q %>" />
@@ -45,7 +48,10 @@
             <td><%- phoneLink(s.phone) %></td>
             <td><%- emailLink(s.email) %></td>
             <td><span class="badge <%= s.status !== 'פעיל' ? 'archive' : '' %>"><%= s.status || '' %></span></td>
-            <td><a href="/suppliers/<%= s.id %>" class="btn small secondary">צפייה</a></td>
+            <td>
+              <a href="/suppliers/<%= s.id %>" class="btn small secondary">צפייה</a>
+              <a href="/suppliers/orders/new?supplier_id=<%= s.id %>" class="btn small secondary">📦 הזמנה</a>
+            </td>
           </tr>
         <% }) %>
       </tbody>

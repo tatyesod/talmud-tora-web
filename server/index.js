@@ -269,10 +269,22 @@ app.get("/", (req, res) => {
     }));
   const teacherBirthdays = upcomingBirthdays(teacherBirthdayRows).map((b) => ({ ...b, daysLabel: daysAwayLabel(b.daysAway) }));
 
+  let pendingOrders = [];
+  if (req.currentUser && req.currentUser.is_admin) {
+    pendingOrders = db.prepare(`
+      SELECT o.*, s.name AS supplier_name, u.display_name AS creator_name
+      FROM supplier_orders o
+      JOIN suppliers s ON o.supplier_id = s.id
+      LEFT JOIN users u ON o.created_by = u.id
+      WHERE o.status = 'ממתין לאישור'
+      ORDER BY o.created_at ASC
+    `).all();
+  }
+
   res.render("home", {
     stats, branchStats, monthlyTotal, currentYear, hebrewDateToday, dayName,
     myTasks, unreadCount, greeting, fullName, allUsers,
-    studentBirthdays, teacherBirthdays,
+    studentBirthdays, teacherBirthdays, pendingOrders,
   });
 });
 

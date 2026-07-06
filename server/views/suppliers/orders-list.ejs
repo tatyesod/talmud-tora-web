@@ -1,0 +1,53 @@
+<%- include('../partials/header', {title: 'הזמנות מספקים', wide: true}) %>
+
+<div class="card">
+  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+    <h1>הזמנות מספקים</h1>
+    <div style="display:flex; gap:10px;">
+      <a href="/suppliers" class="btn secondary">← חזרה לספקים</a>
+      <a href="/suppliers/orders/new" class="btn">+ הזמנה חדשה</a>
+    </div>
+  </div>
+
+  <form class="searchbar auto-filter" method="GET" action="/suppliers/orders">
+    <select name="status">
+      <option value="">כל הסטטוסים</option>
+      <option value="ממתין לאישור" <%= status === 'ממתין לאישור' ? 'selected' : '' %>>ממתין לאישור</option>
+      <option value="אושר" <%= status === 'אושר' ? 'selected' : '' %>>אושר</option>
+      <option value="נדחה" <%= status === 'נדחה' ? 'selected' : '' %>>נדחה</option>
+      <option value="נשלח לספק" <%= status === 'נשלח לספק' ? 'selected' : '' %>>נשלח לספק</option>
+    </select>
+    <label style="display:flex; align-items:center; gap:6px; font-weight:400;">
+      <input type="checkbox" name="mine" value="1" <%= mine === '1' ? 'checked' : '' %> onchange="this.form.submit()" style="width:auto;" />
+      רק ההזמנות שלי
+    </label>
+  </form>
+
+  <% if (orders.length === 0) { %>
+    <div class="empty-state">אין הזמנות להצגה</div>
+  <% } else { %>
+    <table>
+      <thead><tr><th>תאריך</th><th>ספק</th><th>תיאור</th><th>נוצר ע"י</th><th>סטטוס</th><th></th></tr></thead>
+      <tbody>
+        <% orders.forEach(o => { %>
+          <tr>
+            <td><%= o.created_at_str %></td>
+            <td><%= o.supplier_name %></td>
+            <td><%= o.description %></td>
+            <td><%= o.creator_name || '' %></td>
+            <td>
+              <% if (o.status === 'ממתין לאישור') { %><span style="color:#e65100;">⏳ <%= o.status %></span>
+              <% } else if (o.status === 'אושר') { %><span style="color:#2e7d32;">✅ <%= o.status %></span>
+              <% } else if (o.status === 'נדחה') { %><span style="color:#a94442;">❌ <%= o.status %></span>
+              <% } else { %><span style="color:#1565c0;">📨 <%= o.status %></span>
+              <% } %>
+            </td>
+            <td><a href="/suppliers/orders/<%= o.id %>" class="btn small secondary">צפייה</a></td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  <% } %>
+</div>
+
+<%- include('../partials/footer') %>
