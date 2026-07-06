@@ -59,9 +59,10 @@ router.delete("/:id", (req, res) => {
 
 // ============ בקשות תחזוקה ============
 router.get("/maintenance", (req, res) => {
-  const { status } = req.query;
+  const { status, branch } = req.query;
   let sql = `
-    SELECT m.*, c.name AS class_name, c.parallel, u.display_name AS reporter_name
+    SELECT m.*, c.name AS class_name, c.parallel, u.display_name AS reporter_name,
+           COALESCE(m.branch, c.branch) AS effective_branch
     FROM maintenance_requests m
     LEFT JOIN classes c ON m.class_id = c.id
     LEFT JOIN users u ON m.reported_by_user_id = u.id
@@ -72,12 +73,50 @@ router.get("/maintenance", (req, res) => {
     sql += " AND m.status = ?";
     params.push(status);
   }
+  if (branch) {
+    sql += " AND COALESCE(m.branch, c.branch) = ?";
+    params.push(branch);
+  }
   sql += " ORDER BY m.created_at DESC";
   const requests = db.prepare(sql).all(...params).map((r) => ({
     ...r,
     created_at_str: r.created_at ? new Date(r.created_at).toLocaleDateString("he-IL") : "",
   }));
-  res.render("inventory/maintenance-list", { requests, status: status || "" });
+  res.render("inventory/maintenance-list", { requests, status: status || "", branch: branch || "" });
+});
+
+router.get("/maintenance/print", (req, res) => {
+  const { status, branch } = req.query;
+  let sql = `
+    SELECT m.*, c.name AS class_name, c.parallel, u.display_name AS reporter_name,
+           COALESCE(m.branch, c.branch) AS effective_branch
+    FROM maintenance_requests m
+    LEFT JOIN classes c ON m.class_id = c.id
+    LEFT JOIN users u ON m.reported_by_user_id = u.id
+    WHERE 1=1
+  `;
+  const params = [];
+  if (status) {
+    sql += " AND m.status = ?";
+    params.push(status);
+  }
+  if (branch) {
+    sql += " AND COALESCE(m.branch, c.branch) = ?";
+    params.push(branch);
+  }
+  sql += " ORDER BY m.created_at DESC";
+  const requests = db.prepare(sql).all(...params);
+  const headers = ["תאריך", "סניף", "תיאור", "מיקום", "דווח ע\"י", "סטטוס"];
+  const rows = requests.map((r) => [
+    r.created_at ? new Date(r.created_at).toLocaleDateString("he-IL") : "",
+    r.effective_branch || "כללי",
+    r.description || "",
+    r.class_name ? r.class_name + (r.parallel ? " (" + r.parallel + ")" : "") : (r.location || ""),
+    r.reporter_name || "",
+    r.status || "",
+  ]);
+  const title = "בקשות תחזוקה ותיקונים" + (branch ? " - סניף " + branch : " - כל הסניפים");
+  res.render("reports/print-view", { title, headers, rows });
 });
 
 router.get("/maintenance/new", (req, res) => {
@@ -86,10 +125,10 @@ router.get("/maintenance/new", (req, res) => {
 });
 
 router.post("/maintenance", (req, res) => {
-  const { description, class_id, location } = req.body;
+  const { description, class_id, location, branch } = req.body;
   db.prepare(
-    "INSERT INTO maintenance_requests (description, class_id, location, status, reported_by_user_id, created_at) VALUES (?,?,?,?,?,?)"
-  ).run(description, class_id || null, location || null, "פתוח", req.currentUser.id, new Date().toISOString());
+    "INSERT INTO maintenance_requests (description, class_id, location, branch, status, reported_by_user_id, created_at) VALUES (?,?,?,?,?,?,?)"
+  ).run(description, class_id || null, location || null, branch || null, "פתוח", req.currentUser.id, new Date().toISOString());
   res.redirect("/inventory/maintenance");
 });
 

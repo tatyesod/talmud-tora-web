@@ -15,17 +15,33 @@
       <option value="בטיפול" <%= status === 'בטיפול' ? 'selected' : '' %>>בטיפול</option>
       <option value="סגור" <%= status === 'סגור' ? 'selected' : '' %>>סגור</option>
     </select>
+    <select name="branch">
+      <option value="">כל הסניפים</option>
+      <option value="סוקולוב" <%= branch === 'סוקולוב' ? 'selected' : '' %>>סוקולוב</option>
+      <option value="נפחא" <%= branch === 'נפחא' ? 'selected' : '' %>>נפחא</option>
+      <option value="בן פתחיה" <%= branch === 'בן פתחיה' ? 'selected' : '' %>>בן פתחיה</option>
+    </select>
   </form>
+
+  <div class="actions" style="margin:12px 0;">
+    <a href="/inventory/maintenance/print?status=<%= status %>&branch=<%= branch %>" target="_blank" class="btn secondary">
+      🖨️ הדפסה <%= branch ? '- סניף ' + branch : '- כל הסניפים' %>
+    </a>
+    <% if (branch) { %>
+      <a href="/inventory/maintenance/print?status=<%= status %>" target="_blank" class="btn secondary">🖨️ הדפסה - כל הסניפים יחד</a>
+    <% } %>
+  </div>
 
   <% if (requests.length === 0) { %>
     <div class="empty-state">אין בקשות תחזוקה</div>
   <% } else { %>
     <table>
-      <thead><tr><th>תאריך</th><th>תיאור</th><th>מיקום</th><th>דווח ע"י</th><th>סטטוס</th><th></th></tr></thead>
+      <thead><tr><th>תאריך</th><th>סניף</th><th>תיאור</th><th>מיקום</th><th>דווח ע"י</th><th>סטטוס</th><th></th></tr></thead>
       <tbody>
         <% requests.forEach(r => { %>
           <tr>
             <td><%= r.created_at_str %></td>
+            <td><%= r.effective_branch || 'כללי' %></td>
             <td><%= r.description %></td>
             <td><%= r.class_name ? r.class_name+(r.parallel?' ('+r.parallel+')':'') : (r.location || '') %></td>
             <td><%= r.reporter_name || '' %></td>
