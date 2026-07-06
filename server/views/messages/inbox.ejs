@@ -9,14 +9,14 @@
       <thead><tr><th>משתמש</th><th>הודעה אחרונה</th><th>תאריך</th><th></th></tr></thead>
       <tbody>
         <% conversations.forEach(c => { %>
-          <tr>
+          <tr class="<%= c.unread > 0 ? 'unread-row' : '' %>">
             <td>
               <a href="/messages/<%= c.user.id %>"><%= c.user.display_name || c.user.username %></a>
-              <% if (c.unread > 0) { %><span class="unread-badge-light"><%= c.unread %></span><% } %>
+              <% if (c.unread > 0) { %><span class="unread-badge-light">הודעה חדשה<% if (c.unread > 1) { %> (<%= c.unread %>)<% } %></span><% } %>
             </td>
             <td><%= c.lastMsg ? (c.lastMsg.body && c.lastMsg.body.length > 0 ? (c.lastMsg.body.length > 50 ? c.lastMsg.body.slice(0,50)+'...' : c.lastMsg.body) : (c.lastMsg.attachment_type === 'image' ? '📷 תמונה' : c.lastMsg.attachment_path ? '📎 קובץ מצורף' : '')) : 'אין הודעות עדיין' %></td>
             <td><%= c.lastMsg ? c.lastMsg.created_at_str : '' %></td>
-            <td><a href="/messages/<%= c.user.id %>" class="btn small secondary">פתח שיחה</a></td>
+            <td><a href="/messages/<%= c.user.id %>" class="btn small <%= c.unread > 0 ? '' : 'secondary' %>">פתח שיחה</a></td>
           </tr>
         <% }) %>
       </tbody>

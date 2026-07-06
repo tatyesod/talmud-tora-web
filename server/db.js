@@ -163,6 +163,8 @@ const migrations = [
     sent_at TEXT,
     created_at TEXT
   )`,
+  "DELETE FROM messages WHERE sender_id = recipient_id",
+  "DELETE FROM messages WHERE sender_id NOT IN (SELECT id FROM users) OR recipient_id NOT IN (SELECT id FROM users)",
 ];
 
 for (const sql of migrations) {

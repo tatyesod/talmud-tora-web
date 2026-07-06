@@ -130,4 +130,52 @@ if (renewalForm) {
 }
 </script>
 
+<div class="card" style="margin-top:20px;">
+  <h3>📊 סיכום כללי — חידושים להזמנה (<%= year %>)</h3>
+  <p style="color:var(--muted); font-size:0.9em;">
+    סיכום כמות ההזמנות לכל ספר, על פני כל הכיתות (לא רק הכיתה שנבחרה למעלה) — לשימוש בהזמנת הספרים מהמו"ל.
+  </p>
+
+  <form method="GET" action="/books/renewals" style="display:flex; align-items:flex-end; gap:10px; flex-wrap:wrap; margin-bottom:14px;">
+    <input type="hidden" name="year" value="<%= year %>" />
+    <input type="hidden" name="class_id" value="<%= class_id %>" />
+    <div class="form-group" style="margin:0;">
+      <label>סניף</label>
+      <select name="summary_branch" onchange="this.form.submit()">
+        <option value="">כל הסניפים</option>
+        <% branches.forEach(b => { %>
+          <option value="<%= b %>" <%= summaryBranch === b ? 'selected' : '' %>><%= b %></option>
+        <% }) %>
+      </select>
+    </div>
+    <a href="/books/renewals/summary/export?year=<%= encodeURIComponent(year) %>&summary_branch=<%= encodeURIComponent(summaryBranch) %>" class="btn secondary">
+      📥 ייצוא דו"ח להזמנה
+    </a>
+  </form>
+
+  <% if (summaryRows.length === 0) { %>
+    <p class="empty-state">אין עדיין חידושים רשומים לשנה זו<%= summaryBranch ? ' בסניף ' + summaryBranch : '' %></p>
+  <% } else { %>
+    <table>
+      <thead><tr><th>ספר</th><th>כמות להזמנה</th><th>סה"כ ₪</th></tr></thead>
+      <tbody>
+        <% summaryRows.forEach(r => { %>
+          <tr>
+            <td><%= r.item_name %></td>
+            <td><strong><%= r.quantity %></strong></td>
+            <td><%= (r.total_price || 0).toLocaleString() %> ₪</td>
+          </tr>
+        <% }) %>
+      </tbody>
+      <tfoot>
+        <tr style="font-weight:700; background:#f8f9fa;">
+          <td>סה"כ</td>
+          <td><%= summaryTotalQty %></td>
+          <td><%= summaryTotalPrice.toLocaleString() %> ₪</td>
+        </tr>
+      </tfoot>
+    </table>
+  <% } %>
+</div>
+
 <%- include('../partials/footer') %>

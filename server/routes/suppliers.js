@@ -136,12 +136,14 @@ router.post("/orders/:orderId/approve", (req, res) => {
   db.prepare("UPDATE supplier_orders SET status = 'אושר', approved_by = ?, approved_at = ? WHERE id = ?").run(
     req.currentUser.id, new Date().toISOString(), req.params.orderId
   );
-  const supplier = db.prepare("SELECT name FROM suppliers WHERE id = ?").get(order.supplier_id);
-  db.prepare("INSERT INTO messages (sender_id, recipient_id, body, created_at) VALUES (?,?,?,?)").run(
-    req.currentUser.id, order.created_by,
-    `✅ ההזמנה שלך אושרה: ${supplier ? supplier.name : ""} — ${order.description}. אפשר לשלוח לספק.`,
-    new Date().toISOString()
-  );
+  if (order.created_by !== req.currentUser.id) {
+    const supplier = db.prepare("SELECT name FROM suppliers WHERE id = ?").get(order.supplier_id);
+    db.prepare("INSERT INTO messages (sender_id, recipient_id, body, created_at) VALUES (?,?,?,?)").run(
+      req.currentUser.id, order.created_by,
+      `✅ ההזמנה שלך אושרה: ${supplier ? supplier.name : ""} — ${order.description}. אפשר לשלוח לספק.`,
+      new Date().toISOString()
+    );
+  }
   res.redirect(req.get("Referer") || "/");
 });
 
@@ -152,12 +154,14 @@ router.post("/orders/:orderId/reject", (req, res) => {
   db.prepare("UPDATE supplier_orders SET status = 'נדחה', approved_by = ?, approved_at = ?, rejection_reason = ? WHERE id = ?").run(
     req.currentUser.id, new Date().toISOString(), rejection_reason || null, req.params.orderId
   );
-  const supplier = db.prepare("SELECT name FROM suppliers WHERE id = ?").get(order.supplier_id);
-  db.prepare("INSERT INTO messages (sender_id, recipient_id, body, created_at) VALUES (?,?,?,?)").run(
-    req.currentUser.id, order.created_by,
-    `❌ ההזמנה שלך נדחתה: ${supplier ? supplier.name : ""} — ${order.description}.${rejection_reason ? " סיבה: " + rejection_reason : ""}`,
-    new Date().toISOString()
-  );
+  if (order.created_by !== req.currentUser.id) {
+    const supplier = db.prepare("SELECT name FROM suppliers WHERE id = ?").get(order.supplier_id);
+    db.prepare("INSERT INTO messages (sender_id, recipient_id, body, created_at) VALUES (?,?,?,?)").run(
+      req.currentUser.id, order.created_by,
+      `❌ ההזמנה שלך נדחתה: ${supplier ? supplier.name : ""} — ${order.description}.${rejection_reason ? " סיבה: " + rejection_reason : ""}`,
+      new Date().toISOString()
+    );
+  }
   res.redirect(req.get("Referer") || "/");
 });
 

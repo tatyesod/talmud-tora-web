@@ -516,6 +516,8 @@ legend { color: var(--primary-dark); font-weight: 700; padding: 0 8px; }
   font-weight: 700;
   margin-right: 6px;
 }
+.unread-row { background: #fff8e1 !important; font-weight: 700; }
+.unread-row td { border-bottom: 1px solid #ffe082; }
 
 .thread-box {
   max-height: 420px;

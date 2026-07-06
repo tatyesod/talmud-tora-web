@@ -461,7 +461,7 @@ router.delete("/prices/:id", (req, res) => {
 
 // ============ חידוש ספרים / הזמנות נוספות ============
 router.get("/renewals", (req, res) => {
-  const { year, class_id } = req.query;
+  const { year, class_id, summary_branch } = req.query;
   const defaultYear = db.prepare("SELECT value FROM settings WHERE key='current_hebrew_year'").get()?.value || 'תשפ"ז';
   const activeYear = year || defaultYear;
   const classes = db.prepare("SELECT id, name, parallel FROM classes ORDER BY name, parallel").all();
@@ -471,7 +471,82 @@ router.get("/renewals", (req, res) => {
   }
   const prices = db.prepare("SELECT * FROM book_prices ORDER BY item_name").all();
   const extras = class_id ? db.prepare(`SELECT e.*, s.first_name, s.last_name FROM book_order_extras e JOIN students s ON e.student_id=s.id WHERE e.year_label=? AND s.class_id=? ORDER BY s.last_name, e.item_name`).all(activeYear, class_id) : [];
-  res.render("books/renewals", { year: activeYear, classes, class_id: class_id||'', students, prices, extras, error: req.query.error||'' });
+
+  // סיכום כללי לכל הכיתות/סניפים - לצורך הזמנת ספרים מהמו"ל
+  const branches = db.prepare("SELECT DISTINCT branch FROM classes WHERE branch IS NOT NULL ORDER BY branch").all().map((r) => r.branch);
+  let summarySql = `
+    SELECT e.item_name, COUNT(*) AS quantity, SUM(e.price) AS total_price
+    FROM book_order_extras e
+    JOIN students s ON e.student_id = s.id
+    LEFT JOIN classes c ON s.class_id = c.id
+    WHERE e.year_label = ?
+  `;
+  const summaryParams = [activeYear];
+  if (summary_branch) {
+    summarySql += " AND c.branch = ?";
+    summaryParams.push(summary_branch);
+  }
+  summarySql += " GROUP BY e.item_name ORDER BY quantity DESC, e.item_name";
+  const summaryRows = db.prepare(summarySql).all(...summaryParams);
+  const summaryTotalQty = summaryRows.reduce((s, r) => s + r.quantity, 0);
+  const summaryTotalPrice = summaryRows.reduce((s, r) => s + (r.total_price || 0), 0);
+
+  res.render("books/renewals", {
+    year: activeYear, classes, class_id: class_id||'', students, prices, extras, error: req.query.error||'',
+    branches, summaryBranch: summary_branch || '', summaryRows, summaryTotalQty, summaryTotalPrice,
+  });
+});
+
+router.get("/renewals/summary/export", async (req, res) => {
+  const { year, summary_branch } = req.query;
+  const defaultYear = db.prepare("SELECT value FROM settings WHERE key='current_hebrew_year'").get()?.value || 'תשפ"ז';
+  const activeYear = year || defaultYear;
+
+  let sql = `
+    SELECT e.item_name, COUNT(*) AS quantity, SUM(e.price) AS total_price
+    FROM book_order_extras e
+    JOIN students s ON e.student_id = s.id
+    LEFT JOIN classes c ON s.class_id = c.id
+    WHERE e.year_label = ?
+  `;
+  const params = [activeYear];
+  if (summary_branch) {
+    sql += " AND c.branch = ?";
+    params.push(summary_branch);
+  }
+  sql += " GROUP BY e.item_name ORDER BY quantity DESC, e.item_name";
+  const rows = db.prepare(sql).all(...params);
+
+  const branchLabel = summary_branch || "כל הסניפים";
+  const wb = new ExcelJS.Workbook();
+  const ws = wb.addWorksheet("סיכום חידושים", { views: [{ rightToLeft: true }] });
+  addExcelHeader(wb, ws, "", `סיכום חידושי ספרים להזמנה — ${activeYear} — ${branchLabel}`, rows.length + 3);
+  addLogo(wb, ws, rows.length + 2, 0);
+
+  const headerRow = ws.addRow(["ספר", "כמות להזמנה", "סה\"כ ₪"]);
+  headerRow.eachCell((cell) => {
+    cell.font = { bold: true, color: { argb: "FFFFFFFF" } };
+    cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF2C5F7C" } };
+    cell.alignment = { horizontal: "right", vertical: "middle" };
+  });
+
+  let totalQty = 0, totalPrice = 0;
+  rows.forEach((r) => {
+    ws.addRow([r.item_name, r.quantity, r.total_price || 0]).alignment = { horizontal: "right" };
+    totalQty += r.quantity;
+    totalPrice += r.total_price || 0;
+  });
+  const sr = ws.addRow(["סה\"כ", totalQty, totalPrice]);
+  sr.font = { bold: true };
+  sr.eachCell((cell) => { cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFEFF4F8" } }; });
+
+  ws.getColumn(1).width = 30;
+  ws.getColumn(2).width = 16;
+  ws.getColumn(3).width = 14;
+
+  res.setHeader("Content-Disposition", `attachment; filename="${encodeURIComponent(`סיכום-חידושים-${activeYear}-${branchLabel}.xlsx`)}"`);
+  res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+  await wb.xlsx.write(res); res.end();
 });
 
 router.post("/renewals", (req, res) => {

@@ -69,6 +69,8 @@ router.delete("/:id", (req, res) => {
   if (parseInt(req.params.id) === req.currentUser.id) {
     return res.redirect("/users");
   }
+  // ניקוי הודעות ומשימות ששייכות למשתמש הנמחק, כדי לא להשאיר "הודעות יתומות" תקועות כלא-נקראות
+  db.prepare("DELETE FROM messages WHERE sender_id = ? OR recipient_id = ?").run(req.params.id, req.params.id);
   db.prepare("DELETE FROM users WHERE id = ?").run(req.params.id);
   res.redirect("/users");
 });

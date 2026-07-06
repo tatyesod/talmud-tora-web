@@ -22,7 +22,7 @@
   </div>
 
   <p style="color:var(--muted); font-size:0.88em; margin-bottom:10px;">
-    לחץ על תא לסימון/ביטול הזמנה. לחיצה על כותרת עמודה = מסמן/מבטל את כולם.
+    לחץ על תא לסימון/ביטול הזמנה. לחיצה על שם התלמיד = מסמן/מבטל עבורו את כל הספרים.
   </p>
   <div class="table-scroll-wrap" style="overflow-x:auto;">
     <form method="POST" action="/books/class/save" id="orders-form">
@@ -110,8 +110,7 @@
 .student-name-row { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
 .student-pay-link { text-decoration: none; font-size: 1em; opacity: 0.7; flex-shrink: 0; }
 .student-pay-link:hover { opacity: 1; }
-.book-col { min-width: 100px; max-width: 130px; font-size: 0.80em; background: #f0f4f8; vertical-align: bottom; cursor: pointer; }
-.book-col:hover { background: #dde8f0; }
+.book-col { min-width: 100px; max-width: 130px; font-size: 0.80em; background: #f0f4f8; vertical-align: bottom; }
 .book-price { font-weight: 700; color: var(--primary); font-size: 0.95em; margin-top: 2px; }
 .book-cell { cursor: pointer; user-select: none; font-size: 1.3em; color: #2e7d32; font-weight: 700; width: 42px; }
 .book-cell:hover { background: #e8f5e9 !important; }
@@ -133,17 +132,21 @@ function toggleCell(td) {
   updateTotals();
 }
 
-document.querySelectorAll('.book-col').forEach((th, idx) => {
-  th.addEventListener('click', () => {
-    const cells = document.querySelectorAll(`.student-row td.book-cell:nth-child(${idx + 2})`);
-    const allChecked = [...cells].every(td => td.querySelector('input').checked);
-    cells.forEach(td => {
+document.querySelectorAll('.student-name').forEach((nameCell) => {
+  nameCell.addEventListener('click', (e) => {
+    if (e.target.closest('a')) return; // לא להפעיל כשלוחצים על קישור התשלום
+    const row = nameCell.closest('.student-row');
+    const cells = row.querySelectorAll('td.book-cell');
+    const allChecked = [...cells].every((td) => td.querySelector('input').checked);
+    cells.forEach((td) => {
       const cb = td.querySelector('input'), mark = td.querySelector('.check-mark');
       cb.checked = !allChecked; mark.textContent = cb.checked ? '✓' : '';
       td.classList.toggle('checked', cb.checked);
     });
     updateTotals();
   });
+  nameCell.style.cursor = 'pointer';
+  nameCell.title = 'לחיצה מסמנת/מבטלת את כל ההזמנות של תלמיד זה';
 });
 
 function updateTotals() {
