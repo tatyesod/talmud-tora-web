@@ -84,7 +84,14 @@ router.get("/:id", (req, res) => {
     ORDER BY (s.birth_date_civil IS NULL), s.birth_date_civil ASC
     LIMIT 1
   `).get(req.params.id);
-  res.render("families/view", { family, students, contacts, tuition, eldest });
+
+  // ניווט חצים בין משפחות - לפי אותו סדר ברירת מחדל כמו ברשימת המשפחות (שם משפחה)
+  const orderedIds = db.prepare("SELECT id FROM families ORDER BY last_name, id").all().map((r) => r.id);
+  const curIdx = orderedIds.findIndex((id) => String(id) === String(req.params.id));
+  const prevFamilyId = curIdx > 0 ? orderedIds[curIdx - 1] : null;
+  const nextFamilyId = curIdx >= 0 && curIdx < orderedIds.length - 1 ? orderedIds[curIdx + 1] : null;
+
+  res.render("families/view", { family, students, contacts, tuition, eldest, prevFamilyId, nextFamilyId });
 });
 
 router.get("/:id/edit", (req, res) => {

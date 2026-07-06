@@ -5,12 +5,18 @@
   <% if (eldest && eldest.class_name) { %>
     <p style="color:var(--muted); margin-top:-6px;">כיתת האח הבכור: <strong><%= eldest.class_name %><%= eldest.parallel ? ' ('+eldest.parallel+')' : '' %></strong></p>
   <% } %>
-  <div class="actions">
-    <a href="/families/<%= family.id %>/edit" class="btn">עריכה</a>
-    <form method="POST" action="/families/<%= family.id %>?_method=DELETE" onsubmit="return confirm('האם למחוק את המשפחה? התלמידים המשויכים אליה לא יימחקו, אך הקישור למשפחה יוסר מהם. לא ניתן לבטל פעולה זו.');" style="display:inline">
-      <button type="submit" class="btn danger">מחיקת משפחה</button>
-    </form>
-    <a href="javascript:history.back()" class="btn secondary">חזרה לרשימה</a>
+  <div class="actions" style="justify-content:space-between; display:flex; flex-wrap:wrap; gap:10px;">
+    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+      <a href="/families/<%= family.id %>/edit" class="btn">עריכה</a>
+      <form method="POST" action="/families/<%= family.id %>?_method=DELETE" onsubmit="return confirm('האם למחוק את המשפחה? התלמידים המשויכים אליה לא יימחקו, אך הקישור למשפחה יוסר מהם. לא ניתן לבטל פעולה זו.');" style="display:inline">
+        <button type="submit" class="btn danger">מחיקת משפחה</button>
+      </form>
+      <a href="javascript:history.back()" class="btn secondary">חזרה לרשימה</a>
+    </div>
+    <div style="display:flex; gap:8px;">
+      <% if (prevFamilyId) { %><a href="/families/<%= prevFamilyId %>" class="btn small secondary">→ הקודמת</a><% } %>
+      <% if (nextFamilyId) { %><a href="/families/<%= nextFamilyId %>" class="btn small secondary">הבאה ←</a><% } %>
+    </div>
   </div>
 </div>
 
