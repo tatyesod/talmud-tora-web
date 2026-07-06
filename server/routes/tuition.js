@@ -60,12 +60,18 @@ async function sendWorkbook(res, filename, sheetName, reportTitle, headerRow, da
   dataRows.forEach((row) => {
     const r = ws.addRow(row);
     r.alignment = { horizontal: "right" };
+    row.forEach((val, i) => {
+      if (val instanceof Date) {
+        r.getCell(i + 1).numFmt = "dd/mm/yyyy";
+      }
+    });
   });
 
   ws.columns.forEach((col, i) => {
     let maxLen = (headerRow[i] || "").toString().length;
     dataRows.forEach((row) => {
-      const v = row[i] != null ? String(row[i]) : "";
+      const cellVal = row[i];
+      const v = cellVal instanceof Date ? "00/00/0000" : (cellVal != null ? String(cellVal) : "");
       if (v.length > maxLen) maxLen = v.length;
     });
     col.width = Math.min(Math.max(maxLen + 3, 12), 40);

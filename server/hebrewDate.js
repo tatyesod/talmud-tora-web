@@ -189,6 +189,14 @@ function serialToGregorianString(serial) {
   return `${pad(g.day)}/${pad(g.month)}/${g.year}`;
 }
 
+// מחזיר אובייקט Date אמיתי (לא טקסט) - לשימוש בעמודות תאריך באקסל,
+// כדי ש-Excel יזהה את זה כתאריך אמיתי (למיון/סינון כרונולוגי נכון)
+function serialToDateObject(serial) {
+  const g = serialToGregorianDate(serial);
+  if (!g) return null;
+  return new Date(g.year, g.month - 1, g.day);
+}
+
 function serialToHebrewString(serial) {
   if (serial === null || serial === undefined || serial === "") return "";
   const abs = accessSerialToAbsolute(Number(serial));
@@ -322,4 +330,5 @@ module.exports = {
   israelHour,
   absoluteToAccessSerial,
   hebrewNumeral,
+  serialToDateObject,
 };

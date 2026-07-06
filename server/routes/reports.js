@@ -74,12 +74,18 @@ async function sendWorkbook(res, filename, sheetName, reportTitle, headerRow, da
   dataRows.forEach((row) => {
     const r = ws.addRow(row);
     r.alignment = { horizontal: "right" };
+    row.forEach((val, i) => {
+      if (val instanceof Date) {
+        r.getCell(i + 1).numFmt = "dd/mm/yyyy";
+      }
+    });
   });
 
   ws.columns.forEach((col, i) => {
     let maxLen = (headerRow[i] || "").toString().length;
     dataRows.forEach((row) => {
-      const v = row[i] != null ? String(row[i]) : "";
+      const cellVal = row[i];
+      const v = cellVal instanceof Date ? "00/00/0000" : (cellVal != null ? String(cellVal) : "");
       if (v.length > maxLen) maxLen = v.length;
     });
     col.width = Math.min(Math.max(maxLen + 3, 12), 40);
@@ -187,7 +193,7 @@ router.get("/full-student-list/export", async (req, res) => {
     r.class_name ? r.class_name + (r.parallel ? " " + r.parallel : "") : "",
     r.status || "", r.father_name || "", r.mother_name || "",
     r.home_phone || "", r.father_mobile || "", r.mother_mobile || "",
-    buildAddress(r), hd.serialToGregorianString(r.birth_date_civil),
+    buildAddress(r), hd.serialToDateObject(r.birth_date_civil),
   ]);
 
   await sendWorkbook(res, "רשימת תלמידים מלא.xlsx", "תלמידים", "רשימת תלמידים מלא", header, data);
