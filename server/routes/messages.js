@@ -69,16 +69,6 @@ router.get("/recent/json", (req, res) => {
   res.json(result);
 });
 
-router.get("/debug-unread", (req, res) => {
-  const myId = req.currentUser.id;
-  const rows = db.prepare(`
-    SELECT m.*, s.display_name AS sender_name, s.username AS sender_username
-    FROM messages m LEFT JOIN users s ON m.sender_id = s.id
-    WHERE m.recipient_id = ? AND m.read_at IS NULL
-  `).all(myId);
-  res.json({ myId, count: rows.length, rows });
-});
-
 router.get("/", (req, res) => {
   const myId = req.currentUser.id;
   const otherUsers = db.prepare("SELECT id, username, display_name FROM users WHERE id != ? ORDER BY display_name").all(myId);
