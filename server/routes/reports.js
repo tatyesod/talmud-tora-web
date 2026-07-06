@@ -153,6 +153,10 @@ router.get("/full-student-list", (req, res) => {
 
 router.get("/full-student-list/export", async (req, res) => {
   const status = req.query.status || "";
+  let classIds = req.query.class_id || [];
+  if (!Array.isArray(classIds)) classIds = [classIds];
+  classIds = classIds.filter(Boolean);
+
   let sql = `
     SELECT s.last_name, s.first_name, s.id_number, c.name AS class_name, c.parallel,
            s.status, f.father_name, f.mother_name, f.home_phone, f.father_mobile,
@@ -166,6 +170,10 @@ router.get("/full-student-list/export", async (req, res) => {
   if (status) {
     sql += " AND s.status = ?";
     params.push(status);
+  }
+  if (classIds.length > 0) {
+    sql += ` AND s.class_id IN (${classIds.map(() => "?").join(",")})`;
+    params.push(...classIds);
   }
   sql += " ORDER BY c.name, c.parallel, s.last_name, s.first_name";
   const rows = db.prepare(sql).all(...params);
