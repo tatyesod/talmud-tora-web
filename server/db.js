@@ -177,6 +177,15 @@ const migrations = [
   "ALTER TABLE students ADD COLUMN birth_country TEXT DEFAULT 'ישראל'",
   "ALTER TABLE students ADD COLUMN immigration_year TEXT",
   "ALTER TABLE classes ADD COLUMN next_year_class_id INTEGER",
+  `CREATE TABLE IF NOT EXISTS book_inventory (
+    id INTEGER PRIMARY KEY,
+    book_price_id INTEGER NOT NULL,
+    branch TEXT NOT NULL,
+    current_stock INTEGER DEFAULT 0,
+    desired_stock INTEGER DEFAULT 0,
+    updated_at TEXT,
+    UNIQUE(book_price_id, branch)
+  )`,
 ];
 
 for (const sql of migrations) {

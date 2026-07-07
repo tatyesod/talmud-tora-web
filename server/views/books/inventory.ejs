@@ -1,0 +1,63 @@
+<%- include('../partials/header', {title: 'מלאי ספרים', wide: true}) %>
+
+<div class="card">
+  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+    <h1>📦 מלאי ספרים</h1>
+    <div class="actions">
+      <a href="/books" class="btn secondary">← חזרה</a>
+      <a href="/books/inventory/order?branch=<%= encodeURIComponent(branch) %>" class="btn">🛒 מעבר להזמנה מהספק</a>
+    </div>
+  </div>
+
+  <p style="color:var(--muted); font-size:0.9em;">
+    לכל ספר, מלאו את <strong>המלאי הנוכחי</strong> בפועל בסניף (ספירת מלאי), ואת <strong>הכמות הרצויה</strong> שברצונכם
+    להחזיק תמיד במלאי. במסך "הזמנה מהספק" המערכת תחשב אוטומטית כמה להזמין מכל ספר (כמות רצויה פחות מלאי נוכחי).
+  </p>
+
+  <form method="GET" action="/books/inventory" style="margin-bottom:14px;">
+    <label><strong>סניף:</strong></label>
+    <select name="branch" onchange="this.form.submit()">
+      <% branches.forEach(b => { %>
+        <option value="<%= b %>" <%= b === branch ? 'selected' : '' %>><%= b %></option>
+      <% }) %>
+    </select>
+  </form>
+
+  <% if (saved) { %>
+    <div style="background:#e8f5e9; border:1px solid #a5d6a7; color:#2e7d32; border-radius:8px; padding:10px 16px; margin-bottom:14px;">
+      ✅ המלאי נשמר בהצלחה.
+    </div>
+  <% } %>
+
+  <% if (items.length === 0) { %>
+    <p class="empty-state">אין ספרים במחירון. יש להוסיף קודם דרך "💰 מחירון".</p>
+  <% } else { %>
+    <form method="POST" action="/books/inventory/save">
+      <input type="hidden" name="branch" value="<%= branch %>" />
+      <div class="table-scroll-wrap">
+        <table>
+          <thead><tr><th>ספר</th><th>הוצאה</th><th>מחיר</th><th>מלאי נוכחי</th><th>כמות רצויה</th></tr></thead>
+          <tbody>
+            <% items.forEach(it => { %>
+              <tr>
+                <td><%= it.item_name %></td>
+                <td><%= it.publisher || '' %></td>
+                <td><%= it.price %> ₪</td>
+                <td>
+                  <input type="hidden" name="book_price_id" value="<%= it.book_price_id %>" />
+                  <input type="number" name="current_stock" value="<%= it.current_stock %>" min="0" style="width:90px;" />
+                </td>
+                <td><input type="number" name="desired_stock" value="<%= it.desired_stock %>" min="0" style="width:90px;" /></td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+      <div class="actions" style="margin-top:14px;">
+        <button type="submit" class="btn">💾 שמירת מלאי לסניף <%= branch %></button>
+      </div>
+    </form>
+  <% } %>
+</div>
+
+<%- include('../partials/footer') %>

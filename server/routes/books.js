@@ -587,6 +587,118 @@ router.delete("/renewals/:id", (req, res) => {
   res.redirect(`/books/renewals?year=${encodeURIComponent(year)}&class_id=${sid}`);
 });
 
+// ============ מלאי ספרים לפי סניף ============
+router.get("/inventory", (req, res) => {
+  const branches = db.prepare("SELECT DISTINCT branch FROM classes WHERE branch IS NOT NULL AND branch<>'' ORDER BY branch").all().map(r => r.branch);
+  const branch = req.query.branch || branches[0] || "";
+
+  const items = db.prepare(`
+    SELECT bp.id AS book_price_id, bp.item_name, bp.publisher, bp.price,
+           COALESCE(bi.current_stock, 0) AS current_stock,
+           COALESCE(bi.desired_stock, 0) AS desired_stock
+    FROM book_prices bp
+    LEFT JOIN book_inventory bi ON bi.book_price_id = bp.id AND bi.branch = ?
+    ORDER BY bp.item_name
+  `).all(branch);
+
+  res.render("books/inventory", { branches, branch, items, saved: req.query.saved === "1" });
+});
+
+router.post("/inventory/save", (req, res) => {
+  const { branch } = req.body;
+  let ids = req.body.book_price_id || [];
+  let currentStocks = req.body.current_stock || [];
+  let desiredStocks = req.body.desired_stock || [];
+  if (!Array.isArray(ids)) ids = [ids];
+  if (!Array.isArray(currentStocks)) currentStocks = [currentStocks];
+  if (!Array.isArray(desiredStocks)) desiredStocks = [desiredStocks];
+
+  const upsert = db.prepare(`
+    INSERT INTO book_inventory (book_price_id, branch, current_stock, desired_stock, updated_at)
+    VALUES (?,?,?,?,?)
+    ON CONFLICT(book_price_id, branch) DO UPDATE SET
+      current_stock = excluded.current_stock,
+      desired_stock = excluded.desired_stock,
+      updated_at = excluded.updated_at
+  `);
+  const now = new Date().toISOString();
+  ids.forEach((id, i) => {
+    upsert.run(id, branch, parseInt(currentStocks[i], 10) || 0, parseInt(desiredStocks[i], 10) || 0, now);
+  });
+
+  res.redirect(`/books/inventory?branch=${encodeURIComponent(branch)}&saved=1`);
+});
+
+// ============ הזמנת ספרים מהספק - חישוב אוטומטי לפי מלאי מול כמות רצויה ============
+router.get("/inventory/order", (req, res) => {
+  const branches = db.prepare("SELECT DISTINCT branch FROM classes WHERE branch IS NOT NULL AND branch<>'' ORDER BY branch").all().map(r => r.branch);
+  const branch = req.query.branch || branches[0] || "";
+
+  const rows = db.prepare(`
+    SELECT bp.item_name, bp.publisher, bp.price,
+           COALESCE(bi.current_stock, 0) AS current_stock,
+           COALESCE(bi.desired_stock, 0) AS desired_stock
+    FROM book_prices bp
+    LEFT JOIN book_inventory bi ON bi.book_price_id = bp.id AND bi.branch = ?
+    WHERE COALESCE(bi.desired_stock, 0) > COALESCE(bi.current_stock, 0)
+    ORDER BY bp.item_name
+  `).all(branch).map((r) => ({
+    ...r,
+    to_order: r.desired_stock - r.current_stock,
+    line_total: (r.desired_stock - r.current_stock) * r.price,
+  }));
+
+  const grandTotal = rows.reduce((s, r) => s + r.line_total, 0);
+  const grandQty = rows.reduce((s, r) => s + r.to_order, 0);
+
+  res.render("books/inventory-order", { branches, branch, rows, grandTotal, grandQty });
+});
+
+router.get("/inventory/order/export", async (req, res) => {
+  const { branch } = req.query;
+  const rows = db.prepare(`
+    SELECT bp.item_name, bp.publisher, bp.price,
+           COALESCE(bi.current_stock, 0) AS current_stock,
+           COALESCE(bi.desired_stock, 0) AS desired_stock
+    FROM book_prices bp
+    LEFT JOIN book_inventory bi ON bi.book_price_id = bp.id AND bi.branch = ?
+    WHERE COALESCE(bi.desired_stock, 0) > COALESCE(bi.current_stock, 0)
+    ORDER BY bp.item_name
+  `).all(branch).map((r) => ({
+    ...r,
+    to_order: r.desired_stock - r.current_stock,
+    line_total: (r.desired_stock - r.current_stock) * r.price,
+  }));
+
+  const wb = new ExcelJS.Workbook();
+  const ws = wb.addWorksheet("הזמנה מהספק", { views: [{ rightToLeft: true }] });
+  addExcelHeader(wb, ws, "", `הזמנת ספרים מהספק - סניף ${branch}`, rows.length + 4);
+  addLogo(wb, ws, rows.length + 3, 0);
+
+  const hr = ws.addRow(["ספר", "הוצאה", "מלאי נוכחי", "כמות רצויה", "כמות להזמנה", "מחיר יחידה", "סה\"כ"]);
+  hr.eachCell((cell) => {
+    cell.font = { bold: true, color: { argb: "FFFFFFFF" } };
+    cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF2C5F7C" } };
+    cell.alignment = { horizontal: "right" };
+  });
+
+  let grandTotal = 0, grandQty = 0;
+  rows.forEach((r) => {
+    ws.addRow([r.item_name, r.publisher || "", r.current_stock, r.desired_stock, r.to_order, r.price, r.line_total]).alignment = { horizontal: "right" };
+    grandTotal += r.line_total;
+    grandQty += r.to_order;
+  });
+  const sr = ws.addRow(["סה\"כ", "", "", "", grandQty, "", grandTotal]);
+  sr.font = { bold: true };
+  sr.eachCell((cell) => { cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFEFF4F8" } }; });
+
+  [28, 16, 12, 12, 14, 12, 12].forEach((w, i) => { ws.getColumn(i + 1).width = w; });
+
+  res.setHeader("Content-Disposition", `attachment; filename="${encodeURIComponent(`הזמנה-מהספק-${branch}.xlsx`)}"`);
+  res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+  await wb.xlsx.write(res); res.end();
+});
+
 module.exports = router;
 
 // ============ מחירון בסיס ============
