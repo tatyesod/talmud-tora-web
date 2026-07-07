@@ -405,6 +405,66 @@ router.get("/gan-export", async (req, res) => {
   await wb.xlsx.write(res); res.end();
 });
 
+// ============ ילדי גן בכיתה א' - איתור התלמידים הצעירים ביותר בכל כיתה א' ============
+// פעולה הפוכה מ"רישום גני ילדים": שם הוצאנו את השנתון הגדול (המבוגר), כאן מרכזים
+// דווקא את השנתון הקטן (הצעיר) ביותר בכל כיתה - התלמידים שהם בגיל גן אך משובצים בכיתה א'.
+router.get("/young-kids-grade-a", async (req, res) => {
+  const classes = db.prepare(`
+    SELECT id, name, parallel FROM classes
+    WHERE name = 'כיתה א''' AND status = 'פעיל'
+    ORDER BY parallel
+  `).all();
+
+  const wb = new ExcelJS.Workbook();
+  const ws = wb.addWorksheet("ילדי גן בכיתה א", { views: [{ rightToLeft: true }] });
+  ws.getColumn(1).width = 26;
+  ws.getColumn(2).width = 14;
+  ws.getColumn(3).width = 14;
+  ws.getColumn(4).width = 14;
+
+  const titleRow = ws.addRow(["תלמוד תורה יסוד העולם"]);
+  titleRow.getCell(1).font = { bold: true, size: 13 };
+  const headerRow = ws.addRow(["שם פרטי ומשפחה", "מ.ז", "ת.ל לועזי", "כיתה"]);
+  headerRow.font = { bold: true };
+  headerRow.eachCell((cell) => {
+    cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFEFF4F8" } };
+  });
+
+  classes.forEach((cls) => {
+    const students = db.prepare(`
+      SELECT first_name, last_name, id_number, birth_date_civil
+      FROM students WHERE class_id = ? AND status = 'פעיל'
+      ORDER BY last_name, first_name
+    `).all(cls.id).map((s) => {
+      const d = hd.serialToDateObject(s.birth_date_civil);
+      return { ...s, birthYear: d ? d.getFullYear() : null };
+    });
+
+    // רק אם יש בפועל יותר משנתון אחד בכיתה, יש טעם "לחלץ" את הצעירים ביותר -
+    // אחרת (כולם מאותו שנתון) אין ילדי-גן חריגים לדווח עליהם מהכיתה הזו.
+    const years = [...new Set(students.map((s) => s.birthYear).filter((y) => y != null))];
+    if (years.length <= 1) return;
+
+    const youngestYear = Math.max(...years);
+    const youngStudents = students.filter((s) => s.birthYear === youngestYear);
+
+    youngStudents.forEach((s) => {
+      const row = ws.addRow([
+        `${s.first_name || ""} ${s.last_name || ""}`.trim(),
+        s.id_number || "",
+        hd.serialToDateObject(s.birth_date_civil),
+        `${cls.name}${cls.parallel ? " " + cls.parallel : ""}`,
+      ]);
+      if (row.getCell(3).value instanceof Date) row.getCell(3).numFmt = "dd/mm/yyyy";
+      row.alignment = { horizontal: "right" };
+    });
+  });
+
+  res.setHeader("Content-Disposition", `attachment; filename="${encodeURIComponent("ילדי-גן-בכיתה-א.xlsx")}"`);
+  res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+  await wb.xlsx.write(res); res.end();
+});
+
 // ============ יצוא PDF — תצוגת הדפסה לדוחות קיימים ============
 router.get("/print-view", (req, res) => {
   const { type, status, class_id } = req.query;
