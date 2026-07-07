@@ -275,9 +275,25 @@ router.get("/grandparents-report", (req, res) => {
 });
 
 router.get("/grandparents-report/export", async (req, res) => {
-  const rows = db.prepare("SELECT name, address, city FROM grandparents WHERE name IS NOT NULL ORDER BY name").all();
-  const header = ["שם", "כתובת", "עיר"];
-  const data = rows.map((r) => [r.name || "", r.address || "", r.city || ""]);
+  const families = db.prepare(`
+    SELECT last_name, paternal_grandparents, paternal_grandparents_address,
+           maternal_grandparents, maternal_grandparents_address
+    FROM families
+    WHERE (paternal_grandparents IS NOT NULL AND paternal_grandparents <> '')
+       OR (maternal_grandparents IS NOT NULL AND maternal_grandparents <> '')
+    ORDER BY last_name
+  `).all();
+
+  const header = ["משפחת הנכד/ה", "צד", "שם הסב/סבתא", "כתובת"];
+  const data = [];
+  families.forEach((f) => {
+    if (f.paternal_grandparents) {
+      data.push([f.last_name || "", "הורי האב", f.paternal_grandparents, f.paternal_grandparents_address || ""]);
+    }
+    if (f.maternal_grandparents) {
+      data.push([f.last_name || "", "הורי האם", f.maternal_grandparents, f.maternal_grandparents_address || ""]);
+    }
+  });
   await sendWorkbook(res, "רשימת סבים וכתובתם.xlsx", "סבים", "רשימת סבים וכתובתם", header, data);
 });
 
@@ -500,8 +516,19 @@ router.get("/print-view", (req, res) => {
 
   } else if (type === "grandparents") {
     title = "רשימת סבים";
-    headers = ["שם", "כתובת", "עיר"];
-    rows = db.prepare("SELECT name, address, city FROM grandparents WHERE name IS NOT NULL ORDER BY name").all().map(r => [r.name, r.address, r.city]);
+    headers = ["משפחת הנכד/ה", "צד", "שם הסב/סבתא", "כתובת"];
+    const families2 = db.prepare(`
+      SELECT last_name, paternal_grandparents, paternal_grandparents_address,
+             maternal_grandparents, maternal_grandparents_address
+      FROM families
+      WHERE (paternal_grandparents IS NOT NULL AND paternal_grandparents <> '')
+         OR (maternal_grandparents IS NOT NULL AND maternal_grandparents <> '')
+      ORDER BY last_name
+    `).all();
+    families2.forEach((f) => {
+      if (f.paternal_grandparents) rows.push([f.last_name || "", "הורי האב", f.paternal_grandparents, f.paternal_grandparents_address || ""]);
+      if (f.maternal_grandparents) rows.push([f.last_name || "", "הורי האם", f.maternal_grandparents, f.maternal_grandparents_address || ""]);
+    });
   }
 
   res.render("reports/print-view", { title, headers, rows });
