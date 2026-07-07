@@ -20,6 +20,7 @@
       </select>
       <input type="hidden" name="year" value="<%= year %>" />
     </form>
+    <input type="text" id="family-search" placeholder="🔍 חיפוש לפי שם משפחה, שם אב, ילד..." style="flex:1; min-width:240px; max-width:400px;" />
   </div>
 
   <div style="display:flex; gap:14px; flex-wrap:wrap; margin-bottom:18px;">
@@ -53,7 +54,7 @@
       </tr></thead>
       <tbody>
         <% familiesData.forEach(fam => { %>
-          <tr id="fam-<%= fam.id %>">
+          <tr id="fam-<%= fam.id %>" class="fam-row" data-search="<%= (fam.last_name + ' ' + (fam.father_name||'') + ' ' + fam.childClass).toLowerCase() %>">
             <td><strong><%= fam.last_name %></strong><br/><span style="color:var(--muted); font-size:0.85em;"><%= fam.father_name || '' %></span></td>
             <td style="font-size:0.88em;"><%= fam.childClass %></td>
             <td><%= fam.total.toLocaleString() %> ₪</td>
@@ -109,6 +110,17 @@
   function toggleForm(famId) {
     const el = document.getElementById('payform-' + famId);
     el.style.display = el.style.display === 'none' ? 'block' : 'none';
+  }
+
+  const searchInput = document.getElementById('family-search');
+  if (searchInput) {
+    searchInput.addEventListener('input', () => {
+      const q = searchInput.value.trim().toLowerCase();
+      document.querySelectorAll('.fam-row').forEach((row) => {
+        const match = !q || (row.dataset.search || '').includes(q);
+        row.style.display = match ? '' : 'none';
+      });
+    });
   }
 
   // אם הגענו עם עיגון לכיתה ספציפית (למשל מכפתור התשלום בעמוד ההזמנות) - גלול והדגש

@@ -197,8 +197,13 @@ router.get("/report/families", async (req, res) => {
   const families = db.prepare(`
     SELECT DISTINCT f.id, f.last_name, f.father_name, f.home_phone, f.father_mobile
     FROM families f JOIN students s ON s.family_id=f.id
-    JOIN book_orders bo ON bo.student_id=s.id WHERE bo.year_label=? ORDER BY f.last_name
-  `).all(year);
+    WHERE s.family_id IN (
+      SELECT s2.family_id FROM students s2 JOIN book_orders bo ON bo.student_id=s2.id WHERE bo.year_label=?
+      UNION
+      SELECT s3.family_id FROM students s3 JOIN book_order_extras e ON e.student_id=s3.id WHERE e.year_label=?
+    )
+    ORDER BY f.last_name
+  `).all(year, year);
 
   const wb = new ExcelJS.Workbook();
   const ws = wb.addWorksheet("חיובים", { views: [{ rightToLeft: true }] });
@@ -221,17 +226,23 @@ router.get("/report/families", async (req, res) => {
       JOIN students s ON bo.student_id=s.id LEFT JOIN classes c ON s.class_id=c.id
       WHERE bo.year_label=? AND s.family_id=? ORDER BY s.first_name, bc.sort_order
     `).all(year, fam.id);
+    const extras = db.prepare(`
+      SELECT e.item_name, e.price, s.first_name, c.name||' '||COALESCE(c.parallel,'') AS class_label
+      FROM book_order_extras e JOIN students s ON e.student_id=s.id LEFT JOIN classes c ON s.class_id=c.id
+      WHERE e.year_label=? AND s.family_id=? ORDER BY s.first_name, e.item_name
+    `).all(year, fam.id);
+    const allItems = [...items, ...extras];
 
-    const total = items.reduce((s, i) => s + i.price, 0);
+    const total = allItems.reduce((s, i) => s + (i.price || 0), 0);
     grandTotal += total;
     const paidRow = db.prepare("SELECT COALESCE(SUM(amount),0) s FROM book_payments WHERE year_label=? AND family_id=?").get(year, fam.id);
     const paid = paidRow.s;
     grandPaid += paid;
-    const childClass = [...new Set(items.map(i => `${i.first_name} (${i.class_label.trim()})`))].join(", ");
-    const detail = items.map(i => `${i.item_name} — ${i.price}₪`).join("\n");
+    const childClass = [...new Set(allItems.map(i => `${i.first_name} (${(i.class_label || "").trim()})`))].join(", ");
+    const detail = allItems.map(i => `${i.item_name} — ${i.price}₪`).join("\n");
     const row = ws.addRow([fam.last_name, fam.father_name || "", fam.father_mobile || fam.home_phone || "", childClass, detail, total, paid, Math.round((total - paid) * 100) / 100]);
     row.getCell(5).alignment = { wrapText: true };
-    row.height = Math.max(18, items.length * 14);
+    row.height = Math.max(18, allItems.length * 14);
     row.alignment = { horizontal: "right" };
   }
   const sr = ws.addRow(["", "", "", "", "סה\"כ כולל", grandTotal, grandPaid, Math.round((grandTotal - grandPaid) * 100) / 100]);
@@ -252,11 +263,14 @@ router.get("/payments", (req, res) => {
   const families = db.prepare(`
     SELECT DISTINCT f.id, f.last_name, f.father_name, f.home_phone, f.father_mobile
     FROM families f JOIN students s ON s.family_id=f.id
-    JOIN book_orders bo ON bo.student_id=s.id
     LEFT JOIN classes c ON s.class_id=c.id
-    WHERE bo.year_label=? ${branch ? "AND c.branch=?" : ""}
+    WHERE s.family_id IN (
+      SELECT s2.family_id FROM students s2 JOIN book_orders bo ON bo.student_id=s2.id WHERE bo.year_label=?
+      UNION
+      SELECT s3.family_id FROM students s3 JOIN book_order_extras e ON e.student_id=s3.id WHERE e.year_label=?
+    ) ${branch ? "AND c.branch=?" : ""}
     ORDER BY f.last_name
-  `).all(...(branch ? [year, branch] : [year]));
+  `).all(...(branch ? [year, year, branch] : [year, year]));
 
   const familiesData = families.map((fam) => {
     const items = db.prepare(`
@@ -265,8 +279,14 @@ router.get("/payments", (req, res) => {
       JOIN students s ON bo.student_id=s.id LEFT JOIN classes c ON s.class_id=c.id
       WHERE bo.year_label=? AND s.family_id=? ORDER BY s.first_name, bc.sort_order
     `).all(year, fam.id);
-    const total = items.reduce((s, i) => s + i.price, 0);
-    const childClass = [...new Set(items.map(i => `${i.first_name} (${(i.class_label || "").trim()})`))].join(", ");
+    const extras = db.prepare(`
+      SELECT e.item_name, e.price, s.first_name, c.name||' '||COALESCE(c.parallel,'') AS class_label
+      FROM book_order_extras e JOIN students s ON e.student_id=s.id LEFT JOIN classes c ON s.class_id=c.id
+      WHERE e.year_label=? AND s.family_id=? ORDER BY s.first_name, e.item_name
+    `).all(year, fam.id);
+    const allItems = [...items, ...extras];
+    const total = allItems.reduce((s, i) => s + (i.price || 0), 0);
+    const childClass = [...new Set(allItems.map(i => `${i.first_name} (${(i.class_label || "").trim()})`))].join(", ");
 
     const payments = db.prepare(`
       SELECT * FROM book_payments WHERE year_label=? AND family_id=? ORDER BY payment_date, id
