@@ -1,0 +1,31 @@
+<%- include('../partials/header', {title: mode === 'new' ? 'תבנית חדשה' : 'עריכת תבנית'}) %>
+
+<div class="card">
+  <h1><%= mode === 'new' ? 'תבנית מכתב חדשה' : 'עריכת תבנית: ' + template.name %></h1>
+
+  <div style="background:#eff4f8; border:1px solid #cfe0ea; border-radius:8px; padding:12px 16px; margin-bottom:16px; font-size:0.88em;">
+    <strong>איך לכתוב תבנית:</strong>
+    שורה ריקה = פסקה חדשה. <code>**טקסט**</code> = טקסט מודגש.
+    שדות שיתמלאו אוטומטית: <code>{{class_name}}</code> (שם כיתה), <code>{{parallel}}</code> (מקבילה),
+    <code>{{class_full_name}}</code> (שם+מקבילה יחד), <code>{{branch}}</code> (סניף), <code>{{teacher_name}}</code> (שם המלמד),
+    <code>{{room_description}}</code> (תיאור מיקום/חדר), <code>{{tuition_price}}</code> (שכ"ל), <code>{{hebrew_date}}</code> (תאריך המכתב),
+    <code>{{hebrew_year}}</code> (שנה"ל).
+  </div>
+
+  <form method="POST" action="<%= mode === 'new' ? '/letters/templates' : '/letters/templates/' + template.id + '?_method=PUT' %>">
+    <div class="form-group">
+      <label>שם התבנית (לזיהוי פנימי, למשל "מכינה א'")</label>
+      <input type="text" name="name" value="<%= template.name || '' %>" required />
+    </div>
+    <div class="form-group" style="margin-top:14px;">
+      <label>גוף המכתב</label>
+      <textarea name="body" rows="28" style="font-family:monospace; direction:rtl;" required><%= template.body || '' %></textarea>
+    </div>
+    <div class="actions" style="margin-top:14px;">
+      <button type="submit" class="btn">שמירה</button>
+      <a href="/letters/templates" class="btn secondary">ביטול</a>
+    </div>
+  </form>
+</div>
+
+<%- include('../partials/footer') %>

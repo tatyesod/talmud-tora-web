@@ -165,6 +165,15 @@ const migrations = [
   )`,
   "DELETE FROM messages WHERE sender_id = recipient_id",
   "DELETE FROM messages WHERE sender_id NOT IN (SELECT id FROM users) OR recipient_id NOT IN (SELECT id FROM users)",
+  "ALTER TABLE classes ADD COLUMN room_description TEXT",
+  "ALTER TABLE classes ADD COLUMN letter_template_id INTEGER",
+  `CREATE TABLE IF NOT EXISTS letter_templates (
+    id INTEGER PRIMARY KEY,
+    name TEXT NOT NULL,
+    body TEXT NOT NULL,
+    created_at TEXT,
+    updated_at TEXT
+  )`,
 ];
 
 for (const sql of migrations) {
@@ -173,6 +182,19 @@ for (const sql of migrations) {
   } catch (e) {
     // עמודה כבר קיימת — מתעלמים מהשגיאה
   }
+}
+
+// זריעה חד-פעמית של 4 תבניות פתיחה למכתבי שיבוץ, מבוססות על דוגמאות אמיתיות
+try {
+  const templateCount = db.prepare("SELECT COUNT(*) c FROM letter_templates").get().c;
+  if (templateCount === 0) {
+    const { SEED_TEMPLATES } = require("./letterTemplatesSeed");
+    const insertTpl = db.prepare("INSERT INTO letter_templates (name, body, created_at, updated_at) VALUES (?,?,?,?)");
+    const now = new Date().toISOString();
+    SEED_TEMPLATES.forEach((t) => insertTpl.run(t.name, t.body, now, now));
+  }
+} catch (e) {
+  // אם משהו נכשל - לא קריטי, אפשר ליצור תבניות ידנית דרך המסך
 }
 
 // ניקוי חד-פעמי: השדה "מעבר לכיתה" התמלא בעבר אוטומטית בערך המקבילה הקיים,

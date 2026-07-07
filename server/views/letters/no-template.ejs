@@ -1,0 +1,11 @@
+<%- include('../partials/header', {title: 'אין תבנית מכתב'}) %>
+
+<div class="card">
+  <h1>לא ניתן להפיק מכתב</h1>
+  <p class="empty-state">
+    <%= typeof message !== 'undefined' && message ? message : 'לכיתה זו לא משויכת תבנית מכתב. יש לשייך תבנית בעמוד "מכתבי שיבוץ".' %>
+  </p>
+  <a href="/letters" class="btn secondary">← חזרה למכתבי שיבוץ</a>
+</div>
+
+<%- include('../partials/footer') %>

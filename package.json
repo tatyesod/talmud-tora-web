@@ -12,6 +12,7 @@
     "node": ">=22.5.0"
   },
   "dependencies": {
+    "docx": "^9.7.1",
     "ejs": "^3.1.10",
     "exceljs": "^4.4.0",
     "express": "^4.19.2",

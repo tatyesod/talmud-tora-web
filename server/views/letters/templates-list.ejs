@@ -1,0 +1,34 @@
+<%- include('../partials/header', {title: 'תבניות מכתב'}) %>
+
+<div class="card">
+  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+    <h1>ניהול תבניות מכתב</h1>
+    <div style="display:flex; gap:10px;">
+      <a href="/letters" class="btn secondary">← חזרה למכתבי שיבוץ</a>
+      <a href="/letters/templates/new" class="btn">+ תבנית חדשה</a>
+    </div>
+  </div>
+
+  <% if (templates.length === 0) { %>
+    <p class="empty-state">אין עדיין תבניות</p>
+  <% } else { %>
+    <table>
+      <thead><tr><th>שם התבנית</th><th></th></tr></thead>
+      <tbody>
+        <% templates.forEach(t => { %>
+          <tr>
+            <td><%= t.name %></td>
+            <td>
+              <a href="/letters/templates/<%= t.id %>/edit" class="btn small secondary">עריכה</a>
+              <form method="POST" action="/letters/templates/<%= t.id %>?_method=DELETE" onsubmit="return confirm('למחוק את התבנית? כיתות ששויכו אליה יישארו ללא תבנית.');" style="display:inline">
+                <button type="submit" class="btn small danger">מחיקה</button>
+              </form>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  <% } %>
+</div>
+
+<%- include('../partials/footer') %>

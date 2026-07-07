@@ -325,6 +325,7 @@ app.post("/profile", requireLogin, (req, res) => {
   res.redirect("/profile?saved=1");
 });
 app.use("/suppliers", require("./routes/suppliers"));
+app.use("/letters", require("./routes/letters"));
 app.use("/parent-comm", require("./routes/parent-comm"));
 app.use("/events", require("./routes/events"));
 app.use("/inventory", require("./routes/inventory"));
