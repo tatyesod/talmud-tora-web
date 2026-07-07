@@ -228,27 +228,28 @@ router.get("/families-report/export", async (req, res) => {
 
   const rows = db.prepare(sql).all(...params);
   const eldestClassStmt = db.prepare(`
-    SELECT c.name AS class_name, c.parallel
+    SELECT s.first_name, s.last_name, c.name AS class_name, c.parallel
     FROM students s LEFT JOIN classes c ON s.class_id = c.id
     WHERE s.family_id = ? AND s.status='פעיל' AND c.id IS NOT NULL
     ORDER BY c.name, c.parallel LIMIT 1
   `);
 
-  const header = ["שם משפחה", "שם האב", "שם האם", "טלפון בית", "נייד אב", "נייד אם", "כתובת", "מס' ילדים פעילים", "כיתת האח הבכור"];
+  const header = ["שם משפחה", "שם האב", "שם האם", "טלפון בית", "נייד אב", "נייד אם", "כתובת", "מס' ילדים פעילים", "שם האח הבכור", "כיתת האח הבכור"];
   const enriched = rows.map((r) => {
     const eldest = eldestClassStmt.get(r.id);
+    const eldestName = eldest ? `${eldest.first_name || ""} ${eldest.last_name || ""}`.trim() : "";
     const eldestClass = eldest?.class_name ? eldest.class_name + (eldest.parallel ? " " + eldest.parallel : "") : "";
-    return { r, eldestClass };
+    return { r, eldestName, eldestClass };
   });
   enriched.sort((a, b) => a.eldestClass.localeCompare(b.eldestClass, "he"));
-  const data = enriched.map(({ r, eldestClass }) => [
+  const data = enriched.map(({ r, eldestName, eldestClass }) => [
     r.last_name || "", r.father_name || "", r.mother_name || "",
     r.home_phone || "", r.father_mobile || "", r.mother_mobile || "",
-    buildAddress(r), r.active_children, eldestClass,
+    buildAddress(r), r.active_children, eldestName, eldestClass,
   ]);
 
   if (output === "print") {
-    const header2 = ["שם משפחה", "שם האב", "שם האם", "טלפון בית", "נייד אב", "נייד אם", "כתובת", "ילדים פעילים", "כיתת הבכור"];
+    const header2 = ["שם משפחה", "שם האב", "שם האם", "טלפון בית", "נייד אב", "נייד אם", "כתובת", "ילדים פעילים", "שם הבכור", "כיתת הבכור"];
     return res.render("reports/print-view", { title: "דוח משפחות", headers: header2, rows: data });
   }
 
