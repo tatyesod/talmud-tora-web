@@ -6,6 +6,8 @@ const db = require("../db");
 const { mergeTemplate, buildClassData, buildRecipientLine } = require("../letterEngine");
 const { Document, Packer, Paragraph, TextRun, AlignmentType, PageBreak, ImageRun } = require("docx");
 
+const JSZip = require("jszip");
+
 const LETTERHEAD_PATH = path.join(__dirname, "..", "public", "images", "letterhead.jpg");
 function buildLetterheadParagraph() {
   const imageBuffer = fs.readFileSync(LETTERHEAD_PATH);
@@ -21,6 +23,19 @@ function buildLetterheadParagraph() {
       }),
     ],
   });
+}
+
+// ספריית docx לא חושפת דרך ישירה להגדיר <w:bidi/> ברמת ה-section (רק ברמת פסקה בודדת),
+// וזה עלול לגרום להתנהגות "הפוכה" של כפתורי היישור ב-Word האמיתי (גם כשכל פסקה
+// כשלעצמה מוגדרת נכון). מתקנים את זה בדיעבד ע"י הזרקת התג ישירות ל-XML הפנימי
+// של הקובץ (שהוא בעצם ZIP עם קבצי XML בפנים).
+async function injectSectionBidi(buffer) {
+  const zip = await JSZip.loadAsync(buffer);
+  const docXmlPath = "word/document.xml";
+  let xml = await zip.file(docXmlPath).async("string");
+  xml = xml.replace(/<w:sectPr>/g, "<w:sectPr><w:bidi/>");
+  zip.file(docXmlPath, xml);
+  return zip.generateAsync({ type: "nodebuffer" });
 }
 
 // סדר השכבות במוסד - כל שכבה "עולה" לשכבה הבאה ברשימה, וזה קובע אוטומטית איזו
@@ -239,13 +254,13 @@ async function buildLetterDocx(recipientLine, paragraphs) {
   const doc = new Document({
     sections: [{
       properties: {
-        bidirectional: true,
         page: { margin: { top: 1000, bottom: 1000, left: 1000, right: 1000 } },
       },
       children: docParagraphs,
     }],
   });
-  return Packer.toBuffer(doc);
+  const rawBuffer = await Packer.toBuffer(doc);
+  return injectSectionBidi(rawBuffer);
 }
 
 router.get("/family/:familyId/docx", async (req, res) => {
@@ -322,13 +337,13 @@ router.get("/generate-all/docx", async (req, res) => {
   const doc = new Document({
     sections: [{
       properties: {
-        bidirectional: true,
         page: { margin: { top: 1000, bottom: 1000, left: 1000, right: 1000 } },
       },
       children: allDocParagraphs,
     }],
   });
-  const buffer = await Packer.toBuffer(doc);
+  const rawBuffer = await Packer.toBuffer(doc);
+  const buffer = await injectSectionBidi(rawBuffer);
 
   res.setHeader("Content-Disposition", `attachment; filename="${encodeURIComponent(`מכתבי-שיבוץ-כל-הכיתות-${settings.letter_hebrew_year || ""}.docx`)}"`);
   res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
