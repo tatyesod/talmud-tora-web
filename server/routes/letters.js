@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const db = require("../db");
-const { mergeTemplate, buildClassData } = require("../letterEngine");
+const { mergeTemplate, buildClassData, buildRecipientLine } = require("../letterEngine");
 const { Document, Packer, Paragraph, TextRun, AlignmentType, PageBreak } = require("docx");
 
 function getSetting(key) {
@@ -100,7 +100,7 @@ router.get("/class/:classId/preview", (req, res) => {
   const paragraphs = mergeTemplate(template.body, data);
   res.render("letters/print-letter", {
     title: `מכתב שיבוץ - ${data.class_full_name}`,
-    recipientLine: `לכבוד הורי התלמידים העולים ל${data.class_full_name} (${data.branch}) שיחיו`,
+    recipientLine: buildRecipientLine(data),
     paragraphs,
   });
 });
@@ -115,7 +115,7 @@ router.get("/class/:classId/docx", async (req, res) => {
   const settings = { letter_hebrew_date: getSetting("letter_hebrew_date"), letter_hebrew_year: getSetting("letter_hebrew_year") };
   const data = buildClassData(db, classRow, settings);
   const paragraphs = mergeTemplate(template.body, data);
-  const recipientLine = `לכבוד הורי התלמידים העולים ל${data.class_full_name} (${data.branch}) שיחיו`;
+  const recipientLine = buildRecipientLine(data);
 
   const buffer = await buildLetterDocx(recipientLine, paragraphs);
   res.setHeader("Content-Disposition", `attachment; filename="${encodeURIComponent(`מכתב-${data.class_full_name}.docx`)}"`);
@@ -232,7 +232,7 @@ router.get("/generate-all/docx", async (req, res) => {
     if (!template) return;
     const data = buildClassData(db, classRow, settings);
     const paragraphs = mergeTemplate(template.body, data);
-    const recipientLine = `לכבוד הורי התלמידים העולים ל${data.class_full_name} (${data.branch}) שיחיו`;
+    const recipientLine = buildRecipientLine(data);
 
     if (idx > 0) {
       allDocParagraphs.push(new Paragraph({ children: [new PageBreak()] }));

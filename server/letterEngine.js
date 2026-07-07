@@ -56,4 +56,9 @@ function buildClassData(db, classRow, globalSettings) {
   };
 }
 
-module.exports = { parseTemplateToParagraphs, mergeTemplate, buildClassData, fillPlaceholders };
+function buildRecipientLine(data) {
+  const word = data.class_name && data.class_name.startsWith("כיתה ח'") ? "הבחורים" : "התלמידים";
+  return `לכבוד הורי ${word} העולים ל${data.class_full_name} (${data.branch}) שיחיו`;
+}
+
+module.exports = { parseTemplateToParagraphs, mergeTemplate, buildClassData, fillPlaceholders, buildRecipientLine };

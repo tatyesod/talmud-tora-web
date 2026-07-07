@@ -184,14 +184,23 @@ for (const sql of migrations) {
   }
 }
 
-// זריעה חד-פעמית של 4 תבניות פתיחה למכתבי שיבוץ, מבוססות על דוגמאות אמיתיות
+// זריעה/עדכון חד-פעמי של תבניות פתיחה למכתבי שיבוץ, מבוססות על 28 מכתבים אמיתיים
+// (דגל ב-settings מבטיח שזה קורה פעם אחת בלבד, ולא דורס תבניות שהמנהל כתב/ערך בעצמו אחר כך)
 try {
-  const templateCount = db.prepare("SELECT COUNT(*) c FROM letter_templates").get().c;
-  if (templateCount === 0) {
+  const alreadySeededV2 = db.prepare("SELECT value FROM settings WHERE key = 'letter_templates_seeded_v2'").get();
+  if (!alreadySeededV2) {
     const { SEED_TEMPLATES } = require("./letterTemplatesSeed");
+    // מסיר תבניות ישנות (גרסה מקורית משוערת) שאף אחד לא הספיק לערוך אותן דרך המסך,
+    // ומחליף אותן בגרסה המדויקת. כיתות ששויכו לתבנית ישנה ישויכו מחדש ל"ללא תבנית" לרגע.
+    const oldTemplateIds = db.prepare("SELECT id FROM letter_templates").all().map((r) => r.id);
+    if (oldTemplateIds.length > 0) {
+      db.exec("UPDATE classes SET letter_template_id = NULL WHERE letter_template_id IN (" + oldTemplateIds.join(",") + ")");
+      db.exec("DELETE FROM letter_templates");
+    }
     const insertTpl = db.prepare("INSERT INTO letter_templates (name, body, created_at, updated_at) VALUES (?,?,?,?)");
     const now = new Date().toISOString();
     SEED_TEMPLATES.forEach((t) => insertTpl.run(t.name, t.body, now, now));
+    db.prepare("INSERT INTO settings (key, value) VALUES ('letter_templates_seeded_v2', '1')").run();
   }
 } catch (e) {
   // אם משהו נכשל - לא קריטי, אפשר ליצור תבניות ידנית דרך המסך
