@@ -1,8 +1,27 @@
 const express = require("express");
 const router = express.Router();
+const fs = require("fs");
+const path = require("path");
 const db = require("../db");
 const { mergeTemplate, buildClassData, buildRecipientLine } = require("../letterEngine");
-const { Document, Packer, Paragraph, TextRun, AlignmentType, PageBreak } = require("docx");
+const { Document, Packer, Paragraph, TextRun, AlignmentType, PageBreak, ImageRun } = require("docx");
+
+const LETTERHEAD_PATH = path.join(__dirname, "..", "public", "images", "letterhead.jpg");
+function buildLetterheadParagraph() {
+  const imageBuffer = fs.readFileSync(LETTERHEAD_PATH);
+  // התמונה המקורית 2480x537 פיקסלים - שומרים על אותו יחס גובה-רוחב, מוצמד לרוחב הדף
+  return new Paragraph({
+    alignment: AlignmentType.CENTER,
+    spacing: { after: 200 },
+    children: [
+      new ImageRun({
+        data: imageBuffer,
+        transformation: { width: 620, height: 134 },
+        type: "jpg",
+      }),
+    ],
+  });
+}
 
 // סדר השכבות במוסד - כל שכבה "עולה" לשכבה הבאה ברשימה, וזה קובע אוטומטית איזו
 // תבנית מכתב מתאימה (אין צורך לבחור תבנית ידנית - היא נגזרת מהכיתה הנוכחית)
@@ -199,9 +218,9 @@ router.get("/family/:familyId/preview", (req, res) => {
 
 async function buildLetterDocx(recipientLine, paragraphs) {
   const docParagraphs = [
+    buildLetterheadParagraph(),
     new Paragraph({
       alignment: AlignmentType.RIGHT,
-      bidirectional: true,
       spacing: { after: 180 },
       children: [new TextRun({ text: recipientLine, bold: true, size: 24, rightToLeft: true })],
     }),
@@ -210,7 +229,6 @@ async function buildLetterDocx(recipientLine, paragraphs) {
     const isClosingLine = idx >= paragraphs.length - 2;
     docParagraphs.push(new Paragraph({
       alignment: isClosingLine ? AlignmentType.CENTER : AlignmentType.RIGHT,
-      bidirectional: true,
       spacing: { after: 120 },
       children: runs.map((r) => new TextRun({ text: r.text, bold: r.bold, rightToLeft: true, size: 20 })),
     }));
@@ -219,7 +237,6 @@ async function buildLetterDocx(recipientLine, paragraphs) {
   const doc = new Document({
     sections: [{
       properties: {
-        bidirectional: true,
         page: { margin: { top: 1000, bottom: 1000, left: 1000, right: 1000 } },
       },
       children: docParagraphs,
@@ -281,9 +298,9 @@ router.get("/generate-all/docx", async (req, res) => {
     if (idx > 0) {
       allDocParagraphs.push(new Paragraph({ children: [new PageBreak()] }));
     }
+    allDocParagraphs.push(buildLetterheadParagraph());
     allDocParagraphs.push(new Paragraph({
       alignment: AlignmentType.RIGHT,
-      bidirectional: true,
       spacing: { after: 180 },
       children: [new TextRun({ text: recipientLine, bold: true, size: 24, rightToLeft: true })],
     }));
@@ -291,7 +308,6 @@ router.get("/generate-all/docx", async (req, res) => {
       const isClosingLine = pIdx >= paragraphs.length - 2;
       allDocParagraphs.push(new Paragraph({
         alignment: isClosingLine ? AlignmentType.CENTER : AlignmentType.RIGHT,
-        bidirectional: true,
         spacing: { after: 120 },
         children: runs.map((r) => new TextRun({ text: r.text, bold: r.bold, rightToLeft: true, size: 20 })),
       }));
@@ -301,7 +317,6 @@ router.get("/generate-all/docx", async (req, res) => {
   const doc = new Document({
     sections: [{
       properties: {
-        bidirectional: true,
         page: { margin: { top: 1000, bottom: 1000, left: 1000, right: 1000 } },
       },
       children: allDocParagraphs,

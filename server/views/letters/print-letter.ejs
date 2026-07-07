@@ -1,26 +1,19 @@
 <%- include('../partials/header', {title: title}) %>
 
-<div class="card" style="max-width:800px; margin:0 auto; padding:40px 56px;">
-  <div class="actions no-print" style="justify-content:flex-end; margin-bottom:14px;">
-    <button onclick="window.print()" class="btn secondary">🖨️ הדפסה</button>
-  </div>
+<div class="actions no-print" style="max-width:800px; margin:0 auto 10px; justify-content:flex-end; display:flex;">
+  <button onclick="window.print()" class="btn secondary">🖨️ הדפסה</button>
+</div>
 
-  <div class="letter-header">
-    <img src="/images/logo-reports.jpg" alt="לוגו" />
-    <div class="school-info">
-      תלמוד תורה החדש (יסוד העולם)<br />
-      כתובת: סוקולוב 5, בני ברק<br />
-      טל: 03-6185020 | פקס: 03-6185030
-    </div>
-  </div>
+<div id="letter-page">
+  <img src="/images/letterhead.jpg" alt="בלנק תלמוד תורה החדש" class="letter-header-img" />
   <div class="letter-bsd">בס"ד</div>
 
-  <div id="letter-body" style="font-family:'Times New Roman', serif; line-height:1.4; direction:rtl;">
-    <p style="font-weight:700; font-size:1.1em; margin:0 0 8px;"><%= recipientLine %></p>
-    <p style="margin:0 0 10px;">שלו' וברכה,</p>
+  <div id="letter-body">
+    <p class="recipient-line"><%= recipientLine %></p>
+    <p class="greeting">שלו' וברכה,</p>
 
     <% if (typeof childrenRows !== 'undefined' && childrenRows) { %>
-      <div style="background:#f8f5ec; border:1px solid #e0d8c0; border-radius:8px; padding:12px 16px; margin:16px 0;">
+      <div class="children-box">
         <strong>פירוט שיבוץ הילדים במשפחה:</strong>
         <table style="margin-top:8px;">
           <thead><tr><th>שם</th><th>כיתה</th><th>סניף</th><th>מלמד</th></tr></thead>
@@ -36,11 +29,11 @@
           </tbody>
         </table>
       </div>
-      <p style="color:var(--muted); font-size:0.85em;">⚠️ מכתב זה במצב ניסיוני: הנוסח הכללי שמופיע למטה נלקח מתבנית הילד הבכור בלבד.</p>
+      <p style="color:#888; font-size:0.85em;">⚠️ מכתב זה במצב ניסיוני: הנוסח הכללי שמופיע למטה נלקח מתבנית הילד הבכור בלבד.</p>
     <% } %>
 
     <% paragraphs.forEach((runs, idx) => { %>
-      <p style="margin:0 0 6px; <%= idx >= paragraphs.length - 2 ? 'text-align:center;' : '' %>">
+      <p class="letter-p <%= idx >= paragraphs.length - 2 ? 'closing-line' : '' %>">
         <% runs.forEach(r => { %><% if (r.bold) { %><strong><%= r.text %></strong><% } else { %><%= r.text %><% } %><% }) %>
       </p>
     <% }) %>
@@ -48,32 +41,39 @@
 </div>
 
 <style>
-.letter-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  border-bottom: 3px solid #2c5f7c;
-  padding-bottom: 8px;
-  margin-bottom: 6px;
-}
-.letter-header img { height: 100px; }
-.letter-header .school-info { text-align: left; font-size: 0.8em; color: #555; line-height: 1.35; }
-.letter-bsd { text-align: left; font-size: 0.8em; color: #888; margin-bottom: 10px; }
+  #letter-page {
+    max-width: 800px;
+    margin: 0 auto;
+    background: #fff;
+    padding: 10px 14px;
+    direction: rtl;
+  }
+  .letter-header-img { width: 100%; height: auto; display: block; margin-bottom: 6px; }
+  .letter-bsd { text-align: left; font-size: 0.8em; color: #888; margin-bottom: 10px; }
 
-@page {
-  size: A4;
-  margin: 12mm 14mm;
-}
+  #letter-body { font-family: 'Times New Roman', serif; line-height: 1.4; direction: rtl; text-align: right; }
+  #letter-body p { margin: 0 0 6px; text-align: right; }
+  .recipient-line { font-weight: 700; font-size: 1.1em; }
+  .greeting { margin-bottom: 10px !important; }
+  .closing-line { text-align: center !important; }
 
-@media print {
-  .no-print, header, nav, .header, .top-nav { display: none !important; }
-  body { background: #fff !important; }
-  .card { padding: 6px 10px !important; max-width: 100% !important; }
-  .letter-header img { height: 55px !important; }
-  .letter-header .school-info { font-size: 0.75em !important; }
-  #letter-body { line-height: 1.25 !important; font-size: 0.92em !important; }
-  #letter-body p { margin: 0 0 4px !important; }
-}
+  .children-box {
+    background: #f8f5ec; border: 1px solid #e0d8c0; border-radius: 8px;
+    padding: 12px 16px; margin: 16px 0;
+  }
+
+  @page {
+    size: A4;
+    margin: 10mm 14mm;
+  }
+
+  @media print {
+    .no-print, header, nav, .header, .top-nav { display: none !important; }
+    body { background: #fff !important; }
+    #letter-page { max-width: 100% !important; padding: 0 !important; }
+    #letter-body { line-height: 1.25 !important; font-size: 0.92em !important; }
+    #letter-body p { margin: 0 0 4px !important; }
+  }
 </style>
 
 <%- include('../partials/footer') %>
