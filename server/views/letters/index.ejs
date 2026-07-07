@@ -12,9 +12,10 @@
   <p style="color:var(--muted); font-size:0.9em;">
     כל שנה: מלאו כאן את התאריך העברי ואת שנה"ל הקרובה (פעם אחת, לא לכל כיתה בנפרד), ודאו ששיבוץ המלמדים לכיתות עדכני
     (בעמוד עריכת כיתה). למטה מוצגות כל הכיתות <strong>הנוכחיות</strong> (כולל "עדיין לא נכנסו" וכיתה ח'). לכיתה ח' אפשר
-    לעדכן רק מיקום (אין לה תבנית/יעד כי בוגריה עוזבים את המוסד). לשאר הכיתות בוחרים <strong>תבנית מכתב</strong> (הנוסח,
-    לפי השכבה שאליה עולים) ובנפרד <strong>כיתת יעד לשנה הבאה</strong> (מכיוון שלא תמיד א'1 עולה דווקא ל-ב'1). לחיצה אחת
-    על "הפקת מכתבים לכל הכיתות" מייצרת קובץ Word אחד עם עמוד נפרד לכל כיתה, ממולא אוטומטית לפי הנתונים בפועל של כיתת היעד.
+    לעדכן רק מיקום (אין לה תבנית/יעד כי בוגריה עוזבים את המוסד). לשאר הכיתות <strong>התבנית נגזרת אוטומטית</strong> לפי
+    השכבה הנוכחית (למשל כיתה א' מקבלת אוטומטית את תבנית "כיתה ב'", עדיין לא נכנסו מקבלת את תבנית "מכינה א'") —
+    כל מה שנשאר לבחור הוא <strong>כיתת היעד הספציפית לשנה הבאה</strong> (מכיוון שלא תמיד א'1 עולה דווקא ל-ב'1). לחיצה
+    אחת על "הפקת מכתבים לכל הכיתות" מייצרת קובץ Word אחד עם עמוד נפרד לכל כיתה, ממולא אוטומטית לפי כיתת היעד.
   </p>
 
   <% if (saved) { %>
@@ -55,21 +56,18 @@
                 <% } else { %>
                   <span style="color:var(--muted); font-size:0.85em;">— אין מיקום פיזי לכיתה זו —</span>
                 <% } %>
-                <% if (isGraduating) { %>
-                  <span style="color:var(--muted); font-size:0.85em;">כיתת בוגרים - לא ממשיכה למקום נוסף, אין צורך בתבנית/יעד</span>
-                <% } else { %>
-                  <select name="letter_template_id" style="min-width:150px;">
-                    <option value="">— תבנית —</option>
-                    <% templates.forEach(t => { %>
-                      <option value="<%= t.id %>" <%= String(c.letter_template_id) === String(t.id) ? 'selected' : '' %>><%= t.name %></option>
-                    <% }) %>
-                  </select>
+                <% if (!isGraduating) { %>
+                  <span style="min-width:150px; padding:6px 8px; background:#f0f4f8; border-radius:6px; font-size:0.85em;" title="נגזר אוטומטית לפי שכבת הכיתה הנוכחית">
+                    תבנית: <strong><%= c.auto_template_name || '—' %></strong>
+                  </span>
                   <select name="next_year_class_id" style="min-width:170px;">
                     <option value="">— כיתת יעד —</option>
                     <% allClasses.forEach(t => { %>
                       <option value="<%= t.id %>" <%= String(c.next_year_class_id) === String(t.id) ? 'selected' : '' %>><%= t.full_name %></option>
                     <% }) %>
                   </select>
+                <% } else { %>
+                  <span style="color:var(--muted); font-size:0.85em;">כיתת בוגרים - לא ממשיכה למקום נוסף, אין צורך בתבנית/יעד</span>
                 <% } %>
                 <button type="submit" class="btn small secondary">שמירה</button>
               </form>

@@ -314,8 +314,8 @@ router.get("/health-declaration/view", (req, res) => {
 
   let sql = `
     SELECT s.*, c.name AS class_name, c.parallel AS class_parallel,
-           f.father_name, f.father_id_number, f.father_workplace, f.father_mobile, f.father_work_phone,
-           f.mother_name, f.mother_workplace, f.mother_mobile, f.mother_work_phone,
+           f.father_name, f.father_id_number, f.father_workplace, f.father_mobile, f.father_work_phone, f.father_email,
+           f.mother_name, f.mother_workplace, f.mother_mobile, f.mother_work_phone, f.mother_email,
            f.home_phone, f.street, f.house_number, f.apartment, f.city,
            (SELECT COUNT(*) FROM students s2 WHERE s2.family_id = s.family_id) AS siblings_count
     FROM students s

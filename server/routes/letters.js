@@ -4,6 +4,30 @@ const db = require("../db");
 const { mergeTemplate, buildClassData, buildRecipientLine } = require("../letterEngine");
 const { Document, Packer, Paragraph, TextRun, AlignmentType, PageBreak } = require("docx");
 
+// סדר השכבות במוסד - כל שכבה "עולה" לשכבה הבאה ברשימה, וזה קובע אוטומטית איזו
+// תבנית מכתב מתאימה (אין צורך לבחור תבנית ידנית - היא נגזרת מהכיתה הנוכחית)
+const STAGE_ORDER = [
+  "עדיין לא נכנסו", "מכינה א'", "מכינה ב'",
+  "כיתה א'", "כיתה ב'", "כיתה ג'", "כיתה ד'",
+  "כיתה ה'", "כיתה ו'", "כיתה ז'", "כיתה ח'",
+];
+
+function getNextStageTemplateName(currentClassName) {
+  if (!currentClassName) return null;
+  const stage = STAGE_ORDER.find((s) => currentClassName.startsWith(s));
+  if (!stage) return null;
+  const idx = STAGE_ORDER.indexOf(stage);
+  if (idx === -1 || idx === STAGE_ORDER.length - 1) return null; // כיתה ח' - אין שכבה הבאה
+  return STAGE_ORDER[idx + 1];
+}
+
+function getTemplateIdForClass(currentClassName) {
+  const nextStageName = getNextStageTemplateName(currentClassName);
+  if (!nextStageName) return null;
+  const row = db.prepare("SELECT id FROM letter_templates WHERE name = ?").get(nextStageName);
+  return row ? row.id : null;
+}
+
 function getSetting(key) {
   const row = db.prepare("SELECT value FROM settings WHERE key = ?").get(key);
   return row ? row.value : "";
@@ -24,7 +48,7 @@ router.get("/", (req, res) => {
     LEFT JOIN letter_templates lt ON c.letter_template_id = lt.id
     WHERE c.status = 'פעיל'
     ORDER BY c.name, c.parallel
-  `).all();
+  `).all().map((c) => ({ ...c, auto_template_name: getNextStageTemplateName(c.name) }));
   // כל הכיתות (כולל ח') - לבחירת "כיתת יעד לשנה הבאה" (כי גם כיתה ח' יכולה להיות יעד של כיתה ז')
   const allClasses = db.prepare(`
     SELECT id, name, parallel FROM classes WHERE status = 'פעיל' ORDER BY name, parallel
@@ -44,9 +68,11 @@ router.post("/settings", (req, res) => {
 });
 
 router.post("/class/:classId/fields", (req, res) => {
+  const classRow = db.prepare("SELECT name FROM classes WHERE id = ?").get(req.params.classId);
+  const autoTemplateId = classRow ? getTemplateIdForClass(classRow.name) : null;
   db.prepare("UPDATE classes SET room_description = ?, letter_template_id = ?, next_year_class_id = ? WHERE id = ?").run(
     req.body.room_description || null,
-    req.body.letter_template_id || null,
+    autoTemplateId,
     req.body.next_year_class_id || null,
     req.params.classId
   );
