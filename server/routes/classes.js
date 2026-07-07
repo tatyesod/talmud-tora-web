@@ -388,7 +388,13 @@ router.get("/:id", (req, res) => {
     `)
     .all(req.params.id);
 
-  res.render("classes/view", { classRow, students, teachers, sectorBreakdown });
+  // ניווט הקודם/הבא - לפי אותו סדר שמופיע ברשימת הכיתות
+  const orderedIds = db.prepare("SELECT id FROM classes ORDER BY name, parallel").all().map((r) => r.id);
+  const curIdx = orderedIds.findIndex((id) => String(id) === String(req.params.id));
+  const prevId = curIdx > 0 ? orderedIds[curIdx - 1] : null;
+  const nextId = curIdx >= 0 && curIdx < orderedIds.length - 1 ? orderedIds[curIdx + 1] : null;
+
+  res.render("classes/view", { classRow, students, teachers, sectorBreakdown, prevId, nextId });
 });
 
 module.exports = router;

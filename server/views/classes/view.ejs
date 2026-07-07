@@ -4,11 +4,13 @@
   <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:10px;">
     <h1>כיתה: <%= classRow.name %><%= classRow.parallel ? ' ('+classRow.parallel+')' : '' %></h1>
     <div class="actions">
+      <% if (prevId) { %><a href="/classes/<%= prevId %>" class="btn small secondary">→ הקודמת</a><% } %>
+      <% if (nextId) { %><a href="/classes/<%= nextId %>" class="btn small secondary">הבאה ←</a><% } %>
       <a href="/classes/<%= classRow.id %>/edit" class="btn">עריכה</a>
       <form method="POST" action="/classes/<%= classRow.id %>?_method=DELETE" onsubmit="return confirm('האם למחוק את הכיתה?');" style="display:inline">
         <button type="submit" class="btn danger">מחיקה</button>
       </form>
-      <a href="/classes" class="btn secondary">חזרה לכיתות</a>
+      <a href="javascript:history.back()" class="btn secondary">חזרה לכיתות</a>
     </div>
   </div>
   <table>
