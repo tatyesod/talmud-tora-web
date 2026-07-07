@@ -360,6 +360,14 @@ router.get("/gan-export", async (req, res) => {
   ws.getColumn(3).width = 14;
   ws.getColumn(4).width = 12;
 
+  const titleRow = ws.addRow(["תלמוד תורה יסוד העולם"]);
+  titleRow.getCell(1).font = { bold: true, size: 13 };
+  const headerRow = ws.addRow(["שם פרטי ומשפחה", "מ.ז", "ת.ל לועזי", "סמל גן"]);
+  headerRow.font = { bold: true };
+  headerRow.eachCell((cell) => {
+    cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFEFF4F8" } };
+  });
+
   classes.forEach((cls) => {
     let students = db.prepare(`
       SELECT first_name, last_name, id_number, birth_date_civil
@@ -380,18 +388,6 @@ router.get("/gan-export", async (req, res) => {
       }
     }
 
-    const sectionTitleRow = ws.addRow(["תלמוד תורה יסוד העולם"]);
-    sectionTitleRow.getCell(1).font = { bold: true, size: 13 };
-
-    const classNameRow = ws.addRow([`${cls.name}${cls.parallel ? " " + cls.parallel : ""}`]);
-    classNameRow.getCell(1).font = { bold: true, color: { argb: "FF2C5F7C" } };
-
-    const headerRow = ws.addRow(["שם פרטי ומשפחה", "מ.ז", "ת.ל לועזי", "סמל גן"]);
-    headerRow.font = { bold: true };
-    headerRow.eachCell((cell) => {
-      cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFEFF4F8" } };
-    });
-
     students.forEach((s) => {
       const row = ws.addRow([
         `${s.first_name || ""} ${s.last_name || ""}`.trim(),
@@ -402,8 +398,6 @@ router.get("/gan-export", async (req, res) => {
       if (row.getCell(3).value instanceof Date) row.getCell(3).numFmt = "dd/mm/yyyy";
       row.alignment = { horizontal: "right" };
     });
-
-    ws.addRow([]); // שורת רווח בין כיתה לכיתה
   });
 
   res.setHeader("Content-Disposition", `attachment; filename="${encodeURIComponent("רישום-גני-ילדים.xlsx")}"`);
