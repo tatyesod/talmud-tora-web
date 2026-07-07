@@ -1,0 +1,180 @@
+<%- include('../partials/header', {title: 'קטלוג ומחירון', wide: true}) %>
+
+<div class="card">
+  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+    <h1>📚 קטלוג ומחירון</h1>
+    <a href="/books" class="btn secondary">חזרה להזמנות</a>
+  </div>
+
+  <p style="color:var(--muted); font-size:0.9em;">
+    <strong>מחירון</strong> = הרשימה הכללית של כל הספרים והמחירים שלכם (למטה בעמוד). <strong>קטלוג</strong> = אילו ספרים
+    מתוך המחירון שייכים בפועל לכל כיתה, בכל שנה (למעלה) — זה מה שנבנית ממנו רשימת ההזמנות שהורים מסמנים. שינוי מחיר
+    במחירון מעדכן אוטומטית את כל פריטי הקטלוג עם אותו שם.
+  </p>
+
+  <% if (saved === "1") { %>
+    <div style="background:#e8f5e9; border:1px solid #a5d6a7; color:#2e7d32; border-radius:8px; padding:10px 16px; margin-bottom:14px;">✅ נשמר בהצלחה.</div>
+  <% } %>
+  <% if (updated) { %>
+    <div style="background:#eef6ee; border:1px solid #bcd9bc; border-radius:8px; padding:10px 16px; margin-bottom:14px; color:#2d7a2d;">
+      ✅ המחיר עודכן ב-<%= updated %> פריטי קטלוג
+    </div>
+  <% } %>
+
+  <!-- ============ סעיף א: קטלוג שנתי לפי כיתה ============ -->
+  <h2 style="border-bottom:2px solid #2c5f7c; padding-bottom:6px;">קטלוג שנתי לפי כיתה</h2>
+
+  <form class="searchbar" method="GET" action="/books/catalog-and-prices" style="margin-bottom:18px;">
+    <label><strong>שנה:</strong></label>
+    <select name="year" onchange="this.form.submit()">
+      <% years.forEach(y => { %>
+        <option value="<%= y %>" <%= y === year ? 'selected' : '' %>><%= y %></option>
+      <% }) %>
+      <option value="">-- שנה חדשה --</option>
+    </select>
+  </form>
+
+  <h3>הוספת פריט קטלוג לכיתה</h3>
+  <p style="color:var(--muted); font-size:0.85em;">בחרו ספר מהמחירון (ימולא מחיר אוטומטית) או הקלידו שם חדש (יתווסף גם למחירון).</p>
+  <form method="POST" action="/books/catalog" class="form-grid" style="margin-bottom:24px;" id="add-catalog-form">
+    <div class="form-group">
+      <label>שנה</label>
+      <input type="text" name="year_label" value="<%= year %>" required placeholder='תשפ"ז' />
+    </div>
+    <div class="form-group">
+      <label>כיתה</label>
+      <input type="text" name="class_name" list="class-list" required placeholder="כיתה א'" />
+      <datalist id="class-list">
+        <option value="כיתה א'"><option value="כיתה ב'"><option value="כיתה ג'">
+        <option value="כיתה ד'"><option value="כיתה ה'"><option value="כיתה ו'">
+        <option value="כיתה ז'"><option value="כיתה ח'">
+      </datalist>
+    </div>
+    <div class="form-group">
+      <label>שם הפריט (מהמחירון או חדש)</label>
+      <input type="text" name="item_name" id="catalog-item-name" list="price-list-datalist" required />
+      <datalist id="price-list-datalist">
+        <% prices.forEach(p => { %><option value="<%= p.item_name %>" data-price="<%= p.price %>" data-publisher="<%= p.publisher || '' %>"><% }) %>
+      </datalist>
+    </div>
+    <div class="form-group"><label>הוצאה</label><input type="text" name="publisher" id="catalog-publisher" /></div>
+    <div class="form-group"><label>מחיר (₪)</label><input type="number" step="0.01" name="price" id="catalog-price" required /></div>
+    <div class="form-group">
+      <label><input type="checkbox" name="is_mandatory" style="width:auto; margin-left:6px;" /> חובה</label>
+    </div>
+    <div class="form-group full"><button type="submit" class="btn small">+ הוסף לקטלוג</button></div>
+  </form>
+
+  <h3>קטלוג קיים — <%= year %> (<%= catalog.length %> פריטים)</h3>
+  <% if (catalog.length === 0) { %>
+    <p class="empty-state">אין פריטים בקטלוג לשנה זו</p>
+  <% } else { %>
+    <div class="table-scroll-wrap">
+    <table>
+      <thead><tr><th>כיתה</th><th>פריט</th><th>הוצאה</th><th>מחיר</th><th>חובה</th><th></th></tr></thead>
+      <tbody>
+        <% catalog.forEach(c => { %>
+          <tr id="view-row-<%= c.id %>">
+            <td><%= c.class_name %></td>
+            <td><%= c.item_name %></td>
+            <td><%= c.publisher || '' %></td>
+            <td><%= c.price %> ₪</td>
+            <td><%= c.is_mandatory ? '✓' : '' %></td>
+            <td style="white-space:nowrap;">
+              <button type="button" class="btn small secondary" onclick="toggleEdit(<%= c.id %>)">✏️ ערוך</button>
+              <form method="POST" action="/books/catalog/<%= c.id %>?_method=DELETE" onsubmit="return confirm('למחוק פריט זה?');" style="display:inline">
+                <button type="submit" class="btn small danger">מחק</button>
+              </form>
+            </td>
+          </tr>
+          <tr id="edit-row-<%= c.id %>" style="display:none; background:#f5f9fc;">
+            <td colspan="6">
+              <form method="POST" action="/books/catalog/<%= c.id %>?_method=PUT" style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; padding:8px 0;">
+                <input type="hidden" name="year_label" value="<%= year %>" />
+                <input type="text" name="class_name" value="<%= c.class_name %>" required style="width:110px;" placeholder="כיתה" />
+                <input type="text" name="item_name" value="<%= c.item_name %>" required style="width:160px;" placeholder="שם הפריט" />
+                <input type="text" name="publisher" value="<%= c.publisher || '' %>" style="width:120px;" placeholder="הוצאה" />
+                <input type="number" step="0.01" name="price" value="<%= c.price %>" required style="width:90px;" placeholder="מחיר" />
+                <label style="width:auto; display:flex; align-items:center; gap:4px; white-space:nowrap;">
+                  <input type="checkbox" name="is_mandatory" style="width:auto;" <%= c.is_mandatory ? 'checked' : '' %> /> חובה
+                </label>
+                <button type="submit" class="btn small">💾 שמור</button>
+                <button type="button" class="btn small secondary" onclick="toggleEdit(<%= c.id %>)">ביטול</button>
+              </form>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+    </div>
+  <% } %>
+
+  <!-- ============ סעיף ב: מחירון כללי ============ -->
+  <h2 style="border-bottom:2px solid #2c5f7c; padding-bottom:6px; margin-top:36px;">מחירון כללי</h2>
+
+  <h3>הוספת/עדכון פריט במחירון</h3>
+  <form method="POST" action="/books/prices" class="form-grid" style="margin-bottom:24px;">
+    <div class="form-group"><label>שם הפריט</label><input type="text" name="item_name" required /></div>
+    <div class="form-group"><label>הוצאה</label><input type="text" name="publisher" /></div>
+    <div class="form-group"><label>מחיר (₪)</label><input type="number" step="0.01" name="price" required /></div>
+    <div class="form-group"><label>הערות</label><input type="text" name="notes" /></div>
+    <div class="form-group full"><button type="submit" class="btn small">+ הוסף / עדכן במחירון</button></div>
+  </form>
+
+  <h3>רשימת המחירון (<%= prices.length %> פריטים)</h3>
+  <% if (prices.length === 0) { %>
+    <p class="empty-state">אין פריטים במחירון</p>
+  <% } else { %>
+    <div class="table-scroll-wrap">
+    <table>
+      <thead><tr><th>שם הפריט</th><th>הוצאה</th><th>מחיר</th><th>הערות</th><th>עדכון מחיר</th><th></th></tr></thead>
+      <tbody>
+        <% prices.forEach(p => { %>
+          <tr>
+            <td><%= p.item_name %></td>
+            <td><%= p.publisher || '' %></td>
+            <td><strong><%= p.price %> ₪</strong></td>
+            <td><%= p.notes || '' %></td>
+            <td>
+              <form method="POST" action="/books/prices/<%= p.id %>?_method=PUT" style="display:flex; gap:6px; align-items:center;">
+                <input type="number" name="price" value="<%= p.price %>" step="0.01" style="width:80px;" />
+                <input type="hidden" name="publisher" value="<%= p.publisher||'' %>" />
+                <button type="submit" class="btn small">עדכן</button>
+              </form>
+            </td>
+            <td>
+              <form method="POST" action="/books/prices/<%= p.id %>?_method=DELETE" onsubmit="return confirm('למחוק?');" style="display:inline">
+                <button type="submit" class="btn small danger">מחק</button>
+              </form>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+    </div>
+  <% } %>
+</div>
+
+<script>
+  function toggleEdit(id) {
+    const viewRow = document.getElementById('view-row-' + id);
+    const editRow = document.getElementById('edit-row-' + id);
+    const editing = editRow.style.display !== 'none';
+    editRow.style.display = editing ? 'none' : 'table-row';
+    viewRow.style.display = editing ? 'table-row' : 'none';
+  }
+
+  // בחירת פריט מהמחירון בטופס הוספת קטלוג - ממלא מחיר+הוצאה אוטומטית
+  document.getElementById('catalog-item-name').addEventListener('input', function () {
+    const opts = document.getElementById('price-list-datalist').options;
+    for (const opt of opts) {
+      if (opt.value === this.value) {
+        document.getElementById('catalog-price').value = opt.dataset.price || '';
+        document.getElementById('catalog-publisher').value = opt.dataset.publisher || '';
+        break;
+      }
+    }
+  });
+</script>
+
+<%- include('../partials/footer') %>

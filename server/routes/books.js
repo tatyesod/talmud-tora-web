@@ -417,26 +417,36 @@ router.delete("/pricelist/:id", (req, res) => {
 });
 
 // ============ קטלוג ============
-router.get("/catalog", (req, res) => {
+// ============ קטלוג ומחירון - עמוד מאוחד ============
+router.get("/catalog-and-prices", (req, res) => {
   const years = db.prepare("SELECT DISTINCT year_label FROM book_catalog ORDER BY year_label DESC").all().map(r => r.year_label);
   const defaultYear = db.prepare("SELECT value FROM settings WHERE key='current_hebrew_year'").get()?.value || years[0] || 'תשפ"ז';
   const year = req.query.year || defaultYear;
   const catalog = db.prepare("SELECT * FROM book_catalog WHERE year_label=? ORDER BY class_name, sort_order, id").all(year);
   const grouped = {};
   catalog.forEach(c => { if (!grouped[c.class_name]) grouped[c.class_name] = []; grouped[c.class_name].push(c); });
-  res.render("books/catalog", { year, years, catalog, grouped });
+  const prices = db.prepare("SELECT * FROM book_prices ORDER BY item_name").all();
+  res.render("books/catalog-and-prices", { year, years, catalog, grouped, prices, saved: req.query.saved || "", updated: req.query.updated || "" });
+});
+
+// נתיבים ישנים - הפניה לעמוד המאוחד (למקרה של סימניות שמורות)
+router.get("/catalog", (req, res) => {
+  res.redirect(`/books/catalog-and-prices${req.query.year ? "?year=" + encodeURIComponent(req.query.year) : ""}`);
+});
+router.get("/prices", (req, res) => {
+  res.redirect("/books/catalog-and-prices");
 });
 
 router.post("/catalog", (req, res) => {
   const { year_label, class_name, item_name, publisher, price, is_mandatory } = req.body;
   db.prepare("INSERT INTO book_catalog (year_label, class_name, item_name, publisher, price, is_mandatory) VALUES (?,?,?,?,?,?)").run(year_label, class_name, item_name, publisher || "", parseFloat(price) || 0, is_mandatory === "on" ? 1 : 0);
-  res.redirect(`/books/catalog?year=${encodeURIComponent(year_label)}`);
+  res.redirect(`/books/catalog-and-prices?year=${encodeURIComponent(year_label)}`);
 });
 
 router.delete("/catalog/:id", (req, res) => {
   const row = db.prepare("SELECT year_label FROM book_catalog WHERE id=?").get(req.params.id);
   db.prepare("DELETE FROM book_catalog WHERE id=?").run(req.params.id);
-  res.redirect(`/books/catalog?year=${encodeURIComponent(row?.year_label || "")}`);
+  res.redirect(`/books/catalog-and-prices?year=${encodeURIComponent(row?.year_label || "")}`);
 });
 
 router.put("/catalog/:id", (req, res) => {
@@ -445,38 +455,33 @@ router.put("/catalog/:id", (req, res) => {
     UPDATE book_catalog SET class_name=?, item_name=?, publisher=?, price=?, is_mandatory=?
     WHERE id=?
   `).run(class_name, item_name, publisher || "", parseFloat(price) || 0, is_mandatory === "on" ? 1 : 0, req.params.id);
-  res.redirect(`/books/catalog?year=${encodeURIComponent(year_label || "")}`);
+  res.redirect(`/books/catalog-and-prices?year=${encodeURIComponent(year_label || "")}`);
 });
 
 
 // ============ מחירון בסיס ============
-router.get("/prices", (req, res) => {
-  const prices = db.prepare("SELECT * FROM book_prices ORDER BY item_name").all();
-  res.render("books/prices", { prices, updated: req.query.updated || "" });
-});
-
 router.post("/prices", (req, res) => {
   const { item_name, publisher, price, notes } = req.body;
   const now = new Date().toISOString();
   db.prepare("INSERT INTO book_prices (item_name, publisher, price, notes, updated_at) VALUES (?,?,?,?,?) ON CONFLICT(item_name) DO UPDATE SET price=excluded.price, publisher=excluded.publisher, notes=excluded.notes, updated_at=excluded.updated_at").run(item_name, publisher||'', parseFloat(price)||0, notes||'', now);
-  res.redirect("/books/prices");
+  res.redirect("/books/catalog-and-prices");
 });
 
 // עדכון מחיר ומעדכן קטלוגים קשורים
 router.put("/prices/:id", (req, res) => {
   const { price, publisher } = req.body;
   const row = db.prepare("SELECT * FROM book_prices WHERE id=?").get(req.params.id);
-  if (!row) return res.redirect("/books/prices");
+  if (!row) return res.redirect("/books/catalog-and-prices");
   const newPrice = parseFloat(price) || 0;
   db.prepare("UPDATE book_prices SET price=?, publisher=?, updated_at=? WHERE id=?").run(newPrice, publisher||row.publisher||'', new Date().toISOString(), req.params.id);
   // עדכון כל הקטלוגים עם שם זהה
   const updated = db.prepare("UPDATE book_catalog SET price=? WHERE item_name=?").run(newPrice, row.item_name);
-  res.redirect("/books/prices?updated=" + updated.changes);
+  res.redirect("/books/catalog-and-prices?updated=" + updated.changes);
 });
 
 router.delete("/prices/:id", (req, res) => {
   db.prepare("DELETE FROM book_prices WHERE id=?").run(req.params.id);
-  res.redirect("/books/prices");
+  res.redirect("/books/catalog-and-prices");
 });
 
 // ============ חידוש ספרים / הזמנות נוספות ============
