@@ -176,6 +176,7 @@ const migrations = [
   )`,
   "ALTER TABLE students ADD COLUMN birth_country TEXT DEFAULT 'ישראל'",
   "ALTER TABLE students ADD COLUMN immigration_year TEXT",
+  "ALTER TABLE classes ADD COLUMN next_year_class_id INTEGER",
 ];
 
 for (const sql of migrations) {
@@ -189,7 +190,7 @@ for (const sql of migrations) {
 // זריעה/עדכון חד-פעמי של תבניות פתיחה למכתבי שיבוץ, מבוססות על 28 מכתבים אמיתיים
 // (דגל ב-settings מבטיח שזה קורה פעם אחת בלבד, ולא דורס תבניות שהמנהל כתב/ערך בעצמו אחר כך)
 try {
-  const alreadySeededV2 = db.prepare("SELECT value FROM settings WHERE key = 'letter_templates_seeded_v2'").get();
+  const alreadySeededV2 = db.prepare("SELECT value FROM settings WHERE key = 'letter_templates_seeded_v3'").get();
   if (!alreadySeededV2) {
     const { SEED_TEMPLATES } = require("./letterTemplatesSeed");
     // מסיר תבניות ישנות (גרסה מקורית משוערת) שאף אחד לא הספיק לערוך אותן דרך המסך,
@@ -202,7 +203,7 @@ try {
     const insertTpl = db.prepare("INSERT INTO letter_templates (name, body, created_at, updated_at) VALUES (?,?,?,?)");
     const now = new Date().toISOString();
     SEED_TEMPLATES.forEach((t) => insertTpl.run(t.name, t.body, now, now));
-    db.prepare("INSERT INTO settings (key, value) VALUES ('letter_templates_seeded_v2', '1')").run();
+    db.prepare("INSERT INTO settings (key, value) VALUES ('letter_templates_seeded_v3', '1')").run();
   }
 } catch (e) {
   // אם משהו נכשל - לא קריטי, אפשר ליצור תבניות ידנית דרך המסך

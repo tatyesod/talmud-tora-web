@@ -16,20 +16,25 @@ function setSetting(key, value) {
 
 // ============ עמוד ראשי - ניהול מכתבי שיבוץ ============
 router.get("/", (req, res) => {
+  // כל הכיתות הפעילות שצריכות מיפוי לשנה הבאה - חוץ מכיתה ח' (בוגרים, לא ממשיכים במוסד)
   const classes = db.prepare(`
     SELECT c.*, cat.price, lt.name AS template_name
     FROM classes c
     LEFT JOIN categories cat ON c.category_id = cat.id
     LEFT JOIN letter_templates lt ON c.letter_template_id = lt.id
-    WHERE c.status = 'פעיל'
+    WHERE c.status = 'פעיל' AND c.name NOT LIKE 'כיתה ח%'
     ORDER BY c.name, c.parallel
   `).all();
+  // כל הכיתות (כולל ח') - לבחירת "כיתת יעד לשנה הבאה" (כי גם כיתה ח' יכולה להיות יעד של כיתה ז')
+  const allClasses = db.prepare(`
+    SELECT id, name, parallel FROM classes WHERE status = 'פעיל' ORDER BY name, parallel
+  `).all().map((c) => ({ ...c, full_name: `${c.name}${c.parallel ? " " + c.parallel : ""}` }));
   const templates = db.prepare("SELECT id, name FROM letter_templates ORDER BY name").all();
   const settings = {
     letter_hebrew_date: getSetting("letter_hebrew_date"),
     letter_hebrew_year: getSetting("letter_hebrew_year"),
   };
-  res.render("letters/index", { classes, templates, settings, saved: req.query.saved === "1" });
+  res.render("letters/index", { classes, allClasses, templates, settings, saved: req.query.saved === "1" });
 });
 
 router.post("/settings", (req, res) => {
@@ -39,9 +44,10 @@ router.post("/settings", (req, res) => {
 });
 
 router.post("/class/:classId/fields", (req, res) => {
-  db.prepare("UPDATE classes SET room_description = ?, letter_template_id = ? WHERE id = ?").run(
+  db.prepare("UPDATE classes SET room_description = ?, letter_template_id = ?, next_year_class_id = ? WHERE id = ?").run(
     req.body.room_description || null,
     req.body.letter_template_id || null,
+    req.body.next_year_class_id || null,
     req.params.classId
   );
   res.redirect("/letters");
@@ -92,7 +98,10 @@ router.get("/class/:classId/preview", (req, res) => {
   `).get(req.params.classId);
   if (!classRow) return res.status(404).render("404");
   if (!classRow.letter_template_id) {
-    return res.render("letters/no-template", { classRow });
+    return res.render("letters/no-template", { classRow, message: "לכיתה זו לא משויכת תבנית מכתב." });
+  }
+  if (!classRow.next_year_class_id) {
+    return res.render("letters/no-template", { classRow, message: "לכיתה זו לא משויכת כיתת יעד לשנה הבאה." });
   }
   const template = db.prepare("SELECT * FROM letter_templates WHERE id = ?").get(classRow.letter_template_id);
   const settings = { letter_hebrew_date: getSetting("letter_hebrew_date"), letter_hebrew_year: getSetting("letter_hebrew_year") };
@@ -111,6 +120,7 @@ router.get("/class/:classId/docx", async (req, res) => {
   `).get(req.params.classId);
   if (!classRow) return res.status(404).render("404");
   if (!classRow.letter_template_id) return res.status(400).send("לכיתה זו לא משויכת תבנית מכתב");
+  if (!classRow.next_year_class_id) return res.status(400).send("לכיתה זו לא משויכת כיתת יעד לשנה הבאה");
   const template = db.prepare("SELECT * FROM letter_templates WHERE id = ?").get(classRow.letter_template_id);
   const settings = { letter_hebrew_date: getSetting("letter_hebrew_date"), letter_hebrew_year: getSetting("letter_hebrew_year") };
   const data = buildClassData(db, classRow, settings);
@@ -214,12 +224,13 @@ router.get("/generate-all/docx", async (req, res) => {
   const classes = db.prepare(`
     SELECT c.*, cat.price FROM classes c
     LEFT JOIN categories cat ON c.category_id = cat.id
-    WHERE c.status = 'פעיל' AND c.letter_template_id IS NOT NULL
+    WHERE c.status = 'פעיל' AND c.name NOT LIKE 'כיתה ח%'
+      AND c.letter_template_id IS NOT NULL AND c.next_year_class_id IS NOT NULL
     ORDER BY c.name, c.parallel
   `).all();
 
   if (classes.length === 0) {
-    return res.status(400).send("אין כיתות עם תבנית מכתב משויכת. יש לשייך תבנית לכל כיתה בעמוד 'מכתבי שיבוץ' לפני ההפקה.");
+    return res.status(400).send("אין כיתות עם תבנית וכיתת יעד משויכות. יש להשלים את השיוך בעמוד 'מכתבי שיבוץ' לפני ההפקה.");
   }
 
   const settings = { letter_hebrew_date: getSetting("letter_hebrew_date"), letter_hebrew_year: getSetting("letter_hebrew_year") };

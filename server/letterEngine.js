@@ -32,33 +32,56 @@ function mergeTemplate(body, data) {
   return paragraphs.map((runs) => runs.map((r) => ({ ...r, text: fillPlaceholders(r.text, data) })));
 }
 
-// בונה את אובייקט הנתונים למיזוג עבור כיתה בודדת
-function buildClassData(db, classRow, globalSettings) {
+function getTeacherName(db, classId) {
   const teacherRow = db.prepare(`
     SELECT t.first_name, t.last_name FROM teacher_classes tc
     JOIN teachers t ON tc.teacher_id = t.id
     WHERE tc.class_id = ?
     ORDER BY CASE tc.role WHEN 'בוקר' THEN 1 WHEN 'אחה"צ' THEN 2 WHEN 'עוזר' THEN 3 ELSE 4 END
     LIMIT 1
-  `).get(classRow.id);
-  const teacherName = teacherRow ? `${teacherRow.first_name || ""} ${teacherRow.last_name || ""}`.trim() : "";
+  `).get(classId);
+  return teacherRow ? `${teacherRow.first_name || ""} ${teacherRow.last_name || ""}`.trim() : "";
+}
+
+// בונה את אובייקט הנתונים למיזוג: currentClassRow היא הכיתה שבה התלמיד נמצא היום,
+// ומתוכה שולפים את next_year_class_id - הכיתה שאליה הוא עולה בשנה הבאה (טרם עם כל
+// הפרטים - מלמד, סניף, חדר, שכ"ל - נלקחים מכיתת היעד, כי זה מה שיהיה נכון בפועל).
+function buildClassData(db, currentClassRow, globalSettings) {
+  const currentFullName = `${currentClassRow.name || ""}${currentClassRow.parallel ? " " + currentClassRow.parallel : ""}`;
+
+  let targetRow = null;
+  if (currentClassRow.next_year_class_id) {
+    targetRow = db.prepare(`
+      SELECT c.*, cat.price FROM classes c
+      LEFT JOIN categories cat ON c.category_id = cat.id
+      WHERE c.id = ?
+    `).get(currentClassRow.next_year_class_id);
+  }
+  // נפילה רכה לאחור: אם אין כיתת יעד מוגדרת, נציג את פרטי הכיתה הנוכחית עצמה
+  const source = targetRow || currentClassRow;
+  const targetFullName = `${source.name || ""}${source.parallel ? " " + source.parallel : ""}`;
 
   return {
-    class_name: classRow.name || "",
-    parallel: classRow.parallel || "",
-    class_full_name: `${classRow.name || ""}${classRow.parallel ? " " + classRow.parallel : ""}`,
-    branch: classRow.branch || "",
-    teacher_name: teacherName,
-    room_description: classRow.room_description || "",
-    tuition_price: classRow.price != null ? classRow.price : "",
+    current_class_name: currentClassRow.name || "",
+    current_parallel: currentClassRow.parallel || "",
+    current_class_full_name: currentFullName,
+    class_name: source.name || "",
+    parallel: source.parallel || "",
+    class_full_name: targetFullName,
+    branch: source.branch || "",
+    teacher_name: getTeacherName(db, source.id),
+    room_description: source.room_description || "",
+    tuition_price: source.price != null ? source.price : "",
     hebrew_date: globalSettings.letter_hebrew_date || "",
     hebrew_year: globalSettings.letter_hebrew_year || "",
   };
 }
 
 function buildRecipientLine(data) {
-  const word = data.class_name && data.class_name.startsWith("כיתה ח'") ? "הבחורים" : "התלמידים";
-  return `לכבוד הורי ${word} העולים ל${data.class_full_name} (${data.branch}) שיחיו`;
+  if (data.current_class_name && data.current_class_name.startsWith("עדיין לא נכנסו")) {
+    return `לכב' הורי החמד העולים ל${data.class_full_name} (${data.branch}) שיחיו`;
+  }
+  return `לכבוד הורי תלמידי ${data.current_class_full_name} שיחיו`;
 }
 
 module.exports = { parseTemplateToParagraphs, mergeTemplate, buildClassData, fillPlaceholders, buildRecipientLine };

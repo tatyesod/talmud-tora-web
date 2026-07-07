@@ -11,8 +11,10 @@
 
   <p style="color:var(--muted); font-size:0.9em;">
     כל שנה: מלאו כאן את התאריך העברי ואת שנה"ל הקרובה (פעם אחת, לא לכל כיתה בנפרד), ודאו ששיבוץ המלמדים לכיתות עדכני
-    (בעמוד עריכת כיתה), ושכל כיתה משויכת לתבנית המכתב המתאימה לה למטה. לחיצה אחת על "הפקת מכתבים לכל הכיתות" מייצרת
-    קובץ Word אחד עם עמוד נפרד לכל כיתה, ממולא אוטומטית לפי הנתונים בפועל.
+    (בעמוד עריכת כיתה). למטה מוצגות כל הכיתות <strong>הנוכחיות</strong> (כולל "עדיין לא נכנסו"; כיתה ח' לא מופיעה כי
+    בוגריה לא ממשיכים במוסד). לכל כיתה נוכחית בוחרים <strong>תבנית מכתב</strong> (הנוסח, לפי השכבה שאליה עולים) ובנפרד
+    <strong>כיתת יעד לשנה הבאה</strong> (מכיוון שלא תמיד א'1 עולה דווקא ל-ב'1). לחיצה אחת על "הפקת מכתבים לכל הכיתות"
+    מייצרת קובץ Word אחד עם עמוד נפרד לכל כיתה, ממולא אוטומטית לפי הנתונים בפועל של כיתת היעד.
   </p>
 
   <% if (saved) { %>
@@ -33,25 +35,31 @@
     <div class="form-group full"><button type="submit" class="btn small">שמירת הגדרות שנתיות</button></div>
   </form>
 
-  <h3>שיוך תבנית וחדר לכל כיתה</h3>
+  <h3>שיוך כיתה נוכחית → תבנית + כיתת יעד לשנה הבאה</h3>
   <div class="table-scroll-wrap">
     <table>
-      <thead><tr><th>כיתה</th><th>סניף</th><th>תבנית מכתב</th><th>תיאור מיקום/חדר</th><th></th></tr></thead>
+      <thead><tr><th>כיתה נוכחית</th><th>סניף</th><th>תיאור מיקום/חדר (של כיתה זו)</th><th>תבנית מכתב</th><th>כיתת יעד לשנה הבאה</th><th></th></tr></thead>
       <tbody>
         <% classes.forEach(c => { %>
           <tr>
             <td class="nowrap-cell"><strong><%= c.name %><%= c.parallel ? ' '+c.parallel : '' %></strong></td>
             <td><%= c.branch || '' %></td>
-            <td colspan="2">
+            <td colspan="3">
               <form method="POST" action="/letters/class/<%= c.id %>/fields" style="display:flex; gap:8px; flex-wrap:wrap;">
-                <select name="letter_template_id" style="min-width:160px;">
-                  <option value="">— ללא תבנית —</option>
+                <input type="text" name="room_description" value="<%= c.room_description || '' %>"
+                       placeholder="לדוגמה: בקומה 3 הכיתה האמצעית" style="flex:1; min-width:200px;" />
+                <select name="letter_template_id" style="min-width:150px;">
+                  <option value="">— תבנית —</option>
                   <% templates.forEach(t => { %>
                     <option value="<%= t.id %>" <%= String(c.letter_template_id) === String(t.id) ? 'selected' : '' %>><%= t.name %></option>
                   <% }) %>
                 </select>
-                <input type="text" name="room_description" value="<%= c.room_description || '' %>"
-                       placeholder="לדוגמה: בקומה 3 הכיתה האמצעית" style="flex:1; min-width:220px;" />
+                <select name="next_year_class_id" style="min-width:170px;">
+                  <option value="">— כיתת יעד —</option>
+                  <% allClasses.forEach(t => { %>
+                    <option value="<%= t.id %>" <%= String(c.next_year_class_id) === String(t.id) ? 'selected' : '' %>><%= t.full_name %></option>
+                  <% }) %>
+                </select>
                 <button type="submit" class="btn small secondary">שמירה</button>
               </form>
             </td>
