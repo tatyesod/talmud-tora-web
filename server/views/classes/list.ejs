@@ -46,6 +46,7 @@
         <th><a href="<%= sortUrl('parallel') %>">מקבילה<%= sortIndicator('parallel') %></a></th>
         <th><a href="<%= sortUrl('branch') %>">סניף<%= sortIndicator('branch') %></a></th>
         <th><a href="<%= sortUrl('category') %>">קטגוריית שכ"ל<%= sortIndicator('category') %></a></th>
+        <th>סמל מוסד</th>
         <th><a href="<%= sortUrl('active_count') %>">תלמידים פעילים<%= sortIndicator('active_count') %></a></th>
         <th><a href="<%= sortUrl('status') %>">סטטוס<%= sortIndicator('status') %></a></th>
         <th></th>
@@ -57,6 +58,7 @@
             <td><%= c.parallel || '' %></td>
             <td><%= c.branch || '' %></td>
             <td><%= c.category_name || '' %><%= c.price != null ? ' ('+c.price+' ₪)' : '' %></td>
+            <td><%= c.institution_code || '—' %></td>
             <td><%= c.active_count %></td>
             <td><span class="badge <%= c.status !== 'פעיל' ? 'archive' : '' %>"><%= c.status || '' %></span></td>
             <td>

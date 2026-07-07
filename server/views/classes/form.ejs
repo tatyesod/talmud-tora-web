@@ -37,6 +37,16 @@
         <input type="text" name="transfer_number" value="<%= classRow.transfer_number || '' %>" placeholder="ברירת מחדל: אותה מקבילה" />
       </div>
       <div class="form-group">
+        <label>סמל מוסד</label>
+        <% const isGrade = classRow.name && classRow.name.startsWith("כיתה "); %>
+        <% if (isGrade) { %>
+          <input type="text" value="512384" disabled style="background:#f0f0f0; color:#888;" title="קבוע לכיתות א'-ח', לא ניתן לשינוי" />
+          <input type="hidden" name="institution_code" value="512384" />
+        <% } else { %>
+          <input type="text" name="institution_code" value="<%= classRow.institution_code || '' %>" placeholder="לדוגמה: 123456" />
+        <% } %>
+      </div>
+      <div class="form-group">
         <label>סניף</label>
         <select name="branch">
           <option value="">--</option>

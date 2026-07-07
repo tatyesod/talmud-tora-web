@@ -14,6 +14,7 @@
   <table>
     <tr><th>סניף</th><td><%= classRow.branch || '' %></td><th>קטגוריית שכר לימוד</th><td><%= classRow.category_name || '' %></td></tr>
     <tr><th>מחיר</th><td><%= classRow.price != null ? classRow.price+' ₪' : '' %></td><th>סטטוס</th><td><%= classRow.status || '' %></td></tr>
+    <tr><th>סמל מוסד</th><td colspan="3"><%= classRow.institution_code || '—' %></td></tr>
   </table>
 </div>
 

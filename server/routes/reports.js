@@ -348,7 +348,7 @@ router.get("/health-declaration/view", (req, res) => {
 // ============ ייצוא תלמידי "גנים" (מכינה א'-ב') לפי תבנית משרד החינוך ============
 router.get("/gan-export", async (req, res) => {
   const classes = db.prepare(`
-    SELECT id, name, parallel FROM classes
+    SELECT id, name, parallel, institution_code FROM classes
     WHERE (name = 'מכינה א''' OR name = 'מכינה ב''') AND status = 'פעיל'
     ORDER BY name, parallel
   `).all();
@@ -377,7 +377,7 @@ router.get("/gan-export", async (req, res) => {
         `${s.first_name || ""} ${s.last_name || ""}`.trim(),
         s.id_number || "",
         hd.serialToDateObject(s.birth_date_civil),
-        "", // סמל מוסד - יש להשלים ידנית
+        cls.institution_code || "", // סמל מוסד - מהכיתה, אם הוגדר
       ]);
       if (row.getCell(3).value instanceof Date) row.getCell(3).numFmt = "dd/mm/yyyy";
       row.alignment = { horizontal: "right" };

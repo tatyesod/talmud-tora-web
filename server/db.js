@@ -186,6 +186,8 @@ const migrations = [
     updated_at TEXT,
     UNIQUE(book_price_id, branch)
   )`,
+  "ALTER TABLE classes ADD COLUMN institution_code TEXT",
+  "UPDATE classes SET institution_code = '512384' WHERE name LIKE 'כיתה %'",
 ];
 
 for (const sql of migrations) {

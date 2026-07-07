@@ -76,7 +76,7 @@ router.get("/new", (req, res) => {
   res.render("classes/form", { classRow: {}, mode: "new", categories });
 });
 
-const CLASS_FIELDS = ["name", "parallel", "class_number", "transfer_number", "status", "category_id", "branch"];
+const CLASS_FIELDS = ["name", "parallel", "class_number", "transfer_number", "status", "category_id", "branch", "institution_code"];
 
 router.post("/", (req, res) => {
   const body = req.body;
@@ -148,6 +148,10 @@ router.put("/:id", (req, res) => {
   const body = req.body;
   if (!checkNoConflict("classes", req.params.id, body.updated_at)) {
     return res.redirect(`/classes/${req.params.id}/edit?conflict=1`);
+  }
+  // סמל מוסד קבוע לכיתות א'-ח' - לא ניתן לשינוי דרך הטופס, בלי קשר למה שנשלח
+  if (body.name && body.name.startsWith("כיתה ")) {
+    body.institution_code = "512384";
   }
   const cols = CLASS_FIELDS.filter((c) => c in body);
   const setClause = [...cols.map((c) => `${c} = ?`), "updated_at = ?"].join(", ");
