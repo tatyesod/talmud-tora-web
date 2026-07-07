@@ -31,81 +31,92 @@
     </div>
   </div>
 
-  <% branches.forEach(branch => { %>
-    <h3 style="border-bottom:2px solid #2c5f7c; padding-bottom:4px; margin-top:20px; font-size:1.05em;"><%= branch || 'ללא סניף' %></h3>
-    <table class="staffing-table">
-      <thead><tr><th>כיתה</th><th>בוקר</th><th>אחה"צ</th><th>עוזר</th></tr></thead>
-      <tbody>
-        <% rows.filter(r => r.branch === branch).forEach(r => { %>
-          <tr>
-            <td class="cls-name"><%= r.class_full_name %></td>
+  <div class="staffing-columns">
+    <% branches.forEach(branch => { %>
+      <div class="staffing-col">
+        <h3><%= branch || 'ללא סניף' %></h3>
+        <table class="staffing-table">
+          <thead><tr><th>כיתה</th><th>בוקר</th><th>אחה"צ</th><th>עוזר</th></tr></thead>
+          <tbody>
+            <% rows.filter(r => r.branch === branch).forEach(r => { %>
+              <tr>
+                <td class="cls-name"><%= r.class_full_name %></td>
 
-            <td class="<%= r.morning ? 'filled' : 'gap' %>">
-              <form method="POST" action="/teachers/staffing-map/assign">
-                <input type="hidden" name="class_id" value="<%= r.class_id %>" />
-                <input type="hidden" name="role" value="בוקר" />
-                <select name="teacher_id" onchange="this.form.submit()">
-                  <option value="">— חסר —</option>
-                  <% allTeachers.forEach(t => { %>
-                    <option value="<%= t.id %>" <%= r.morning && r.morning.teacher_id === t.id ? 'selected' : '' %>><%= t.last_name %> <%= t.first_name %></option>
-                  <% }) %>
-                </select>
-              </form>
-            </td>
+                <td class="<%= r.morning ? 'filled' : 'gap' %>">
+                  <form method="POST" action="/teachers/staffing-map/assign">
+                    <input type="hidden" name="class_id" value="<%= r.class_id %>" />
+                    <input type="hidden" name="role" value="בוקר" />
+                    <select name="teacher_id" onchange="this.form.submit()">
+                      <option value="">— חסר —</option>
+                      <% allTeachers.forEach(t => { %>
+                        <option value="<%= t.id %>" <%= r.morning && r.morning.teacher_id === t.id ? 'selected' : '' %>><%= t.last_name %> <%= t.first_name %></option>
+                      <% }) %>
+                    </select>
+                  </form>
+                </td>
 
-            <% if (r.afternoonStatus === 'na') { %>
-              <td class="neutral">—</td>
-            <% } else if (r.afternoonStatus === 'grace' && !r.afternoon) { %>
-              <td class="grace">ישובץ עד חנוכה</td>
-            <% } else { %>
-              <td class="<%= r.afternoon ? 'filled' : 'gap' %>">
-                <form method="POST" action="/teachers/staffing-map/assign">
-                  <input type="hidden" name="class_id" value="<%= r.class_id %>" />
-                  <input type="hidden" name="role" value='אחה"צ' />
-                  <select name="teacher_id" onchange="this.form.submit()">
-                    <option value="">— חסר —</option>
-                    <% allTeachers.forEach(t => { %>
-                      <option value="<%= t.id %>" <%= r.afternoon && r.afternoon.teacher_id === t.id ? 'selected' : '' %>><%= t.last_name %> <%= t.first_name %></option>
-                    <% }) %>
-                  </select>
-                </form>
-              </td>
-            <% } %>
+                <% if (r.afternoonStatus === 'na') { %>
+                  <td class="neutral">—</td>
+                <% } else if (r.afternoonStatus === 'grace' && !r.afternoon) { %>
+                  <td class="grace">ישובץ עד חנוכה</td>
+                <% } else { %>
+                  <td class="<%= r.afternoon ? 'filled' : 'gap' %>">
+                    <form method="POST" action="/teachers/staffing-map/assign">
+                      <input type="hidden" name="class_id" value="<%= r.class_id %>" />
+                      <input type="hidden" name="role" value='אחה"צ' />
+                      <select name="teacher_id" onchange="this.form.submit()">
+                        <option value="">— חסר —</option>
+                        <% allTeachers.forEach(t => { %>
+                          <option value="<%= t.id %>" <%= r.afternoon && r.afternoon.teacher_id === t.id ? 'selected' : '' %>><%= t.last_name %> <%= t.first_name %></option>
+                        <% }) %>
+                      </select>
+                    </form>
+                  </td>
+                <% } %>
 
-            <% if (r.helperStatus === 'na') { %>
-              <td class="neutral">—</td>
-            <% } else { %>
-              <td class="<%= r.helper ? 'filled' : 'gap' %>">
-                <form method="POST" action="/teachers/staffing-map/assign">
-                  <input type="hidden" name="class_id" value="<%= r.class_id %>" />
-                  <input type="hidden" name="role" value="עוזר" />
-                  <select name="teacher_id" onchange="this.form.submit()">
-                    <option value="">— חסר —</option>
-                    <% allTeachers.forEach(t => { %>
-                      <option value="<%= t.id %>" <%= r.helper && r.helper.teacher_id === t.id ? 'selected' : '' %>><%= t.last_name %> <%= t.first_name %></option>
-                    <% }) %>
-                  </select>
-                </form>
-              </td>
-            <% } %>
-          </tr>
-        <% }) %>
-      </tbody>
-    </table>
-  <% }) %>
+                <% if (r.helperStatus === 'na') { %>
+                  <td class="neutral">—</td>
+                <% } else { %>
+                  <td class="<%= r.helper ? 'filled' : 'gap' %>">
+                    <form method="POST" action="/teachers/staffing-map/assign">
+                      <input type="hidden" name="class_id" value="<%= r.class_id %>" />
+                      <input type="hidden" name="role" value="עוזר" />
+                      <select name="teacher_id" onchange="this.form.submit()">
+                        <option value="">— חסר —</option>
+                        <% allTeachers.forEach(t => { %>
+                          <option value="<%= t.id %>" <%= r.helper && r.helper.teacher_id === t.id ? 'selected' : '' %>><%= t.last_name %> <%= t.first_name %></option>
+                        <% }) %>
+                      </select>
+                    </form>
+                  </td>
+                <% } %>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    <% }) %>
+  </div>
 </div>
 
 <style>
-  .staffing-table { width: auto; max-width: 620px; border-collapse: collapse; font-size: 0.82em; }
-  .staffing-table th, .staffing-table td { padding: 3px 6px; border: 1px solid #e0e0e0; text-align: center; }
+  .staffing-columns { display: flex; gap: 16px; align-items: flex-start; margin-top: 16px; }
+  .staffing-col { flex: 1 1 0; min-width: 0; }
+  .staffing-col h3 { border-bottom: 2px solid #2c5f7c; padding-bottom: 5px; margin: 0 0 8px; font-size: 1.05em; }
+  .staffing-table { width: 100%; border-collapse: collapse; font-size: 0.85em; }
+  .staffing-table th, .staffing-table td { padding: 4px 5px; border: 1px solid #e0e0e0; text-align: center; }
   .staffing-table .cls-name { text-align: right; font-weight: 600; white-space: nowrap; background: #f7f9fb; }
   .staffing-table td.filled { background: #eef6ee; }
   .staffing-table td.gap { background: #fdecea; }
   .staffing-table td.neutral { color: #aaa; background: #fafafa; }
   .staffing-table td.grace { background: #fff8e1; color: #8a6d00; font-size: 0.85em; white-space: nowrap; }
-  .staffing-table select { width: 105px; font-size: 0.95em; border: none; background: transparent; text-align: center; }
+  .staffing-table select { width: 100%; font-size: 0.95em; border: none; background: transparent; text-align: center; }
   .staffing-table td.gap select { color: #a94442; font-weight: 700; }
   .staffing-table td.filled select { color: #2d7a4f; }
+
+  @media (max-width: 1000px) {
+    .staffing-columns { flex-direction: column; }
+  }
 </style>
 
 <%- include('../partials/footer') %>
