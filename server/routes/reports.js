@@ -345,7 +345,7 @@ router.get("/health-declaration/view", (req, res) => {
   res.render("reports/health-declaration-print", { students });
 });
 
-// ============ ייצוא תלמידי "גנים" (מכינה א'-ב') לפי תבנית משרד החינוך ============
+// ============ רישום גני ילדים (מכינה א'-ב') לפי תבנית משרד החינוך ============
 router.get("/gan-export", async (req, res) => {
   const classes = db.prepare(`
     SELECT id, name, parallel, institution_code FROM classes
@@ -389,7 +389,7 @@ router.get("/gan-export", async (req, res) => {
     ws.getColumn(4).width = 12;
   });
 
-  res.setHeader("Content-Disposition", `attachment; filename="${encodeURIComponent("רשימת-גנים-מכינה-א-ב.xlsx")}"`);
+  res.setHeader("Content-Disposition", `attachment; filename="${encodeURIComponent("רישום-גני-ילדים.xlsx")}"`);
   res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
   await wb.xlsx.write(res); res.end();
 });
