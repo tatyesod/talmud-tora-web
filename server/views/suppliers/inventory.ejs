@@ -1,0 +1,108 @@
+<%- include('../partials/header', {title: 'מלאי - ' + supplier.name, wide: true}) %>
+
+<div class="card">
+  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+    <h1>📦 מלאי — <%= supplier.name %></h1>
+    <div class="actions">
+      <a href="/suppliers/<%= supplier.id %>" class="btn secondary">← כרטיס הספק</a>
+      <a href="/suppliers/<%= supplier.id %>/order?branch=<%= encodeURIComponent(branch) %>" class="btn">🛒 הפקת הזמנה</a>
+    </div>
+  </div>
+
+  <% if (saved) { %>
+    <div style="background:#e8f5e9; border:1px solid #a5d6a7; color:#2e7d32; border-radius:8px; padding:10px 16px; margin-bottom:14px;">✅ נשמר בהצלחה.</div>
+  <% } %>
+
+  <!-- ============ אנשי קשר ============ -->
+  <h3>אנשי קשר</h3>
+  <% if (contacts.length === 0) { %>
+    <p class="empty-state">אין עדיין אנשי קשר לספק זה</p>
+  <% } else { %>
+    <table style="margin-bottom:10px;">
+      <thead><tr><th>שם</th><th>טלפון</th><th></th></tr></thead>
+      <tbody>
+        <% contacts.forEach(c => { %>
+          <tr>
+            <td><%= c.contact_name %></td>
+            <td><% if (c.phone) { %><a href="tel:<%= c.phone %>">📞 <%= c.phone %></a><% } %></td>
+            <td>
+              <form method="POST" action="/suppliers/contacts/<%= c.id %>?_method=DELETE" onsubmit="return confirm('להסיר איש קשר זה?');" style="display:inline">
+                <button type="submit" class="btn small danger">הסר</button>
+              </form>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  <% } %>
+  <form method="POST" action="/suppliers/<%= supplier.id %>/contacts" style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:24px;">
+    <input type="text" name="contact_name" placeholder="שם איש קשר" required style="max-width:200px;" />
+    <input type="text" name="phone" placeholder="טלפון" style="max-width:160px;" />
+    <button type="submit" class="btn small secondary">+ הוסף איש קשר</button>
+  </form>
+
+  <!-- ============ מלאי לפי סניף ============ -->
+  <h3>מלאי לפי סניף</h3>
+  <form method="GET" action="/suppliers/<%= supplier.id %>/inventory" style="margin-bottom:14px;">
+    <label><strong>סניף:</strong></label>
+    <select name="branch" onchange="this.form.submit()">
+      <% branches.forEach(b => { %>
+        <option value="<%= b %>" <%= b === branch ? 'selected' : '' %>><%= b %></option>
+      <% }) %>
+    </select>
+  </form>
+
+  <p style="color:var(--muted); font-size:0.9em;">
+    לכל מוצר: מלאו <strong>מלאי נוכחי</strong> בפועל בסניף, ו<strong>כמות רצויה</strong> שתמיד רוצים להחזיק. במסך "הפקת הזמנה"
+    יחושב אוטומטית כמה להזמין (כמות רצויה פחות מלאי נוכחי).
+  </p>
+
+  <% if (items.length === 0) { %>
+    <p class="empty-state">אין עדיין מוצרים לספק זה</p>
+  <% } else { %>
+    <form method="POST" action="/suppliers/<%= supplier.id %>/inventory/save">
+      <input type="hidden" name="branch" value="<%= branch %>" />
+      <div class="table-scroll-wrap">
+        <table>
+          <thead><tr><th>מוצר</th><th>קטגוריה</th><th>מחיר</th><th>מלאי נוכחי</th><th>כמות רצויה</th><th></th></tr></thead>
+          <tbody>
+            <% items.forEach(it => { %>
+              <tr>
+                <td><%= it.item_name %></td>
+                <td><%= it.category || '' %></td>
+                <td><%= it.price %> ₪</td>
+                <td>
+                  <input type="hidden" name="item_id" value="<%= it.id %>" />
+                  <input type="number" name="current_stock" value="<%= it.current_stock %>" min="0" style="width:90px;" />
+                </td>
+                <td><input type="number" name="desired_stock" value="<%= it.desired_stock %>" min="0" style="width:90px;" /></td>
+                <td>
+                  <button type="submit" class="btn small secondary" formaction="/suppliers/items/<%= it.id %>?_method=DELETE" formnovalidate onclick="return confirm('להסיר מוצר זה?');">הסר</button>
+                </td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+      <div class="actions" style="margin-top:14px;">
+        <button type="submit" class="btn">💾 שמירת מלאי לסניף <%= branch %></button>
+      </div>
+    </form>
+  <% } %>
+
+  <h3 style="margin-top:24px;">הוספת מוצר חדש</h3>
+  <form method="POST" action="/suppliers/<%= supplier.id %>/items?branch=<%= encodeURIComponent(branch) %>" class="form-grid">
+    <div class="form-group"><label>שם המוצר</label><input type="text" name="item_name" required /></div>
+    <div class="form-group">
+      <label>קטגוריה</label>
+      <input type="text" name="category" list="category-list" placeholder="בחר או הקלד קטגוריה חדשה" />
+      <datalist id="category-list">
+        <% categories.forEach(c => { %><option value="<%= c %>"><% }) %>
+      </datalist>
+    </div>
+    <div class="form-group"><label>מחיר (₪)</label><input type="number" step="0.01" name="price" /></div>
+    <div class="form-group full"><button type="submit" class="btn small">+ הוסף מוצר</button></div>
+  </form>
+</div>
+
+<%- include('../partials/footer') %>

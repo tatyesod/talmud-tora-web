@@ -50,7 +50,8 @@
             <td><span class="badge <%= s.status !== 'פעיל' ? 'archive' : '' %>"><%= s.status || '' %></span></td>
             <td>
               <a href="/suppliers/<%= s.id %>" class="btn small secondary">צפייה</a>
-              <a href="/suppliers/orders/new?supplier_id=<%= s.id %>" class="btn small secondary">📦 הזמנה</a>
+              <a href="/suppliers/<%= s.id %>/inventory" class="btn small secondary">📦 מלאי</a>
+              <a href="/suppliers/orders/new?supplier_id=<%= s.id %>" class="btn small secondary">🔔 בקשת הזמנה (לאישור)</a>
             </td>
           </tr>
         <% }) %>

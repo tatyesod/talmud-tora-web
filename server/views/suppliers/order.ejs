@@ -1,0 +1,71 @@
+<%- include('../partials/header', {title: 'הזמנה - ' + supplier.name, wide: true}) %>
+
+<div class="card">
+  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+    <h1>🛒 הזמנה — <%= supplier.name %></h1>
+    <div class="actions">
+      <a href="/suppliers/<%= supplier.id %>/inventory?branch=<%= encodeURIComponent(branch) %>" class="btn secondary">📦 עדכון מלאי</a>
+      <a href="/suppliers/<%= supplier.id %>" class="btn secondary">← כרטיס הספק</a>
+    </div>
+  </div>
+
+  <form method="GET" action="/suppliers/<%= supplier.id %>/order" style="margin-bottom:14px;">
+    <label><strong>סניף:</strong></label>
+    <select name="branch" onchange="this.form.submit()">
+      <% branches.forEach(b => { %>
+        <option value="<%= b %>" <%= b === branch ? 'selected' : '' %>><%= b %></option>
+      <% }) %>
+    </select>
+  </form>
+
+  <div style="display:flex; gap:14px; flex-wrap:wrap; margin-bottom:18px;">
+    <div style="background:linear-gradient(135deg,#eef3f8,#f5f3ee); border:1px solid #b8cfe0; border-radius:10px; padding:12px 22px; min-width:150px;">
+      <div style="font-size:1.4em; font-weight:800; color:#2c5f7c;"><%= grandQty %></div>
+      <div style="color:var(--muted); font-size:0.85em;">סה"כ יחידות להזמנה</div>
+    </div>
+    <div style="background:linear-gradient(135deg,#eef6ee,#f5f3ee); border:1px solid #bcd9bc; border-radius:10px; padding:12px 22px; min-width:150px;">
+      <div style="font-size:1.4em; font-weight:800; color:#2d7a4f;"><%= grandTotal.toLocaleString() %> ₪</div>
+      <div style="color:var(--muted); font-size:0.85em;">עלות משוערת</div>
+    </div>
+  </div>
+
+  <% if (rows.length === 0) { %>
+    <p class="empty-state">אין מוצרים שצריך להזמין כרגע מספק זה בסניף <%= branch %>.</p>
+  <% } else { %>
+    <div class="table-scroll-wrap">
+      <table>
+        <thead><tr><th>מוצר</th><th>קטגוריה</th><th>מלאי נוכחי</th><th>כמות רצויה</th><th>כמות להזמנה</th><th>מחיר</th><th>סה"כ</th></tr></thead>
+        <tbody>
+          <% rows.forEach(r => { %>
+            <tr>
+              <td><%= r.item_name %></td>
+              <td><%= r.category || '' %></td>
+              <td><%= r.current_stock %></td>
+              <td><%= r.desired_stock %></td>
+              <td><strong><%= r.to_order %></strong></td>
+              <td><%= r.price %> ₪</td>
+              <td><%= r.line_total.toLocaleString() %> ₪</td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 style="margin-top:22px;">הפקת מסמך הזמנה</h3>
+    <form method="GET" action="/suppliers/<%= supplier.id %>/order/print" target="_blank" style="display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap;">
+      <input type="hidden" name="branch" value="<%= branch %>" />
+      <div class="form-group" style="margin:0;">
+        <label>איש קשר אצל הספק (אופציונלי)</label>
+        <select name="contact_id">
+          <option value="">— ללא —</option>
+          <% contacts.forEach(c => { %>
+            <option value="<%= c.id %>"><%= c.contact_name %><%= c.phone ? ' - '+c.phone : '' %></option>
+          <% }) %>
+        </select>
+      </div>
+      <button type="submit" class="btn">📄 הפקת מסמך הזמנה להדפסה</button>
+    </form>
+  <% } %>
+</div>
+
+<%- include('../partials/footer') %>

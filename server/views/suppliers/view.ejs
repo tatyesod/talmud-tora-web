@@ -5,6 +5,7 @@
     <h1><%= supplier.name %> <span class="badge <%= supplier.status !== 'פעיל' ? 'archive' : '' %>"><%= supplier.status || '' %></span></h1>
     <div class="actions">
       <a href="/suppliers/<%= supplier.id %>/edit" class="btn">עריכה</a>
+      <a href="/suppliers/<%= supplier.id %>/inventory" class="btn secondary">📦 מלאי</a>
       <form method="POST" action="/suppliers/<%= supplier.id %>?_method=DELETE" onsubmit="return confirm('האם למחוק את הספק?');" style="display:inline">
         <button type="submit" class="btn danger">מחיקה</button>
       </form>

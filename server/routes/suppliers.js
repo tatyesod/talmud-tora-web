@@ -217,4 +217,122 @@ router.delete("/:id", (req, res) => {
   res.redirect("/suppliers");
 });
 
+// ============ מלאי ספק - פריטים, אנשי קשר, מלאי לפי סניף ============
+router.get("/:id/inventory", (req, res) => {
+  const supplier = db.prepare("SELECT * FROM suppliers WHERE id = ?").get(req.params.id);
+  if (!supplier) return res.status(404).render("404");
+
+  const branches = db.prepare("SELECT DISTINCT branch FROM classes WHERE branch IS NOT NULL AND branch<>'' ORDER BY branch").all().map(r => r.branch);
+  const branch = req.query.branch || branches[0] || "";
+
+  const items = db.prepare(`
+    SELECT si.*, COALESCE(sii.current_stock,0) AS current_stock, COALESCE(sii.desired_stock,0) AS desired_stock
+    FROM supplier_items si
+    LEFT JOIN supplier_item_inventory sii ON sii.supplier_item_id = si.id AND sii.branch = ?
+    WHERE si.supplier_id = ?
+    ORDER BY si.category, si.item_name
+  `).all(branch, req.params.id);
+
+  const categories = db.prepare("SELECT DISTINCT category FROM supplier_items WHERE category IS NOT NULL AND category<>'' ORDER BY category").all().map(r => r.category);
+  const contacts = db.prepare("SELECT * FROM supplier_contacts WHERE supplier_id = ? ORDER BY contact_name").all(req.params.id);
+
+  res.render("suppliers/inventory", { supplier, branches, branch, items, categories, contacts, saved: req.query.saved === "1" });
+});
+
+router.post("/:id/items", (req, res) => {
+  const { item_name, category, price } = req.body;
+  db.prepare("INSERT INTO supplier_items (supplier_id, item_name, category, price, created_at) VALUES (?,?,?,?,?)").run(
+    req.params.id, item_name, category || null, parseFloat(price) || 0, new Date().toISOString()
+  );
+  res.redirect(`/suppliers/${req.params.id}/inventory?branch=${encodeURIComponent(req.query.branch || req.body.branch || "")}`);
+});
+
+router.delete("/items/:itemId", (req, res) => {
+  const item = db.prepare("SELECT supplier_id FROM supplier_items WHERE id = ?").get(req.params.itemId);
+  db.prepare("DELETE FROM supplier_item_inventory WHERE supplier_item_id = ?").run(req.params.itemId);
+  db.prepare("DELETE FROM supplier_items WHERE id = ?").run(req.params.itemId);
+  res.redirect(`/suppliers/${item ? item.supplier_id : ""}/inventory`);
+});
+
+router.post("/:id/inventory/save", (req, res) => {
+  const { branch } = req.body;
+  let ids = req.body.item_id || [];
+  let currentStocks = req.body.current_stock || [];
+  let desiredStocks = req.body.desired_stock || [];
+  if (!Array.isArray(ids)) ids = [ids];
+  if (!Array.isArray(currentStocks)) currentStocks = [currentStocks];
+  if (!Array.isArray(desiredStocks)) desiredStocks = [desiredStocks];
+
+  const upsert = db.prepare(`
+    INSERT INTO supplier_item_inventory (supplier_item_id, branch, current_stock, desired_stock, updated_at)
+    VALUES (?,?,?,?,?)
+    ON CONFLICT(supplier_item_id, branch) DO UPDATE SET
+      current_stock = excluded.current_stock, desired_stock = excluded.desired_stock, updated_at = excluded.updated_at
+  `);
+  const now = new Date().toISOString();
+  ids.forEach((id, i) => {
+    upsert.run(id, branch, parseInt(currentStocks[i], 10) || 0, parseInt(desiredStocks[i], 10) || 0, now);
+  });
+
+  res.redirect(`/suppliers/${req.params.id}/inventory?branch=${encodeURIComponent(branch)}&saved=1`);
+});
+
+router.post("/:id/contacts", (req, res) => {
+  const { contact_name, phone } = req.body;
+  db.prepare("INSERT INTO supplier_contacts (supplier_id, contact_name, phone, created_at) VALUES (?,?,?,?)").run(
+    req.params.id, contact_name, phone || null, new Date().toISOString()
+  );
+  res.redirect(`/suppliers/${req.params.id}/inventory`);
+});
+
+router.delete("/contacts/:contactId", (req, res) => {
+  const contact = db.prepare("SELECT supplier_id FROM supplier_contacts WHERE id = ?").get(req.params.contactId);
+  db.prepare("DELETE FROM supplier_contacts WHERE id = ?").run(req.params.contactId);
+  res.redirect(`/suppliers/${contact ? contact.supplier_id : ""}/inventory`);
+});
+
+// ============ הזמנה מסודרת מהספק - לפי סניף, כולל בחירת איש קשר ============
+router.get("/:id/order", (req, res) => {
+  const supplier = db.prepare("SELECT * FROM suppliers WHERE id = ?").get(req.params.id);
+  if (!supplier) return res.status(404).render("404");
+
+  const branches = db.prepare("SELECT DISTINCT branch FROM classes WHERE branch IS NOT NULL AND branch<>'' ORDER BY branch").all().map(r => r.branch);
+  const branch = req.query.branch || branches[0] || "";
+
+  const rows = db.prepare(`
+    SELECT si.item_name, si.category, si.price,
+           COALESCE(sii.current_stock,0) AS current_stock, COALESCE(sii.desired_stock,0) AS desired_stock
+    FROM supplier_items si
+    LEFT JOIN supplier_item_inventory sii ON sii.supplier_item_id = si.id AND sii.branch = ?
+    WHERE si.supplier_id = ? AND COALESCE(sii.desired_stock,0) > COALESCE(sii.current_stock,0)
+    ORDER BY si.category, si.item_name
+  `).all(branch, req.params.id).map(r => ({ ...r, to_order: r.desired_stock - r.current_stock, line_total: (r.desired_stock - r.current_stock) * r.price }));
+
+  const contacts = db.prepare("SELECT * FROM supplier_contacts WHERE supplier_id = ? ORDER BY contact_name").all(req.params.id);
+  const grandTotal = rows.reduce((s, r) => s + r.line_total, 0);
+  const grandQty = rows.reduce((s, r) => s + r.to_order, 0);
+
+  res.render("suppliers/order", { supplier, branches, branch, rows, contacts, grandTotal, grandQty });
+});
+
+router.get("/:id/order/print", (req, res) => {
+  const supplier = db.prepare("SELECT * FROM suppliers WHERE id = ?").get(req.params.id);
+  if (!supplier) return res.status(404).render("404");
+  const { branch, contact_id } = req.query;
+
+  const rows = db.prepare(`
+    SELECT si.item_name, si.category,
+           COALESCE(sii.current_stock,0) AS current_stock, COALESCE(sii.desired_stock,0) AS desired_stock
+    FROM supplier_items si
+    LEFT JOIN supplier_item_inventory sii ON sii.supplier_item_id = si.id AND sii.branch = ?
+    WHERE si.supplier_id = ? AND COALESCE(sii.desired_stock,0) > COALESCE(sii.current_stock,0)
+    ORDER BY si.category, si.item_name
+  `).all(branch || "", req.params.id).map(r => ({ ...r, to_order: r.desired_stock - r.current_stock }));
+
+  const contact = contact_id ? db.prepare("SELECT * FROM supplier_contacts WHERE id = ?").get(contact_id) : null;
+  const today = new Date().toLocaleDateString("he-IL");
+
+  res.render("suppliers/order-print", { supplier, branch, rows, contact, today });
+});
+
 module.exports = router;

@@ -190,6 +190,36 @@ const migrations = [
   "UPDATE classes SET institution_code = '512384' WHERE name LIKE 'כיתה %'",
   "ALTER TABLE supplier_orders ADD COLUMN dismissed_by_creator INTEGER DEFAULT 0",
   "ALTER TABLE teacher_attendance ADD COLUMN day_part TEXT DEFAULT 'יום שלם'",
+  `CREATE TABLE IF NOT EXISTS supplier_contacts (
+    id INTEGER PRIMARY KEY,
+    supplier_id INTEGER NOT NULL,
+    contact_name TEXT NOT NULL,
+    phone TEXT,
+    created_at TEXT
+  )`,
+  `CREATE TABLE IF NOT EXISTS supplier_items (
+    id INTEGER PRIMARY KEY,
+    supplier_id INTEGER NOT NULL,
+    item_name TEXT NOT NULL,
+    category TEXT,
+    price REAL DEFAULT 0,
+    created_at TEXT
+  )`,
+  `CREATE TABLE IF NOT EXISTS supplier_item_inventory (
+    id INTEGER PRIMARY KEY,
+    supplier_item_id INTEGER NOT NULL,
+    branch TEXT NOT NULL,
+    current_stock INTEGER DEFAULT 0,
+    desired_stock INTEGER DEFAULT 0,
+    updated_at TEXT,
+    UNIQUE(supplier_item_id, branch)
+  )`,
+  // מייבא את איש הקשר הקיים כבר בכרטיס הספק כאיש קשר ראשון בטבלת אנשי הקשר החדשה,
+  // כדי לא לאבד מידע שכבר הוזן, ולתמוך מכאן והלאה בכמה אנשי קשר לספק
+  `INSERT INTO supplier_contacts (supplier_id, contact_name, phone, created_at)
+   SELECT id, contact_person, phone, datetime('now') FROM suppliers
+   WHERE contact_person IS NOT NULL AND contact_person <> ''
+     AND id NOT IN (SELECT DISTINCT supplier_id FROM supplier_contacts)`,
 ];
 
 for (const sql of migrations) {
