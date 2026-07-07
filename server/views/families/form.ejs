@@ -9,6 +9,10 @@
   <% } %>
   <form method="POST" action="/families/<%= family.id %>?_method=PUT">
     <input type="hidden" name="updated_at" value="<%= family.updated_at || '' %>" />
+    <div class="actions" style="margin-bottom:16px;">
+      <button type="submit" class="btn">שמירה</button>
+      <a href="/families/<%= family.id %>" class="btn secondary">ביטול</a>
+    </div>
     <fieldset>
       <legend>מגזר</legend>
       <div class="form-grid">
