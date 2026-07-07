@@ -15,7 +15,7 @@
   </div>
   <div class="letter-bsd">בס"ד</div>
 
-  <div style="font-family:'Times New Roman', serif; line-height:1.4; direction:rtl;">
+  <div id="letter-body" style="font-family:'Times New Roman', serif; line-height:1.4; direction:rtl;">
     <p style="font-weight:700; font-size:1.1em; margin:0 0 8px;"><%= recipientLine %></p>
     <p style="margin:0 0 10px;">שלו' וברכה,</p>
 
@@ -60,10 +60,19 @@
 .letter-header .school-info { text-align: left; font-size: 0.8em; color: #555; line-height: 1.35; }
 .letter-bsd { text-align: left; font-size: 0.8em; color: #888; margin-bottom: 10px; }
 
+@page {
+  size: A4;
+  margin: 12mm 14mm;
+}
+
 @media print {
   .no-print, header, nav, .header, .top-nav { display: none !important; }
   body { background: #fff !important; }
-  .card { padding: 40px 56px !important; }
+  .card { padding: 6px 10px !important; max-width: 100% !important; }
+  .letter-header img { height: 55px !important; }
+  .letter-header .school-info { font-size: 0.75em !important; }
+  #letter-body { line-height: 1.25 !important; font-size: 0.92em !important; }
+  #letter-body p { margin: 0 0 4px !important; }
 }
 </style>
 

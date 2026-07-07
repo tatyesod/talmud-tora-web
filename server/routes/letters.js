@@ -202,8 +202,8 @@ async function buildLetterDocx(recipientLine, paragraphs) {
     new Paragraph({
       alignment: AlignmentType.RIGHT,
       bidirectional: true,
-      spacing: { after: 300 },
-      children: [new TextRun({ text: recipientLine, bold: true, size: 26, rightToLeft: true })],
+      spacing: { after: 180 },
+      children: [new TextRun({ text: recipientLine, bold: true, size: 24, rightToLeft: true })],
     }),
   ];
   paragraphs.forEach((runs, idx) => {
@@ -211,8 +211,8 @@ async function buildLetterDocx(recipientLine, paragraphs) {
     docParagraphs.push(new Paragraph({
       alignment: isClosingLine ? AlignmentType.CENTER : AlignmentType.RIGHT,
       bidirectional: true,
-      spacing: { after: 200 },
-      children: runs.map((r) => new TextRun({ text: r.text, bold: r.bold, rightToLeft: true, size: 22 })),
+      spacing: { after: 120 },
+      children: runs.map((r) => new TextRun({ text: r.text, bold: r.bold, rightToLeft: true, size: 20 })),
     }));
   });
 
@@ -220,7 +220,7 @@ async function buildLetterDocx(recipientLine, paragraphs) {
     sections: [{
       properties: {
         bidirectional: true,
-        page: { margin: { top: 2160, bottom: 2160, left: 2160, right: 2160 } },
+        page: { margin: { top: 1000, bottom: 1000, left: 1000, right: 1000 } },
       },
       children: docParagraphs,
     }],
@@ -284,16 +284,16 @@ router.get("/generate-all/docx", async (req, res) => {
     allDocParagraphs.push(new Paragraph({
       alignment: AlignmentType.RIGHT,
       bidirectional: true,
-      spacing: { after: 300 },
-      children: [new TextRun({ text: recipientLine, bold: true, size: 26, rightToLeft: true })],
+      spacing: { after: 180 },
+      children: [new TextRun({ text: recipientLine, bold: true, size: 24, rightToLeft: true })],
     }));
     paragraphs.forEach((runs, pIdx) => {
       const isClosingLine = pIdx >= paragraphs.length - 2;
       allDocParagraphs.push(new Paragraph({
         alignment: isClosingLine ? AlignmentType.CENTER : AlignmentType.RIGHT,
         bidirectional: true,
-        spacing: { after: 200 },
-        children: runs.map((r) => new TextRun({ text: r.text, bold: r.bold, rightToLeft: true, size: 22 })),
+        spacing: { after: 120 },
+        children: runs.map((r) => new TextRun({ text: r.text, bold: r.bold, rightToLeft: true, size: 20 })),
       }));
     });
   });
@@ -302,7 +302,7 @@ router.get("/generate-all/docx", async (req, res) => {
     sections: [{
       properties: {
         bidirectional: true,
-        page: { margin: { top: 2160, bottom: 2160, left: 2160, right: 2160 } },
+        page: { margin: { top: 1000, bottom: 1000, left: 1000, right: 1000 } },
       },
       children: allDocParagraphs,
     }],
