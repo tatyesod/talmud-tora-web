@@ -354,23 +354,43 @@ router.get("/gan-export", async (req, res) => {
   `).all();
 
   const wb = new ExcelJS.Workbook();
+  const ws = wb.addWorksheet("רישום גני ילדים", { views: [{ rightToLeft: true }] });
+  ws.getColumn(1).width = 26;
+  ws.getColumn(2).width = 14;
+  ws.getColumn(3).width = 14;
+  ws.getColumn(4).width = 12;
 
   classes.forEach((cls) => {
-    const sheetName = `${cls.name}${cls.parallel ? " " + cls.parallel : ""}`.slice(0, 31);
-    const ws = wb.addWorksheet(sheetName, { views: [{ rightToLeft: true }] });
-
-    ws.getCell("A1").value = "תלמוד תורה יסוד העולם";
-    ws.getCell("A1").font = { bold: true, size: 13 };
-
-    const headerRow = ws.getRow(2);
-    headerRow.values = ["שם פרטי ומשפחה", "מ.ז", "ת.ל לועזי", "סמל גן"];
-    headerRow.font = { bold: true };
-
-    const students = db.prepare(`
+    let students = db.prepare(`
       SELECT first_name, last_name, id_number, birth_date_civil
       FROM students WHERE class_id = ? AND status = 'פעיל'
       ORDER BY last_name, first_name
-    `).all(cls.id);
+    `).all(cls.id).map((s) => {
+      const d = hd.serialToDateObject(s.birth_date_civil);
+      return { ...s, birthYear: d ? d.getFullYear() : null };
+    });
+
+    // במכינה ב' לפעמים יש 3 שנתונים בכיתה אחת (למשל 2020,2021,2022) - יש להשאיר
+    // תמיד רק את 2 השנתונים הצעירים (הקטנים), ולהוציא את השנתון הגדול/מבוגר מבין השלושה
+    if (cls.name === "מכינה ב'") {
+      const years = [...new Set(students.map((s) => s.birthYear).filter((y) => y != null))];
+      if (years.length > 2) {
+        const oldestYear = Math.min(...years);
+        students = students.filter((s) => s.birthYear !== oldestYear);
+      }
+    }
+
+    const sectionTitleRow = ws.addRow(["תלמוד תורה יסוד העולם"]);
+    sectionTitleRow.getCell(1).font = { bold: true, size: 13 };
+
+    const classNameRow = ws.addRow([`${cls.name}${cls.parallel ? " " + cls.parallel : ""}`]);
+    classNameRow.getCell(1).font = { bold: true, color: { argb: "FF2C5F7C" } };
+
+    const headerRow = ws.addRow(["שם פרטי ומשפחה", "מ.ז", "ת.ל לועזי", "סמל גן"]);
+    headerRow.font = { bold: true };
+    headerRow.eachCell((cell) => {
+      cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFEFF4F8" } };
+    });
 
     students.forEach((s) => {
       const row = ws.addRow([
@@ -383,18 +403,13 @@ router.get("/gan-export", async (req, res) => {
       row.alignment = { horizontal: "right" };
     });
 
-    ws.getColumn(1).width = 26;
-    ws.getColumn(2).width = 14;
-    ws.getColumn(3).width = 14;
-    ws.getColumn(4).width = 12;
+    ws.addRow([]); // שורת רווח בין כיתה לכיתה
   });
 
   res.setHeader("Content-Disposition", `attachment; filename="${encodeURIComponent("רישום-גני-ילדים.xlsx")}"`);
   res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
   await wb.xlsx.write(res); res.end();
 });
-
-module.exports = router;
 
 // ============ יצוא PDF — תצוגת הדפסה לדוחות קיימים ============
 router.get("/print-view", (req, res) => {
@@ -437,3 +452,5 @@ router.get("/print-view", (req, res) => {
 
   res.render("reports/print-view", { title, headers, rows });
 });
+
+module.exports = router;
