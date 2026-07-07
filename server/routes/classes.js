@@ -344,7 +344,8 @@ router.get("/:id", (req, res) => {
       WHERE s.class_id = ?
       ORDER BY s.last_name, s.first_name
     `)
-    .all(req.params.id);
+    .all(req.params.id)
+    .map((s) => ({ ...s, birth_date_hebrew_str: hd.serialToHebrewString(s.birth_date_civil) }));
 
   const teachers = db
     .prepare(`

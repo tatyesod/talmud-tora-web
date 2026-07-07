@@ -60,6 +60,7 @@
         <th>שם משפחה</th>
         <th>שם כינוי</th>
         <th>כתובת</th>
+        <th>תאריך לידה עברי</th>
         <th>מגזר</th>
         <th>טלפון ראשי</th>
         <th>טלפון אב</th>
@@ -74,7 +75,8 @@
           <tr>
             <td><%= s.last_name || '' %></td>
             <td><%= s.nickname || s.first_name || '' %></td>
-            <td><%= address.trim().replace(/^,\s*/, '') || '' %></td>
+            <td class="nowrap-cell"><%= address.trim().replace(/^,\s*/, '') || '' %></td>
+            <td class="nowrap-cell"><%= s.birth_date_hebrew_str || '' %></td>
             <td><%= s.sector || '' %></td>
             <td><%- phoneLink(s.home_phone) %></td>
             <td><%- phoneLink(s.father_mobile) %></td>
