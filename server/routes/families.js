@@ -31,6 +31,12 @@ router.get("/", (req, res) => {
       params.push(status);
     }
     sql += ")";
+    // "לא פעיל" ו"ארכיון" צריכים להיות בלעדיים ל"פעיל" - משפחה שיש לה ילד פעיל
+    // אחד (גם אם יש לה גם ילדים לא-פעילים/בארכיון) תסווג כ"פעיל" בלבד, כדי שהסטטוסים
+    // לא יחפפו זה עם זה (זו הייתה הבעיה: משפחה עם ילד פעיל וילד לא-פעיל הופיעה בשניהם)
+    if (status && status !== "פעיל") {
+      sql += " AND NOT EXISTS (SELECT 1 FROM students s2 WHERE s2.family_id = f.id AND s2.status = 'פעיל')";
+    }
   }
   sql += " " + buildOrderBy(
     req,
@@ -97,14 +103,18 @@ router.get("/:id", (req, res) => {
   if (statusFilter) {
     orderedIdsSql += " AND EXISTS (SELECT 1 FROM students s WHERE s.family_id = f.id AND s.status = ?)";
     orderedIdsParams.push(statusFilter);
+    if (statusFilter !== "פעיל") {
+      orderedIdsSql += " AND NOT EXISTS (SELECT 1 FROM students s2 WHERE s2.family_id = f.id AND s2.status = 'פעיל')";
+    }
   }
   orderedIdsSql += " ORDER BY f.last_name, f.id";
   const orderedIds = db.prepare(orderedIdsSql).all(...orderedIdsParams).map((r) => r.id);
   const curIdx = orderedIds.findIndex((id) => String(id) === String(req.params.id));
+  const currentMatchesFilter = !statusFilter || curIdx !== -1;
   const prevFamilyId = curIdx > 0 ? orderedIds[curIdx - 1] : null;
   const nextFamilyId = curIdx >= 0 && curIdx < orderedIds.length - 1 ? orderedIds[curIdx + 1] : null;
 
-  res.render("families/view", { family, students, contacts, tuition, eldest, prevFamilyId, nextFamilyId, statusFilter });
+  res.render("families/view", { family, students, contacts, tuition, eldest, prevFamilyId, nextFamilyId, statusFilter, currentMatchesFilter });
 });
 
 router.get("/:id/edit", (req, res) => {

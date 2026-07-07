@@ -27,8 +27,10 @@
       <% if (nextFamilyId) { %><a href="/families/<%= nextFamilyId %><%= statusFilter ? '?status='+encodeURIComponent(statusFilter) : '' %>" class="btn small secondary">הבאה ←</a><% } %>
     </div>
   </div>
-  <% if (statusFilter) { %>
+  <% if (statusFilter && currentMatchesFilter) { %>
     <p style="color:var(--muted); font-size:0.85em; margin-top:6px;">🔎 הניווט בין המשפחות מסונן כרגע לפי סטטוס "<%= statusFilter %>" בלבד.</p>
+  <% } else if (statusFilter && !currentMatchesFilter) { %>
+    <p style="color:#a94442; font-size:0.85em; margin-top:6px;">⚠️ המשפחה הזו לא תואמת את סינון "<%= statusFilter %>" שבחרת, ולכן אין לגביה הקודמת/הבאה בסינון הזה.</p>
   <% } %>
 </div>
 
