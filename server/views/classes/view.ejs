@@ -58,15 +58,16 @@
     <div class="table-scroll-wrap">
     <table>
       <thead><tr>
-        <th>שם משפחה</th>
-        <th>שם כינוי</th>
-        <th>כתובת</th>
-        <th>תאריך לידה עברי</th>
-        <th>מגזר</th>
-        <th>טלפון ראשי</th>
-        <th>טלפון אב</th>
-        <th>טלפון אם</th>
-        <th>סטטוס</th>
+        <th><a href="<%= sortUrl('last_name') %>">שם משפחה<%= sortIndicator('last_name') %></a></th>
+        <th><a href="<%= sortUrl('nickname') %>">שם כינוי<%= sortIndicator('nickname') %></a></th>
+        <th><a href="<%= sortUrl('address') %>">כתובת<%= sortIndicator('address') %></a></th>
+        <th><a href="<%= sortUrl('birth_date') %>">תאריך לידה עברי<%= sortIndicator('birth_date') %></a></th>
+        <th><a href="<%= sortUrl('birth_date') %>">תאריך לידה לועזי<%= sortIndicator('birth_date') %></a></th>
+        <th><a href="<%= sortUrl('sector') %>">מגזר<%= sortIndicator('sector') %></a></th>
+        <th><a href="<%= sortUrl('home_phone') %>">טלפון ראשי<%= sortIndicator('home_phone') %></a></th>
+        <th><a href="<%= sortUrl('father_mobile') %>">טלפון אב<%= sortIndicator('father_mobile') %></a></th>
+        <th><a href="<%= sortUrl('mother_mobile') %>">טלפון אם<%= sortIndicator('mother_mobile') %></a></th>
+        <th><a href="<%= sortUrl('status') %>">סטטוס<%= sortIndicator('status') %></a></th>
         <th></th>
       </tr></thead>
       <tbody>
@@ -78,6 +79,7 @@
             <td><%= s.nickname || s.first_name || '' %></td>
             <td class="nowrap-cell"><%= address.trim().replace(/^,\s*/, '') || '' %></td>
             <td class="nowrap-cell"><%= s.birth_date_hebrew_str || '' %></td>
+            <td class="nowrap-cell"><%= s.birth_date_civil_str || '' %></td>
             <td><%= s.sector || '' %></td>
             <td><%- phoneLink(s.home_phone) %></td>
             <td><%- phoneLink(s.father_mobile) %></td>

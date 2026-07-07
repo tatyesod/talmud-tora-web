@@ -346,10 +346,28 @@ router.get("/:id", (req, res) => {
       FROM students s
       LEFT JOIN families f ON s.family_id = f.id
       WHERE s.class_id = ?
-      ORDER BY s.last_name, s.first_name
+      ${buildOrderBy(
+        req,
+        {
+          last_name: "s.last_name, s.first_name",
+          nickname: "s.nickname, s.last_name",
+          address: "f.street, f.house_number",
+          sector: "f.sector",
+          birth_date: "s.birth_date_civil",
+          home_phone: "f.home_phone",
+          father_mobile: "f.father_mobile",
+          mother_mobile: "f.mother_mobile",
+          status: "s.status",
+        },
+        "ORDER BY s.last_name, s.first_name"
+      )}
     `)
     .all(req.params.id)
-    .map((s) => ({ ...s, birth_date_hebrew_str: hd.serialToHebrewString(s.birth_date_civil) }));
+    .map((s) => ({
+      ...s,
+      birth_date_hebrew_str: hd.serialToHebrewString(s.birth_date_civil),
+      birth_date_civil_str: hd.serialToGregorianString(s.birth_date_civil),
+    }));
 
   const teachers = db
     .prepare(`
