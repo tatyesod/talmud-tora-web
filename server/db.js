@@ -198,6 +198,67 @@ for (const sql of migrations) {
   }
 }
 
+// פיצול חד-פעמי של פריטי מחירון כלליים (חומש, קרא כצבי, בואו חשבון, כתיב וכתב, סודות הלשון)
+// לפריטים ספציפיים לפי חלק/כרך - כדי שאפשר יהיה לנהל מלאי נפרד לכל חלק
+try {
+  const alreadySplit = db.prepare("SELECT value FROM settings WHERE key = 'book_prices_split_volumes_v1'").get();
+  if (!alreadySplit) {
+    const GENERIC_ITEMS_TO_REMOVE = ["חומש (כרוך) הדר", "קרא כצבי", "בואו חשבון", "כתיב וכתב", "סודות הלשון"];
+    const delStmt = db.prepare("DELETE FROM book_prices WHERE item_name = ?");
+    GENERIC_ITEMS_TO_REMOVE.forEach((name) => delStmt.run(name));
+
+    const NEW_ITEMS = [
+      // חומש - 5 חלקים, לפי השם המדויק שכבר בשימוש בקטלוג בפועל
+      ['חומש "בראשית" (כרוך)', "הדר", 28],
+      ['חומש "שמות" (כרוך)', "הדר", 28],
+      ['חומש "ויקרא" (כרוך)', "הדר", 28],
+      ['חומש "במדבר" (כרוך)', "הדר", 28],
+      ['חומש "דברים" (כרוך)', "הדר", 28],
+      // בואו חשבון - 7 חלקים
+      ["בואו חשבון חלק 1", "", 32],
+      ["בואו חשבון חלק 2", "", 32],
+      ["בואו חשבון חלק 3", "", 32],
+      ["בואו חשבון חלק 4", "", 32],
+      ["בואו חשבון חלק 5", "", 32],
+      ["בואו חשבון חלק 6", "", 32],
+      ["בואו חשבון חלק 7", "", 32],
+      // כתיב וכתב - חלקים 2-7 (כפי שכבר בשימוש בקטלוג)
+      ["כתיב וכתב 2", "", 17],
+      ["כתיב וכתב 3", "", 17],
+      ["כתיב וכתב 4", "", 17],
+      ["כתיב וכתב 5", "", 17],
+      ["כתיב וכתב 6", "", 17],
+      ["כתיב וכתב 7", "", 17],
+      // סודות הלשון - חלקים ד'-ז' (כפי שכבר בשימוש בקטלוג)
+      ["סודות הלשון ד'", "הלפרין", 33],
+      ["סודות הלשון ה'", "הלפרין", 33],
+      ["סודות הלשון ו'", "הלפרין", 33],
+      ["סודות הלשון ז'", "הלפרין", 33],
+      // קרא כצבי - 6 חלקים
+      ["קרא כצבי חלק 1", "", 44],
+      ["קרא כצבי חלק 2", "", 44],
+      ["קרא כצבי חלק 3", "", 44],
+      ["קרא כצבי חלק 4", "", 44],
+      ["קרא כצבי חלק 5", "", 44],
+      ["קרא כצבי חלק 6 (2 חלקים)", "", 44],
+    ];
+    const insertBookPrices = db.prepare("INSERT OR IGNORE INTO book_prices (item_name, publisher, price, updated_at) VALUES (?,?,?,?)");
+    const insertPriceList = db.prepare("INSERT OR IGNORE INTO price_list (item_name, publisher, price, updated_at) VALUES (?,?,?,?)");
+    const now = new Date().toISOString();
+    NEW_ITEMS.forEach(([name, publisher, price]) => {
+      insertBookPrices.run(name, publisher, price, now);
+      insertPriceList.run(name, publisher, price, now);
+    });
+
+    const delPriceList = db.prepare("DELETE FROM price_list WHERE item_name = ?");
+    GENERIC_ITEMS_TO_REMOVE.forEach((name) => delPriceList.run(name));
+
+    db.prepare("INSERT INTO settings (key, value) VALUES ('book_prices_split_volumes_v1', '1')").run();
+  }
+} catch (e) {
+  // לא קריטי - אפשר להוסיף/לערוך פריטים ידנית דרך עמוד "מחירון"
+}
+
 // זריעה/עדכון חד-פעמי של תבניות פתיחה למכתבי שיבוץ, מבוססות על 28 מכתבים אמיתיים
 // (דגל ב-settings מבטיח שזה קורה פעם אחת בלבד, ולא דורס תבניות שהמנהל כתב/ערך בעצמו אחר כך)
 try {
