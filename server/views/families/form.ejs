@@ -1,7 +1,18 @@
 <%- include('../partials/header', {title: 'עריכת משפחה'}) %>
 
 <div class="card">
-  <h1>עריכת משפחת <%= family.last_name %></h1>
+  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+    <h1>עריכת משפחת <%= family.last_name %></h1>
+    <div style="display:flex; gap:8px;">
+      <% if (prevFamilyId) { %><a href="/families/<%= prevFamilyId %>/edit" class="btn small secondary">→ הקודמת</a><% } %>
+      <% if (nextFamilyId) { %><a href="/families/<%= nextFamilyId %>/edit" class="btn small secondary">הבאה ←</a><% } %>
+    </div>
+  </div>
+  <% if (typeof saved !== 'undefined' && saved) { %>
+    <div style="background:#e8f5e9; border:1px solid #a5d6a7; color:#2e7d32; border-radius:8px; padding:10px 16px; margin-bottom:14px;">
+      ✅ נשמר בהצלחה.
+    </div>
+  <% } %>
   <% if (typeof conflict !== 'undefined' && conflict) { %>
     <div style="background:#fdecea; border:1px solid #f5c6cb; color:#a94442; border-radius:8px; padding:10px 16px; margin-bottom:14px;">
       ⚠️ מישהו אחר עדכן את כרטיס המשפחה הזה בינתיים. הנתונים המוצגים כאן הם המעודכנים ביותר — יש לבדוק ולבצע שוב את השינוי לפני שמירה חוזרת.
@@ -11,7 +22,7 @@
     <input type="hidden" name="updated_at" value="<%= family.updated_at || '' %>" />
     <div class="actions" style="margin-bottom:16px;">
       <button type="submit" class="btn">שמירה</button>
-      <a href="/families/<%= family.id %>" class="btn secondary">ביטול</a>
+      <a href="/families/<%= family.id %>" class="btn secondary">👁️ חזרה לפרטי משפחה</a>
     </div>
     <fieldset>
       <legend>מגזר</legend>
@@ -63,7 +74,7 @@
 
     <div class="actions">
       <button type="submit" class="btn">שמירה</button>
-      <a href="/families/<%= family.id %>" class="btn secondary">ביטול</a>
+      <a href="/families/<%= family.id %>" class="btn secondary">👁️ חזרה לפרטי משפחה</a>
     </div>
   </form>
 </div>

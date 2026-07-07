@@ -97,7 +97,16 @@ router.get("/:id", (req, res) => {
 router.get("/:id/edit", (req, res) => {
   const family = db.prepare("SELECT * FROM families WHERE id = ?").get(req.params.id);
   if (!family) return res.status(404).render("404");
-  res.render("families/form", { family, conflict: req.query.conflict === "1" });
+
+  const orderedIds = db.prepare("SELECT id FROM families ORDER BY last_name, id").all().map((r) => r.id);
+  const curIdx = orderedIds.findIndex((id) => String(id) === String(req.params.id));
+  const prevFamilyId = curIdx > 0 ? orderedIds[curIdx - 1] : null;
+  const nextFamilyId = curIdx >= 0 && curIdx < orderedIds.length - 1 ? orderedIds[curIdx + 1] : null;
+
+  res.render("families/form", {
+    family, conflict: req.query.conflict === "1", saved: req.query.saved === "1",
+    prevFamilyId, nextFamilyId,
+  });
 });
 
 const FAMILY_FIELDS = [
@@ -118,7 +127,7 @@ router.put("/:id", (req, res) => {
   const values = [...cols.map((c) => (body[c] === "" ? null : body[c])), new Date().toISOString()];
   values.push(req.params.id);
   db.prepare(`UPDATE families SET ${setClause} WHERE id = ?`).run(...values);
-  res.redirect(`/families/${req.params.id}`);
+  res.redirect(`/families/${req.params.id}/edit?saved=1`);
 });
 
 router.delete("/:id", (req, res) => {
