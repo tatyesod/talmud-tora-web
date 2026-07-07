@@ -181,6 +181,7 @@ router.get("/staffing-map", (req, res) => {
     FROM teacher_classes tc JOIN teachers t ON tc.teacher_id = t.id
     WHERE tc.class_id = ?
   `);
+  const allTeachers = db.prepare("SELECT id, first_name, last_name FROM teachers WHERE status='פעיל' ORDER BY last_name, first_name").all();
 
   const STAGE_ORDER = [
     "עדיין לא נכנסו", "מכינה א'", "מכינה ב'",
@@ -192,29 +193,62 @@ router.get("/staffing-map", (req, res) => {
     return idx === -1 ? 999 : idx;
   }
 
-  let missingMorning = 0, missingAfternoon = 0;
+  // מכינה ב' מתחילה לימודי אחה"צ רק אחרי חנוכה - לפני כן זה לא נחשב "חוסר" אמיתי.
+  // בודקים לפי חודש לועזי (חנוכה תמיד בנובמבר/דצמבר) כדי לא להסתבך עם חישוב מדויק מדי.
+  const currentMonth = new Date().getMonth() + 1; // 1-12
+  const isBeforeChanukah = currentMonth >= 9 && currentMonth <= 11; // ספטמבר-נובמבר = לפני חנוכה
+
+  let missingMorning = 0, missingAfternoon = 0, missingHelper = 0;
   const rows = classes.map((c) => {
     const assignments = assignmentsStmt.all(c.id);
     const find = (role) => assignments.find((a) => a.role === role);
     const morning = find("בוקר");
     const afternoon = find('אחה"צ');
     const helper = find("עוזר");
+    const isMechinaA = c.name && c.name.startsWith("מכינה א'");
+    const isMechinaB = c.name && c.name.startsWith("מכינה ב'");
+    const isMechina = isMechinaA || isMechinaB;
+
+    // אחה"צ: לא רלוונטי כלל למכינה א'; למכינה ב' רלוונטי רק אחרי חנוכה; לכל שאר הכיתות - חובה.
+    let afternoonStatus = "required";
+    if (isMechinaA) afternoonStatus = "na";
+    else if (isMechinaB) afternoonStatus = isBeforeChanukah ? "grace" : "required";
+
+    // עוזר: רלוונטי רק למכינה א'/ב'; בכל שאר הכיתות - לא רלוונטי כלל.
+    const helperStatus = isMechina ? "required" : "na";
+
     if (!morning) missingMorning++;
-    if (!afternoon) missingAfternoon++;
+    if (afternoonStatus === "required" && !afternoon) missingAfternoon++;
+    if (helperStatus === "required" && !helper) missingHelper++;
+
     return {
       class_id: c.id,
       class_name: c.name,
       parallel: c.parallel,
       class_full_name: `${c.name}${c.parallel ? " " + c.parallel : ""}`,
       branch: c.branch || "",
-      morning, afternoon, helper,
+      morning, afternoon, helper, afternoonStatus, helperStatus,
       rank: classRank(c.name),
     };
   }).sort((a, b) => (a.branch || "").localeCompare(b.branch || "", "he") || a.rank - b.rank || (a.parallel || "").localeCompare(b.parallel || "", "he"));
 
   const branches = [...new Set(rows.map((r) => r.branch))];
 
-  res.render("teachers/staffing-map", { rows, branches, missingMorning, missingAfternoon, totalClasses: classes.length });
+  res.render("teachers/staffing-map", {
+    rows, branches, allTeachers, missingMorning, missingAfternoon, missingHelper,
+    totalClasses: classes.length, saved: req.query.saved === "1",
+  });
+});
+
+// שיבוץ/החלפה/ביטול מלמד ישירות מהמפה - מעדכן את אותה טבלת teacher_classes
+// שמשמשת גם את עמוד עריכת הכיתה וגם את כרטיס המלמד, כך שהכל מסונכרן אוטומטית.
+router.post("/staffing-map/assign", (req, res) => {
+  const { class_id, role, teacher_id } = req.body;
+  db.prepare("DELETE FROM teacher_classes WHERE class_id = ? AND role = ?").run(class_id, role);
+  if (teacher_id) {
+    db.prepare("INSERT INTO teacher_classes (class_id, teacher_id, role) VALUES (?,?,?)").run(class_id, teacher_id, role);
+  }
+  res.redirect("/teachers/staffing-map?saved=1");
 });
 
 router.get("/:id", (req, res) => {
