@@ -42,6 +42,8 @@
         <div class="form-group"><label>קופת חולים</label><input type="text" name="health_fund" value="<%= student.health_fund || '' %>" /></div>
         <div class="form-group"><label>אלרגיות</label><input type="text" name="allergies" value="<%= student.allergies || '' %>" /></div>
         <div class="form-group"><label>תרופות קבועות</label><input type="text" name="medications" value="<%= student.medications || '' %>" /></div>
+        <div class="form-group"><label>ארץ הלידה</label><input type="text" name="birth_country" value="<%= student.birth_country || 'ישראל' %>" /></div>
+        <div class="form-group"><label>שנת עלייה (אם לא נולד בארץ)</label><input type="text" name="immigration_year" value="<%= student.immigration_year || '' %>" /></div>
         <div class="form-group full"><label>הערות</label><textarea name="notes"><%= student.notes || '' %></textarea></div>
       </div>
     </fieldset>

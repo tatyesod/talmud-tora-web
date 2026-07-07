@@ -174,6 +174,8 @@ const migrations = [
     created_at TEXT,
     updated_at TEXT
   )`,
+  "ALTER TABLE students ADD COLUMN birth_country TEXT DEFAULT 'ישראל'",
+  "ALTER TABLE students ADD COLUMN immigration_year TEXT",
 ];
 
 for (const sql of migrations) {

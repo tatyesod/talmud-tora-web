@@ -339,6 +339,7 @@ router.get("/health-declaration/view", (req, res) => {
     hasHealthIssue: !!(
       (s.allergies && s.allergies !== "לא ידוע") || (s.medications && s.medications !== "לא ידוע")
     ),
+    birth_country: s.birth_country || "ישראל",
   }));
 
   res.render("reports/health-declaration-print", { students });

@@ -147,7 +147,7 @@ router.get("/students/new", (req, res) => {
 
 const STUDENT_FIELDS = [
   "last_name", "first_name", "nickname", "class_id", "id_number", "notes",
-  "allergies", "medications", "walks_alone", "health_fund", "family_id", "status",
+  "allergies", "medications", "walks_alone", "health_fund", "birth_country", "immigration_year", "family_id", "status",
   "cohort_id", "birth_date_civil", "entry_date", "update_date", "exit_date",
   "registration_date", "admission_date",
 ];
