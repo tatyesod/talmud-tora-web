@@ -239,6 +239,7 @@ async function buildLetterDocx(recipientLine, paragraphs) {
   const doc = new Document({
     sections: [{
       properties: {
+        bidirectional: true,
         page: { margin: { top: 1000, bottom: 1000, left: 1000, right: 1000 } },
       },
       children: docParagraphs,
@@ -321,6 +322,7 @@ router.get("/generate-all/docx", async (req, res) => {
   const doc = new Document({
     sections: [{
       properties: {
+        bidirectional: true,
         page: { margin: { top: 1000, bottom: 1000, left: 1000, right: 1000 } },
       },
       children: allDocParagraphs,
