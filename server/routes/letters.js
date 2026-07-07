@@ -221,6 +221,7 @@ async function buildLetterDocx(recipientLine, paragraphs) {
     buildLetterheadParagraph(),
     new Paragraph({
       alignment: AlignmentType.RIGHT,
+      bidirectional: true,
       spacing: { after: 180 },
       children: [new TextRun({ text: recipientLine, bold: true, size: 24, rightToLeft: true })],
     }),
@@ -229,6 +230,7 @@ async function buildLetterDocx(recipientLine, paragraphs) {
     const isClosingLine = idx >= paragraphs.length - 2;
     docParagraphs.push(new Paragraph({
       alignment: isClosingLine ? AlignmentType.CENTER : AlignmentType.RIGHT,
+      bidirectional: true,
       spacing: { after: 120 },
       children: runs.map((r) => new TextRun({ text: r.text, bold: r.bold, rightToLeft: true, size: 20 })),
     }));
@@ -301,6 +303,7 @@ router.get("/generate-all/docx", async (req, res) => {
     allDocParagraphs.push(buildLetterheadParagraph());
     allDocParagraphs.push(new Paragraph({
       alignment: AlignmentType.RIGHT,
+      bidirectional: true,
       spacing: { after: 180 },
       children: [new TextRun({ text: recipientLine, bold: true, size: 24, rightToLeft: true })],
     }));
@@ -308,6 +311,7 @@ router.get("/generate-all/docx", async (req, res) => {
       const isClosingLine = pIdx >= paragraphs.length - 2;
       allDocParagraphs.push(new Paragraph({
         alignment: isClosingLine ? AlignmentType.CENTER : AlignmentType.RIGHT,
+        bidirectional: true,
         spacing: { after: 120 },
         children: runs.map((r) => new TextRun({ text: r.text, bold: r.bold, rightToLeft: true, size: 20 })),
       }));
