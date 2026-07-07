@@ -168,6 +168,55 @@ router.get("/monthly-reports", (req, res) => {
   });
 });
 
+// ============ מצבת מלמדים - מפת שיבוץ לכל הכיתות ============
+router.get("/staffing-map", (req, res) => {
+  const classes = db.prepare(`
+    SELECT id, name, parallel, branch FROM classes
+    WHERE status = 'פעיל'
+    ORDER BY branch, name, parallel
+  `).all();
+
+  const assignmentsStmt = db.prepare(`
+    SELECT tc.role, t.id AS teacher_id, t.first_name, t.last_name
+    FROM teacher_classes tc JOIN teachers t ON tc.teacher_id = t.id
+    WHERE tc.class_id = ?
+  `);
+
+  const STAGE_ORDER = [
+    "עדיין לא נכנסו", "מכינה א'", "מכינה ב'",
+    "כיתה א'", "כיתה ב'", "כיתה ג'", "כיתה ד'",
+    "כיתה ה'", "כיתה ו'", "כיתה ז'", "כיתה ח'",
+  ];
+  function classRank(name) {
+    const idx = STAGE_ORDER.findIndex((s) => name && name.startsWith(s));
+    return idx === -1 ? 999 : idx;
+  }
+
+  let missingMorning = 0, missingAfternoon = 0;
+  const rows = classes.map((c) => {
+    const assignments = assignmentsStmt.all(c.id);
+    const find = (role) => assignments.find((a) => a.role === role);
+    const morning = find("בוקר");
+    const afternoon = find('אחה"צ');
+    const helper = find("עוזר");
+    if (!morning) missingMorning++;
+    if (!afternoon) missingAfternoon++;
+    return {
+      class_id: c.id,
+      class_name: c.name,
+      parallel: c.parallel,
+      class_full_name: `${c.name}${c.parallel ? " " + c.parallel : ""}`,
+      branch: c.branch || "",
+      morning, afternoon, helper,
+      rank: classRank(c.name),
+    };
+  }).sort((a, b) => (a.branch || "").localeCompare(b.branch || "", "he") || a.rank - b.rank || (a.parallel || "").localeCompare(b.parallel || "", "he"));
+
+  const branches = [...new Set(rows.map((r) => r.branch))];
+
+  res.render("teachers/staffing-map", { rows, branches, missingMorning, missingAfternoon, totalClasses: classes.length });
+});
+
 router.get("/:id", (req, res) => {
   const teacher = withDates(
     db.prepare(`

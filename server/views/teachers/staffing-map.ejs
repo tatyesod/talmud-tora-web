@@ -1,0 +1,70 @@
+<%- include('../partials/header', {title: 'מצבת מלמדים', wide: true}) %>
+
+<div class="card">
+  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+    <h1>👥 מצבת מלמדים</h1>
+    <a href="/teachers" class="btn secondary">← חזרה למלמדים</a>
+  </div>
+
+  <p style="color:var(--muted); font-size:0.9em;">
+    מפה חיה של שיבוץ המלמדים בכל הכיתות, לפי סניף. מתעדכן אוטומטית לפי שיבוץ המלמדים בפועל בכרטיסי הכיתות/מלמדים —
+    כל שינוי שם מיד יופיע כאן. תאים ריקים ב<strong>בוקר</strong> או <strong>אחה"צ</strong> מסומנים כחוסר (⚠️) שצריך לגייס עבורו;
+    "עוזר" ריק לא בהכרח חוסר, כי לא בכל כיתה יש צורך בעוזר.
+  </p>
+
+  <div style="display:flex; gap:14px; flex-wrap:wrap; margin:18px 0;">
+    <div style="background:<%= missingMorning > 0 ? 'linear-gradient(135deg,#fdecea,#f5f3ee)' : 'linear-gradient(135deg,#eef6ee,#f5f3ee)' %>; border:1px solid <%= missingMorning > 0 ? '#f0b8b0' : '#bcd9bc' %>; border-radius:10px; padding:12px 22px; min-width:170px;">
+      <div style="font-size:1.5em; font-weight:800; color:<%= missingMorning > 0 ? '#a94442' : '#2d7a4f' %>;"><%= missingMorning %></div>
+      <div style="color:var(--muted); font-size:0.85em;">כיתות ללא מלמד בוקר</div>
+    </div>
+    <div style="background:<%= missingAfternoon > 0 ? 'linear-gradient(135deg,#fdecea,#f5f3ee)' : 'linear-gradient(135deg,#eef6ee,#f5f3ee)' %>; border:1px solid <%= missingAfternoon > 0 ? '#f0b8b0' : '#bcd9bc' %>; border-radius:10px; padding:12px 22px; min-width:170px;">
+      <div style="font-size:1.5em; font-weight:800; color:<%= missingAfternoon > 0 ? '#a94442' : '#2d7a4f' %>;"><%= missingAfternoon %></div>
+      <div style="color:var(--muted); font-size:0.85em;">כיתות ללא מלמד אחה"צ</div>
+    </div>
+    <div style="background:linear-gradient(135deg,#eef3f8,#f5f3ee); border:1px solid #b8cfe0; border-radius:10px; padding:12px 22px; min-width:170px;">
+      <div style="font-size:1.5em; font-weight:800; color:#2c5f7c;"><%= totalClasses %></div>
+      <div style="color:var(--muted); font-size:0.85em;">סה"כ כיתות</div>
+    </div>
+  </div>
+
+  <% branches.forEach(branch => { %>
+    <h3 style="border-bottom:2px solid #2c5f7c; padding-bottom:6px; margin-top:26px;"><%= branch || 'ללא סניף' %></h3>
+    <div class="table-scroll-wrap">
+    <table class="staffing-table">
+      <thead><tr><th>כיתה</th><th>בוקר</th><th>אחה"צ</th><th>עוזר</th></tr></thead>
+      <tbody>
+        <% rows.filter(r => r.branch === branch).forEach(r => { %>
+          <tr>
+            <td><strong><%= r.class_full_name %></strong></td>
+            <td class="<%= r.morning ? 'filled' : 'gap' %>">
+              <% if (r.morning) { %>
+                <a href="/teachers/<%= r.morning.teacher_id %>"><%= r.morning.first_name %> <%= r.morning.last_name %></a>
+              <% } else { %>⚠️ חסר<% } %>
+            </td>
+            <td class="<%= r.afternoon ? 'filled' : 'gap' %>">
+              <% if (r.afternoon) { %>
+                <a href="/teachers/<%= r.afternoon.teacher_id %>"><%= r.afternoon.first_name %> <%= r.afternoon.last_name %></a>
+              <% } else { %>⚠️ חסר<% } %>
+            </td>
+            <td class="<%= r.helper ? 'filled' : 'neutral' %>">
+              <% if (r.helper) { %>
+                <a href="/teachers/<%= r.helper.teacher_id %>"><%= r.helper.first_name %> <%= r.helper.last_name %></a>
+              <% } else { %>—<% } %>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+    </div>
+  <% }) %>
+</div>
+
+<style>
+  .staffing-table td.filled { background: #eef6ee; color: #2d7a4f; }
+  .staffing-table td.gap { background: #fdecea; color: #a94442; font-weight: 700; }
+  .staffing-table td.neutral { color: var(--muted); }
+  .staffing-table td a { color: inherit; text-decoration: none; }
+  .staffing-table td a:hover { text-decoration: underline; }
+</style>
+
+<%- include('../partials/footer') %>
