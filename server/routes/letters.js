@@ -16,13 +16,13 @@ function setSetting(key, value) {
 
 // ============ עמוד ראשי - ניהול מכתבי שיבוץ ============
 router.get("/", (req, res) => {
-  // כל הכיתות הפעילות שצריכות מיפוי לשנה הבאה - חוץ מכיתה ח' (בוגרים, לא ממשיכים במוסד)
+  // כל הכיתות הפעילות - כולל כיתה ח' (רק כדי לעדכן את המיקום שלה) וכולל עדיין לא נכנסו
   const classes = db.prepare(`
     SELECT c.*, cat.price, lt.name AS template_name
     FROM classes c
     LEFT JOIN categories cat ON c.category_id = cat.id
     LEFT JOIN letter_templates lt ON c.letter_template_id = lt.id
-    WHERE c.status = 'פעיל' AND c.name NOT LIKE 'כיתה ח%'
+    WHERE c.status = 'פעיל'
     ORDER BY c.name, c.parallel
   `).all();
   // כל הכיתות (כולל ח') - לבחירת "כיתת יעד לשנה הבאה" (כי גם כיתה ח' יכולה להיות יעד של כיתה ז')
@@ -180,9 +180,10 @@ async function buildLetterDocx(recipientLine, paragraphs) {
       children: [new TextRun({ text: recipientLine, bold: true, size: 26, rightToLeft: true })],
     }),
   ];
-  paragraphs.forEach((runs) => {
+  paragraphs.forEach((runs, idx) => {
+    const isClosingLine = idx >= paragraphs.length - 2;
     docParagraphs.push(new Paragraph({
-      alignment: AlignmentType.RIGHT,
+      alignment: isClosingLine ? AlignmentType.CENTER : AlignmentType.RIGHT,
       bidirectional: true,
       spacing: { after: 200 },
       children: runs.map((r) => new TextRun({ text: r.text, bold: r.bold, rightToLeft: true, size: 22 })),
@@ -190,7 +191,13 @@ async function buildLetterDocx(recipientLine, paragraphs) {
   });
 
   const doc = new Document({
-    sections: [{ properties: { bidirectional: true }, children: docParagraphs }],
+    sections: [{
+      properties: {
+        bidirectional: true,
+        page: { margin: { top: 2160, bottom: 2160, left: 2160, right: 2160 } },
+      },
+      children: docParagraphs,
+    }],
   });
   return Packer.toBuffer(doc);
 }
@@ -254,9 +261,10 @@ router.get("/generate-all/docx", async (req, res) => {
       spacing: { after: 300 },
       children: [new TextRun({ text: recipientLine, bold: true, size: 26, rightToLeft: true })],
     }));
-    paragraphs.forEach((runs) => {
+    paragraphs.forEach((runs, pIdx) => {
+      const isClosingLine = pIdx >= paragraphs.length - 2;
       allDocParagraphs.push(new Paragraph({
-        alignment: AlignmentType.RIGHT,
+        alignment: isClosingLine ? AlignmentType.CENTER : AlignmentType.RIGHT,
         bidirectional: true,
         spacing: { after: 200 },
         children: runs.map((r) => new TextRun({ text: r.text, bold: r.bold, rightToLeft: true, size: 22 })),
@@ -264,7 +272,15 @@ router.get("/generate-all/docx", async (req, res) => {
     });
   });
 
-  const doc = new Document({ sections: [{ properties: { bidirectional: true }, children: allDocParagraphs }] });
+  const doc = new Document({
+    sections: [{
+      properties: {
+        bidirectional: true,
+        page: { margin: { top: 2160, bottom: 2160, left: 2160, right: 2160 } },
+      },
+      children: allDocParagraphs,
+    }],
+  });
   const buffer = await Packer.toBuffer(doc);
 
   res.setHeader("Content-Disposition", `attachment; filename="${encodeURIComponent(`מכתבי-שיבוץ-כל-הכיתות-${settings.letter_hebrew_year || ""}.docx`)}"`);

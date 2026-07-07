@@ -11,10 +11,10 @@
 
   <p style="color:var(--muted); font-size:0.9em;">
     כל שנה: מלאו כאן את התאריך העברי ואת שנה"ל הקרובה (פעם אחת, לא לכל כיתה בנפרד), ודאו ששיבוץ המלמדים לכיתות עדכני
-    (בעמוד עריכת כיתה). למטה מוצגות כל הכיתות <strong>הנוכחיות</strong> (כולל "עדיין לא נכנסו"; כיתה ח' לא מופיעה כי
-    בוגריה לא ממשיכים במוסד). לכל כיתה נוכחית בוחרים <strong>תבנית מכתב</strong> (הנוסח, לפי השכבה שאליה עולים) ובנפרד
-    <strong>כיתת יעד לשנה הבאה</strong> (מכיוון שלא תמיד א'1 עולה דווקא ל-ב'1). לחיצה אחת על "הפקת מכתבים לכל הכיתות"
-    מייצרת קובץ Word אחד עם עמוד נפרד לכל כיתה, ממולא אוטומטית לפי הנתונים בפועל של כיתת היעד.
+    (בעמוד עריכת כיתה). למטה מוצגות כל הכיתות <strong>הנוכחיות</strong> (כולל "עדיין לא נכנסו" וכיתה ח'). לכיתה ח' אפשר
+    לעדכן רק מיקום (אין לה תבנית/יעד כי בוגריה עוזבים את המוסד). לשאר הכיתות בוחרים <strong>תבנית מכתב</strong> (הנוסח,
+    לפי השכבה שאליה עולים) ובנפרד <strong>כיתת יעד לשנה הבאה</strong> (מכיוון שלא תמיד א'1 עולה דווקא ל-ב'1). לחיצה אחת
+    על "הפקת מכתבים לכל הכיתות" מייצרת קובץ Word אחד עם עמוד נפרד לכל כיתה, ממולא אוטומטית לפי הנתונים בפועל של כיתת היעד.
   </p>
 
   <% if (saved) { %>
@@ -40,32 +40,45 @@
     <table>
       <thead><tr><th>כיתה נוכחית</th><th>סניף</th><th>תיאור מיקום/חדר (של כיתה זו)</th><th>תבנית מכתב</th><th>כיתת יעד לשנה הבאה</th><th></th></tr></thead>
       <tbody>
-        <% classes.forEach(c => { %>
+        <% classes.forEach(c => {
+          const isGraduating = c.name && c.name.startsWith("כיתה ח'");
+          const hasNoRoom = c.name && c.name.startsWith("עדיין לא נכנסו");
+        %>
           <tr>
             <td class="nowrap-cell"><strong><%= c.name %><%= c.parallel ? ' '+c.parallel : '' %></strong></td>
             <td><%= c.branch || '' %></td>
             <td colspan="3">
-              <form method="POST" action="/letters/class/<%= c.id %>/fields" style="display:flex; gap:8px; flex-wrap:wrap;">
-                <input type="text" name="room_description" value="<%= c.room_description || '' %>"
-                       placeholder="לדוגמה: בקומה 3 הכיתה האמצעית" style="flex:1; min-width:200px;" />
-                <select name="letter_template_id" style="min-width:150px;">
-                  <option value="">— תבנית —</option>
-                  <% templates.forEach(t => { %>
-                    <option value="<%= t.id %>" <%= String(c.letter_template_id) === String(t.id) ? 'selected' : '' %>><%= t.name %></option>
-                  <% }) %>
-                </select>
-                <select name="next_year_class_id" style="min-width:170px;">
-                  <option value="">— כיתת יעד —</option>
-                  <% allClasses.forEach(t => { %>
-                    <option value="<%= t.id %>" <%= String(c.next_year_class_id) === String(t.id) ? 'selected' : '' %>><%= t.full_name %></option>
-                  <% }) %>
-                </select>
+              <form method="POST" action="/letters/class/<%= c.id %>/fields" style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+                <% if (!hasNoRoom) { %>
+                  <input type="text" name="room_description" value="<%= c.room_description || '' %>"
+                         placeholder="לדוגמה: בקומה 3 הכיתה האמצעית" style="flex:1; min-width:200px;" />
+                <% } else { %>
+                  <span style="color:var(--muted); font-size:0.85em;">— אין מיקום פיזי לכיתה זו —</span>
+                <% } %>
+                <% if (isGraduating) { %>
+                  <span style="color:var(--muted); font-size:0.85em;">כיתת בוגרים - לא ממשיכה למקום נוסף, אין צורך בתבנית/יעד</span>
+                <% } else { %>
+                  <select name="letter_template_id" style="min-width:150px;">
+                    <option value="">— תבנית —</option>
+                    <% templates.forEach(t => { %>
+                      <option value="<%= t.id %>" <%= String(c.letter_template_id) === String(t.id) ? 'selected' : '' %>><%= t.name %></option>
+                    <% }) %>
+                  </select>
+                  <select name="next_year_class_id" style="min-width:170px;">
+                    <option value="">— כיתת יעד —</option>
+                    <% allClasses.forEach(t => { %>
+                      <option value="<%= t.id %>" <%= String(c.next_year_class_id) === String(t.id) ? 'selected' : '' %>><%= t.full_name %></option>
+                    <% }) %>
+                  </select>
+                <% } %>
                 <button type="submit" class="btn small secondary">שמירה</button>
               </form>
             </td>
             <td>
-              <a href="/letters/class/<%= c.id %>/preview" target="_blank" class="btn small secondary">👁️ תצוגה</a>
-              <a href="/letters/class/<%= c.id %>/docx" class="btn small secondary">📄 Word</a>
+              <% if (!isGraduating) { %>
+                <a href="/letters/class/<%= c.id %>/preview" target="_blank" class="btn small secondary">👁️ תצוגה</a>
+                <a href="/letters/class/<%= c.id %>/docx" class="btn small secondary">📄 Word</a>
+              <% } %>
             </td>
           </tr>
         <% }) %>

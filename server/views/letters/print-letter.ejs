@@ -1,6 +1,6 @@
 <%- include('../partials/header', {title: title}) %>
 
-<div class="card" style="max-width:800px; margin:0 auto;">
+<div class="card" style="max-width:800px; margin:0 auto; padding:40px 56px;">
   <div class="actions no-print" style="justify-content:flex-end; margin-bottom:14px;">
     <button onclick="window.print()" class="btn secondary">🖨️ הדפסה</button>
   </div>
@@ -39,8 +39,8 @@
       <p style="color:var(--muted); font-size:0.85em;">⚠️ מכתב זה במצב ניסיוני: הנוסח הכללי שמופיע למטה נלקח מתבנית הילד הבכור בלבד.</p>
     <% } %>
 
-    <% paragraphs.forEach(runs => { %>
-      <p style="margin:0 0 6px;">
+    <% paragraphs.forEach((runs, idx) => { %>
+      <p style="margin:0 0 6px; <%= idx >= paragraphs.length - 2 ? 'text-align:center;' : '' %>">
         <% runs.forEach(r => { %><% if (r.bold) { %><strong><%= r.text %></strong><% } else { %><%= r.text %><% } %><% }) %>
       </p>
     <% }) %>
@@ -56,13 +56,14 @@
   padding-bottom: 8px;
   margin-bottom: 6px;
 }
-.letter-header img { height: 60px; }
+.letter-header img { height: 100px; }
 .letter-header .school-info { text-align: left; font-size: 0.8em; color: #555; line-height: 1.35; }
 .letter-bsd { text-align: left; font-size: 0.8em; color: #888; margin-bottom: 10px; }
 
 @media print {
   .no-print, header, nav, .header, .top-nav { display: none !important; }
   body { background: #fff !important; }
+  .card { padding: 40px 56px !important; }
 }
 </style>
 
