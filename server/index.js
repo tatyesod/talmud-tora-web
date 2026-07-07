@@ -255,7 +255,19 @@ app.get("/", (req, res) => {
       birth_date_civil: s.birth_date_civil,
       href: `/students/${s.id}`,
     }));
-  const studentBirthdays = upcomingBirthdays(studentBirthdayRows).map((b) => ({ ...b, daysLabel: daysAwayLabel(b.daysAway) }));
+  const STUDENT_CLASS_ORDER = [
+    "עדיין לא נכנסו", "מכינה א'", "מכינה ב'",
+    "כיתה א'", "כיתה ב'", "כיתה ג'", "כיתה ד'",
+    "כיתה ה'", "כיתה ו'", "כיתה ז'", "כיתה ח'",
+  ];
+  function classRank(className) {
+    if (!className) return 999;
+    const idx = STUDENT_CLASS_ORDER.findIndex((s) => className.startsWith(s));
+    return idx === -1 ? 998 : idx;
+  }
+  const studentBirthdays = upcomingBirthdays(studentBirthdayRows)
+    .map((b) => ({ ...b, daysLabel: daysAwayLabel(b.daysAway) }))
+    .sort((a, b) => classRank(a.subLabel) - classRank(b.subLabel) || a.subLabel.localeCompare(b.subLabel, "he") || a.name.localeCompare(b.name, "he"));
 
   const teacherBirthdayRows = db
     .prepare(`SELECT id, first_name, last_name, birth_date_civil FROM teachers WHERE status = 'פעיל' AND birth_date_civil IS NOT NULL`)
@@ -281,10 +293,31 @@ app.get("/", (req, res) => {
     `).all();
   }
 
+  // הזמנות שהמשתמש הנוכחי שלח, שאושרו (וטרם נשלחו לספק) או נדחו (וטרם "נראו") - צריך תשומת לב שלו
+  let myOrderUpdates = [];
+  if (req.currentUser) {
+    myOrderUpdates = db.prepare(`
+      SELECT o.*, s.name AS supplier_name, s.email AS supplier_email, a.display_name AS approver_name
+      FROM supplier_orders o
+      JOIN suppliers s ON o.supplier_id = s.id
+      LEFT JOIN users a ON o.approved_by = a.id
+      WHERE o.created_by = ? AND o.dismissed_by_creator = 0
+        AND ((o.status = 'אושר' AND o.sent_at IS NULL) OR o.status = 'נדחה')
+      ORDER BY o.approved_at DESC
+    `).all(req.currentUser.id).map((o) => {
+      const mailSubject = encodeURIComponent("הזמנה - תלמוד תורה החדש");
+      const mailBody = encodeURIComponent(`שלום,\n\nברצוננו להזמין:\n${o.description}\n\n${o.notes || ""}\n\nתודה.`);
+      return {
+        ...o,
+        mailtoLink: o.supplier_email ? `mailto:${o.supplier_email}?subject=${mailSubject}&body=${mailBody}` : null,
+      };
+    });
+  }
+
   res.render("home", {
     stats, branchStats, monthlyTotal, currentYear, hebrewDateToday, dayName,
     myTasks, unreadCount, greeting, fullName, allUsers,
-    studentBirthdays, teacherBirthdays, pendingOrders,
+    studentBirthdays, teacherBirthdays, pendingOrders, myOrderUpdates,
   });
 });
 

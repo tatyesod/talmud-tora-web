@@ -188,6 +188,8 @@ const migrations = [
   )`,
   "ALTER TABLE classes ADD COLUMN institution_code TEXT",
   "UPDATE classes SET institution_code = '512384' WHERE name LIKE 'כיתה %'",
+  "ALTER TABLE supplier_orders ADD COLUMN dismissed_by_creator INTEGER DEFAULT 0",
+  "ALTER TABLE teacher_attendance ADD COLUMN day_part TEXT DEFAULT 'יום שלם'",
 ];
 
 for (const sql of migrations) {

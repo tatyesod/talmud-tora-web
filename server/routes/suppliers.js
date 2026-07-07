@@ -165,11 +165,18 @@ router.post("/orders/:orderId/reject", (req, res) => {
   res.redirect(req.get("Referer") || "/");
 });
 
+router.post("/orders/:orderId/dismiss", (req, res) => {
+  db.prepare("UPDATE supplier_orders SET dismissed_by_creator = 1 WHERE id = ? AND created_by = ?").run(
+    req.params.orderId, req.currentUser.id
+  );
+  res.redirect(req.get("Referer") || "/");
+});
+
 router.post("/orders/:orderId/mark-sent", (req, res) => {
   db.prepare("UPDATE supplier_orders SET status = 'נשלח לספק', sent_at = ? WHERE id = ?").run(
     new Date().toISOString(), req.params.orderId
   );
-  res.redirect(`/suppliers/orders/${req.params.orderId}`);
+  res.redirect(req.get("Referer") || `/suppliers/orders/${req.params.orderId}`);
 });
 
 router.delete("/orders/:orderId", (req, res) => {

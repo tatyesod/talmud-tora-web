@@ -151,12 +151,13 @@
     <p class="empty-state">אין רישומי נוכחות</p>
   <% } else { %>
     <table>
-      <thead><tr><th>תאריך</th><th>סטטוס</th><th>הערות</th><th></th></tr></thead>
+      <thead><tr><th>תאריך</th><th>סטטוס</th><th>חלק יום</th><th>הערות</th><th></th></tr></thead>
       <tbody>
         <% attendance.forEach(a => { %>
           <tr>
             <td><%= a.att_date_str %></td>
             <td><%= a.status %></td>
+            <td><%= a.day_part || 'יום שלם' %></td>
             <td><%= a.notes || '' %></td>
             <td>
               <form method="POST" action="/teachers/<%= teacher.id %>/attendance/<%= a.id %>?_method=DELETE" style="display:inline">
@@ -177,6 +178,14 @@
         <option value="נעדר">נעדר</option>
         <option value="חופשה">חופשה</option>
         <option value="מחלה">מחלה</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>חלק יום</label>
+      <select name="day_part">
+        <option value="יום שלם">יום שלם</option>
+        <option value="בוקר">בוקר</option>
+        <option value='אחה"צ'>אחה"צ</option>
       </select>
     </div>
     <div class="form-group full"><label>הערות</label><input type="text" name="notes" /></div>

@@ -218,9 +218,9 @@ router.get("/:id", (req, res) => {
 });
 
 router.post("/:id/attendance", (req, res) => {
-  const { att_date, status, notes } = req.body;
-  db.prepare("INSERT INTO teacher_attendance (teacher_id, att_date, status, notes) VALUES (?,?,?,?)").run(
-    req.params.id, att_date ? hd.gregorianStringToSerial(att_date) : hd.todayAccessSerial(), status, notes || null
+  const { att_date, status, day_part, notes } = req.body;
+  db.prepare("INSERT INTO teacher_attendance (teacher_id, att_date, status, day_part, notes) VALUES (?,?,?,?,?)").run(
+    req.params.id, att_date ? hd.gregorianStringToSerial(att_date) : hd.todayAccessSerial(), status, day_part || "יום שלם", notes || null
   );
   res.redirect(`/teachers/${req.params.id}`);
 });

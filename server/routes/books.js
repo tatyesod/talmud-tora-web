@@ -439,7 +439,13 @@ router.get("/prices", (req, res) => {
 
 router.post("/catalog", (req, res) => {
   const { year_label, class_name, item_name, publisher, price, is_mandatory } = req.body;
-  db.prepare("INSERT INTO book_catalog (year_label, class_name, item_name, publisher, price, is_mandatory) VALUES (?,?,?,?,?,?)").run(year_label, class_name, item_name, publisher || "", parseFloat(price) || 0, is_mandatory === "on" ? 1 : 0);
+  const numPrice = parseFloat(price) || 0;
+  db.prepare("INSERT INTO book_catalog (year_label, class_name, item_name, publisher, price, is_mandatory) VALUES (?,?,?,?,?,?)").run(year_label, class_name, item_name, publisher || "", numPrice, is_mandatory === "on" ? 1 : 0);
+  // סנכרון למחירון הכללי - כדי שהמחירון תמיד יכיל את כל הפריטים שבקטלוג, ובאותו מחיר
+  db.prepare(`
+    INSERT INTO book_prices (item_name, publisher, price, updated_at) VALUES (?,?,?,?)
+    ON CONFLICT(item_name) DO UPDATE SET price=excluded.price, publisher=excluded.publisher, updated_at=excluded.updated_at
+  `).run(item_name, publisher || "", numPrice, new Date().toISOString());
   res.redirect(`/books/catalog-and-prices?year=${encodeURIComponent(year_label)}`);
 });
 
@@ -451,10 +457,16 @@ router.delete("/catalog/:id", (req, res) => {
 
 router.put("/catalog/:id", (req, res) => {
   const { class_name, item_name, publisher, price, is_mandatory, year_label } = req.body;
+  const numPrice = parseFloat(price) || 0;
   db.prepare(`
     UPDATE book_catalog SET class_name=?, item_name=?, publisher=?, price=?, is_mandatory=?
     WHERE id=?
-  `).run(class_name, item_name, publisher || "", parseFloat(price) || 0, is_mandatory === "on" ? 1 : 0, req.params.id);
+  `).run(class_name, item_name, publisher || "", numPrice, is_mandatory === "on" ? 1 : 0, req.params.id);
+  // סנכרון למחירון הכללי
+  db.prepare(`
+    INSERT INTO book_prices (item_name, publisher, price, updated_at) VALUES (?,?,?,?)
+    ON CONFLICT(item_name) DO UPDATE SET price=excluded.price, publisher=excluded.publisher, updated_at=excluded.updated_at
+  `).run(item_name, publisher || "", numPrice, new Date().toISOString());
   res.redirect(`/books/catalog-and-prices?year=${encodeURIComponent(year_label || "")}`);
 });
 
@@ -463,8 +475,11 @@ router.put("/catalog/:id", (req, res) => {
 router.post("/prices", (req, res) => {
   const { item_name, publisher, price, notes } = req.body;
   const now = new Date().toISOString();
-  db.prepare("INSERT INTO book_prices (item_name, publisher, price, notes, updated_at) VALUES (?,?,?,?,?) ON CONFLICT(item_name) DO UPDATE SET price=excluded.price, publisher=excluded.publisher, notes=excluded.notes, updated_at=excluded.updated_at").run(item_name, publisher||'', parseFloat(price)||0, notes||'', now);
-  res.redirect("/books/catalog-and-prices");
+  const numPrice = parseFloat(price) || 0;
+  db.prepare("INSERT INTO book_prices (item_name, publisher, price, notes, updated_at) VALUES (?,?,?,?,?) ON CONFLICT(item_name) DO UPDATE SET price=excluded.price, publisher=excluded.publisher, notes=excluded.notes, updated_at=excluded.updated_at").run(item_name, publisher||'', numPrice, notes||'', now);
+  // סנכרון לכל פריטי הקטלוג עם אותו שם
+  const updated = db.prepare("UPDATE book_catalog SET price=?, publisher=? WHERE item_name=?").run(numPrice, publisher||'', item_name);
+  res.redirect("/books/catalog-and-prices" + (updated.changes ? "?updated=" + updated.changes : ""));
 });
 
 // עדכון מחיר ומעדכן קטלוגים קשורים
@@ -474,8 +489,8 @@ router.put("/prices/:id", (req, res) => {
   if (!row) return res.redirect("/books/catalog-and-prices");
   const newPrice = parseFloat(price) || 0;
   db.prepare("UPDATE book_prices SET price=?, publisher=?, updated_at=? WHERE id=?").run(newPrice, publisher||row.publisher||'', new Date().toISOString(), req.params.id);
-  // עדכון כל הקטלוגים עם שם זהה
-  const updated = db.prepare("UPDATE book_catalog SET price=? WHERE item_name=?").run(newPrice, row.item_name);
+  // עדכון כל הקטלוגים עם שם זהה (מחיר + הוצאה)
+  const updated = db.prepare("UPDATE book_catalog SET price=?, publisher=? WHERE item_name=?").run(newPrice, publisher||row.publisher||'', row.item_name);
   res.redirect("/books/catalog-and-prices?updated=" + updated.changes);
 });
 

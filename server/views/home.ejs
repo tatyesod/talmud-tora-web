@@ -89,6 +89,41 @@
       </div>
     <% } %>
 
+    <% if (myOrderUpdates && myOrderUpdates.length > 0) { %>
+      <div class="card" style="background:#eef6ee; border:1px solid #bcd9bc; margin:14px auto; max-width:900px; text-align:right;">
+        <h3 style="margin:0 0 10px;">📦 עדכון על ההזמנות שלך</h3>
+        <table>
+          <tbody>
+            <% myOrderUpdates.forEach(o => { %>
+              <tr>
+                <td><strong><%= o.supplier_name %></strong></td>
+                <td><%= o.description %></td>
+                <td>
+                  <% if (o.status === 'אושר') { %>
+                    <span style="color:#2e7d32;">✅ אושר ע"י <%= o.approver_name || '' %></span>
+                  <% } else { %>
+                    <span style="color:#a94442;">❌ נדחה<%= o.rejection_reason ? ' — ' + o.rejection_reason : '' %></span>
+                  <% } %>
+                </td>
+                <td style="white-space:nowrap;">
+                  <% if (o.status === 'אושר') { %>
+                    <% if (o.mailtoLink) { %><a href="<%= o.mailtoLink %>" class="btn small">📧 שליחה במייל לספק</a><% } %>
+                    <form method="POST" action="/suppliers/orders/<%= o.id %>/mark-sent" style="display:inline">
+                      <button type="submit" class="btn small secondary">✔️ סומן כנשלח</button>
+                    </form>
+                  <% } else { %>
+                    <form method="POST" action="/suppliers/orders/<%= o.id %>/dismiss" style="display:inline">
+                      <button type="submit" class="btn small secondary">הבנתי</button>
+                    </form>
+                  <% } %>
+                </td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    <% } %>
+
     <div class="nav-section-divider"></div>
 
     <div class="nav-grid" id="nav-grid">

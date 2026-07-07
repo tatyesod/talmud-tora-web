@@ -481,7 +481,7 @@
 .dock-tab-content.active { display: flex; }
 
 /* חלוניות ימי הולדת - קבועות, תמיד גלויות מתחת לפאנל המשימות */
-.dock-birthday-panel { height: 130px; margin-top: 12px; }
+.dock-birthday-panel { height: 220px; margin-top: 12px; }
 
 .msg-preview-item {
   display: flex;
