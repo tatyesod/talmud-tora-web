@@ -345,6 +345,55 @@ router.get("/health-declaration/view", (req, res) => {
   res.render("reports/health-declaration-print", { students });
 });
 
+// ============ ייצוא תלמידי "גנים" (מכינה א'-ב') לפי תבנית משרד החינוך ============
+router.get("/gan-export", async (req, res) => {
+  const classes = db.prepare(`
+    SELECT id, name, parallel FROM classes
+    WHERE (name = 'מכינה א''' OR name = 'מכינה ב''') AND status = 'פעיל'
+    ORDER BY name, parallel
+  `).all();
+
+  const wb = new ExcelJS.Workbook();
+
+  classes.forEach((cls) => {
+    const sheetName = `${cls.name}${cls.parallel ? " " + cls.parallel : ""}`.slice(0, 31);
+    const ws = wb.addWorksheet(sheetName, { views: [{ rightToLeft: true }] });
+
+    ws.getCell("A1").value = "תלמוד תורה יסוד העולם";
+    ws.getCell("A1").font = { bold: true, size: 13 };
+
+    const headerRow = ws.getRow(2);
+    headerRow.values = ["שם פרטי ומשפחה", "מ.ז", "ת.ל לועזי", "סמל גן"];
+    headerRow.font = { bold: true };
+
+    const students = db.prepare(`
+      SELECT first_name, last_name, id_number, birth_date_civil
+      FROM students WHERE class_id = ? AND status = 'פעיל'
+      ORDER BY last_name, first_name
+    `).all(cls.id);
+
+    students.forEach((s) => {
+      const row = ws.addRow([
+        `${s.first_name || ""} ${s.last_name || ""}`.trim(),
+        s.id_number || "",
+        hd.serialToDateObject(s.birth_date_civil),
+        "", // סמל מוסד - יש להשלים ידנית
+      ]);
+      if (row.getCell(3).value instanceof Date) row.getCell(3).numFmt = "dd/mm/yyyy";
+      row.alignment = { horizontal: "right" };
+    });
+
+    ws.getColumn(1).width = 26;
+    ws.getColumn(2).width = 14;
+    ws.getColumn(3).width = 14;
+    ws.getColumn(4).width = 12;
+  });
+
+  res.setHeader("Content-Disposition", `attachment; filename="${encodeURIComponent("רשימת-גנים-מכינה-א-ב.xlsx")}"`);
+  res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+  await wb.xlsx.write(res); res.end();
+});
+
 module.exports = router;
 
 // ============ יצוא PDF — תצוגת הדפסה לדוחות קיימים ============
