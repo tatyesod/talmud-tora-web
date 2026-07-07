@@ -41,6 +41,7 @@
         <th>נייד אם</th>
         <th>כתובת</th>
         <th><a href="<%= sortUrl('city') %>">עיר<%= sortIndicator('city') %></a></th>
+        <th>שכ"ל כולל</th>
         <th></th>
       </tr></thead>
       <tbody>
@@ -54,6 +55,7 @@
             <td><%- phoneLink(f.father_mobile) %></td>
             <td><%- phoneLink(f.mother_mobile) %></td>
             <td class="nowrap-cell"><%= [f.street, f.house_number, f.city].filter(Boolean).join(' ') %></td>
+            <td class="nowrap-cell"><strong><%= f.tuitionTotal.toLocaleString() %> ₪</strong></td>
             <td class="nowrap-cell">
               <a href="/families/<%= f.id %>" class="btn small secondary">צפייה</a>
               <a href="/families/<%= f.id %>/edit" class="btn small secondary">עריכה</a>

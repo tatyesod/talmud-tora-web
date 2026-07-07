@@ -13,11 +13,23 @@
       </form>
       <a href="javascript:history.back()" class="btn secondary">חזרה לרשימה</a>
     </div>
-    <div style="display:flex; gap:8px;">
-      <% if (prevFamilyId) { %><a href="/families/<%= prevFamilyId %>" class="btn small secondary">→ הקודמת</a><% } %>
-      <% if (nextFamilyId) { %><a href="/families/<%= nextFamilyId %>" class="btn small secondary">הבאה ←</a><% } %>
+    <div style="display:flex; gap:8px; align-items:center;">
+      <form method="GET" action="/families/<%= family.id %>" style="display:inline-flex; gap:4px;">
+        <select name="status" onchange="this.form.submit()" style="font-size:0.85em;">
+          <option value="">כל הסטטוסים</option>
+          <option value="פעיל" <%= statusFilter === 'פעיל' ? 'selected' : '' %>>פעיל</option>
+          <option value="לא פעיל" <%= statusFilter === 'לא פעיל' ? 'selected' : '' %>>לא פעיל</option>
+          <option value="ארכיון" <%= statusFilter === 'ארכיון' ? 'selected' : '' %>>ארכיון</option>
+          <option value="לא התקבל" <%= statusFilter === 'לא התקבל' ? 'selected' : '' %>>לא התקבל</option>
+        </select>
+      </form>
+      <% if (prevFamilyId) { %><a href="/families/<%= prevFamilyId %><%= statusFilter ? '?status='+encodeURIComponent(statusFilter) : '' %>" class="btn small secondary">→ הקודמת</a><% } %>
+      <% if (nextFamilyId) { %><a href="/families/<%= nextFamilyId %><%= statusFilter ? '?status='+encodeURIComponent(statusFilter) : '' %>" class="btn small secondary">הבאה ←</a><% } %>
     </div>
   </div>
+  <% if (statusFilter) { %>
+    <p style="color:var(--muted); font-size:0.85em; margin-top:6px;">🔎 הניווט בין המשפחות מסונן כרגע לפי סטטוס "<%= statusFilter %>" בלבד.</p>
+  <% } %>
 </div>
 
 <div class="card">

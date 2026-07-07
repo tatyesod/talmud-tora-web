@@ -44,7 +44,10 @@ router.get("/", (req, res) => {
     },
     "ORDER BY f.last_name"
   );
-  const families = db.prepare(sql).all(...params);
+  const families = db.prepare(sql).all(...params).map((f) => ({
+    ...f,
+    tuitionTotal: calcFamilyTuition(f.id).netTotal,
+  }));
   res.render("families/list", {
     families, q: q || "", sector: sector || "", branch: branch || "", status: status || "",
     sort: req.query.sort || "", dir: req.query.dir || "",
@@ -85,13 +88,23 @@ router.get("/:id", (req, res) => {
     LIMIT 1
   `).get(req.params.id);
 
-  // ניווט חצים בין משפחות - לפי אותו סדר ברירת מחדל כמו ברשימת המשפחות (שם משפחה)
-  const orderedIds = db.prepare("SELECT id FROM families ORDER BY last_name, id").all().map((r) => r.id);
+  // ניווט חצים בין משפחות - לפי אותו סדר ברירת מחדל כמו ברשימת המשפחות (שם משפחה),
+  // עם אפשרות לסנן לפי סטטוס תלמידים (כמו ברשימה הראשית) כדי שהניווט יעבור רק בין
+  // משפחות שמתאימות לסטטוס שנבחר
+  const statusFilter = req.query.status || "";
+  let orderedIdsSql = "SELECT f.id FROM families f WHERE 1=1";
+  const orderedIdsParams = [];
+  if (statusFilter) {
+    orderedIdsSql += " AND EXISTS (SELECT 1 FROM students s WHERE s.family_id = f.id AND s.status = ?)";
+    orderedIdsParams.push(statusFilter);
+  }
+  orderedIdsSql += " ORDER BY f.last_name, f.id";
+  const orderedIds = db.prepare(orderedIdsSql).all(...orderedIdsParams).map((r) => r.id);
   const curIdx = orderedIds.findIndex((id) => String(id) === String(req.params.id));
   const prevFamilyId = curIdx > 0 ? orderedIds[curIdx - 1] : null;
   const nextFamilyId = curIdx >= 0 && curIdx < orderedIds.length - 1 ? orderedIds[curIdx + 1] : null;
 
-  res.render("families/view", { family, students, contacts, tuition, eldest, prevFamilyId, nextFamilyId });
+  res.render("families/view", { family, students, contacts, tuition, eldest, prevFamilyId, nextFamilyId, statusFilter });
 });
 
 router.get("/:id/edit", (req, res) => {
