@@ -69,13 +69,24 @@
     @media print {
       .page { padding: 6px 22px; }
     }
+
+    /* עמוד 1 - יותר רווח בין השורות, כדי שהתוכן יתפרש על פני אורך העמוד */
+    .page-one .form-header { margin-bottom: 16px; padding-bottom: 12px; }
+    .page-one .school-line { margin-bottom: 16px; }
+    .page-one table.fields { margin-bottom: 14px; }
+    .page-one table.fields td { padding: 6px 6px; line-height: 1.6; }
+    .page-one .section-title { margin: 20px 0 10px; }
+    .page-one .declaration { line-height: 2; }
+    .page-one .declaration .row { margin-bottom: 12px; }
+    .page-one .declaration .sub-row { margin-bottom: 12px; }
+    .page-one .free-line { height: 1.8em; margin: 8px 0; }
   </style>
 </head>
 <body onload="window.print()">
   <% students.forEach(s => { %>
 
   <!-- ===== עמוד 1: פרטים מזהים + הצהרת בריאות מלאה ===== -->
-  <div class="page">
+  <div class="page page-one">
     <div class="form-header">
       <img src="/images/logo-reports.jpg" alt="לוגו" />
       <div class="school-info">
@@ -198,7 +209,7 @@
   </div>
 
   <!-- ===== עמוד 2: הצהרת חיסונים + חתימה + אישור הורים ===== -->
-  <div class="page">
+  <div class="page page-two">
     <div class="form-header">
       <img src="/images/logo-reports.jpg" alt="לוגו" />
       <div class="school-info">
