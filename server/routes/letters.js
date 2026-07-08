@@ -15,6 +15,7 @@ function buildLetterheadParagraph() {
   return new Paragraph({
     alignment: AlignmentType.CENTER,
     bidirectional: true,
+    run: { rightToLeft: true },
     spacing: { after: 200 },
     children: [
       new ImageRun({
@@ -240,6 +241,7 @@ async function buildLetterDocx(recipientLine, paragraphs) {
       bidirectional: true,
       indent: { left: 0, right: 0, firstLine: 0 },
       spacing: { after: 180 },
+      run: { rightToLeft: true },
       children: [new TextRun({ text: recipientLine, bold: true, size: 24, rightToLeft: true })],
     }),
   ];
@@ -248,6 +250,7 @@ async function buildLetterDocx(recipientLine, paragraphs) {
     docParagraphs.push(new Paragraph({
       alignment: isClosingLine ? AlignmentType.CENTER : AlignmentType.JUSTIFIED,
       bidirectional: true,
+      run: { rightToLeft: true },
       spacing: { after: 120 },
       children: runs.map((r) => new TextRun({ text: r.text, bold: r.bold, rightToLeft: true, size: 24 })),
     }));
@@ -316,7 +319,7 @@ router.get("/generate-all/docx", async (req, res) => {
     const recipientLine = buildRecipientLine(data);
 
     if (idx > 0) {
-      allDocParagraphs.push(new Paragraph({ bidirectional: true, children: [new PageBreak()] }));
+      allDocParagraphs.push(new Paragraph({ bidirectional: true, run: { rightToLeft: true }, children: [new PageBreak()] }));
     }
     allDocParagraphs.push(buildLetterheadParagraph());
     allDocParagraphs.push(new Paragraph({
@@ -324,6 +327,7 @@ router.get("/generate-all/docx", async (req, res) => {
       bidirectional: true,
       indent: { left: 0, right: 0, firstLine: 0 },
       spacing: { after: 180 },
+      run: { rightToLeft: true },
       children: [new TextRun({ text: recipientLine, bold: true, size: 24, rightToLeft: true })],
     }));
     paragraphs.forEach((runs, pIdx) => {
@@ -331,6 +335,7 @@ router.get("/generate-all/docx", async (req, res) => {
       allDocParagraphs.push(new Paragraph({
         alignment: isClosingLine ? AlignmentType.CENTER : AlignmentType.JUSTIFIED,
         bidirectional: true,
+        run: { rightToLeft: true },
         spacing: { after: 120 },
         children: runs.map((r) => new TextRun({ text: r.text, bold: r.bold, rightToLeft: true, size: 24 })),
       }));
