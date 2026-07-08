@@ -238,7 +238,7 @@ function buildSeparatorParagraph() {
   // ניסיון לפתור תקלת תצוגה עקשנית ב-Word שבה שורה קצרה/מודגשת שמגיעה ישר אחרי
   // פסקת תמונה יוצאת מיושרת שמאלה, על אף שה-XML שלה תקין ב-100% (מאומת גם ב-LibreOffice).
   return new Paragraph({
-    alignment: AlignmentType.END,
+    alignment: AlignmentType.JUSTIFIED,
     bidirectional: true,
     run: { rightToLeft: true, size: 2 },
     spacing: { after: 0, before: 0, line: 20, lineRule: "exact" },
@@ -251,7 +251,7 @@ async function buildLetterDocx(recipientLine, paragraphs) {
     buildLetterheadParagraph(),
     buildSeparatorParagraph(),
     new Paragraph({
-      alignment: AlignmentType.END,
+      alignment: AlignmentType.JUSTIFIED,
       bidirectional: true,
       indent: { left: 0, right: 0, firstLine: 0 },
       spacing: { after: 180 },
@@ -338,7 +338,7 @@ router.get("/generate-all/docx", async (req, res) => {
     allDocParagraphs.push(buildLetterheadParagraph());
     allDocParagraphs.push(buildSeparatorParagraph());
     allDocParagraphs.push(new Paragraph({
-      alignment: AlignmentType.END,
+      alignment: AlignmentType.JUSTIFIED,
       bidirectional: true,
       indent: { left: 0, right: 0, firstLine: 0 },
       spacing: { after: 180 },
