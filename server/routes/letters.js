@@ -233,9 +233,23 @@ router.get("/family/:familyId/preview", (req, res) => {
   });
 });
 
+function buildSeparatorParagraph() {
+  // פסקה זעירה כמעט בלתי נראית, רק כדי שהכותרת לא תהיה הפסקה הראשונה מיד אחרי התמונה -
+  // ניסיון לפתור תקלת תצוגה עקשנית ב-Word שבה שורה קצרה/מודגשת שמגיעה ישר אחרי
+  // פסקת תמונה יוצאת מיושרת שמאלה, על אף שה-XML שלה תקין ב-100% (מאומת גם ב-LibreOffice).
+  return new Paragraph({
+    alignment: AlignmentType.RIGHT,
+    bidirectional: true,
+    run: { rightToLeft: true, size: 2 },
+    spacing: { after: 0, before: 0, line: 20, lineRule: "exact" },
+    children: [new TextRun({ text: "", rightToLeft: true, size: 2 })],
+  });
+}
+
 async function buildLetterDocx(recipientLine, paragraphs) {
   const docParagraphs = [
     buildLetterheadParagraph(),
+    buildSeparatorParagraph(),
     new Paragraph({
       alignment: AlignmentType.RIGHT,
       bidirectional: true,
@@ -322,6 +336,7 @@ router.get("/generate-all/docx", async (req, res) => {
       allDocParagraphs.push(new Paragraph({ bidirectional: true, run: { rightToLeft: true }, children: [new PageBreak()] }));
     }
     allDocParagraphs.push(buildLetterheadParagraph());
+    allDocParagraphs.push(buildSeparatorParagraph());
     allDocParagraphs.push(new Paragraph({
       alignment: AlignmentType.RIGHT,
       bidirectional: true,
