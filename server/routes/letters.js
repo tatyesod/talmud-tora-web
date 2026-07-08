@@ -244,7 +244,7 @@ async function buildLetterDocx(recipientLine, paragraphs) {
   paragraphs.forEach((runs, idx) => {
     const isClosingLine = idx >= paragraphs.length - 2;
     docParagraphs.push(new Paragraph({
-      alignment: isClosingLine ? AlignmentType.CENTER : AlignmentType.RIGHT,
+      alignment: isClosingLine ? AlignmentType.CENTER : AlignmentType.JUSTIFIED,
       bidirectional: true,
       spacing: { after: 120 },
       children: runs.map((r) => new TextRun({ text: r.text, bold: r.bold, rightToLeft: true, size: 20 })),
@@ -326,7 +326,7 @@ router.get("/generate-all/docx", async (req, res) => {
     paragraphs.forEach((runs, pIdx) => {
       const isClosingLine = pIdx >= paragraphs.length - 2;
       allDocParagraphs.push(new Paragraph({
-        alignment: isClosingLine ? AlignmentType.CENTER : AlignmentType.RIGHT,
+        alignment: isClosingLine ? AlignmentType.CENTER : AlignmentType.JUSTIFIED,
         bidirectional: true,
         spacing: { after: 120 },
         children: runs.map((r) => new TextRun({ text: r.text, bold: r.bold, rightToLeft: true, size: 20 })),
