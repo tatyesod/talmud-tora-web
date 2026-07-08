@@ -14,6 +14,7 @@ function buildLetterheadParagraph() {
   // התמונה המקורית 2480x537 פיקסלים - שומרים על אותו יחס גובה-רוחב, מוצמד לרוחב הדף
   return new Paragraph({
     alignment: AlignmentType.CENTER,
+    bidirectional: true,
     spacing: { after: 200 },
     children: [
       new ImageRun({
@@ -237,6 +238,7 @@ async function buildLetterDocx(recipientLine, paragraphs) {
     new Paragraph({
       alignment: AlignmentType.RIGHT,
       bidirectional: true,
+      indent: { left: 0, right: 0, firstLine: 0 },
       spacing: { after: 180 },
       children: [new TextRun({ text: recipientLine, bold: true, size: 24, rightToLeft: true })],
     }),
@@ -314,12 +316,13 @@ router.get("/generate-all/docx", async (req, res) => {
     const recipientLine = buildRecipientLine(data);
 
     if (idx > 0) {
-      allDocParagraphs.push(new Paragraph({ children: [new PageBreak()] }));
+      allDocParagraphs.push(new Paragraph({ bidirectional: true, children: [new PageBreak()] }));
     }
     allDocParagraphs.push(buildLetterheadParagraph());
     allDocParagraphs.push(new Paragraph({
       alignment: AlignmentType.RIGHT,
       bidirectional: true,
+      indent: { left: 0, right: 0, firstLine: 0 },
       spacing: { after: 180 },
       children: [new TextRun({ text: recipientLine, bold: true, size: 24, rightToLeft: true })],
     }));
