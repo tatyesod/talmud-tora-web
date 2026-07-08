@@ -247,7 +247,7 @@ async function buildLetterDocx(recipientLine, paragraphs) {
       alignment: isClosingLine ? AlignmentType.CENTER : AlignmentType.JUSTIFIED,
       bidirectional: true,
       spacing: { after: 120 },
-      children: runs.map((r) => new TextRun({ text: r.text, bold: r.bold, rightToLeft: true, size: 20 })),
+      children: runs.map((r) => new TextRun({ text: r.text, bold: r.bold, rightToLeft: true, size: 24 })),
     }));
   });
 
@@ -329,7 +329,7 @@ router.get("/generate-all/docx", async (req, res) => {
         alignment: isClosingLine ? AlignmentType.CENTER : AlignmentType.JUSTIFIED,
         bidirectional: true,
         spacing: { after: 120 },
-        children: runs.map((r) => new TextRun({ text: r.text, bold: r.bold, rightToLeft: true, size: 20 })),
+        children: runs.map((r) => new TextRun({ text: r.text, bold: r.bold, rightToLeft: true, size: 24 })),
       }));
     });
   });
