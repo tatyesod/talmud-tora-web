@@ -220,6 +220,8 @@ const migrations = [
    SELECT id, contact_person, phone, datetime('now') FROM suppliers
    WHERE contact_person IS NOT NULL AND contact_person <> ''
      AND id NOT IN (SELECT DISTINCT supplier_id FROM supplier_contacts)`,
+  // חברת גביה למשפחה - קשר / מוסדי / אחר (טקסט חופשי)
+  "ALTER TABLE families ADD COLUMN billing_company TEXT",
 ];
 
 for (const sql of migrations) {

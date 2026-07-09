@@ -98,6 +98,7 @@
 
 <div class="card">
   <h3>שכר לימוד</h3>
+  <p><strong>חברת גביה:</strong> <%= family.billing_company || '—' %></p>
   <% if (tuition.children.length === 0) { %>
     <p class="empty-state">אין ילדים פעילים לחישוב שכר לימוד</p>
   <% } else { %>

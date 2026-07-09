@@ -70,6 +70,28 @@
       </div>
     </fieldset>
 
+    <fieldset>
+      <legend>פרטי שכר לימוד</legend>
+      <% const billingIsOther = family.billing_company && family.billing_company !== 'קשר' && family.billing_company !== 'מוסדי'; %>
+      <div class="form-group">
+        <label>חברת גביה</label>
+        <div style="display:flex; gap:16px; align-items:center; flex-wrap:wrap; margin-top:4px;">
+          <label style="font-weight:normal; display:flex; align-items:center; gap:4px;">
+            <input type="radio" name="billing_company_choice" value="קשר" <%= family.billing_company === 'קשר' ? 'checked' : '' %> /> קשר
+          </label>
+          <label style="font-weight:normal; display:flex; align-items:center; gap:4px;">
+            <input type="radio" name="billing_company_choice" value="מוסדי" <%= family.billing_company === 'מוסדי' ? 'checked' : '' %> /> מוסדי
+          </label>
+          <label style="font-weight:normal; display:flex; align-items:center; gap:4px;">
+            <input type="radio" name="billing_company_choice" value="אחר" id="billing-other-radio" <%= billingIsOther ? 'checked' : '' %> /> אחר:
+            <input type="text" name="billing_company_other" id="billing-other-text" placeholder="הקלד..."
+              value="<%= billingIsOther ? family.billing_company : '' %>" style="width:150px;"
+              onfocus="document.getElementById('billing-other-radio').checked = true;" />
+          </label>
+        </div>
+      </div>
+    </fieldset>
+
     <div class="form-group full" style="margin-bottom:14px;"><label>הערות</label><textarea name="notes"><%= family.notes || '' %></textarea></div>
 
     <div class="actions">
