@@ -18,6 +18,25 @@ router.get("/", (req, res) => {
   res.render("inventory/list", { items, openRequests });
 });
 
+router.get("/print", (req, res) => {
+  const items = db
+    .prepare(`
+      SELECT i.*, c.name AS class_name, c.parallel FROM inventory_items i
+      LEFT JOIN classes c ON i.class_id = c.id ORDER BY i.name
+    `)
+    .all();
+  const headers = ["פריט", "כיתה/מיקום", "כמות לפי המערכת", "מצב", "הערות", "ספירה בפועל (למילוי ידני)"];
+  const rows = items.map(i => [
+    i.name,
+    i.class_name ? i.class_name + (i.parallel ? " (" + i.parallel + ")" : "") : (i.location || ""),
+    i.quantity != null ? i.quantity : "",
+    i.condition || "",
+    i.notes || "",
+    "",
+  ]);
+  res.render("reports/print-view", { title: "דוח ספירת מלאי וציוד", headers, rows });
+});
+
 router.get("/new", (req, res) => {
   const classes = db.prepare("SELECT id, name, parallel FROM classes ORDER BY name, parallel").all();
   res.render("inventory/form", { item: {}, mode: "new", classes });

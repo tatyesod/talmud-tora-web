@@ -694,6 +694,25 @@ router.get("/inventory", (req, res) => {
   res.render("books/inventory", { branches, branch, items, saved: req.query.saved === "1" });
 });
 
+router.get("/inventory/print", (req, res) => {
+  const branches = db.prepare("SELECT DISTINCT branch FROM classes WHERE branch IS NOT NULL AND branch<>'' ORDER BY branch").all().map(r => r.branch);
+  const branch = req.query.branch || branches[0] || "";
+
+  const items = db.prepare(`
+    SELECT bp.item_name, bp.publisher,
+           COALESCE(bi.current_stock, 0) AS current_stock,
+           COALESCE(bi.desired_stock, 0) AS desired_stock
+    FROM book_prices bp
+    LEFT JOIN book_inventory bi ON bi.book_price_id = bp.id AND bi.branch = ?
+    ORDER BY bp.item_name
+  `).all(branch);
+
+  const headers = ["ספר", "הוצאה", "מלאי לפי המערכת", "כמות רצויה", "ספירה בפועל (למילוי ידני)"];
+  const rows = items.map(it => [it.item_name, it.publisher || "", it.current_stock, it.desired_stock, ""]);
+
+  res.render("reports/print-view", { title: `דוח ספירת מלאי ספרים${branch ? " - " + branch : ""}`, headers, rows });
+});
+
 router.post("/inventory/save", (req, res) => {
   const { branch } = req.body;
   let ids = req.body.book_price_id || [];

@@ -239,6 +239,28 @@ router.get("/:id/inventory", (req, res) => {
   res.render("suppliers/inventory", { supplier, branches, branch, items, categories, contacts, saved: req.query.saved === "1" });
 });
 
+router.get("/:id/inventory/print", (req, res) => {
+  const supplier = db.prepare("SELECT * FROM suppliers WHERE id = ?").get(req.params.id);
+  if (!supplier) return res.status(404).render("404");
+
+  const branches = db.prepare("SELECT DISTINCT branch FROM classes WHERE branch IS NOT NULL AND branch<>'' ORDER BY branch").all().map(r => r.branch);
+  const branch = req.query.branch || branches[0] || "";
+
+  const items = db.prepare(`
+    SELECT si.item_name, si.category, si.notes,
+           COALESCE(sii.current_stock,0) AS current_stock, COALESCE(sii.desired_stock,0) AS desired_stock
+    FROM supplier_items si
+    LEFT JOIN supplier_item_inventory sii ON sii.supplier_item_id = si.id AND sii.branch = ?
+    WHERE si.supplier_id = ?
+    ORDER BY si.category, si.item_name
+  `).all(branch, req.params.id);
+
+  const headers = ["מוצר", "קטגוריה", "הערות", "מלאי לפי המערכת", "כמות רצויה", "ספירה בפועל (למילוי ידני)"];
+  const rows = items.map(it => [it.item_name, it.category || "", it.notes || "", it.current_stock, it.desired_stock, ""]);
+
+  res.render("reports/print-view", { title: `דוח ספירת מלאי — ${supplier.name}${branch ? " - " + branch : ""}`, headers, rows });
+});
+
 router.post("/:id/items", (req, res) => {
   const { item_name, category, price, notes } = req.body;
   db.prepare("INSERT INTO supplier_items (supplier_id, item_name, category, price, notes, created_at) VALUES (?,?,?,?,?,?)").run(
