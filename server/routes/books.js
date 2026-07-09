@@ -103,7 +103,7 @@ router.get("/class", (req, res) => {
     ordersMap[o.student_id].add(o.catalog_id);
   });
 
-  res.render("books/class-orders", { year, cls, catalog, students, ordersMap, saved: req.query.saved || "" });
+  res.render("books/class-orders", { year, cls, catalog, students, ordersMap, saved: req.query.saved || "", paymentsReset: parseInt(req.query.paymentsReset, 10) || 0 });
 });
 
 // ============ שמירת הזמנות ============
@@ -114,25 +114,53 @@ router.post("/class/save", (req, res) => {
   const cls = db.prepare("SELECT * FROM classes WHERE id=?").get(class_id);
   if (!cls) return res.redirect("/books");
 
-  const studentIds = db.prepare("SELECT id FROM students WHERE class_id=? AND status='פעיל'").all(class_id).map(s => s.id);
+  const studentIds = db.prepare("SELECT id, family_id FROM students WHERE class_id=? AND status='פעיל'").all(class_id);
   const catalogIds = db.prepare("SELECT id FROM book_catalog WHERE year_label=? AND class_name=?").all(year, cls.name).map(c => c.id);
 
-  for (const sid of studentIds) {
+  // מצב "לפני" - כדי לזהות מי איבד הזמנה (ולא רק מי קיבל הזמנה חדשה)
+  const oldOrders = db.prepare(
+    `SELECT student_id, catalog_id FROM book_orders WHERE year_label=? AND student_id IN (${studentIds.map(() => "?").join(",") || "NULL"})`
+  ).all(year, ...studentIds.map(s => s.id));
+  const oldMap = {};
+  oldOrders.forEach(o => {
+    if (!oldMap[o.student_id]) oldMap[o.student_id] = new Set();
+    oldMap[o.student_id].add(o.catalog_id);
+  });
+
+  for (const s of studentIds) {
     for (const cid of catalogIds) {
-      db.prepare("DELETE FROM book_orders WHERE year_label=? AND student_id=? AND catalog_id=?").run(year, sid, cid);
+      db.prepare("DELETE FROM book_orders WHERE year_label=? AND student_id=? AND catalog_id=?").run(year, s.id, cid);
     }
   }
 
   const now = new Date().toISOString();
   const ordersData = orders ? (Array.isArray(orders) ? orders : [orders]) : [];
+  const newMap = {};
+  const studentIdList = studentIds.map(s => s.id);
   for (const key of ordersData) {
     const [sid, cid] = key.split("_").map(Number);
-    if (studentIds.includes(sid) && catalogIds.includes(cid)) {
+    if (studentIdList.includes(sid) && catalogIds.includes(cid)) {
       db.prepare("INSERT OR REPLACE INTO book_orders (year_label, student_id, catalog_id, ordered, created_at) VALUES (?,?,?,1,?)").run(year, sid, cid, now);
+      if (!newMap[sid]) newMap[sid] = new Set();
+      newMap[sid].add(cid);
     }
   }
 
-  res.redirect(`/books/class?year=${encodeURIComponent(year)}&class_id=${class_id}&saved=1`);
+  // תשלום תלוי תמיד בסימון ההזמנה: אם בוטלה הזמנת ספר לתלמיד, מבטלים גם את
+  // התשלומים שנרשמו למשפחה שלו לשנה זו (כאילו לא שילמו כלל), כדי שלא יישאר
+  // תשלום "תלוי באוויר" מול הזמנה שכבר לא קיימת. יש להזין את התשלום מחדש בהתאם למצב העדכני.
+  const familiesToReset = new Set();
+  for (const s of studentIds) {
+    const before = oldMap[s.id] || new Set();
+    const after = newMap[s.id] || new Set();
+    const lostSomething = [...before].some((cid) => !after.has(cid));
+    if (lostSomething && s.family_id) familiesToReset.add(s.family_id);
+  }
+  familiesToReset.forEach((familyId) => {
+    db.prepare("DELETE FROM book_payments WHERE year_label=? AND family_id=?").run(year, familyId);
+  });
+
+  res.redirect(`/books/class?year=${encodeURIComponent(year)}&class_id=${class_id}&saved=1${familiesToReset.size > 0 ? "&paymentsReset=" + familiesToReset.size : ""}`);
 });
 
 // ============ דוח כיתה ספציפית לאקסל ============

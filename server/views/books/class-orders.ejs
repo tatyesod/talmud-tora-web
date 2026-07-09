@@ -12,6 +12,11 @@
   <% if (saved) { %>
     <div style="background:#eef6ee; border:1px solid #bcd9bc; border-radius:8px; padding:10px 16px; margin-bottom:14px; color:#2d7a2d;">✅ ההזמנות נשמרו בהצלחה!</div>
   <% } %>
+  <% if (typeof paymentsReset !== 'undefined' && paymentsReset > 0) { %>
+    <div style="background:#fdecea; border:1px solid #f5c6cb; border-radius:8px; padding:10px 16px; margin-bottom:14px; color:#a94442;">
+      ⚠️ בוטלה הזמנת ספר לתלמיד אחד או יותר - לכן <strong>בוטלו גם התשלומים</strong> שנרשמו למשפחות שלהם לשנה זו (<%= paymentsReset %> משפחות). יש להזין את התשלום מחדש בהתאם למצב העדכני של ההזמנה, במסך "תשלומים".
+    </div>
+  <% } %>
 
   <% if (students.length === 0) { %>
     <p class="empty-state">אין תלמידים פעילים בכיתה זו</p>
