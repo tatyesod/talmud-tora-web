@@ -329,6 +329,35 @@ try {
   // אם טבלת settings עדיין לא קיימת בשלב הזה - מתעלמים, זה ירוץ בהפעלה הבאה
 }
 
+// זריעה חד-פעמית של קטלוג ציוד משרדי (מתוך קבצי אקסל שהמשתמש שלח) -
+// יוצר את הספקים "עולם המדבקות" ו"גוונים" אם עוד לא קיימים, ומכניס את הפריטים כקטלוג בחירה
+// (כדי שבמסך הזמנת ציוד משרדי אפשר יהיה לבחור פריט מתוך רשימה, ולא רק להקליד חופשי).
+// דגל ב-settings מבטיח שזה קורה פעם אחת בלבד, ולא דורס/מכפיל פריטים שנוספו/נערכו ידנית אחר כך.
+try {
+  const alreadySeededSupplies = db.prepare("SELECT value FROM settings WHERE key = 'office_supplies_seeded_v1'").get();
+  if (!alreadySeededSupplies) {
+    const { OFFICE_SUPPLIES_SEED } = require("./officeSuppliesSeed");
+    const now = new Date().toISOString();
+    const findSupplier = db.prepare("SELECT id FROM suppliers WHERE name = ?");
+    const insertSupplier = db.prepare("INSERT INTO suppliers (name, category, status, created_at) VALUES (?,?,?,?)");
+    const findItem = db.prepare("SELECT id FROM supplier_items WHERE supplier_id = ? AND item_name = ?");
+    const insertItem = db.prepare("INSERT INTO supplier_items (supplier_id, item_name, category, price, created_at) VALUES (?,?,?,?,?)");
+
+    for (const supplierName of Object.keys(OFFICE_SUPPLIES_SEED)) {
+      const existing = findSupplier.get(supplierName);
+      const supplierId = existing ? existing.id : insertSupplier.run(supplierName, "ציוד משרדי", "פעיל", now).lastInsertRowid;
+      for (const item of OFFICE_SUPPLIES_SEED[supplierName]) {
+        if (!findItem.get(supplierId, item.item_name)) {
+          insertItem.run(supplierId, item.item_name, item.category, 0, now);
+        }
+      }
+    }
+    db.prepare("INSERT INTO settings (key, value) VALUES ('office_supplies_seeded_v1', '1')").run();
+  }
+} catch (e) {
+  // לא קריטי - אפשר להוסיף פריטים ידנית דרך המסך
+}
+
 function cleanShutdown() {
   try {
     db.exec("PRAGMA wal_checkpoint(TRUNCATE);");
