@@ -259,6 +259,11 @@ router.get("/:id", (req, res) => {
     `).get(req.params.id)
   );
   if (!teacher) return res.status(404).render("404");
+  // רכיבי שכר הם חלק מ"תיק עובד" - לא נחשפים למשתמשים שאינם מנהלים, גם ברמת הנתונים
+  if (!req.currentUser || !req.currentUser.is_admin) {
+    delete teacher.hourly_rate;
+    delete teacher.monthly_hours;
+  }
   const classes = db
     .prepare(`
       SELECT c.*, tc.role FROM teacher_classes tc JOIN classes c ON tc.class_id = c.id
@@ -312,6 +317,23 @@ router.post("/:id/attendance", (req, res) => {
 
 router.delete("/:id/attendance/:attId", (req, res) => {
   db.prepare("DELETE FROM teacher_attendance WHERE id = ? AND teacher_id = ?").run(req.params.attId, req.params.id);
+  res.redirect(`/teachers/${req.params.id}`);
+});
+
+router.post("/:id/salary", (req, res) => {
+  // רכיבי שכר הם חלק מ"תיק עובד" - חומר אישי רגיש, עדכון מותר למנהלים בלבד.
+  // בכוונה נשמר בנתיב נפרד מטופס עריכת המלמד הכללי, כדי שלא ייחשף/יתעדכן
+  // דרך מסך שגם משתמשים רגילים יכולים לגשת אליו.
+  if (!req.currentUser || !req.currentUser.is_admin) {
+    return res.status(403).render("403");
+  }
+  const hourlyRate = parseFloat(req.body.hourly_rate);
+  const monthlyHours = parseFloat(req.body.monthly_hours);
+  db.prepare("UPDATE teachers SET hourly_rate = ?, monthly_hours = ? WHERE id = ?").run(
+    isNaN(hourlyRate) ? null : hourlyRate,
+    isNaN(monthlyHours) ? null : monthlyHours,
+    req.params.id
+  );
   res.redirect(`/teachers/${req.params.id}`);
 });
 

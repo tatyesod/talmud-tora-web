@@ -196,6 +196,42 @@
 <% if (isAdmin) { %>
 <div class="card">
   <h3>תיק עובד <span style="font-size:0.6em; font-weight:normal; color:var(--muted);">(גלוי למנהלים בלבד)</span></h3>
+
+  <div style="background:var(--bg); border:1px solid var(--border); border-radius:10px; padding:14px 16px; margin-bottom:18px;">
+    <h4 style="margin:0 0 10px;">💰 רכיבי שכר</h4>
+    <form method="POST" action="/teachers/<%= teacher.id %>/salary" class="form-grid">
+      <div class="form-group">
+        <label>מחיר לשעה חודשית (₪)</label>
+        <input type="number" step="0.01" min="0" name="hourly_rate" value="<%= teacher.hourly_rate != null ? teacher.hourly_rate : '' %>" id="salary-rate" oninput="updateSalaryTotal()" />
+      </div>
+      <div class="form-group">
+        <label>שעות חודשיות</label>
+        <input type="number" step="0.01" min="0" name="monthly_hours" value="<%= teacher.monthly_hours != null ? teacher.monthly_hours : '' %>" id="salary-hours" oninput="updateSalaryTotal()" />
+      </div>
+      <div class="form-group">
+        <label>סה"כ לחודש</label>
+        <input type="text" id="salary-total" readonly
+               value="<%= (teacher.hourly_rate != null && teacher.monthly_hours != null) ? (teacher.hourly_rate * teacher.monthly_hours).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}) + ' ₪' : '—' %>"
+               style="background:#f0ede4; font-weight:700;" />
+      </div>
+      <div class="form-group full">
+        <button type="submit" class="btn small">💾 שמירת רכיבי שכר</button>
+      </div>
+    </form>
+    <script>
+      function updateSalaryTotal() {
+        const rate = parseFloat(document.getElementById('salary-rate').value);
+        const hours = parseFloat(document.getElementById('salary-hours').value);
+        const totalField = document.getElementById('salary-total');
+        if (!isNaN(rate) && !isNaN(hours)) {
+          totalField.value = (rate * hours).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) + ' ₪';
+        } else {
+          totalField.value = '—';
+        }
+      }
+    </script>
+  </div>
+
   <% if (file.length === 0) { %>
     <p class="empty-state">אין רשומות בתיק העובד</p>
   <% } else { %>

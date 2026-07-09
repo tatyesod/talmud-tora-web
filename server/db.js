@@ -224,6 +224,9 @@ const migrations = [
   "ALTER TABLE families ADD COLUMN billing_company TEXT",
   // הערות חופשיות לכל פריט במלאי ספק (לדוגמה: מק"ט, הערת ספק, וכו')
   "ALTER TABLE supplier_items ADD COLUMN notes TEXT",
+  // רכיבי שכר למלמד - חלק מ"תיק עובד", חשוף למנהלים בלבד
+  "ALTER TABLE teachers ADD COLUMN hourly_rate REAL",
+  "ALTER TABLE teachers ADD COLUMN monthly_hours REAL",
 ];
 
 for (const sql of migrations) {
