@@ -222,6 +222,8 @@ const migrations = [
      AND id NOT IN (SELECT DISTINCT supplier_id FROM supplier_contacts)`,
   // חברת גביה למשפחה - קשר / מוסדי / אחר (טקסט חופשי)
   "ALTER TABLE families ADD COLUMN billing_company TEXT",
+  // הערות חופשיות לכל פריט במלאי ספק (לדוגמה: מק"ט, הערת ספק, וכו')
+  "ALTER TABLE supplier_items ADD COLUMN notes TEXT",
 ];
 
 for (const sql of migrations) {

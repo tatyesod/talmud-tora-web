@@ -240,9 +240,9 @@ router.get("/:id/inventory", (req, res) => {
 });
 
 router.post("/:id/items", (req, res) => {
-  const { item_name, category, price } = req.body;
-  db.prepare("INSERT INTO supplier_items (supplier_id, item_name, category, price, created_at) VALUES (?,?,?,?,?)").run(
-    req.params.id, item_name, category || null, parseFloat(price) || 0, new Date().toISOString()
+  const { item_name, category, price, notes } = req.body;
+  db.prepare("INSERT INTO supplier_items (supplier_id, item_name, category, price, notes, created_at) VALUES (?,?,?,?,?,?)").run(
+    req.params.id, item_name, category || null, parseFloat(price) || 0, notes || null, new Date().toISOString()
   );
   res.redirect(`/suppliers/${req.params.id}/inventory?branch=${encodeURIComponent(req.query.branch || req.body.branch || "")}`);
 });
@@ -259,19 +259,34 @@ router.post("/:id/inventory/save", (req, res) => {
   let ids = req.body.item_id || [];
   let currentStocks = req.body.current_stock || [];
   let desiredStocks = req.body.desired_stock || [];
+  let itemNames = req.body.item_name || [];
+  let categories = req.body.category || [];
+  let prices = req.body.price || [];
+  let notesArr = req.body.notes || [];
   if (!Array.isArray(ids)) ids = [ids];
   if (!Array.isArray(currentStocks)) currentStocks = [currentStocks];
   if (!Array.isArray(desiredStocks)) desiredStocks = [desiredStocks];
+  if (!Array.isArray(itemNames)) itemNames = [itemNames];
+  if (!Array.isArray(categories)) categories = [categories];
+  if (!Array.isArray(prices)) prices = [prices];
+  if (!Array.isArray(notesArr)) notesArr = [notesArr];
 
-  const upsert = db.prepare(`
+  const upsertStock = db.prepare(`
     INSERT INTO supplier_item_inventory (supplier_item_id, branch, current_stock, desired_stock, updated_at)
     VALUES (?,?,?,?,?)
     ON CONFLICT(supplier_item_id, branch) DO UPDATE SET
       current_stock = excluded.current_stock, desired_stock = excluded.desired_stock, updated_at = excluded.updated_at
   `);
+  const updateItem = db.prepare(`UPDATE supplier_items SET item_name=?, category=?, price=?, notes=? WHERE id=? AND supplier_id=?`);
   const now = new Date().toISOString();
   ids.forEach((id, i) => {
-    upsert.run(id, branch, parseInt(currentStocks[i], 10) || 0, parseInt(desiredStocks[i], 10) || 0, now);
+    upsertStock.run(id, branch, parseInt(currentStocks[i], 10) || 0, parseInt(desiredStocks[i], 10) || 0, now);
+    if (itemNames[i] !== undefined) {
+      updateItem.run(
+        (itemNames[i] || "").trim() || "ללא שם", (categories[i] || "").trim() || null,
+        parseFloat(prices[i]) || 0, (notesArr[i] || "").trim() || null, id, req.params.id
+      );
+    }
   });
 
   res.redirect(`/suppliers/${req.params.id}/inventory?branch=${encodeURIComponent(branch)}&saved=1`);

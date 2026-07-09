@@ -1,7 +1,10 @@
 <%- include('../partials/header', {title: mode === 'new' ? 'ספק חדש' : 'עריכת ספק'}) %>
 
 <div class="card">
-  <h1><%= mode === 'new' ? 'הוספת ספק חדש' : 'עריכת ספק' %></h1>
+  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+    <h1><%= mode === 'new' ? 'הוספת ספק חדש' : 'עריכת ספק' %></h1>
+    <a href="javascript:history.back()" class="btn secondary">חזרה</a>
+  </div>
   <form method="POST" action="<%= mode === 'new' ? '/suppliers' : '/suppliers/' + supplier.id + '?_method=PUT' %>">
     <div class="form-grid">
       <div class="form-group"><label>שם הספק</label><input type="text" name="name" value="<%= supplier.name || '' %>" required /></div>
