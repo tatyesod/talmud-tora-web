@@ -5,6 +5,12 @@
   overflow-x: hidden;
   position: relative;
   font-family: "Segoe UI", "Arial Hebrew", Arial, sans-serif;
+  user-select: none;
+}
+/* טפסים בתוך דף הבית (למשל הוספת משימה) צריכים להישאר ניתנים להקלדה/סימון כרגיל */
+.home-body input,
+.home-body textarea {
+  user-select: text;
 }
 
 .home-bg {
