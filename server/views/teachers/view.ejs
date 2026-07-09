@@ -193,8 +193,9 @@
   </form>
 </div>
 
+<% if (isAdmin) { %>
 <div class="card">
-  <h3>תיק עובד</h3>
+  <h3>תיק עובד <span style="font-size:0.6em; font-weight:normal; color:var(--muted);">(גלוי למנהלים בלבד)</span></h3>
   <% if (file.length === 0) { %>
     <p class="empty-state">אין רשומות בתיק העובד</p>
   <% } else { %>
@@ -253,6 +254,7 @@
     </div>
   </form>
 </div>
+<% } %>
 
 <div class="card">
   <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">

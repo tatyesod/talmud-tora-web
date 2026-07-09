@@ -275,10 +275,12 @@ router.get("/:id", (req, res) => {
     .prepare("SELECT status, COUNT(*) c FROM teacher_attendance WHERE teacher_id = ? GROUP BY status")
     .all(req.params.id);
 
-  const file = db
-    .prepare("SELECT * FROM teacher_file WHERE teacher_id = ? ORDER BY entry_date DESC")
-    .all(req.params.id)
-    .map((f) => ({ ...f, entry_date_str: hd.serialToGregorianString(f.entry_date) }));
+  // "תיק עובד" (חוזי העסקה וכד') - חומר אישי רגיש, זמין למנהלים בלבד
+  const file = req.currentUser && req.currentUser.is_admin
+    ? db.prepare("SELECT * FROM teacher_file WHERE teacher_id = ? ORDER BY entry_date DESC")
+        .all(req.params.id)
+        .map((f) => ({ ...f, entry_date_str: hd.serialToGregorianString(f.entry_date) }))
+    : null;
 
   const monthlyReports = db
     .prepare("SELECT * FROM teacher_monthly_reports WHERE teacher_id = ? ORDER BY month_label DESC")
@@ -314,6 +316,10 @@ router.delete("/:id/attendance/:attId", (req, res) => {
 });
 
 router.post("/:id/file", upload.single("attachment"), (req, res) => {
+  // "תיק עובד" הוא חומר אישי רגיש (חוזי העסקה וכד') - העלאה מותרת למנהלים בלבד
+  if (!req.currentUser || !req.currentUser.is_admin) {
+    return res.status(403).render("403");
+  }
   const { entry_date, category, notes } = req.body;
   const file_path = req.file ? `/uploads/teachers/${req.file.filename}` : null;
   const file_name = req.file ? Buffer.from(req.file.originalname, "latin1").toString("utf8") : null;
@@ -350,6 +356,9 @@ router.delete("/:id/monthly-report/:reportId", (req, res) => {
 });
 
 router.delete("/:id/file/:fileId", (req, res) => {
+  if (!req.currentUser || !req.currentUser.is_admin) {
+    return res.status(403).render("403");
+  }
   const row = db.prepare("SELECT file_path FROM teacher_file WHERE id=? AND teacher_id=?").get(req.params.fileId, req.params.id);
   if (row?.file_path) {
     const full = path.join(__dirname, "..", row.file_path.replace(/^\//, ""));

@@ -24,7 +24,6 @@ app.use(methodOverride("_method"));
 const UPLOADS_DIR = process.env.RENDER_PERSISTENT_DIR
   ? path.join(process.env.RENDER_PERSISTENT_DIR, "uploads")
   : path.join(__dirname, "uploads");
-app.use("/uploads", express.static(UPLOADS_DIR));
 app.use(express.static(path.join(__dirname, "public")));
 
 app.use(
@@ -119,6 +118,19 @@ function requireAdmin(req, res, next) {
   if (req.currentUser && req.currentUser.is_admin) return next();
   return res.status(403).render("403");
 }
+
+// הגשת קבצים מצורפים (/uploads) - רק אחרי אימות משתמש, כדי שאי אפשר יהיה לגשת
+// לקבצים ישירות דרך כתובת בלי להתחבר. "תיק עובד" (חוזי העסקה וכד') מוגן במיוחד -
+// מנהלים בלבד, גם אם המשתמש מחובר, כי זה חומר אישי רגיש.
+app.use("/uploads/teachers", (req, res, next) => {
+  if (req.currentUser && req.currentUser.is_admin) return next();
+  return res.status(403).send("אין הרשאה לצפות בקובץ זה - תיק עובד זמין למנהלים בלבד");
+});
+app.use("/uploads", (req, res, next) => {
+  if (req.currentUser) return next();
+  return res.redirect("/login");
+});
+app.use("/uploads", express.static(UPLOADS_DIR));
 
 // אם המשתמש חייב לשנות סיסמה — מנתב לעמוד שינוי סיסמה בלבד
 function checkForcePasswordChange(req, res, next) {
