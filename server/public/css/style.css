@@ -44,6 +44,7 @@ header.topbar .brand {
   font-size: 1.3em;
   font-weight: 700;
   color: #fff;
+  user-select: none;
 }
 
 header.topbar nav a {

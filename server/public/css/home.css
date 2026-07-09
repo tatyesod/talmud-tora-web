@@ -119,6 +119,7 @@
   display: inline-block;
   margin-top: 0;
   animation: appear 0.8s ease-out both;
+  user-select: none;
 }
 .logo-glow {
   position: absolute;
@@ -156,6 +157,8 @@
   letter-spacing: 1px;
   text-shadow: 0 2px 18px rgba(201,151,76,0.4);
   animation: appear 0.8s ease-out 0.15s both;
+  user-select: none;
+  cursor: default;
 }
 .home-title-divider {
   display: flex;
@@ -165,6 +168,7 @@
   margin: 6px auto 10px;
   width: 220px;
   animation: appear 0.8s ease-out 0.22s both;
+  user-select: none;
 }
 .home-title-divider::before,
 .home-title-divider::after {
@@ -190,6 +194,7 @@
   margin: 0 0 8px;
   letter-spacing: 1.5px;
   animation: appear 0.8s ease-out 0.3s both;
+  user-select: none;
 }
 .home-greeting {
   color: #e9e2d0;
