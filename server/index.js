@@ -332,6 +332,7 @@ app.use("/tasks", require("./routes/tasks"));
 app.use("/messages", require("./routes/messages"));
 app.use("/presence", require("./routes/presence"));
 app.use("/users", requireAdmin, require("./routes/users"));
+app.use("/backups", requireAdmin, require("./routes/backups"));
 app.get("/profile", requireLogin, (req, res) => {
   const db = require("./db");
   const { hashPassword } = require("./auth");
@@ -519,6 +520,13 @@ app.listen(PORT, () => {
     console.log(`גיבוי אוטומטי מתוכנן בעוד ${Math.round(msUntilNext / 60000)} דקות`);
   }
   scheduleNightlyBackup();
+
+  // גיבוי מלא שבועי (קוד + נתונים יחד) - זמין להורדה תחת /backups
+  try {
+    require("./fullBackup").scheduleWeeklyFullBackup();
+  } catch (e) {
+    console.error("שגיאה בתזמון גיבוי מלא:", e.message);
+  }
 });
 
 // ===== API — משימות משותפות =====

@@ -33,6 +33,13 @@
       <a href="/books" class="btn secondary report-btn">הזמנת ספרים ודוחות</a>
     </div>
 
+    <% if (typeof isAdmin !== 'undefined' && isAdmin) { %>
+    <div class="report-group">
+      <h3 style="margin-bottom:8px; color:var(--primary); font-size:0.95em; border-bottom:1px solid var(--border); padding-bottom:4px;">⚙️ ניהול מערכת</h3>
+      <a href="/backups" class="btn secondary report-btn">🗄️ גיבויים מלאים (קוד + נתונים)</a>
+    </div>
+    <% } %>
+
   </div>
 </div>
 

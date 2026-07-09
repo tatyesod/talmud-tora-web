@@ -1,0 +1,40 @@
+<%- include('../partials/header', {title: 'גיבויים'}) %>
+
+<div class="card">
+  <h1>🗄️ גיבויים מלאים</h1>
+  <p style="color:var(--muted); margin-bottom:14px;">
+    כל גיבוי מכיל את <strong>כל קוד המערכת</strong> (עיצוב, תבניות, לוגיקה) וגם <strong>את כל הנתונים</strong> (תלמידים, משפחות, כיתות וכו') בקובץ ZIP אחד.
+    מומלץ להוריד מדי פעם ולשמור עצמאית בדרייב/דרופבוקס.
+    גיבוי חדש נוצר אוטומטית פעם בשבוע, ונשמרים 8 הגיבויים האחרונים.
+  </p>
+
+  <% if (justCreated) { %>
+    <div class="alert-success" style="background:#eef6ee; border:1px solid #bcd9bc; border-radius:8px; padding:9px 14px; margin-bottom:14px; color:#2d7a2d;">✅ הגיבוי נוצר בהצלחה - אפשר להוריד אותו למטה.</div>
+  <% } %>
+
+  <form method="POST" action="/backups/create" style="margin-bottom:18px;">
+    <button type="submit" class="btn">📦 צור גיבוי חדש עכשיו</button>
+  </form>
+
+  <% if (files.length === 0) { %>
+    <p style="color:var(--muted);">עדיין אין גיבויים. לחץ על הכפתור למעלה כדי ליצור את הראשון.</p>
+  <% } else { %>
+    <table>
+      <thead>
+        <tr><th>קובץ</th><th>גודל</th><th>נוצר בתאריך</th><th></th></tr>
+      </thead>
+      <tbody>
+        <% files.forEach(f => { %>
+          <tr>
+            <td><%= f.name %></td>
+            <td><%= f.sizeMb %> MB</td>
+            <td><%= new Date(f.mtime).toLocaleString('he-IL') %></td>
+            <td><a href="/backups/download/<%= encodeURIComponent(f.name) %>" class="btn secondary small">⬇️ הורדה</a></td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  <% } %>
+</div>
+
+<%- include('../partials/footer') %>

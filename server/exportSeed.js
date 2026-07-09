@@ -10,8 +10,13 @@ const DATA_DIR = process.env.RENDER_PERSISTENT_DIR
   : path.join(__dirname, "data");
 
 const dbPath = path.join(DATA_DIR, "talmud-tora.db");
-// seed.json תמיד נשמר בתוך הקוד (server/data) — כדי שיעלה ל-GitHub כגיבוי
+// seed.json נשמר בתוך הקוד (server/data) — כדי שיעלה ל-GitHub כגיבוי בפעם הבאה שדוחפים עדכון
 const outPath = path.join(__dirname, "data", "seed.json");
+// וגם בדיסק הקבוע של Render (אם קיים) — כדי שהגיבוי ישרוד גם בלי git push,
+// כי תיקיית הקוד נדרסת בכל דיפלוי אבל הדיסק הקבוע לא.
+const persistentOutPath = process.env.RENDER_PERSISTENT_DIR
+  ? path.join(process.env.RENDER_PERSISTENT_DIR, "backups", "seed-latest.json")
+  : null;
 
 const db = new DatabaseSync(dbPath);
 
@@ -31,8 +36,16 @@ for (const t of tables) {
   seed.tables[t.name] = rows;
 }
 
-fs.writeFileSync(outPath, JSON.stringify(seed), "utf-8");
+const seedJson = JSON.stringify(seed);
+fs.writeFileSync(outPath, seedJson, "utf-8");
 console.log(`נוצר קובץ seed: ${outPath}`);
+
+if (persistentOutPath) {
+  fs.mkdirSync(path.dirname(persistentOutPath), { recursive: true });
+  fs.writeFileSync(persistentOutPath, seedJson, "utf-8");
+  console.log(`נוצר עותק גם בדיסק הקבוע: ${persistentOutPath}`);
+}
+
 console.log("טבלאות:", Object.keys(seed.tables).map((k) => `${k}(${seed.tables[k].length})`).join(", "));
 
 db.close();
