@@ -261,7 +261,8 @@ router.get("/payments", (req, res) => {
   if (!year) return res.redirect("/books");
 
   const families = db.prepare(`
-    SELECT DISTINCT f.id, f.last_name, f.father_name, f.home_phone, f.father_mobile
+    SELECT DISTINCT f.id, f.last_name, f.father_name, f.home_phone, f.father_mobile,
+           f.street, f.house_number, f.city
     FROM families f JOIN students s ON s.family_id=f.id
     LEFT JOIN classes c ON s.class_id=c.id
     WHERE s.family_id IN (

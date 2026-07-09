@@ -42,9 +42,10 @@
     <p class="empty-state">אין הזמנות ספרים לשנה זו</p>
   <% } else { %>
   <div class="table-scroll-wrap">
-    <table>
+    <table class="payments-table">
       <thead><tr>
         <th>משפחה</th>
+        <th>כתובת</th>
         <th>ילד/כיתה</th>
         <th>סה"כ לתשלום</th>
         <th>שולם</th>
@@ -56,6 +57,7 @@
         <% familiesData.forEach(fam => { %>
           <tr id="fam-<%= fam.id %>" class="fam-row" data-search="<%= (fam.last_name + ' ' + (fam.father_name||'') + ' ' + fam.childClass).toLowerCase() %>">
             <td><strong><%= fam.last_name %></strong><br/><span style="color:var(--muted); font-size:0.85em;"><%= fam.father_name || '' %></span></td>
+            <td style="font-size:0.88em; color:var(--muted);"><%= [fam.street, fam.house_number].filter(Boolean).join(' ') %><% if (fam.city) { %><br/><%= fam.city %><% } %></td>
             <td style="font-size:0.88em;"><%= fam.childClass %></td>
             <td><%= fam.total.toLocaleString() %> ₪</td>
             <td style="color:#2d7a4f; font-weight:600;"><%= fam.paid.toLocaleString() %> ₪</td>
@@ -142,6 +144,16 @@
   20%, 80% { background: #fff6d6; }
 }
 .payment-row-highlight { animation: paymentRowFlash 2.5s ease; }
+
+/* ריווח נוסף לטבלת התשלומים בלבד - כדי שלא תהיה צפופה */
+.payments-table th, .payments-table td {
+  padding: 16px 14px;
+  vertical-align: top;
+  line-height: 1.6;
+}
+.payments-table td:first-child { vertical-align: middle; }
+.payments-table tbody tr { border-bottom: 6px solid var(--bg, #f7f5ef); }
+.payments-table thead th { padding-bottom: 12px; }
 </style>
 
 <%- include('../partials/footer') %>
