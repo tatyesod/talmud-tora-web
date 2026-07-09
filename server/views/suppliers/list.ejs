@@ -9,7 +9,7 @@
     </div>
   </div>
   <form class="searchbar auto-filter" method="GET" action="/suppliers">
-    <input type="text" name="q" placeholder="חיפוש לפי שם, איש קשר, טלפון, מייל..." value="<%= q %>" />
+    <input type="text" name="q" placeholder="חיפוש לפי שם, איש קשר, טלפון, מייל..." value="<%= q %>" autofocus />
     <select name="category">
       <option value="">כל הקטגוריות</option>
       <% categories.forEach(c => { %>

@@ -13,7 +13,7 @@
     — שימושי לחישוב תקציב חלוקת מתנות
   </p>
   <form class="searchbar auto-filter" method="GET" action="/teachers">
-    <input type="text" name="q" placeholder="חיפוש לפי שם, ת.ז, נייד..." value="<%= q %>" />
+    <input type="text" name="q" placeholder="חיפוש לפי שם, ת.ז, נייד..." value="<%= q %>" autofocus />
     <select name="status">
       <option value="" <%- status === '' ? 'selected' : '' %>>הצג הכל</option>
       <% statuses.forEach(s => { %>

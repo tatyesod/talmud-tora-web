@@ -3,7 +3,7 @@
 <div class="card">
   <h1>משפחות</h1>
   <form class="searchbar auto-filter" method="GET" action="/families">
-    <input type="text" name="q" placeholder="חיפוש לפי שם משפחה, שם אב, טלפון..." value="<%= q %>" />
+    <input type="text" name="q" placeholder="חיפוש לפי שם משפחה, שם אב, טלפון..." value="<%= q %>" autofocus />
     <select name="sector">
       <option value="">כל המגזרים</option>
       <option value="ליטאי" <%= sector === 'ליטאי' ? 'selected' : '' %>>ליטאי</option>
