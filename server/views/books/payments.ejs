@@ -61,10 +61,13 @@
             <td style="font-size:0.88em;"><%= fam.childClass %></td>
             <td><%= fam.total.toLocaleString() %> ₪</td>
             <td style="color:#2d7a4f; font-weight:600;"><%= fam.paid.toLocaleString() %> ₪</td>
-            <td style="font-weight:700; <%= fam.balance > 0 ? 'color:#c0392b;' : 'color:#2d7a4f;' %>">
-              <%= fam.balance.toLocaleString() %> ₪
-              <% if (fam.balance <= 0) { %> ✅<% } %>
-            </td>
+            <% if (fam.balance > 0) { %>
+              <td style="font-weight:700; color:#c0392b;"><%= fam.balance.toLocaleString() %> ₪</td>
+            <% } else if (fam.balance < 0) { %>
+              <td style="font-weight:700; color:#2c5f9e;">זכות <%= Math.abs(fam.balance).toLocaleString() %> ₪</td>
+            <% } else { %>
+              <td style="font-weight:700; color:#2d7a4f;">0 ₪ ✅</td>
+            <% } %>
             <td style="font-size:0.85em;">
               <% if (fam.payments.length === 0) { %>
                 <span style="color:var(--muted);">אין תשלומים</span>
