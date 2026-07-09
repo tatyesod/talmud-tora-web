@@ -12,9 +12,9 @@
   <% if (saved) { %>
     <div style="background:#eef6ee; border:1px solid #bcd9bc; border-radius:8px; padding:10px 16px; margin-bottom:14px; color:#2d7a2d;">✅ ההזמנות נשמרו בהצלחה!</div>
   <% } %>
-  <% if (typeof paymentsAdjusted !== 'undefined' && paymentsAdjusted > 0) { %>
-    <div style="background:#fdecea; border:1px solid #f5c6cb; border-radius:8px; padding:10px 16px; margin-bottom:14px; color:#a94442;">
-      ⚠️ בוטלה הזמנת ספר לתלמיד אחד או יותר - לכן <strong>קוזז אוטומטית</strong> מהתשלום שנרשם למשפחה שלהם הסכום המתאים בדיוק לספרים שבוטלו (סה"כ <%= adjustedAmount.toLocaleString() %> ₪, ב-<%= paymentsAdjusted %> תלמידים). תשלומים עבור ילדים/ספרים אחרים באותה משפחה לא נפגעו. אפשר לראות את פירוט הקיזוז במסך "תשלומים".
+  <% if (typeof creditCreated !== 'undefined' && creditCreated > 0) { %>
+    <div style="background:#eef3f8; border:1px solid #b8cfe0; border-radius:8px; padding:10px 16px; margin-bottom:14px; color:#2c5f9e;">
+      ℹ️ בוטלה הזמנת ספר לתלמיד אחד או יותר (סה"כ <%= creditAmount.toLocaleString() %> ₪, ב-<%= creditCreated %> תלמידים). אם המשפחה כבר שילמה על כך - תופיע להם <strong>יתרת זכות</strong> (בכחול) במסך "תשלומים", ומשם אפשר לאשר את ההחזר בפועל.
     </div>
   <% } %>
 

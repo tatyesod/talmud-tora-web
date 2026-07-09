@@ -103,7 +103,7 @@ router.get("/class", (req, res) => {
     ordersMap[o.student_id].add(o.catalog_id);
   });
 
-  res.render("books/class-orders", { year, cls, catalog, students, ordersMap, saved: req.query.saved || "", paymentsAdjusted: parseInt(req.query.paymentsAdjusted, 10) || 0, adjustedAmount: parseFloat(req.query.adjustedAmount) || 0 });
+  res.render("books/class-orders", { year, cls, catalog, students, ordersMap, saved: req.query.saved || "", creditCreated: parseInt(req.query.creditCreated, 10) || 0, creditAmount: parseFloat(req.query.creditAmount) || 0 });
 });
 
 // ============ שמירת הזמנות ============
@@ -149,17 +149,13 @@ router.post("/class/save", (req, res) => {
     }
   }
 
-  // תשלום תלוי תמיד בסימון ההזמנה, אבל רק באופן יחסי לתלמיד/לספר שבוטל -
-  // לא נוגעים בתשלום של שאר הילדים במשפחה. לכל ספר שבוטל לתלמיד מסוים, מוסיפים
-  // רשומת "ביטול" בסכום שלילי בגובה מחיר הספר, כדי שהסכום ששולם בפועל יקטן
-  // באותו סכום (ולא יישאר תלוי מול הזמנה שכבר לא קיימת), בלי למחוק תשלומים
-  // שקשורים לילדים/ספרים אחרים באותה משפחה.
-  const insertAdjustment = db.prepare(`
-    INSERT INTO book_payments (year_label, family_id, amount, method, payment_date, notes, created_by, created_at)
-    VALUES (?,?,?,?,?,?,?,?)
-  `);
-  let adjustedCount = 0;
-  let adjustedTotal = 0;
+  // תשלום תלוי תמיד בסימון ההזמנה: כשמבטלים ספר לתלמיד, לא נוגעים כאן בתשלומים
+  // בכלל - ה"סה"כ לתשלום" של המשפחה כבר יורד ממילא (מחושב לפי ההזמנות הנוכחיות),
+  // כך שאם המשפחה כבר שילמה על הספר שבוטל, תיווצר אוטומטית "יתרת זכות" (תוצג בכחול
+  // במסך התשלומים) - סימן שמגיע להם החזר. ההחזר בפועל נרשם במסך התשלומים עצמו
+  // (כפתור ייעודי ליד יתרת הזכות), ולא כאן - כדי שלא "נאפס" תשלום לפני שבאמת הוחזר.
+  let affectedCount = 0;
+  let affectedTotal = 0;
   for (const s of studentIds) {
     const before = oldMap[s.id] || new Set();
     const after = newMap[s.id] || new Set();
@@ -167,19 +163,11 @@ router.post("/class/save", (req, res) => {
     if (removedIds.length === 0 || !s.family_id) continue;
     const removedTotal = removedIds.reduce((sum, cid) => sum + (priceById[cid] || 0), 0);
     if (removedTotal <= 0) continue;
-    const removedNames = removedIds.map((cid) => catalog.find((c) => c.id === cid)?.item_name).filter(Boolean).join(", ");
-    const studentName = `${s.first_name || ""} ${s.last_name || ""}`.trim();
-    insertAdjustment.run(
-      year, s.family_id, -removedTotal, "ביטול הזמנה",
-      new Date().toISOString().slice(0, 10),
-      `קיזוז אוטומטי - בוטלה הזמנה עבור ${studentName}: ${removedNames}`,
-      req.currentUser.id, now
-    );
-    adjustedCount++;
-    adjustedTotal += removedTotal;
+    affectedCount++;
+    affectedTotal += removedTotal;
   }
 
-  res.redirect(`/books/class?year=${encodeURIComponent(year)}&class_id=${class_id}&saved=1${adjustedCount > 0 ? "&paymentsAdjusted=" + adjustedCount + "&adjustedAmount=" + adjustedTotal : ""}`);
+  res.redirect(`/books/class?year=${encodeURIComponent(year)}&class_id=${class_id}&saved=1${affectedCount > 0 ? "&creditCreated=" + affectedCount + "&creditAmount=" + affectedTotal : ""}`);
 });
 
 // ============ דוח כיתה ספציפית לאקסל ============
@@ -371,6 +359,39 @@ router.post("/payments/:id/delete", (req, res) => {
   const y = year || (payment ? payment.year_label : "");
   const anchor = payment ? `#fam-${payment.family_id}` : "";
   res.redirect(`/books/payments?year=${encodeURIComponent(y)}${branch ? `&branch=${encodeURIComponent(branch)}` : ""}${anchor}`);
+});
+
+// אישור החזר בפועל למשפחה על יתרת זכות שנוצרה עקב ביטול הזמנה -
+// מוסיף רשומת קיזוז שמאפסת בדיוק את יתרת הזכות הנוכחית (ולא סתם סכום קבוע),
+// כדי שהחישוב יהיה נכון גם אם בינתיים היו עוד שינויים.
+router.post("/payments/settle-credit", (req, res) => {
+  const { year, family_id, branch } = req.body;
+  if (year && family_id) {
+    const family = db.prepare("SELECT last_name FROM families WHERE id=?").get(family_id);
+    // מחשבים מחדש את היתרה הנוכחית בדיוק כמו שמסך התשלומים מחשב, כדי לאפס בדיוק אליה
+    const items = db.prepare(`
+      SELECT bc.price FROM book_orders bo JOIN book_catalog bc ON bo.catalog_id=bc.id
+      JOIN students s ON bo.student_id=s.id WHERE bo.year_label=? AND s.family_id=?
+    `).all(year, family_id);
+    const extras = db.prepare(`
+      SELECT e.price FROM book_order_extras e JOIN students s ON e.student_id=s.id
+      WHERE e.year_label=? AND s.family_id=?
+    `).all(year, family_id);
+    const total = [...items, ...extras].reduce((s, i) => s + (i.price || 0), 0);
+    const paidSoFar = db.prepare("SELECT COALESCE(SUM(amount),0) AS s FROM book_payments WHERE year_label=? AND family_id=?").get(year, family_id).s;
+    const credit = paidSoFar - total; // חיובי = יש יתרת זכות לקוזז
+    if (credit > 0) {
+      db.prepare(`
+        INSERT INTO book_payments (year_label, family_id, amount, method, payment_date, notes, created_by, created_at)
+        VALUES (?,?,?,?,?,?,?,?)
+      `).run(
+        year, family_id, -credit, "אישור החזר ללקוח", new Date().toISOString().slice(0, 10),
+        `אושר והוחזר בפועל ללקוח סך ${credit.toLocaleString()} ₪ (יתרת זכות ${family ? "- משפחת " + family.last_name : ""})`,
+        req.currentUser.id, new Date().toISOString()
+      );
+    }
+  }
+  res.redirect(`/books/payments?year=${encodeURIComponent(year)}${branch ? `&branch=${encodeURIComponent(branch)}` : ""}#fam-${family_id}`);
 });
 
 // ============ מכתב הזמנה להורים (checkboxes ריקים) ============
