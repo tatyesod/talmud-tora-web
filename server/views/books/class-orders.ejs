@@ -33,6 +33,7 @@
         <thead>
           <tr>
             <th class="student-col">תלמיד</th>
+            <th class="father-col">שם האב</th>
             <% catalog.forEach((c, idx) => { %>
               <th class="book-col" data-col="<%= idx %>" title="<%= c.publisher || '' %>">
                 <%= c.item_name %>
@@ -55,6 +56,7 @@
                 <% const addr = [s.street, s.house_number].filter(Boolean).join(' '); %>
                 <% if (addr) { %><div class="student-address"><%= addr %></div><% } %>
               </td>
+              <td class="father-col"><%= s.father_name || '' %></td>
               <% let rowTotal = 0; catalog.forEach(c => {
                 const checked = ordersMap[s.id] && ordersMap[s.id].has(c.id);
                 if (checked) rowTotal += c.price;
@@ -70,7 +72,7 @@
         </tbody>
         <tfoot>
           <tr>
-            <th>כמות מוזמנים</th>
+            <th colspan="2">כמות מוזמנים</th>
             <% catalog.forEach(c => {
               const cnt = students.filter(s => ordersMap[s.id] && ordersMap[s.id].has(c.id)).length;
             %>
@@ -110,6 +112,7 @@
 .student-name-row { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
 .student-pay-link { text-decoration: none; font-size: 1em; opacity: 0.7; flex-shrink: 0; }
 .student-pay-link:hover { opacity: 1; }
+.father-col { min-width: 110px; max-width: 150px; text-align: right !important; background: #fff; color: var(--muted); font-size: 0.9em; }
 .book-col { min-width: 100px; max-width: 130px; font-size: 0.80em; background: #f0f4f8; vertical-align: bottom; }
 .book-price { font-weight: 700; color: var(--primary); font-size: 0.95em; margin-top: 2px; }
 .book-cell { cursor: pointer; user-select: none; font-size: 1.3em; color: #2e7d32; font-weight: 700; width: 42px; }
