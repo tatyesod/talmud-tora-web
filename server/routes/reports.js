@@ -256,6 +256,44 @@ router.get("/families-report/export", async (req, res) => {
   await sendWorkbook(res, "דוח משפחות.xlsx", "משפחות", "דוח משפחות", header, data);
 });
 
+// ============ דוח שכר לימוד למשפחה, עם סינון לפי חברת גביה - ייצוא לאקסל ============
+router.get("/tuition-by-billing-company", (req, res) => {
+  const companies = db
+    .prepare("SELECT DISTINCT billing_company FROM families WHERE billing_company IS NOT NULL AND TRIM(billing_company) != '' ORDER BY billing_company")
+    .all()
+    .map((r) => r.billing_company);
+  res.render("reports/tuition-by-billing-company", { companies });
+});
+
+router.get("/tuition-by-billing-company/export", async (req, res) => {
+  const { calcAllFamiliesTuition } = require("../tuitionCalc");
+  const billingCompany = req.query.billing_company || "";
+  const output = req.query.output || "excel";
+
+  let familiesTuition = calcAllFamiliesTuition();
+  if (billingCompany) {
+    familiesTuition = familiesTuition.filter((f) => (f.billing_company || "") === billingCompany);
+  }
+
+  const header = [
+    "שם משפחה", "חברת גביה", "שם האב", "טלפון בית", "נייד אב", "נייד אם", "כתובת",
+    "מס' ילדים פעילים", "סה\"כ מלא", "אחוז הנחה", "סכום הנחה", "לתשלום חודשי",
+  ];
+  const data = familiesTuition.map((f) => [
+    f.last_name || "", f.billing_company || "", f.father_name || "", f.home_phone || "",
+    f.father_mobile || "", f.mother_mobile || "", buildAddress(f),
+    f.activeCount, f.grossTotal, f.discountPercent + "%", f.discountAmount, f.netTotal,
+  ]);
+
+  const reportTitle = billingCompany ? `דוח שכר לימוד - חברת גביה: ${billingCompany}` : "דוח שכר לימוד - כל המשפחות";
+
+  if (output === "print") {
+    return res.render("reports/print-view", { title: reportTitle, headers: header, rows: data });
+  }
+
+  await sendWorkbook(res, "דוח שכר לימוד לפי חברת גביה.xlsx", "שכר לימוד", reportTitle, header, data);
+});
+
 // ============ רשימת רחובות ייחודית - ייצוא לאקסל ============
 router.get("/streets-export", async (req, res) => {
   const rows = db.prepare(`

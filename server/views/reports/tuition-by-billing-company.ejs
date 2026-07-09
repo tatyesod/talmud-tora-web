@@ -1,0 +1,25 @@
+<%- include('../partials/header', {title: 'דוח שכר לימוד לפי חברת גביה'}) %>
+<div class="card">
+  <h1>דוח שכר לימוד לפי חברת גביה — ייצוא לאקסל</h1>
+  <form id="rep-form" method="GET" action="/reports/tuition-by-billing-company/export">
+    <div class="form-grid">
+      <div class="form-group">
+        <label>חברת גביה (ריק = כל המשפחות)</label>
+        <select name="billing_company">
+          <option value="">הכל</option>
+          <option value="קשר">קשר</option>
+          <option value="מוסדי">מוסדי</option>
+          <% companies.filter(c => c !== 'קשר' && c !== 'מוסדי').forEach(c => { %>
+            <option value="<%= c %>"><%= c %></option>
+          <% }) %>
+        </select>
+      </div>
+    </div>
+    <div class="actions" style="margin-top:14px; display:flex; gap:10px; flex-wrap:wrap;">
+      <button type="submit" class="btn" formaction="/reports/tuition-by-billing-company/export">📥 ייצוא לאקסל</button>
+      <button type="submit" class="btn secondary" formaction="/reports/tuition-by-billing-company/export?output=print" onclick="this.form.target='_blank'">🖨️ הדפסה / PDF</button>
+      <a href="/reports" class="btn secondary">חזרה</a>
+    </div>
+  </form>
+</div>
+<%- include('../partials/footer') %>

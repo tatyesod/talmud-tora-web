@@ -50,7 +50,9 @@ function calcFamilyTuition(familyId) {
 function calcAllFamiliesTuition() {
   const families = db
     .prepare(`
-      SELECT DISTINCT f.id, f.last_name, f.father_name, f.home_phone
+      SELECT DISTINCT f.id, f.last_name, f.father_name, f.home_phone,
+             f.billing_company, f.father_mobile, f.mother_mobile,
+             f.street, f.house_number, f.city
       FROM families f
       JOIN students s ON s.family_id = f.id
       WHERE s.status = 'פעיל'
