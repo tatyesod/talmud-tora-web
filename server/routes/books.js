@@ -342,7 +342,7 @@ router.post("/payments/add", (req, res) => {
       VALUES (?,?,?,?,?,?,?,?)
     `).run(year, family_id, amt, method || "מזומן", payment_date || null, notes || null, req.currentUser.id, new Date().toISOString());
   }
-  res.redirect(`/books/payments?year=${encodeURIComponent(year)}${branch ? `&branch=${encodeURIComponent(branch)}` : ""}`);
+  res.redirect(`/books/payments?year=${encodeURIComponent(year)}${branch ? `&branch=${encodeURIComponent(branch)}` : ""}#fam-${family_id}`);
 });
 
 router.post("/payments/:id/delete", (req, res) => {
@@ -350,7 +350,8 @@ router.post("/payments/:id/delete", (req, res) => {
   db.prepare("DELETE FROM book_payments WHERE id=?").run(req.params.id);
   const { year, branch } = req.query;
   const y = year || (payment ? payment.year_label : "");
-  res.redirect(`/books/payments?year=${encodeURIComponent(y)}${branch ? `&branch=${encodeURIComponent(branch)}` : ""}`);
+  const anchor = payment ? `#fam-${payment.family_id}` : "";
+  res.redirect(`/books/payments?year=${encodeURIComponent(y)}${branch ? `&branch=${encodeURIComponent(branch)}` : ""}${anchor}`);
 });
 
 // ============ מכתב הזמנה להורים (checkboxes ריקים) ============
