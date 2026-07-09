@@ -71,7 +71,7 @@
               <% } else { %>
                 <ul style="margin:0; padding-right:16px;">
                   <% fam.payments.forEach(p => { %>
-                    <li>
+                    <li title="<%= p.notes || '' %>" style="<%= p.amount < 0 ? 'color:#c0392b;' : '' %>">
                       <%= p.amount.toLocaleString() %> ₪ &middot; <%= p.method %>
                       <% if (p.payment_date) { %> &middot; <%= p.payment_date %><% } %>
                       <form method="POST" action="/books/payments/<%= p.id %>/delete?year=<%= encodeURIComponent(year) %>&branch=<%= encodeURIComponent(branch) %>" style="display:inline;" onsubmit="return confirm('למחוק תשלום זה?');">

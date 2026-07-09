@@ -103,7 +103,7 @@ router.get("/class", (req, res) => {
     ordersMap[o.student_id].add(o.catalog_id);
   });
 
-  res.render("books/class-orders", { year, cls, catalog, students, ordersMap, saved: req.query.saved || "", paymentsReset: parseInt(req.query.paymentsReset, 10) || 0 });
+  res.render("books/class-orders", { year, cls, catalog, students, ordersMap, saved: req.query.saved || "", paymentsAdjusted: parseInt(req.query.paymentsAdjusted, 10) || 0, adjustedAmount: parseFloat(req.query.adjustedAmount) || 0 });
 });
 
 // ============ שמירת הזמנות ============
@@ -114,8 +114,11 @@ router.post("/class/save", (req, res) => {
   const cls = db.prepare("SELECT * FROM classes WHERE id=?").get(class_id);
   if (!cls) return res.redirect("/books");
 
-  const studentIds = db.prepare("SELECT id, family_id FROM students WHERE class_id=? AND status='פעיל'").all(class_id);
-  const catalogIds = db.prepare("SELECT id FROM book_catalog WHERE year_label=? AND class_name=?").all(year, cls.name).map(c => c.id);
+  const studentIds = db.prepare("SELECT id, first_name, last_name, family_id FROM students WHERE class_id=? AND status='פעיל'").all(class_id);
+  const catalog = db.prepare("SELECT id, item_name, price FROM book_catalog WHERE year_label=? AND class_name=?").all(year, cls.name);
+  const catalogIds = catalog.map(c => c.id);
+  const priceById = {};
+  catalog.forEach(c => { priceById[c.id] = c.price; });
 
   // מצב "לפני" - כדי לזהות מי איבד הזמנה (ולא רק מי קיבל הזמנה חדשה)
   const oldOrders = db.prepare(
@@ -146,21 +149,37 @@ router.post("/class/save", (req, res) => {
     }
   }
 
-  // תשלום תלוי תמיד בסימון ההזמנה: אם בוטלה הזמנת ספר לתלמיד, מבטלים גם את
-  // התשלומים שנרשמו למשפחה שלו לשנה זו (כאילו לא שילמו כלל), כדי שלא יישאר
-  // תשלום "תלוי באוויר" מול הזמנה שכבר לא קיימת. יש להזין את התשלום מחדש בהתאם למצב העדכני.
-  const familiesToReset = new Set();
+  // תשלום תלוי תמיד בסימון ההזמנה, אבל רק באופן יחסי לתלמיד/לספר שבוטל -
+  // לא נוגעים בתשלום של שאר הילדים במשפחה. לכל ספר שבוטל לתלמיד מסוים, מוסיפים
+  // רשומת "ביטול" בסכום שלילי בגובה מחיר הספר, כדי שהסכום ששולם בפועל יקטן
+  // באותו סכום (ולא יישאר תלוי מול הזמנה שכבר לא קיימת), בלי למחוק תשלומים
+  // שקשורים לילדים/ספרים אחרים באותה משפחה.
+  const insertAdjustment = db.prepare(`
+    INSERT INTO book_payments (year_label, family_id, amount, method, payment_date, notes, created_by, created_at)
+    VALUES (?,?,?,?,?,?,?,?)
+  `);
+  let adjustedCount = 0;
+  let adjustedTotal = 0;
   for (const s of studentIds) {
     const before = oldMap[s.id] || new Set();
     const after = newMap[s.id] || new Set();
-    const lostSomething = [...before].some((cid) => !after.has(cid));
-    if (lostSomething && s.family_id) familiesToReset.add(s.family_id);
+    const removedIds = [...before].filter((cid) => !after.has(cid));
+    if (removedIds.length === 0 || !s.family_id) continue;
+    const removedTotal = removedIds.reduce((sum, cid) => sum + (priceById[cid] || 0), 0);
+    if (removedTotal <= 0) continue;
+    const removedNames = removedIds.map((cid) => catalog.find((c) => c.id === cid)?.item_name).filter(Boolean).join(", ");
+    const studentName = `${s.first_name || ""} ${s.last_name || ""}`.trim();
+    insertAdjustment.run(
+      year, s.family_id, -removedTotal, "ביטול הזמנה",
+      new Date().toISOString().slice(0, 10),
+      `קיזוז אוטומטי - בוטלה הזמנה עבור ${studentName}: ${removedNames}`,
+      req.currentUser.id, now
+    );
+    adjustedCount++;
+    adjustedTotal += removedTotal;
   }
-  familiesToReset.forEach((familyId) => {
-    db.prepare("DELETE FROM book_payments WHERE year_label=? AND family_id=?").run(year, familyId);
-  });
 
-  res.redirect(`/books/class?year=${encodeURIComponent(year)}&class_id=${class_id}&saved=1${familiesToReset.size > 0 ? "&paymentsReset=" + familiesToReset.size : ""}`);
+  res.redirect(`/books/class?year=${encodeURIComponent(year)}&class_id=${class_id}&saved=1${adjustedCount > 0 ? "&paymentsAdjusted=" + adjustedCount + "&adjustedAmount=" + adjustedTotal : ""}`);
 });
 
 // ============ דוח כיתה ספציפית לאקסל ============
