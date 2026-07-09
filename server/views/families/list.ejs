@@ -30,8 +30,16 @@
   <% if (families.length === 0) { %>
     <div class="empty-state">לא נמצאו משפחות</div>
   <% } else { %>
+    <form id="bulk-delete-form" method="POST" action="/families/bulk-delete"></form>
+    <div id="bulk-toolbar" style="display:none; align-items:center; gap:10px; margin:10px 0; padding:10px 14px; background:#fdecea; border:1px solid #f5c6cb; border-radius:8px;">
+      <span id="bulk-count-text" style="color:#a94442; font-weight:600;"></span>
+      <span style="color:#a94442; font-size:0.85em;">(התלמידים לא יימחקו, רק ינותקו מהמשפחה)</span>
+      <button type="submit" form="bulk-delete-form" class="btn danger small" onclick="return confirmBulkDelete('משפחות')">🗑️ מחק נבחרות</button>
+      <button type="button" class="btn secondary small" onclick="clearBulkSelection()">בטל בחירה</button>
+    </div>
     <div class="table-scroll-wrap"><table>
       <thead><tr>
+        <th><input type="checkbox" id="select-all-rows" /></th>
         <th><a href="<%= sortUrl('last_name') %>">שם משפחה<%= sortIndicator('last_name') %></a></th>
         <th><a href="<%= sortUrl('father_name') %>">שם האב<%= sortIndicator('father_name') %></a></th>
         <th><a href="<%= sortUrl('mother_name') %>">שם האם<%= sortIndicator('mother_name') %></a></th>
@@ -47,6 +55,7 @@
       <tbody>
         <% families.forEach(f => { %>
           <tr>
+            <td><input type="checkbox" class="row-check" name="ids" value="<%= f.id %>" form="bulk-delete-form" /></td>
             <td class="nowrap-cell"><a href="/families/<%= f.id %>"><%= f.last_name || '' %></a></td>
             <td class="nowrap-cell"><%= f.father_name || '' %></td>
             <td class="nowrap-cell"><%= f.mother_name || '' %></td>
@@ -67,5 +76,8 @@
     <p style="color:var(--muted); margin-top:10px;">סה"כ <%= families.length %> משפחות</p>
   <% } %>
 </div>
+
+<script src="/js/bulk-select.js"></script>
+<script>initBulkSelect('select-all-rows', 'משפחות');</script>
 
 <%- include('../partials/footer') %>

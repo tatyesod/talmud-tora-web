@@ -43,9 +43,16 @@
   <% if (students.length === 0) { %>
     <div class="empty-state">לא נמצאו תלמידים התואמים את החיפוש</div>
   <% } else { %>
+    <form id="bulk-delete-form" method="POST" action="/students/bulk-delete"></form>
+    <div id="bulk-toolbar" style="display:none; align-items:center; gap:10px; margin:10px 0; padding:10px 14px; background:#fdecea; border:1px solid #f5c6cb; border-radius:8px;">
+      <span id="bulk-count-text" style="color:#a94442; font-weight:600;"></span>
+      <button type="submit" form="bulk-delete-form" class="btn danger small" onclick="return confirmBulkDelete('תלמידים')">🗑️ מחק נבחרים</button>
+      <button type="button" class="btn secondary small" onclick="clearBulkSelection()">בטל בחירה</button>
+    </div>
     <div class="table-scroll-wrap"><table>
       <thead>
         <tr>
+          <th><input type="checkbox" id="select-all-rows" /></th>
           <th><a href="<%= sortUrl('last_name') %>">שם משפחה<%= sortIndicator('last_name') %></a></th>
           <th><a href="<%= sortUrl('first_name') %>">שם פרטי<%= sortIndicator('first_name') %></a></th>
           <th><a href="<%= sortUrl('nickname') %>">כינוי<%= sortIndicator('nickname') %></a></th>
@@ -66,6 +73,7 @@
       <tbody>
         <% students.forEach(s => { %>
           <tr>
+            <td><input type="checkbox" class="row-check" name="ids" value="<%= s.id %>" form="bulk-delete-form" /></td>
             <td><a href="/students/<%= s.id %>"><%= s.last_name || s.family_last_name || '' %></a></td>
             <td><%= s.first_name || '' %></td>
             <td><%= s.nickname || '' %></td>
@@ -90,5 +98,8 @@
     <p style="color:var(--muted); margin-top:10px;">סה"כ <%= students.length %> תלמידים</p>
   <% } %>
 </div>
+
+<script src="/js/bulk-select.js"></script>
+<script>initBulkSelect('select-all-rows', 'תלמידים');</script>
 
 <%- include('../partials/footer') %>

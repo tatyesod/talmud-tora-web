@@ -257,6 +257,18 @@ router.delete("/students/:id", (req, res) => {
   res.redirect("/students");
 });
 
+// --- מחיקה מרובה (סימון ווי ברשימה) ---
+router.post("/students/bulk-delete", (req, res) => {
+  let ids = req.body.ids || [];
+  if (!Array.isArray(ids)) ids = [ids];
+  ids = ids.map((v) => parseInt(v, 10)).filter((v) => !isNaN(v));
+  if (ids.length > 0) {
+    const placeholders = ids.map(() => "?").join(",");
+    db.prepare(`DELETE FROM students WHERE id IN (${placeholders})`).run(...ids);
+  }
+  res.redirect("/students");
+});
+
 // --- הוספת רשומה לתיק תלמיד ---
 router.post("/students/:id/file", (req, res) => {
   const { notes, class_name_at_time, entry_date } = req.body;

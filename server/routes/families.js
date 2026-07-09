@@ -167,4 +167,17 @@ router.delete("/:id", (req, res) => {
   res.redirect("/families");
 });
 
+// --- מחיקה מרובה (סימון ווי ברשימה) - אותה לוגיקה כמו מחיקה בודדת: מנתק תלמידים, לא מוחק אותם ---
+router.post("/bulk-delete", (req, res) => {
+  let ids = req.body.ids || [];
+  if (!Array.isArray(ids)) ids = [ids];
+  ids = ids.map((v) => parseInt(v, 10)).filter((v) => !isNaN(v));
+  for (const id of ids) {
+    db.prepare("UPDATE students SET family_id = NULL WHERE family_id = ?").run(id);
+    db.prepare("DELETE FROM emergency_contacts WHERE family_id = ?").run(id);
+    db.prepare("DELETE FROM families WHERE id = ?").run(id);
+  }
+  res.redirect("/families");
+});
+
 module.exports = router;
