@@ -21,9 +21,16 @@
       const b = el.getAttribute("data-branch-item");
       const matches = !branchValue || b === branchValue;
       el.style.display = matches ? "" : "none";
+      const cb = el.querySelector("input[type='checkbox']");
+      if (!cb) return;
       if (!matches) {
-        const cb = el.querySelector("input[type='checkbox']");
-        if (cb) cb.checked = false;
+        // כיתה שלא בסניף שנבחר - תמיד מוסתרת ולא מסומנת
+        cb.checked = false;
+      } else if (branchValue) {
+        // נבחר סניף ספציפי - מסמנים אוטומטית את כל הכיתות שלו,
+        // כדי שהסינון באמת יפעל (ולא ייצא בטעות את כל הכיתות/הסניפים
+        // רק כי אף תיבה לא סומנה ידנית)
+        cb.checked = true;
       }
     });
   }
