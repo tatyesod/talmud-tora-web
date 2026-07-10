@@ -65,7 +65,7 @@ router.get("/:id", (req, res) => {
   if (!family) return res.status(404).render("404");
   const students = db
     .prepare(`
-      SELECT s.*, c.name AS class_name, c.parallel AS class_parallel FROM students s
+      SELECT s.*, c.name AS class_name, c.parallel AS class_parallel, COALESCE(c.branch, s.branch) AS branch FROM students s
       LEFT JOIN classes c ON s.class_id = c.id WHERE s.family_id = ?
       ORDER BY (s.birth_date_civil IS NULL), s.birth_date_civil ASC
     `)

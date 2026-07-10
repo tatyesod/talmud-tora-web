@@ -59,7 +59,7 @@
     <p class="empty-state">לא נמצאו ילדים</p>
   <% } else { %>
     <table>
-      <thead><tr><th>שם</th><th>תאריך לידה</th><th>גיל</th><th>כיתה</th><th>סטטוס</th><th></th></tr></thead>
+      <thead><tr><th>שם</th><th>תאריך לידה</th><th>גיל</th><th>כיתה</th><th>סניף</th><th>סטטוס</th><th></th></tr></thead>
       <tbody>
         <% students.forEach(s => { %>
           <tr>
@@ -71,6 +71,7 @@
               <% } %>
             </td>
             <td><%= [s.class_name, s.class_parallel].filter(Boolean).join('') %></td>
+            <td><%= s.branch || '—' %></td>
             <td><span class="badge <%= s.status !== 'פעיל' ? 'archive' : '' %>"><%= s.status || '' %></span></td>
             <td><a href="/students/<%= s.id %>" class="btn small secondary">צפייה</a></td>
           </tr>
