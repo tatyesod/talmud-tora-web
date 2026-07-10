@@ -1,6 +1,7 @@
 <%- include('../partials/header', {title: 'כיתות ומחזורים'}) %>
 
 <div class="card">
+  <div class="sticky-filter-header">
   <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
     <h1>כיתות</h1>
     <div style="display:flex; gap:10px;">
@@ -36,6 +37,7 @@
       <% }) %>
     </div>
   </form>
+  </div>
 
   <% if (classes.length === 0) { %>
     <p class="empty-state">לא נמצאו כיתות</p>

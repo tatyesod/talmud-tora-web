@@ -75,6 +75,17 @@ header.topbar nav a:hover { color: var(--accent); }
 
 h1, h2, h3 { color: var(--primary-dark); margin-top: 0; }
 
+.sticky-filter-header {
+  position: sticky;
+  top: 64px; /* מיד מתחת לסרגל הניווט העליון הדביק (header.topbar) */
+  z-index: 50;
+  background: var(--card-bg);
+  margin: -20px -20px 16px;
+  padding: 20px 20px 14px;
+  border-bottom: 1px solid var(--border);
+  box-shadow: 0 6px 10px -8px rgba(0,0,0,0.2);
+}
+
 .btn {
   display: inline-block;
   padding: 8px 16px;
