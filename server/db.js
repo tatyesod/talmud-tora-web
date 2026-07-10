@@ -227,6 +227,15 @@ const migrations = [
   // רכיבי שכר למלמד - חלק מ"תיק עובד", חשוף למנהלים בלבד
   "ALTER TABLE teachers ADD COLUMN hourly_rate REAL",
   "ALTER TABLE teachers ADD COLUMN monthly_hours REAL",
+  // רחובות שלא היו ברשימת שיוך האזורים הקבועה (streetZones.js) - נשמרים כאן
+  // ברגע שמנהל בוחר ידנית סניף עבורם בפעם הראשונה, כדי שמכאן והלאה השיבוץ
+  // יהיה אוטומטי לאותו רחוב.
+  `CREATE TABLE IF NOT EXISTS street_zone_overrides (
+    street TEXT PRIMARY KEY,
+    zone INTEGER NOT NULL,
+    branch TEXT NOT NULL,
+    created_at TEXT
+  )`,
 ];
 
 for (const sql of migrations) {

@@ -539,6 +539,26 @@ app.listen(PORT, () => {
   } catch (e) {
     console.error("שגיאה בתזמון גיבוי מלא:", e.message);
   }
+
+  // שיבוץ אוטומטי לפי אזור מגורים - רץ ברקע כל 3 שעות, בלי צורך שמישהו יבקר
+  // במסך "שיבוץ לפי אזור" באופן ידני. מזיז רק תלמידי "עדיין לא נכנסו" שהרחוב
+  // שלהם מזוהה (ברשימה הקבועה או שנלמד בעבר); רחובות לא מזוהים נשארים לטיפול ידני.
+  try {
+    const { runAutoZoneAssignment } = require("./zoneResolver");
+    function runZoneAssignment() {
+      try {
+        const moved = runAutoZoneAssignment(db);
+        if (moved > 0) console.log(`[שיבוץ אזורים אוטומטי] ${moved} תלמידים שובצו -`, new Date().toLocaleString("he-IL"));
+      } catch (e) {
+        console.error("שגיאה בשיבוץ אזורים אוטומטי:", e.message);
+      }
+    }
+    setTimeout(runZoneAssignment, 2 * 60 * 1000); // ריצה ראשונה כמה דקות אחרי עליית השרת
+    setInterval(runZoneAssignment, 3 * 60 * 60 * 1000); // ואז כל 3 שעות
+    console.log("שיבוץ אזורים אוטומטי מתוזמן (כל 3 שעות)");
+  } catch (e) {
+    console.error("שגיאה בתזמון שיבוץ אזורים:", e.message);
+  }
 });
 
 // ===== API — משימות משותפות =====

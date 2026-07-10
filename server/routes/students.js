@@ -4,6 +4,7 @@ const db = require("../db");
 const hd = require("../hebrewDate");
 const { buildOrderBy } = require("../sortHelper");
 const { checkNoConflict } = require("../concurrency");
+const { resolveZone, saveZoneOverride, findWaitingClassForZone, isWaitingClass, ZONE_BRANCH } = require("../zoneResolver");
 
 function calcAge(accessSerial) {
   if (!accessSerial) return null;
@@ -178,6 +179,34 @@ router.post("/students", (req, res) => {
         `INSERT INTO families (${famCols.join(",")}) VALUES (${famCols.map(()=>"?").join(",")})`
       ).run(...famVals);
       body.family_id = famInfo.lastInsertRowid;
+    }
+  }
+
+  // שיבוץ אוטומטי לפי אזור מגורים - גם אם לא נבחרה כיתה בכלל (הקטנים ביותר),
+  // וגם אם נבחרה כיתת "עדיין לא נכנסו" כלשהי. לא נוגעים בבחירה אם נבחרה כיתה
+  // אמיתית מפורשת (לא "עדיין לא נכנסו") - זה תמיד נשאר בשליטת המשתמש.
+  if (!body.class_id || isWaitingClass(db, body.class_id)) {
+    let street = body.fam_street, houseNumber = body.fam_house_number;
+    if (body.family_mode !== "new" && body.family_id) {
+      const fam = db.prepare("SELECT street, house_number FROM families WHERE id = ?").get(body.family_id);
+      if (fam) { street = fam.street; houseNumber = fam.house_number; }
+    }
+
+    if (body.resolved_branch) {
+      // חוזרים מהשלב של "בחירת סניף לרחוב לא מוכר" - שומרים את הרחוב לפעם הבאה
+      const zone = body.resolved_branch === "סוקולוב" ? 1 : 3; // ברירת מחדל לאזור הראשון של הסניף שנבחר
+      saveZoneOverride(db, street, zone, body.resolved_branch);
+      const waitingClass = findWaitingClassForZone(db, zone);
+      if (waitingClass) body.class_id = waitingClass.id;
+    } else {
+      const result = resolveZone(db, street, houseNumber);
+      if (result) {
+        const waitingClass = findWaitingClassForZone(db, result.zone);
+        if (waitingClass) body.class_id = waitingClass.id;
+      } else if (street && street.trim()) {
+        // רחוב לא מוכר - עוצרים ושואלים לאיזה סניף לשבץ, לפני שממשיכים ליצור את התלמיד
+        return res.render("students/resolve-branch", { formData: body, street });
+      }
     }
   }
 

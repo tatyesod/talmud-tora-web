@@ -1,0 +1,39 @@
+<%- include('../partials/header', {title: 'שיבוץ סניף לרחוב חדש'}) %>
+
+<div class="card">
+  <h1>📍 רחוב לא מוכר - לאיזה סניף לשבץ?</h1>
+  <p style="color:var(--muted); margin-bottom:14px;">
+    הרחוב <strong>"<%= street %>"</strong> עדיין לא קיים ברשימת שיוך האזורים של המערכת.
+    בחר לאיזה סניף לשבץ את התלמיד - <strong>מכאן והלאה, כל תלמיד עם אותו רחוב ישובץ אוטומטית לאותו סניף</strong>.
+  </p>
+
+  <form method="POST" action="/students">
+    <% Object.keys(formData).forEach(key => { %>
+      <% if (Array.isArray(formData[key])) { %>
+        <% formData[key].forEach(v => { %><input type="hidden" name="<%= key %>" value="<%= v %>" /><% }) %>
+      <% } else { %>
+        <input type="hidden" name="<%= key %>" value="<%= formData[key] %>" />
+      <% } %>
+    <% }) %>
+
+    <div class="form-group" style="max-width:320px;">
+      <label>סניף</label>
+      <select name="resolved_branch" required>
+        <option value="">בחר סניף...</option>
+        <option value="סוקולוב">סוקולוב</option>
+        <option value="בן פתחיה">בן פתחיה</option>
+      </select>
+      <p style="color:var(--muted); font-size:0.85em; margin-top:4px;">
+        אם התלמיד שייך לסניף נפחא, מומלץ ליצור אותו כרגיל ואז לשבץ ידנית לכיתה המתאימה בכרטיס התלמיד -
+        סניף נפחא אינו חלק ממערכת שיוך האזורים הגיאוגרפית.
+      </p>
+    </div>
+
+    <div class="actions" style="margin-top:16px;">
+      <button type="submit" class="btn">המשך ליצירת התלמיד</button>
+      <a href="javascript:history.back()" class="btn secondary">ביטול</a>
+    </div>
+  </form>
+</div>
+
+<%- include('../partials/footer') %>
