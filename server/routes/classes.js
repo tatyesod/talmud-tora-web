@@ -241,6 +241,7 @@ router.delete("/cohorts/:id", (req, res) => {
 const { getZoneForAddress } = require("../streetZones");
 
 router.get("/zone-assignment", (req, res) => {
+  const { resolveZone } = require("../zoneResolver");
   const cohortId = req.query.cohort_id || "";
   const cohorts = db.prepare("SELECT id, name FROM cohorts ORDER BY to_date DESC, from_date DESC").all();
 
@@ -262,9 +263,10 @@ router.get("/zone-assignment", (req, res) => {
              c.parallel AS current_parallel, c.name AS current_class_name,
              f.street, f.house_number, f.city
       FROM students s
-      JOIN classes c ON s.class_id = c.id
+      LEFT JOIN classes c ON s.class_id = c.id
       LEFT JOIN families f ON s.family_id = f.id
-      WHERE c.name LIKE 'עדיין לא נכנסו%' AND s.status NOT IN ('ארכיון', 'לא התקבל')
+      WHERE s.status NOT IN ('ארכיון', 'לא התקבל')
+        AND (s.class_id IS NULL OR c.id IS NULL OR c.name LIKE 'עדיין לא נכנסו%')
       ORDER BY s.last_name, s.first_name
     `).all();
   }
@@ -277,7 +279,7 @@ router.get("/zone-assignment", (req, res) => {
   });
 
   const rows = students.map((s) => {
-    const result = getZoneForAddress(s.street, s.house_number);
+    const result = resolveZone(db, s.street, s.house_number);
     let targetClass = null, status = "unmatched";
     if (result) {
       targetClass = targetClassesByParallel[result.zone];

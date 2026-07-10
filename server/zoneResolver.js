@@ -56,12 +56,17 @@ function runAutoZoneAssignment(db) {
   let moved = 0;
   let skippedNoAddress = 0;
   let skippedUnresolved = [];
+  let skippedMissingClass = [];
   for (const s of students) {
     if (!s.street || !s.street.trim()) { skippedNoAddress++; continue; }
     const result = resolveZone(db, s.street, s.house_number);
     if (!result) { skippedUnresolved.push(`${s.last_name} ${s.first_name} - "${s.street}" ${s.house_number || ""}`); continue; }
     const waitingClass = findWaitingClassForZone(db, result.zone);
-    if (waitingClass && waitingClass.id !== s.class_id) {
+    if (!waitingClass) {
+      skippedMissingClass.push(`${s.last_name} ${s.first_name} - אזור ${result.zone} (${result.branch}) - אין כיתת "עדיין לא נכנסו" פעילה עם מקבילה ${result.zone}`);
+      continue;
+    }
+    if (waitingClass.id !== s.class_id) {
       db.prepare("UPDATE students SET class_id = ? WHERE id = ?").run(waitingClass.id, s.id);
       moved++;
     }
@@ -70,6 +75,10 @@ function runAutoZoneAssignment(db) {
   if (skippedUnresolved.length > 0) {
     console.log(`[שיבוץ אזורים] ${skippedUnresolved.length} תלמידים עם רחוב לא מזוהה:`);
     skippedUnresolved.forEach((line) => console.log("  - " + line));
+  }
+  if (skippedMissingClass.length > 0) {
+    console.log(`[שיבוץ אזורים] ${skippedMissingClass.length} תלמידים - הרחוב זוהה אבל חסרה כיתת "עדיין לא נכנסו" מתאימה במערכת:`);
+    skippedMissingClass.forEach((line) => console.log("  - " + line));
   }
   return moved;
 }
