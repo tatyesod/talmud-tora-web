@@ -46,9 +46,10 @@ function runAutoZoneAssignment(db) {
   const students = db.prepare(`
     SELECT s.id, s.class_id, f.street, f.house_number
     FROM students s
-    JOIN classes c ON s.class_id = c.id
+    LEFT JOIN classes c ON s.class_id = c.id
     LEFT JOIN families f ON s.family_id = f.id
-    WHERE c.name LIKE 'עדיין לא נכנסו%' AND s.status NOT IN ('ארכיון', 'לא התקבל')
+    WHERE (s.class_id IS NULL OR c.name LIKE 'עדיין לא נכנסו%')
+      AND s.status NOT IN ('ארכיון', 'לא התקבל')
   `).all();
 
   let moved = 0;

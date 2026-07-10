@@ -343,6 +343,21 @@ try {
   // אם טבלת settings עדיין לא קיימת בשלב הזה - מתעלמים, זה ירוץ בהפעלה הבאה
 }
 
+// הרצה חד-פעמית: שיבוץ מיידי לכל התלמידים הקיימים שאין להם כיתה/סניף
+// (כולל תלמידים בסטטוס "לא פעיל"), לפי בקשת המשתמש - לא מחכים לריצה
+// המתוזמנת הבאה (כל 3 שעות), אלא מריצים פעם אחת מיד עם העדכון הזה.
+try {
+  const alreadyRanInitialZoneAssignment = db.prepare("SELECT value FROM settings WHERE key = 'initial_zone_assignment_v1'").get();
+  if (!alreadyRanInitialZoneAssignment) {
+    const { runAutoZoneAssignment } = require("./zoneResolver");
+    const moved = runAutoZoneAssignment(db);
+    console.log(`[שיבוץ אזורים ראשוני] ${moved} תלמידים שובצו לסניף`);
+    db.prepare("INSERT INTO settings (key, value) VALUES ('initial_zone_assignment_v1', '1')").run();
+  }
+} catch (e) {
+  console.error("שגיאה בשיבוץ אזורים ראשוני:", e.message);
+}
+
 // זריעה חד-פעמית של קטלוג ציוד משרדי (מתוך קבצי אקסל שהמשתמש שלח) -
 // יוצר את הספקים "עולם המדבקות" ו"גוונים" אם עוד לא קיימים, ומכניס את הפריטים כקטלוג בחירה
 // (כדי שבמסך הזמנת ציוד משרדי אפשר יהיה לבחור פריט מתוך רשימה, ולא רק להקליד חופשי).
