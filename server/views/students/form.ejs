@@ -62,6 +62,18 @@
           </select>
         </div>
         <div class="form-group">
+          <label>סניף</label>
+          <select name="branch">
+            <option value="">-- (לפי הכיתה, אם יש)</option>
+            <option value="סוקולוב" <%= student.branch === 'סוקולוב' ? 'selected' : '' %>>סוקולוב</option>
+            <option value="נפחא" <%= student.branch === 'נפחא' ? 'selected' : '' %>>נפחא</option>
+            <option value="בן פתחיה" <%= student.branch === 'בן פתחיה' ? 'selected' : '' %>>בן פתחיה</option>
+          </select>
+          <p style="color:var(--muted); font-size:0.8em; margin-top:2px;">
+            משתבץ אוטומטית לפי כתובת המשפחה. אפשר לשנות ידנית כאן במקרה חריג (למשל אם ההורים מעדיפים סניף אחר).
+          </p>
+        </div>
+        <div class="form-group">
           <label>מחזור</label>
           <select name="cohort_id">
             <option value="">--</option>

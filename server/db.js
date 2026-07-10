@@ -236,6 +236,9 @@ const migrations = [
     branch TEXT NOT NULL,
     created_at TEXT
   )`,
+  // סניף ישיר על התלמיד - בלי תלות בכיתה בכלל (יש תלמידים בלי כיתה,
+  // או עם כיתה שאין לה עדיין "עדיין לא נכנסו" מתאימה, שעדיין צריכים סניף)
+  "ALTER TABLE students ADD COLUMN branch TEXT",
 ];
 
 for (const sql of migrations) {
@@ -347,12 +350,12 @@ try {
 // (כולל תלמידים בסטטוס "לא פעיל"), לפי בקשת המשתמש - לא מחכים לריצה
 // המתוזמנת הבאה (כל 3 שעות), אלא מריצים פעם אחת מיד עם העדכון הזה.
 try {
-  const alreadyRanInitialZoneAssignment = db.prepare("SELECT value FROM settings WHERE key = 'initial_zone_assignment_v4'").get();
+  const alreadyRanInitialZoneAssignment = db.prepare("SELECT value FROM settings WHERE key = 'initial_zone_assignment_v5'").get();
   if (!alreadyRanInitialZoneAssignment) {
     const { runAutoZoneAssignment } = require("./zoneResolver");
     const moved = runAutoZoneAssignment(db);
     console.log(`[שיבוץ אזורים ראשוני] ${moved} תלמידים שובצו לסניף`);
-    db.prepare("INSERT INTO settings (key, value) VALUES ('initial_zone_assignment_v4', '1')").run();
+    db.prepare("INSERT INTO settings (key, value) VALUES ('initial_zone_assignment_v5', '1')").run();
   }
 } catch (e) {
   console.error("שגיאה בשיבוץ אזורים ראשוני:", e.message);

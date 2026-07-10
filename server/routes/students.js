@@ -33,7 +33,7 @@ function withDates(student) {
 }
 
 const STUDENT_SELECT = `
-  SELECT s.*, c.name AS class_name, c.parallel AS class_parallel, c.branch AS branch, co.name AS cohort_name,
+  SELECT s.*, c.name AS class_name, c.parallel AS class_parallel, COALESCE(c.branch, s.branch) AS branch, co.name AS cohort_name,
          f.last_name AS family_last_name, f.father_name, f.mother_name, f.sector,
          f.home_phone, f.father_mobile, f.mother_mobile,
          f.street, f.house_number, f.apartment, f.city
@@ -103,9 +103,9 @@ router.get("/students", (req, res) => {
   }
   if (branch) {
     if (branch === "__none__") {
-      sql += " AND c.branch IS NULL";
+      sql += " AND COALESCE(c.branch, s.branch) IS NULL";
     } else {
-      sql += " AND c.branch = ?";
+      sql += " AND COALESCE(c.branch, s.branch) = ?";
       params.push(branch);
     }
   }
@@ -150,7 +150,7 @@ const STUDENT_FIELDS = [
   "last_name", "first_name", "nickname", "class_id", "id_number", "notes",
   "allergies", "medications", "walks_alone", "health_fund", "birth_country", "immigration_year", "family_id", "status",
   "cohort_id", "birth_date_civil", "entry_date", "update_date", "exit_date",
-  "registration_date", "admission_date",
+  "registration_date", "admission_date", "branch",
 ];
 const DATE_FIELDS = ["birth_date_civil", "entry_date", "update_date", "exit_date", "registration_date", "admission_date"];
 
@@ -182,9 +182,10 @@ router.post("/students", (req, res) => {
     }
   }
 
-  // שיבוץ אוטומטי לפי אזור מגורים - גם אם לא נבחרה כיתה בכלל (הקטנים ביותר),
-  // וגם אם נבחרה כיתת "עדיין לא נכנסו" כלשהי. לא נוגעים בבחירה אם נבחרה כיתה
-  // אמיתית מפורשת (לא "עדיין לא נכנסו") - זה תמיד נשאר בשליטת המשתמש.
+  // שיבוץ אוטומטי לפי אזור מגורים - קובע תמיד את שדה הסניף הישיר על התלמיד,
+  // גם אם לא נבחרה כיתה בכלל וגם אם עדיין אין כיתת "עדיין לא נכנסו" מתאימה
+  // במערכת. אם כן נבחרה כיתת "עדיין לא נכנסו" (או שלא נבחרה כיתה כלל) ויש
+  // כיתת יעד פעילה - משבצים אליה גם כבונוס, אבל זה לא תנאי לקביעת הסניף.
   if (!body.class_id || isWaitingClass(db, body.class_id)) {
     let street = body.fam_street, houseNumber = body.fam_house_number;
     if (body.family_mode !== "new" && body.family_id) {
@@ -196,11 +197,13 @@ router.post("/students", (req, res) => {
       // חוזרים מהשלב של "בחירת סניף לרחוב לא מוכר" - שומרים את הרחוב לפעם הבאה
       const zone = body.resolved_branch === "סוקולוב" ? 1 : 3; // ברירת מחדל לאזור הראשון של הסניף שנבחר
       saveZoneOverride(db, street, zone, body.resolved_branch);
+      body.branch = body.resolved_branch;
       const waitingClass = findWaitingClassForZone(db, zone);
       if (waitingClass) body.class_id = waitingClass.id;
     } else {
       const result = resolveZone(db, street, houseNumber);
       if (result) {
+        body.branch = result.branch;
         const waitingClass = findWaitingClassForZone(db, result.zone);
         if (waitingClass) body.class_id = waitingClass.id;
       } else if (street && street.trim()) {
