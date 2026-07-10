@@ -3,7 +3,7 @@
 <div class="card">
   <h1>תלמידים <span style="font-size:0.6em; font-weight:400; color:var(--muted);">(<%= students.length %> נבחרים)</span></h1>
   <form class="searchbar auto-filter" method="GET" action="/students">
-    <input type="text" name="q" placeholder="חיפוש לפי שם, ת.ז, טלפון, שם אב..." value="<%= q %>" autofocus />
+    <input type="text" name="q" placeholder="חיפוש לפי שם, ת.ז, טלפון, שם אב..." value="<%= q %>" autofocus dir="rtl" style="unicode-bidi: plaintext;" />
     <select name="class_id">
       <option value="">כל הכיתות</option>
       <% classes.forEach(c => { %>
@@ -36,6 +36,7 @@
     </select>
     <button type="submit" class="btn">חיפוש</button>
     <a href="/students/new" class="btn secondary">+ תלמיד חדש</a>
+    <a href="/students/duplicates" class="btn secondary">🔍 בדיקת כפילויות ת.ז</a>
     <input type="hidden" name="sort" value="<%= sort %>" />
     <input type="hidden" name="dir" value="<%= dir %>" />
   </form>

@@ -70,6 +70,29 @@ function getClassTeachers(classId) {
 // --- רשימה וחיפוש ---
 router.get("/", (req, res) => res.redirect("/students"));
 
+router.get("/students/duplicates", (req, res) => {
+  const dupIds = db.prepare(`
+    SELECT id_number FROM students
+    WHERE id_number IS NOT NULL AND TRIM(id_number) != ''
+    GROUP BY id_number HAVING COUNT(*) > 1
+  `).all().map((r) => r.id_number);
+
+  const groups = dupIds.map((idNumber) => {
+    const students = db.prepare(`
+      SELECT s.id, s.first_name, s.last_name, s.status, c.name AS class_name, c.parallel AS class_parallel,
+             f.last_name AS family_last_name
+      FROM students s
+      LEFT JOIN classes c ON s.class_id = c.id
+      LEFT JOIN families f ON s.family_id = f.id
+      WHERE s.id_number = ?
+      ORDER BY s.id
+    `).all(idNumber);
+    return { idNumber, students };
+  });
+
+  res.render("students/duplicates", { groups });
+});
+
 router.get("/students", (req, res) => {
   const { q, class_id, cohort_id, sector, branch } = req.query;
   const status = req.query.status !== undefined ? req.query.status : "פעיל";
