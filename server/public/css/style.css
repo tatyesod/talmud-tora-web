@@ -114,6 +114,7 @@ input, select, textarea {
   font-size: 1em;
   font-family: inherit;
   background: #fff;
+  direction: rtl;
 }
 textarea { resize: vertical; min-height: 60px; }
 
