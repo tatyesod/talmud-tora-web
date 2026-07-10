@@ -8,7 +8,7 @@
   <div class="actions" style="justify-content:space-between; display:flex; flex-wrap:wrap; gap:10px;">
     <div style="display:flex; gap:10px; flex-wrap:wrap;">
       <a href="/families/<%= family.id %>/edit" class="btn">עריכה</a>
-      <form method="POST" action="/families/<%= family.id %>?_method=DELETE" onsubmit="return confirm('האם למחוק את המשפחה? התלמידים המשויכים אליה לא יימחקו, אך הקישור למשפחה יוסר מהם. לא ניתן לבטל פעולה זו.');" style="display:inline">
+      <form method="POST" action="/families/<%= family.id %>?_method=DELETE" onsubmit="return confirm('האם למחוק את המשפחה? פעולה זו תמחק גם את כל התלמידים המשויכים אליה וכל הנתונים שלהם (הזמנות ספרים, תשלומים, תיק תלמיד וכו׳). לא ניתן לבטל פעולה זו.');" style="display:inline">
         <button type="submit" class="btn danger">מחיקת משפחה</button>
       </form>
       <a href="javascript:history.back()" class="btn secondary">חזרה לרשימה</a>

@@ -33,8 +33,8 @@
     <form id="bulk-delete-form" method="POST" action="/families/bulk-delete"></form>
     <div id="bulk-toolbar" style="display:none; align-items:center; gap:10px; margin:10px 0; padding:10px 14px; background:#fdecea; border:1px solid #f5c6cb; border-radius:8px;">
       <span id="bulk-count-text" style="color:#a94442; font-weight:600;"></span>
-      <span style="color:#a94442; font-size:0.85em;">(התלמידים לא יימחקו, רק ינותקו מהמשפחה)</span>
-      <button type="submit" form="bulk-delete-form" class="btn danger small" onclick="return confirmBulkDelete('משפחות')">🗑️ מחק נבחרות</button>
+      <span style="color:#a94442; font-size:0.85em;">(⚠️ ימחקו גם כל התלמידים ששייכים למשפחות שנבחרו, וכל הנתונים שלהם)</span>
+      <button type="submit" form="bulk-delete-form" class="btn danger small" onclick="return confirmBulkDelete('משפחות, כולל כל התלמידים והנתונים שלהם')">🗑️ מחק נבחרות</button>
       <button type="button" class="btn secondary small" onclick="clearBulkSelection()">בטל בחירה</button>
     </div>
     <div class="table-scroll-wrap"><table>

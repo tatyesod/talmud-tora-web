@@ -159,23 +159,37 @@ router.put("/:id", (req, res) => {
   res.redirect(`/families/${req.params.id}/edit?saved=1`);
 });
 
+// מוחק משפחה **וכל** הנתונים תחתיה: כל הילדים, הזמנות ספרים, תשלומים,
+// תיק תלמיד, רישום לאירועים, פניות הורים, ואנשי קשר לשעת חירום.
+// זו פעולה הרסנית ובלתי הפיכה בכוונה (לפי בקשת המשתמש) - שונה מהתנהגות
+// קודמת שרק ניתקה את התלמידים מהמשפחה בלי למחוק אותם.
+function deleteFamilyCascade(familyId) {
+  const studentIds = db.prepare("SELECT id FROM students WHERE family_id = ?").all(familyId).map((s) => s.id);
+  for (const sid of studentIds) {
+    db.prepare("DELETE FROM student_file WHERE student_id = ?").run(sid);
+    db.prepare("DELETE FROM book_orders WHERE student_id = ?").run(sid);
+    db.prepare("DELETE FROM book_order_extras WHERE student_id = ?").run(sid);
+    db.prepare("DELETE FROM event_registrations WHERE student_id = ?").run(sid);
+  }
+  db.prepare("DELETE FROM book_payments WHERE family_id = ?").run(familyId);
+  db.prepare("DELETE FROM parent_requests WHERE family_id = ?").run(familyId);
+  db.prepare("DELETE FROM emergency_contacts WHERE family_id = ?").run(familyId);
+  db.prepare("DELETE FROM students WHERE family_id = ?").run(familyId);
+  db.prepare("DELETE FROM families WHERE id = ?").run(familyId);
+}
+
 router.delete("/:id", (req, res) => {
-  // מנתק תלמידים מהמשפחה (לא מוחק אותם) ומוחק אנשי קשר לשעת חירום של המשפחה
-  db.prepare("UPDATE students SET family_id = NULL WHERE family_id = ?").run(req.params.id);
-  db.prepare("DELETE FROM emergency_contacts WHERE family_id = ?").run(req.params.id);
-  db.prepare("DELETE FROM families WHERE id = ?").run(req.params.id);
+  deleteFamilyCascade(req.params.id);
   res.redirect("/families");
 });
 
-// --- מחיקה מרובה (סימון ווי ברשימה) - אותה לוגיקה כמו מחיקה בודדת: מנתק תלמידים, לא מוחק אותם ---
+// --- מחיקה מרובה (סימון ווי ברשימה) - אותה מחיקה מלאה כמו מחיקה בודדת ---
 router.post("/bulk-delete", (req, res) => {
   let ids = req.body.ids || [];
   if (!Array.isArray(ids)) ids = [ids];
   ids = ids.map((v) => parseInt(v, 10)).filter((v) => !isNaN(v));
   for (const id of ids) {
-    db.prepare("UPDATE students SET family_id = NULL WHERE family_id = ?").run(id);
-    db.prepare("DELETE FROM emergency_contacts WHERE family_id = ?").run(id);
-    db.prepare("DELETE FROM families WHERE id = ?").run(id);
+    deleteFamilyCascade(id);
   }
   res.redirect("/families");
 });
