@@ -9,6 +9,12 @@
     </div>
   <% } %>
 
+  <% if (typeof duplicateIdError !== 'undefined' && duplicateIdError) { %>
+    <div style="background:#fdecea; border:1px solid #f5c6cb; color:#a94442; border-radius:8px; padding:10px 16px; margin-bottom:14px;">
+      🚫 <strong>לא ניתן לשמור</strong> - <%= duplicateIdError %>
+    </div>
+  <% } %>
+
   <form method="POST" action="<%= mode === 'new' ? '/students' : '/students/' + student.id + '?_method=PUT' %>">
     <% if (mode === 'edit') { %><input type="hidden" name="updated_at" value="<%= student.updated_at || '' %>" /><% } %>
 

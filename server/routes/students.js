@@ -163,6 +163,27 @@ function normalizeField(col, value) {
 router.post("/students", (req, res) => {
   const body = req.body;
 
+  // בדיקת כפילות ת"ז - לפני שנוגעים במשהו במסד (גם לפני יצירת משפחה חדשה),
+  // כדי שלא ניצור רשומות מיותרות אם מתברר שזו כפילות.
+  if (body.id_number && body.id_number.trim()) {
+    const dup = db.prepare(`
+      SELECT s.id, s.first_name, s.last_name, f.last_name AS family_last_name
+      FROM students s LEFT JOIN families f ON s.family_id = f.id
+      WHERE s.id_number = ?
+    `).get(body.id_number.trim());
+    if (dup) {
+      const classes = db.prepare("SELECT id, name, parallel FROM classes ORDER BY name, parallel").all();
+      const cohorts = db.prepare("SELECT id, name FROM cohorts ORDER BY to_date DESC, from_date DESC").all();
+      const families = db.prepare("SELECT id, last_name, father_name, sector FROM families ORDER BY last_name").all();
+      const chassidut = db.prepare("SELECT id, name FROM chassidut ORDER BY name").all();
+      const yeshivot = db.prepare("SELECT id, name FROM yeshivot ORDER BY name").all();
+      return res.render("students/form", {
+        student: body, mode: "new", classes, cohorts, families, chassidut, yeshivot,
+        duplicateIdError: `מספר הזהות ${body.id_number.trim()} כבר קיים במערכת - עבור התלמיד/ה ${dup.first_name || ""} ${dup.last_name || dup.family_last_name || ""}. יש לוודא שזה לא אותו תלמיד לפני שממשיכים.`,
+      });
+    }
+  }
+
   // יצירת משפחה חדשה אם המשתמש בחר "משפחה חדשה"
   if (body.family_mode === "new") {
     const famFields = [
@@ -272,6 +293,25 @@ router.put("/students/:id", (req, res) => {
   if (!checkNoConflict("students", req.params.id, body.updated_at)) {
     return res.redirect(`/students/${req.params.id}/edit?conflict=1`);
   }
+
+  if (body.id_number && body.id_number.trim()) {
+    const dup = db.prepare(`
+      SELECT s.id, s.first_name, s.last_name, f.last_name AS family_last_name
+      FROM students s LEFT JOIN families f ON s.family_id = f.id
+      WHERE s.id_number = ? AND s.id != ?
+    `).get(body.id_number.trim(), req.params.id);
+    if (dup) {
+      const classes = db.prepare("SELECT id, name, parallel FROM classes ORDER BY name, parallel").all();
+      const cohorts = db.prepare("SELECT id, name FROM cohorts ORDER BY to_date DESC, from_date DESC").all();
+      const families = db.prepare("SELECT id, last_name, father_name, sector FROM families ORDER BY last_name").all();
+      return res.render("students/form", {
+        student: { ...body, id: req.params.id }, mode: "edit", classes, cohorts, families,
+        conflict: false,
+        duplicateIdError: `מספר הזהות ${body.id_number.trim()} כבר קיים במערכת - עבור התלמיד/ה ${dup.first_name || ""} ${dup.last_name || dup.family_last_name || ""}. יש לוודא שזה לא אותו תלמיד לפני שממשיכים.`,
+      });
+    }
+  }
+
   const cols = STUDENT_FIELDS.filter((c) => c in body);
   const setClause = [...cols.map((c) => `${c} = ?`), "updated_at = ?"].join(", ");
   const values = [...cols.map((c) => normalizeField(c, body[c])), new Date().toISOString()];
