@@ -85,4 +85,26 @@ function runAutoZoneAssignment(db) {
   return moved;
 }
 
-module.exports = { resolveZone, saveZoneOverride, findWaitingClassForZone, isWaitingClass, runAutoZoneAssignment, ZONE_BRANCH };
+// נפחא וסוקולוב שייכים לאותו אזור גיאוגרפי בפועל - נפחא פשוט לא קולט תלמידים
+// חדשים ישירות (רק סוקולוב/בן פתחיה מחולקים לפי כתובת). לכן לצורך בדיקת
+// "פיצול אחים בין סניפים", נפחא וסוקולוב נחשבים לאותו אזור ולא לסתירה.
+const SAME_REGION_GROUPS = [["סוקולוב", "נפחא"], ["בן פתחיה"]];
+function branchesInSameRegion(a, b) {
+  if (!a || !b) return true; // אין מספיק מידע כדי לקבוע סתירה
+  if (a === b) return true;
+  return SAME_REGION_GROUPS.some((group) => group.includes(a) && group.includes(b));
+}
+
+// בודק אם קביעת סניף מסוים לתלמיד סותרת את הסניף של אח/אחות פעילים מאותה
+// משפחה - כדי להתריע לפני שיבוץ שעלול "לפצל" משפחה בין אזורים אמיתיים.
+function findSiblingBranchConflict(db, familyId, branch, excludeStudentId) {
+  if (!familyId || !branch) return null;
+  const siblings = db.prepare(`
+    SELECT id, first_name, last_name, branch FROM students
+    WHERE family_id = ? AND status = 'פעיל' AND branch IS NOT NULL AND TRIM(branch) != ''
+    ${excludeStudentId ? "AND id != ?" : ""}
+  `).all(...(excludeStudentId ? [familyId, excludeStudentId] : [familyId]));
+  return siblings.find((s) => !branchesInSameRegion(s.branch, branch)) || null;
+}
+
+module.exports = { resolveZone, saveZoneOverride, findWaitingClassForZone, isWaitingClass, runAutoZoneAssignment, findSiblingBranchConflict, branchesInSameRegion, ZONE_BRANCH };

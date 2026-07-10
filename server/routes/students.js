@@ -4,7 +4,7 @@ const db = require("../db");
 const hd = require("../hebrewDate");
 const { buildOrderBy } = require("../sortHelper");
 const { checkNoConflict } = require("../concurrency");
-const { resolveZone, saveZoneOverride, findWaitingClassForZone, isWaitingClass, ZONE_BRANCH } = require("../zoneResolver");
+const { resolveZone, saveZoneOverride, findWaitingClassForZone, isWaitingClass, findSiblingBranchConflict, ZONE_BRANCH } = require("../zoneResolver");
 
 function calcAge(accessSerial) {
   if (!accessSerial) return null;
@@ -257,6 +257,23 @@ router.post("/students", (req, res) => {
     }
   }
 
+  // אזהרה (לא חסימה) אם הסניף שנקבע סותר את הסניף של אח/אחות פעילים -
+  // כדי לא "לפצל" משפחה בין סניפים בטעות. אפשר לאשר ולהמשיך בכל זאת.
+  if (body.branch && body.family_id && !body.confirm_sibling_mismatch) {
+    const conflict = findSiblingBranchConflict(db, body.family_id, body.branch);
+    if (conflict) {
+      const classes = db.prepare("SELECT id, name, parallel FROM classes ORDER BY name, parallel").all();
+      const cohorts = db.prepare("SELECT id, name FROM cohorts ORDER BY to_date DESC, from_date DESC").all();
+      const families = db.prepare("SELECT id, last_name, father_name, sector FROM families ORDER BY last_name").all();
+      const chassidut = db.prepare("SELECT id, name FROM chassidut ORDER BY name").all();
+      const yeshivot = db.prepare("SELECT id, name FROM yeshivot ORDER BY name").all();
+      return res.render("students/form", {
+        student: body, mode: "new", classes, cohorts, families, chassidut, yeshivot,
+        siblingBranchWarning: `האח/אחות ${conflict.first_name} ${conflict.last_name} (פעיל/ה) משובץ/ת לסניף "${conflict.branch}", אבל התלמיד/ה הזו עומדת להישבץ לסניף "${body.branch}". האם לשבץ בכל זאת?`,
+      });
+    }
+  }
+
   const cols = STUDENT_FIELDS.filter((c) => c in body);
   const placeholders = cols.map(() => "?").join(",");
   const values = cols.map((c) => normalizeField(c, body[c]));
@@ -335,8 +352,21 @@ router.put("/students/:id", (req, res) => {
     }
   }
 
+  if (body.branch && body.family_id && !body.confirm_sibling_mismatch) {
+    const conflict = findSiblingBranchConflict(db, body.family_id, body.branch, req.params.id);
+    if (conflict) {
+      const classes = db.prepare("SELECT id, name, parallel FROM classes ORDER BY name, parallel").all();
+      const cohorts = db.prepare("SELECT id, name FROM cohorts ORDER BY to_date DESC, from_date DESC").all();
+      const families = db.prepare("SELECT id, last_name, father_name, sector FROM families ORDER BY last_name").all();
+      return res.render("students/form", {
+        student: { ...body, id: req.params.id }, mode: "edit", classes, cohorts, families,
+        conflict: false,
+        siblingBranchWarning: `האח/אחות ${conflict.first_name} ${conflict.last_name} (פעיל/ה) משובץ/ת לסניף "${conflict.branch}", אבל התלמיד/ה הזו עומדת להישבץ לסניף "${body.branch}". האם לשבץ בכל זאת?`,
+      });
+    }
+  }
+
   const cols = STUDENT_FIELDS.filter((c) => c in body);
-  const setClause = [...cols.map((c) => `${c} = ?`), "updated_at = ?"].join(", ");
   const values = [...cols.map((c) => normalizeField(c, body[c])), new Date().toISOString()];
   values.push(req.params.id);
   db.prepare(`UPDATE students SET ${setClause} WHERE id = ?`).run(...values);

@@ -361,6 +361,45 @@ try {
   console.error("שגיאה בשיבוץ אזורים ראשוני:", e.message);
 }
 
+// תיקון חד-פעמי: תלמידים לא פעילים (למשל בכיתת "עדיין לא נכנסו") שיובצו
+// אוטומטית לפי אזור מגורים, יכלו להיות "מפוצלים" מהאחים הפעילים שלהם אם
+// יש התנגשות אזור אמיתית (סוקולוב/נפחא מול בן פתחיה). נפחא וסוקולוב הם
+// אותו אזור גיאוגרפי בפועל (נפחא פשוט לא קולט חדשים ישירות) - so that's
+// לא נחשב פיצול. מיישרים כל אח לא פעיל לסניף של אח/אחות פעילים מאותה
+// משפחה, רק כשיש התנגשות אזור אמיתית. תלמידים בלי אחים פעילים - לא נוגעים בהם.
+try {
+  const alreadyAlignedSiblings = db.prepare("SELECT value FROM settings WHERE key = 'sibling_branch_alignment_v2'").get();
+  if (!alreadyAlignedSiblings) {
+    const { branchesInSameRegion } = require("./zoneResolver");
+    const families = db.prepare(`
+      SELECT DISTINCT family_id FROM students
+      WHERE family_id IS NOT NULL AND status NOT IN ('ארכיון', 'לא התקבל')
+    `).all();
+    let aligned = 0;
+    for (const { family_id } of families) {
+      const activeSibling = db.prepare(`
+        SELECT branch FROM students
+        WHERE family_id = ? AND status = 'פעיל' AND branch IS NOT NULL AND TRIM(branch) != ''
+        LIMIT 1
+      `).get(family_id);
+      if (!activeSibling) continue;
+      const inactiveSiblings = db.prepare(`
+        SELECT id, branch FROM students WHERE family_id = ? AND status != 'פעיל'
+      `).all(family_id);
+      for (const sib of inactiveSiblings) {
+        if (!branchesInSameRegion(sib.branch, activeSibling.branch)) {
+          db.prepare("UPDATE students SET branch = ? WHERE id = ?").run(activeSibling.branch, sib.id);
+          aligned++;
+        }
+      }
+    }
+    console.log(`[יישור סניף אחים] ${aligned} תלמידים לא פעילים יושרו לסניף האח/אחות הפעילים שלהם (התנגשות אזור אמיתית בלבד)`);
+    db.prepare("INSERT INTO settings (key, value) VALUES ('sibling_branch_alignment_v2', '1')").run();
+  }
+} catch (e) {
+  console.error("שגיאה ביישור סניף אחים:", e.message);
+}
+
 // זריעה חד-פעמית של קטלוג ציוד משרדי (מתוך קבצי אקסל שהמשתמש שלח) -
 // יוצר את הספקים "עולם המדבקות" ו"גוונים" אם עוד לא קיימים, ומכניס את הפריטים כקטלוג בחירה
 // (כדי שבמסך הזמנת ציוד משרדי אפשר יהיה לבחור פריט מתוך רשימה, ולא רק להקליד חופשי).

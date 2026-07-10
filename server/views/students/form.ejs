@@ -18,6 +18,16 @@
   <form method="POST" action="<%= mode === 'new' ? '/students' : '/students/' + student.id + '?_method=PUT' %>">
     <% if (mode === 'edit') { %><input type="hidden" name="updated_at" value="<%= student.updated_at || '' %>" /><% } %>
 
+    <% if (typeof siblingBranchWarning !== 'undefined' && siblingBranchWarning) { %>
+      <div style="background:#fff8e1; border:1px solid #ffe082; color:#8a6d00; border-radius:8px; padding:10px 16px; margin-bottom:14px;">
+        ⚠️ <strong>שים לב</strong> - <%= siblingBranchWarning %>
+        <label style="display:block; font-weight:normal; margin-top:8px;">
+          <input type="checkbox" name="confirm_sibling_mismatch" value="1" style="width:auto; margin-left:6px;" />
+          כן, לשבץ בכל זאת לסניף שנבחר (למרות שהוא שונה מהאח/אחות)
+        </label>
+      </div>
+    <% } %>
+
     <%# ======= פרטים אישיים ======= %>
     <fieldset>
       <legend>פרטים אישיים</legend>
