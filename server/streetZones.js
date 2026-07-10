@@ -195,7 +195,22 @@ const SPECIAL_RULES = [
 ];
 
 function normalizeStreet(street) {
-  return (street || "").trim();
+  let s = (street || "").trim();
+  if (!s) return "";
+  // אחידות למירכאות/גרשיים (יש כמה תווים שונים שנראים אותו דבר: ' ’ ׳ וכן " ” ״)
+  s = s.replace(/[\u2018\u2019\u05F3]/g, "'").replace(/[\u201C\u201D\u05F4]/g, '"');
+  // צמצום רווחים כפולים לרווח בודד
+  s = s.replace(/\s+/g, " ").trim();
+  // הסרת קידומת "רחוב "/"רח' " אם קיימת (לפני שמשווים לטבלה, שלא כוללת את הקידומת)
+  s = s.replace(/^(רחוב|רח['׳]?)\s+/, "");
+  return s.trim();
+}
+
+// אינדקס מנורמל של רשימת הרחובות הקבועה, כדי שההשוואה לא תהיה רגישה
+// לגרשיים/רווחים בדיוק כמו שההשוואה לכתובת שהוזנה בפועל אינה רגישה להם
+const NORMALIZED_STREET_ZONE = {};
+for (const key of Object.keys(STREET_ZONE)) {
+  NORMALIZED_STREET_ZONE[normalizeStreet(key)] = STREET_ZONE[key];
 }
 
 // מחזיר { zone, branch } או null אם הרחוב לא נמצא בטבלה (דורש שיבוץ ידני)
@@ -204,19 +219,19 @@ function getZoneForAddress(street, houseNumber) {
   if (!clean) return null;
 
   for (const rule of SPECIAL_RULES) {
-    if (rule.names.includes(clean)) {
+    if (rule.names.some((n) => normalizeStreet(n) === clean)) {
       const zone = rule.resolve(houseNumber);
       if (zone) return { zone, branch: ZONE_BRANCH[zone] };
       return null; // מספר בית חסר/לא תקין - לא ניתן לקבוע צד
     }
   }
 
-  if (Object.prototype.hasOwnProperty.call(STREET_ZONE, clean)) {
-    const zone = STREET_ZONE[clean];
+  if (Object.prototype.hasOwnProperty.call(NORMALIZED_STREET_ZONE, clean)) {
+    const zone = NORMALIZED_STREET_ZONE[clean];
     return { zone, branch: ZONE_BRANCH[zone] };
   }
 
   return null; // רחוב לא מוכר - דורש שיבוץ ידני
 }
 
-module.exports = { STREET_ZONE, ZONE_BRANCH, SPECIAL_RULES, getZoneForAddress };
+module.exports = { STREET_ZONE, ZONE_BRANCH, SPECIAL_RULES, getZoneForAddress, normalizeStreet };

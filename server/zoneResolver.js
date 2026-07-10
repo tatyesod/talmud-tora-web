@@ -1,14 +1,14 @@
 // עוזר משותף לשיבוץ אוטומטי של תלמידים לסניף/כיתת "עדיין לא נכנסו" הנכונה,
 // לפי הרחוב שבכתובת המשפחה. משלב את הרשימה הקבועה (streetZones.js) עם
 // רחובות ש"נלמדו" בעבר (נבחרו ידנית פעם אחת ע"י מנהל ומאז נשמרים).
-const { getZoneForAddress, ZONE_BRANCH } = require("./streetZones");
+const { getZoneForAddress, ZONE_BRANCH, normalizeStreet } = require("./streetZones");
 
 // מחזיר { zone, branch, source: 'static'|'learned' } או null אם הרחוב לא מוכר בכלל
 function resolveZone(db, street, houseNumber) {
   const staticResult = getZoneForAddress(street, houseNumber);
   if (staticResult) return { ...staticResult, source: "static" };
 
-  const clean = (street || "").trim();
+  const clean = normalizeStreet(street);
   if (!clean) return null;
   const learned = db.prepare("SELECT zone, branch FROM street_zone_overrides WHERE street = ?").get(clean);
   if (learned) return { zone: learned.zone, branch: learned.branch, source: "learned" };
@@ -18,7 +18,7 @@ function resolveZone(db, street, houseNumber) {
 
 // שומר רחוב חדש שנבחר ידנית, כדי שהפעם הבאה ישובץ אוטומטית
 function saveZoneOverride(db, street, zone, branch) {
-  const clean = (street || "").trim();
+  const clean = normalizeStreet(street);
   if (!clean) return;
   db.prepare(`
     INSERT INTO street_zone_overrides (street, zone, branch, created_at) VALUES (?,?,?,?)
