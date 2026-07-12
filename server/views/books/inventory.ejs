@@ -37,14 +37,12 @@
       <table id="add-books-table">
         <thead><tr><th>שם הספר</th><th>הוצאה</th><th>מחיר (₪)</th><th>הערות</th></tr></thead>
         <tbody id="add-books-tbody">
-          <% for (let i = 0; i < 3; i++) { %>
-            <tr>
-              <td><input type="text" name="item_name" placeholder="שם הספר" style="min-width:200px;" /></td>
-              <td><input type="text" name="publisher" placeholder="הוצאה" style="min-width:120px;" /></td>
-              <td><input type="number" name="price" step="0.01" min="0" placeholder="מחיר" style="width:90px;" /></td>
-              <td><input type="text" name="notes" placeholder="הערה חופשית (אופציונלי)" style="min-width:140px;" /></td>
-            </tr>
-          <% } %>
+          <tr>
+            <td><input type="text" name="item_name" placeholder="שם הספר" style="min-width:200px;" /></td>
+            <td><input type="text" name="publisher" placeholder="הוצאה" style="min-width:120px;" /></td>
+            <td><input type="number" name="price" step="0.01" min="0" placeholder="מחיר" style="width:90px;" /></td>
+            <td><input type="text" name="notes" placeholder="הערה חופשית (אופציונלי)" style="min-width:140px;" /></td>
+          </tr>
         </tbody>
       </table>
       <div class="actions" style="margin-top:10px;">
