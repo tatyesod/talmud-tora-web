@@ -50,7 +50,7 @@ function runAutoZoneAssignment(db) {
     LEFT JOIN classes c ON s.class_id = c.id
     LEFT JOIN families f ON s.family_id = f.id
     WHERE s.status NOT IN ('ארכיון', 'לא התקבל')
-      AND (s.branch IS NULL OR s.branch = '' OR s.class_id IS NULL OR c.id IS NULL OR c.name LIKE 'עדיין לא נכנסו%')
+      AND (s.class_id IS NULL OR c.id IS NULL OR c.name LIKE 'עדיין לא נכנסו%')
   `).all();
 
   let moved = 0;
@@ -62,12 +62,15 @@ function runAutoZoneAssignment(db) {
     if (!result) { skippedUnresolved.push(`${s.last_name} ${s.first_name} - "${s.street}" ${s.house_number || ""}`); continue; }
 
     let changed = false;
+    // הסניף הישיר נקבע/מתעדכן רק לתלמיד בלי כיתה אמיתית (זה בדיוק מה שהבדיקה
+    // ב-WHERE כבר מבטיחה - אם הגענו לכאן, אין לו כיתה בכלל או שהוא ב"עדיין
+    // לא נכנסו" בלבד). לתלמיד בכיתה אמיתית לעולם לא נוגעים בשדה הזה - הסניף
+    // שלו תמיד נגזר מהכיתה עצמה (COALESCE(c.branch, s.branch) בכל מקום שמציג).
     if (s.branch !== result.branch) {
       db.prepare("UPDATE students SET branch = ? WHERE id = ?").run(result.branch, s.id);
       changed = true;
     }
     // אם קיימת כיתת "עדיין לא נכנסו" פעילה מתאימה - משבצים אליה כבונוס
-    // (אבל הסניף עצמו כבר נקבע למעלה בכל מקרה, גם בלי כיתה)
     if (!s.class_id || isWaitingClass(db, s.class_id)) {
       const waitingClass = findWaitingClassForZone(db, result.zone);
       if (waitingClass && waitingClass.id !== s.class_id) {

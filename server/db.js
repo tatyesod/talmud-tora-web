@@ -366,9 +366,11 @@ try {
 // יש התנגשות אזור אמיתית (סוקולוב/נפחא מול בן פתחיה). נפחא וסוקולוב הם
 // אותו אזור גיאוגרפי בפועל (נפחא פשוט לא קולט חדשים ישירות) - so that's
 // לא נחשב פיצול. מיישרים כל אח לא פעיל לסניף של אח/אחות פעילים מאותה
-// משפחה, רק כשיש התנגשות אזור אמיתית. תלמידים בלי אחים פעילים - לא נוגעים בהם.
+// משפחה, רק כשיש התנגשות אזור אמיתית. תלמידים בלי אחים פעילים - לא נוגעים
+// בהם. תלמידים שכבר בכיתה אמיתית (לא "עדיין לא נכנסו") - לעולם לא נוגעים
+// בשדה הסניף הישיר שלהם, כי הסניף שלהם תמיד נגזר מהכיתה עצמה.
 try {
-  const alreadyAlignedSiblings = db.prepare("SELECT value FROM settings WHERE key = 'sibling_branch_alignment_v2'").get();
+  const alreadyAlignedSiblings = db.prepare("SELECT value FROM settings WHERE key = 'sibling_branch_alignment_v3'").get();
   if (!alreadyAlignedSiblings) {
     const { branchesInSameRegion } = require("./zoneResolver");
     const families = db.prepare(`
@@ -378,23 +380,39 @@ try {
     let aligned = 0;
     for (const { family_id } of families) {
       const activeSibling = db.prepare(`
-        SELECT branch FROM students
-        WHERE family_id = ? AND status = 'פעיל' AND branch IS NOT NULL AND TRIM(branch) != ''
+        SELECT COALESCE(c.branch, s.branch) AS effective_branch
+        FROM students s LEFT JOIN classes c ON s.class_id = c.id
+        WHERE s.family_id = ? AND s.status = 'פעיל'
+          AND COALESCE(c.branch, s.branch) IS NOT NULL AND TRIM(COALESCE(c.branch, s.branch)) != ''
         LIMIT 1
       `).get(family_id);
       if (!activeSibling) continue;
-      const inactiveSiblings = db.prepare(`
-        SELECT id, branch FROM students WHERE family_id = ? AND status != 'פעיל'
+      // רק אחים שאין להם כיתה אמיתית (בלי כיתה בכלל, או ב"עדיין לא נכנסו" בלבד) -
+      // מי שכבר בכיתה אמיתית לעולם לא נוגעים בסניף הישיר שלו.
+      const siblingsToCheck = db.prepare(`
+        SELECT s.id, s.branch FROM students s LEFT JOIN classes c ON s.class_id = c.id
+        WHERE s.family_id = ? AND s.status != 'פעיל'
+          AND (s.class_id IS NULL OR c.id IS NULL OR c.name LIKE 'עדיין לא נכנסו%')
       `).all(family_id);
-      for (const sib of inactiveSiblings) {
-        if (!branchesInSameRegion(sib.branch, activeSibling.branch)) {
-          db.prepare("UPDATE students SET branch = ? WHERE id = ?").run(activeSibling.branch, sib.id);
+      for (const sib of siblingsToCheck) {
+        if (!branchesInSameRegion(sib.branch, activeSibling.effective_branch)) {
+          db.prepare("UPDATE students SET branch = ? WHERE id = ?").run(activeSibling.effective_branch, sib.id);
           aligned++;
         }
       }
     }
-    console.log(`[יישור סניף אחים] ${aligned} תלמידים לא פעילים יושרו לסניף האח/אחות הפעילים שלהם (התנגשות אזור אמיתית בלבד)`);
-    db.prepare("INSERT INTO settings (key, value) VALUES ('sibling_branch_alignment_v2', '1')").run();
+    // ניקוי: תלמידים שכן בכיתה אמיתית אבל יש להם בכל זאת ערך שגוי בשדה הסניף
+    // הישיר (מקוד ישן, לפני התיקון) - מנקים את השדה כי הוא לא אמור לשמש
+    // בכלל כשיש כיתה אמיתית עם סניף משלה.
+    const cleaned = db.prepare(`
+      UPDATE students SET branch = NULL
+      WHERE id IN (
+        SELECT s.id FROM students s JOIN classes c ON s.class_id = c.id
+        WHERE c.name NOT LIKE 'עדיין לא נכנסו%' AND s.branch IS NOT NULL
+      )
+    `).run();
+    console.log(`[יישור סניף אחים] ${aligned} תלמידים לא פעילים יושרו, ${cleaned.changes} שדות סניף שגויים נוקו מתלמידים בכיתה אמיתית`);
+    db.prepare("INSERT INTO settings (key, value) VALUES ('sibling_branch_alignment_v3', '1')").run();
   }
 } catch (e) {
   console.error("שגיאה ביישור סניף אחים:", e.message);

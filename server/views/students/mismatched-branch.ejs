@@ -1,0 +1,38 @@
+<%- include('../partials/header', {title: 'שיבוץ שגוי'}) %>
+
+<div class="card">
+  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+    <h1>⚠️ שיבוץ שגוי</h1>
+    <a href="/students" class="btn secondary">← חזרה לרשימת תלמידים</a>
+  </div>
+
+  <p style="color:var(--muted); margin-bottom:14px;">
+    כאן מוצגים תלמידים שיש להם <strong>סתירה</strong> בין הכיתה שהם משובצים אליה בפועל לבין סניף שנשמר להם בנפרד -
+    לדוגמה תלמיד ששובץ לכיתה א' 2 (שהיא בסניף סוקולוב), אבל בשדה הסניף שלו שמור "בן פתחיה". זו טעות אמיתית
+    שכדאי לתקן ידנית בכרטיס התלמיד (בדרך כלל התיקון הוא פשוט להסיר/לתקן את שדה הסניף הידני, כי הכיתה עצמה קובעת).
+  </p>
+
+  <% if (students.length === 0) { %>
+    <div style="background:#eef6ee; border:1px solid #bcd9bc; border-radius:8px; padding:12px 16px; color:#2d7a2d;">
+      ✅ לא נמצאו סתירות שיבוץ - כל התלמידים בכיתות אמיתיות תואמים לסניף שלהם.
+    </div>
+  <% } else { %>
+    <table>
+      <thead><tr><th>שם</th><th>משפחה</th><th>כיתה משובץ אליה</th><th>סניף הכיתה (נכון)</th><th>סניף שמור בטעות</th><th></th></tr></thead>
+      <tbody>
+        <% students.forEach(s => { %>
+          <tr>
+            <td><%= s.first_name %> <%= s.last_name %></td>
+            <td><%= s.family_last_name || '' %></td>
+            <td><%= s.class_name %><%= s.class_parallel ? ' ('+s.class_parallel+')' : '' %></td>
+            <td><span style="color:#2d7a2d; font-weight:700;"><%= s.class_branch %></span></td>
+            <td><span style="color:#c0392b; font-weight:700;"><%= s.student_branch %></span></td>
+            <td><a href="/students/<%= s.id %>/edit" class="btn small secondary">תקן בכרטיס</a></td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  <% } %>
+</div>
+
+<%- include('../partials/footer') %>

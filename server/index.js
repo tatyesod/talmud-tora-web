@@ -224,6 +224,14 @@ app.get("/", (req, res) => {
   const unassignedClassCount = db
     .prepare("SELECT COUNT(*) c FROM students WHERE status = 'פעיל' AND class_id IS NULL")
     .get().c;
+  // "שיבוץ שגוי" - תלמידים בכיתה אמיתית (לא "עדיין לא נכנסו") שיש להם בכל
+  // זאת שדה סניף ישיר שסותר את הסניף האמיתי של הכיתה שלהם - טעות שדורשת תיקון ידני.
+  const mismatchedBranchCount = db
+    .prepare(`
+      SELECT COUNT(*) c FROM students s JOIN classes c2 ON s.class_id = c2.id
+      WHERE c2.name NOT LIKE 'עדיין לא נכנסו%' AND s.branch IS NOT NULL AND TRIM(s.branch) != '' AND s.branch != c2.branch
+    `)
+    .get().c;
   const monthlyTotal = calcAllFamiliesTuition().reduce((sum, f) => sum + f.netTotal, 0);
   const currentYear = yearManager.getCurrentYear();
   const hebrewDateToday = hd.serialToHebrewString(hd.todayAccessSerial());
@@ -334,7 +342,7 @@ app.get("/", (req, res) => {
   }
 
   res.render("home", {
-    stats, branchStats, unassignedClassCount, monthlyTotal, currentYear, hebrewDateToday, dayName,
+    stats, branchStats, unassignedClassCount, mismatchedBranchCount, monthlyTotal, currentYear, hebrewDateToday, dayName,
     myTasks, unreadCount, greeting, fullName, allUsers,
     studentBirthdays, teacherBirthdays, pendingOrders, myOrderUpdates,
   });

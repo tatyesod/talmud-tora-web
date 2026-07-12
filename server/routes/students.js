@@ -70,6 +70,22 @@ function getClassTeachers(classId) {
 // --- רשימה וחיפוש ---
 router.get("/", (req, res) => res.redirect("/students"));
 
+router.get("/students/mismatched-branch", (req, res) => {
+  const students = db.prepare(`
+    SELECT s.id, s.first_name, s.last_name, s.branch AS student_branch,
+           c.name AS class_name, c.parallel AS class_parallel, c.branch AS class_branch,
+           f.last_name AS family_last_name
+    FROM students s
+    JOIN classes c ON s.class_id = c.id
+    LEFT JOIN families f ON s.family_id = f.id
+    WHERE c.name NOT LIKE 'עדיין לא נכנסו%'
+      AND s.branch IS NOT NULL AND TRIM(s.branch) != ''
+      AND s.branch != c.branch
+    ORDER BY s.last_name, s.first_name
+  `).all();
+  res.render("students/mismatched-branch", { students });
+});
+
 router.get("/students/duplicates", (req, res) => {
   const dupIds = db.prepare(`
     SELECT id_number FROM students

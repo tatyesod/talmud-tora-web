@@ -61,6 +61,12 @@
           <span class="branch-pill-name">לא משויך לכיתה</span>
         </a>
       <% } %>
+      <% if (mismatchedBranchCount > 0) { %>
+        <a href="/students/mismatched-branch" class="branch-pill" style="border-color: rgba(199,90,90,0.5);">
+          <span class="branch-pill-count" style="background: rgba(199,90,90,0.3);"><%= mismatchedBranchCount %></span>
+          <span class="branch-pill-name">⚠️ שיבוץ שגוי</span>
+        </a>
+      <% } %>
       <% branchStats.forEach(b => { %>
         <a href="/students?status=<%= encodeURIComponent('פעיל') %>&branch=<%= encodeURIComponent(b.branch) %>" class="branch-pill">
           <span class="branch-pill-count"><%= b.count %></span>
