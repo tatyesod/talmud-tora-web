@@ -719,10 +719,16 @@ router.post("/inventory/save", (req, res) => {
   let currentStocks = req.body.current_stock || [];
   let desiredStocks = req.body.desired_stock || [];
   let notesArr = req.body.notes || [];
+  let itemNames = req.body.item_name || [];
+  let publishers = req.body.publisher || [];
+  let prices = req.body.price || [];
   if (!Array.isArray(ids)) ids = [ids];
   if (!Array.isArray(currentStocks)) currentStocks = [currentStocks];
   if (!Array.isArray(desiredStocks)) desiredStocks = [desiredStocks];
   if (!Array.isArray(notesArr)) notesArr = [notesArr];
+  if (!Array.isArray(itemNames)) itemNames = [itemNames];
+  if (!Array.isArray(publishers)) publishers = [publishers];
+  if (!Array.isArray(prices)) prices = [prices];
 
   const upsert = db.prepare(`
     INSERT INTO book_inventory (book_price_id, branch, current_stock, desired_stock, updated_at)
@@ -732,12 +738,17 @@ router.post("/inventory/save", (req, res) => {
       desired_stock = excluded.desired_stock,
       updated_at = excluded.updated_at
   `);
-  const updateNotes = db.prepare("UPDATE book_prices SET notes = ? WHERE id = ?");
+  const updateBook = db.prepare(`
+    UPDATE book_prices SET item_name = ?, publisher = ?, price = ?, notes = ?, updated_at = ? WHERE id = ?
+  `);
   const now = new Date().toISOString();
   ids.forEach((id, i) => {
     upsert.run(id, branch, parseInt(currentStocks[i], 10) || 0, parseInt(desiredStocks[i], 10) || 0, now);
-    if (notesArr[i] !== undefined) {
-      updateNotes.run((notesArr[i] || "").trim() || null, id);
+    if (itemNames[i] !== undefined) {
+      updateBook.run(
+        (itemNames[i] || "").trim() || "ללא שם", (publishers[i] || "").trim() || null,
+        parseFloat(prices[i]) || 0, (notesArr[i] || "").trim() || null, now, id
+      );
     }
   });
 

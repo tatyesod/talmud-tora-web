@@ -41,12 +41,14 @@
           <tbody>
             <% items.forEach(it => { %>
               <tr>
-                <td><%= it.item_name %></td>
-                <td><%= it.publisher || '' %></td>
-                <td><input type="text" name="notes" value="<%= it.notes || '' %>" placeholder="הערה חופשית" style="min-width:140px;" /></td>
-                <td><%= it.price %> ₪</td>
-                <td>
+                <td style="min-width:220px;">
                   <input type="hidden" name="book_price_id" value="<%= it.book_price_id %>" />
+                  <input type="text" name="item_name" value="<%= it.item_name %>" required style="width:100%; min-width:200px;" />
+                </td>
+                <td><input type="text" name="publisher" value="<%= it.publisher || '' %>" style="min-width:120px;" /></td>
+                <td><input type="text" name="notes" value="<%= it.notes || '' %>" placeholder="הערה חופשית" style="min-width:140px;" /></td>
+                <td><input type="number" name="price" value="<%= it.price %>" min="0" step="0.01" style="width:80px;" /> ₪</td>
+                <td>
                   <input type="number" name="current_stock" value="<%= it.current_stock %>" min="0" style="width:90px;" />
                 </td>
                 <td><input type="number" name="desired_stock" value="<%= it.desired_stock %>" min="0" style="width:90px;" /></td>

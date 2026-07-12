@@ -400,6 +400,17 @@ try {
   console.error("שגיאה ביישור סניף אחים:", e.message);
 }
 
+// תיקון חד-פעמי: שינוי שם הפריט "משניות" ל"משניות ברכות" במחירון הספרים
+try {
+  const alreadyRenamed = db.prepare("SELECT value FROM settings WHERE key = 'rename_mishnayot_v1'").get();
+  if (!alreadyRenamed) {
+    db.prepare("UPDATE book_prices SET item_name = 'משניות ברכות' WHERE item_name = 'משניות'").run();
+    db.prepare("INSERT INTO settings (key, value) VALUES ('rename_mishnayot_v1', '1')").run();
+  }
+} catch (e) {
+  console.error("שגיאה בשינוי שם משניות:", e.message);
+}
+
 // זריעה חד-פעמית של קטלוג ציוד משרדי (מתוך קבצי אקסל שהמשתמש שלח) -
 // יוצר את הספקים "עולם המדבקות" ו"גוונים" אם עוד לא קיימים, ומכניס את הפריטים כקטלוג בחירה
 // (כדי שבמסך הזמנת ציוד משרדי אפשר יהיה לבחור פריט מתוך רשימה, ולא רק להקליד חופשי).
