@@ -387,6 +387,7 @@ router.put("/students/:id", (req, res) => {
   }
 
   const cols = STUDENT_FIELDS.filter((c) => c in body);
+  const setClause = [...cols.map((c) => `${c} = ?`), "updated_at = ?"].join(", ");
   const values = [...cols.map((c) => normalizeField(c, body[c])), new Date().toISOString()];
   values.push(req.params.id);
   db.prepare(`UPDATE students SET ${setClause} WHERE id = ?`).run(...values);
