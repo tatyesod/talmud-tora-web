@@ -209,11 +209,11 @@ app.get("/", (req, res) => {
   };
   const branchStats = db
     .prepare(`
-      SELECT COALESCE(c.branch, 'לא משויך') AS branch, COUNT(*) AS count
+      SELECT COALESCE(c.branch, s.branch, 'לא משויך') AS branch, COUNT(*) AS count
       FROM students s
       LEFT JOIN classes c ON s.class_id = c.id
       WHERE s.status = 'פעיל'
-      GROUP BY c.branch
+      GROUP BY COALESCE(c.branch, s.branch, 'לא משויך')
       ORDER BY count DESC
     `)
     .all();
