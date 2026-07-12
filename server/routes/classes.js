@@ -349,7 +349,7 @@ router.get("/:id", (req, res) => {
              f.street, f.house_number, f.city
       FROM students s
       LEFT JOIN families f ON s.family_id = f.id
-      WHERE s.class_id = ?
+      WHERE s.class_id = ? AND s.status NOT IN ('ארכיון', 'לא התקבל')
       ${buildOrderBy(
         req,
         {
