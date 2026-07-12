@@ -683,7 +683,7 @@ router.get("/inventory", (req, res) => {
   const branch = req.query.branch || branches[0] || "";
 
   const items = db.prepare(`
-    SELECT bp.id AS book_price_id, bp.item_name, bp.publisher, bp.price,
+    SELECT bp.id AS book_price_id, bp.item_name, bp.publisher, bp.notes, bp.price,
            COALESCE(bi.current_stock, 0) AS current_stock,
            COALESCE(bi.desired_stock, 0) AS desired_stock
     FROM book_prices bp
@@ -699,7 +699,7 @@ router.get("/inventory/print", (req, res) => {
   const branch = req.query.branch || branches[0] || "";
 
   const items = db.prepare(`
-    SELECT bp.item_name, bp.publisher,
+    SELECT bp.item_name, bp.publisher, bp.notes,
            COALESCE(bi.current_stock, 0) AS current_stock,
            COALESCE(bi.desired_stock, 0) AS desired_stock
     FROM book_prices bp
@@ -707,8 +707,8 @@ router.get("/inventory/print", (req, res) => {
     ORDER BY bp.item_name
   `).all(branch);
 
-  const headers = ["ספר", "הוצאה", "מלאי לפי המערכת", "כמות רצויה", "ספירה בפועל (למילוי ידני)"];
-  const rows = items.map(it => [it.item_name, it.publisher || "", it.current_stock, it.desired_stock, ""]);
+  const headers = ["ספר", "הוצאה", "הערות", "מלאי לפי המערכת", "כמות רצויה", "ספירה בפועל (למילוי ידני)"];
+  const rows = items.map(it => [it.item_name, it.publisher || "", it.notes || "", it.current_stock, it.desired_stock, ""]);
 
   res.render("reports/print-view", { title: `דוח ספירת מלאי ספרים${branch ? " - " + branch : ""}`, headers, rows });
 });
@@ -718,9 +718,11 @@ router.post("/inventory/save", (req, res) => {
   let ids = req.body.book_price_id || [];
   let currentStocks = req.body.current_stock || [];
   let desiredStocks = req.body.desired_stock || [];
+  let notesArr = req.body.notes || [];
   if (!Array.isArray(ids)) ids = [ids];
   if (!Array.isArray(currentStocks)) currentStocks = [currentStocks];
   if (!Array.isArray(desiredStocks)) desiredStocks = [desiredStocks];
+  if (!Array.isArray(notesArr)) notesArr = [notesArr];
 
   const upsert = db.prepare(`
     INSERT INTO book_inventory (book_price_id, branch, current_stock, desired_stock, updated_at)
@@ -730,9 +732,13 @@ router.post("/inventory/save", (req, res) => {
       desired_stock = excluded.desired_stock,
       updated_at = excluded.updated_at
   `);
+  const updateNotes = db.prepare("UPDATE book_prices SET notes = ? WHERE id = ?");
   const now = new Date().toISOString();
   ids.forEach((id, i) => {
     upsert.run(id, branch, parseInt(currentStocks[i], 10) || 0, parseInt(desiredStocks[i], 10) || 0, now);
+    if (notesArr[i] !== undefined) {
+      updateNotes.run((notesArr[i] || "").trim() || null, id);
+    }
   });
 
   res.redirect(`/books/inventory?branch=${encodeURIComponent(branch)}&saved=1`);

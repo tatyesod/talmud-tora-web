@@ -37,12 +37,13 @@
       <input type="hidden" name="branch" value="<%= branch %>" />
       <div class="table-scroll-wrap">
         <table>
-          <thead><tr><th>ספר</th><th>הוצאה</th><th>מחיר</th><th>מלאי נוכחי</th><th>כמות רצויה</th></tr></thead>
+          <thead><tr><th>ספר</th><th>הוצאה</th><th>הערות</th><th>מחיר</th><th>מלאי נוכחי</th><th>כמות רצויה</th></tr></thead>
           <tbody>
             <% items.forEach(it => { %>
               <tr>
                 <td><%= it.item_name %></td>
                 <td><%= it.publisher || '' %></td>
+                <td><input type="text" name="notes" value="<%= it.notes || '' %>" placeholder="הערה חופשית" style="min-width:140px;" /></td>
                 <td><%= it.price %> ₪</td>
                 <td>
                   <input type="hidden" name="book_price_id" value="<%= it.book_price_id %>" />
