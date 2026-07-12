@@ -16,7 +16,8 @@ router.get("/", (req, res) => {
 
   let sql = `
       SELECT c.*, cat.name AS category_name, cat.price,
-        (SELECT COUNT(*) FROM students s WHERE s.class_id = c.id AND s.status = 'פעיל') AS active_count
+        (SELECT COUNT(*) FROM students s WHERE s.class_id = c.id AND s.status = 'פעיל') AS active_count,
+        (SELECT COUNT(*) FROM students s WHERE s.class_id = c.id) AS total_count
       FROM classes c
       LEFT JOIN categories cat ON c.category_id = cat.id
       WHERE 1=1
@@ -38,6 +39,7 @@ router.get("/", (req, res) => {
       branch: "c.branch",
       category: "cat.name",
       active_count: "active_count",
+      total_count: "total_count",
       status: "c.status",
     },
     "ORDER BY c.name, c.parallel"
