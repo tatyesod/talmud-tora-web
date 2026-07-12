@@ -542,6 +542,38 @@ router.put("/catalog/:id", (req, res) => {
 
 
 // ============ מחירון בסיס ============
+// הוספת כמה ספרים חדשים בבת אחת (כמה שורות במסך מלאי) - שומר רק שורות שבהן
+// באמת מולא שם ספר, מתעלם משורות ריקות.
+router.post("/prices/bulk-add", (req, res) => {
+  const { branch } = req.body;
+  let itemNames = req.body.item_name || [];
+  let publishers = req.body.publisher || [];
+  let prices = req.body.price || [];
+  let notesArr = req.body.notes || [];
+  if (!Array.isArray(itemNames)) itemNames = [itemNames];
+  if (!Array.isArray(publishers)) publishers = [publishers];
+  if (!Array.isArray(prices)) prices = [prices];
+  if (!Array.isArray(notesArr)) notesArr = [notesArr];
+
+  const now = new Date().toISOString();
+  const insert = db.prepare(`
+    INSERT INTO book_prices (item_name, publisher, price, notes, updated_at) VALUES (?,?,?,?,?)
+    ON CONFLICT(item_name) DO UPDATE SET price=excluded.price, publisher=excluded.publisher, notes=excluded.notes, updated_at=excluded.updated_at
+  `);
+  const syncCatalog = db.prepare("UPDATE book_catalog SET price=?, publisher=? WHERE item_name=?");
+  let added = 0;
+  itemNames.forEach((name, i) => {
+    const trimmedName = (name || "").trim();
+    if (!trimmedName) return;
+    const numPrice = parseFloat(prices[i]) || 0;
+    insert.run(trimmedName, (publishers[i] || "").trim(), numPrice, (notesArr[i] || "").trim() || null, now);
+    syncCatalog.run(numPrice, (publishers[i] || "").trim(), trimmedName);
+    added++;
+  });
+
+  res.redirect(`/books/inventory?branch=${encodeURIComponent(branch || "")}&added=${added}`);
+});
+
 router.post("/prices", (req, res) => {
   const { item_name, publisher, price, notes, return_to, branch } = req.body;
   const now = new Date().toISOString();
@@ -682,7 +714,9 @@ router.delete("/renewals/:id", (req, res) => {
 
 // ============ מלאי ספרים לפי סניף ============
 router.get("/inventory", (req, res) => {
-  const branches = db.prepare("SELECT DISTINCT branch FROM classes WHERE branch IS NOT NULL AND branch<>'' ORDER BY branch").all().map(r => r.branch);
+  const classBranches = db.prepare("SELECT DISTINCT branch FROM classes WHERE branch IS NOT NULL AND branch<>'' ORDER BY branch").all().map(r => r.branch);
+  const ALL_BRANCHES = ["סוקולוב", "נפחא", "בן פתחיה"];
+  const branches = Array.from(new Set([...ALL_BRANCHES, ...classBranches]));
   const branch = req.query.branch || branches[0] || "";
 
   const items = db.prepare(`
@@ -694,7 +728,7 @@ router.get("/inventory", (req, res) => {
     ORDER BY bp.item_name
   `).all(branch);
 
-  res.render("books/inventory", { branches, branch, items, saved: req.query.saved === "1" });
+  res.render("books/inventory", { branches, branch, items, saved: req.query.saved === "1", added: parseInt(req.query.added, 10) || 0 });
 });
 
 router.get("/inventory/print", (req, res) => {
