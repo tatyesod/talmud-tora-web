@@ -543,12 +543,15 @@ router.put("/catalog/:id", (req, res) => {
 
 // ============ מחירון בסיס ============
 router.post("/prices", (req, res) => {
-  const { item_name, publisher, price, notes } = req.body;
+  const { item_name, publisher, price, notes, return_to, branch } = req.body;
   const now = new Date().toISOString();
   const numPrice = parseFloat(price) || 0;
   db.prepare("INSERT INTO book_prices (item_name, publisher, price, notes, updated_at) VALUES (?,?,?,?,?) ON CONFLICT(item_name) DO UPDATE SET price=excluded.price, publisher=excluded.publisher, notes=excluded.notes, updated_at=excluded.updated_at").run(item_name, publisher||'', numPrice, notes||'', now);
   // סנכרון לכל פריטי הקטלוג עם אותו שם
   const updated = db.prepare("UPDATE book_catalog SET price=?, publisher=? WHERE item_name=?").run(numPrice, publisher||'', item_name);
+  if (return_to === "inventory") {
+    return res.redirect(`/books/inventory?branch=${encodeURIComponent(branch || "")}&saved=1`);
+  }
   res.redirect("/books/catalog-and-prices" + (updated.changes ? "?updated=" + updated.changes : ""));
 });
 
