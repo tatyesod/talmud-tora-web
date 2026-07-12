@@ -384,11 +384,12 @@ router.get("/:id", (req, res) => {
       SELECT COALESCE(f.sector, 'לא צוין') AS sector, COUNT(*) AS count
       FROM students s
       LEFT JOIN families f ON s.family_id = f.id
-      WHERE s.class_id = ? AND s.status = 'פעיל'
+      WHERE s.class_id = ?
       GROUP BY f.sector
       ORDER BY count DESC
     `)
     .all(req.params.id);
+  const totalStudentsInClass = sectorBreakdown.reduce((sum, r) => sum + r.count, 0);
 
   // ניווט הקודם/הבא - לפי אותו סדר שמופיע ברשימת הכיתות
   const orderedIds = db.prepare("SELECT id FROM classes ORDER BY name, parallel").all().map((r) => r.id);
@@ -396,7 +397,7 @@ router.get("/:id", (req, res) => {
   const prevId = curIdx > 0 ? orderedIds[curIdx - 1] : null;
   const nextId = curIdx >= 0 && curIdx < orderedIds.length - 1 ? orderedIds[curIdx + 1] : null;
 
-  res.render("classes/view", { classRow, students, teachers, sectorBreakdown, prevId, nextId });
+  res.render("classes/view", { classRow, students, teachers, sectorBreakdown, totalStudentsInClass, prevId, nextId });
 });
 
 module.exports = router;
