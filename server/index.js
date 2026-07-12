@@ -209,14 +209,21 @@ app.get("/", (req, res) => {
   };
   const branchStats = db
     .prepare(`
-      SELECT COALESCE(c.branch, s.branch, 'לא משויך') AS branch, COUNT(*) AS count
+      SELECT COALESCE(c.branch, s.branch) AS branch, COUNT(*) AS count
       FROM students s
       LEFT JOIN classes c ON s.class_id = c.id
-      WHERE s.status = 'פעיל'
-      GROUP BY COALESCE(c.branch, s.branch, 'לא משויך')
+      WHERE s.status = 'פעיל' AND COALESCE(c.branch, s.branch) IS NOT NULL
+      GROUP BY COALESCE(c.branch, s.branch)
       ORDER BY count DESC
     `)
     .all();
+  // "לא משויך" - תלמידים פעילים שאמורים כבר להיות משובצים לכיתה (מ"עדיין לא
+  // נכנסו" ועד כיתה ח') אבל אין להם class_id בכלל. זה עוסק אך ורק בכיתה -
+  // לא משנה אם יש להם סניף או לא. תלמידים שעדיין לא הגיע זמנם (סטטוס לא
+  // פעיל, כמו קטנים שטרם הגיעו לגיל "עדיין לא נכנסו") לא נכללים בכלל.
+  const unassignedClassCount = db
+    .prepare("SELECT COUNT(*) c FROM students WHERE status = 'פעיל' AND class_id IS NULL")
+    .get().c;
   const monthlyTotal = calcAllFamiliesTuition().reduce((sum, f) => sum + f.netTotal, 0);
   const currentYear = yearManager.getCurrentYear();
   const hebrewDateToday = hd.serialToHebrewString(hd.todayAccessSerial());
@@ -327,7 +334,7 @@ app.get("/", (req, res) => {
   }
 
   res.render("home", {
-    stats, branchStats, monthlyTotal, currentYear, hebrewDateToday, dayName,
+    stats, branchStats, unassignedClassCount, monthlyTotal, currentYear, hebrewDateToday, dayName,
     myTasks, unreadCount, greeting, fullName, allUsers,
     studentBirthdays, teacherBirthdays, pendingOrders, myOrderUpdates,
   });

@@ -109,8 +109,12 @@ router.get("/students", (req, res) => {
     for (let i = 0; i < 8; i++) params.push(like);
   }
   if (class_id) {
-    sql += " AND s.class_id = ?";
-    params.push(class_id);
+    if (class_id === "__none__") {
+      sql += " AND s.class_id IS NULL";
+    } else {
+      sql += " AND s.class_id = ?";
+      params.push(class_id);
+    }
   }
   if (status) {
     sql += " AND s.status = ?";
