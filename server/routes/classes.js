@@ -17,7 +17,7 @@ router.get("/", (req, res) => {
   let sql = `
       SELECT c.*, cat.name AS category_name, cat.price,
         (SELECT COUNT(*) FROM students s WHERE s.class_id = c.id AND s.status = 'פעיל') AS active_count,
-        (SELECT COUNT(*) FROM students s WHERE s.class_id = c.id) AS total_count
+        (SELECT COUNT(*) FROM students s WHERE s.class_id = c.id AND s.status NOT IN ('ארכיון', 'לא התקבל')) AS total_count
       FROM classes c
       LEFT JOIN categories cat ON c.category_id = cat.id
       WHERE 1=1
@@ -386,7 +386,7 @@ router.get("/:id", (req, res) => {
       SELECT COALESCE(f.sector, 'לא צוין') AS sector, COUNT(*) AS count
       FROM students s
       LEFT JOIN families f ON s.family_id = f.id
-      WHERE s.class_id = ?
+      WHERE s.class_id = ? AND s.status NOT IN ('ארכיון', 'לא התקבל')
       GROUP BY f.sector
       ORDER BY count DESC
     `)
