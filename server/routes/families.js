@@ -12,9 +12,9 @@ router.get("/", (req, res) => {
   let sql = "SELECT DISTINCT f.* FROM families f WHERE 1=1";
   const params = [];
   if (q) {
-    sql += " AND (f.last_name LIKE ? OR f.father_name LIKE ? OR f.home_phone LIKE ? OR f.father_mobile LIKE ?)";
+    sql += " AND (f.last_name LIKE ? OR f.father_name LIKE ? OR f.mother_name LIKE ? OR f.home_phone LIKE ? OR f.father_mobile LIKE ? OR f.mother_mobile LIKE ?)";
     const like = `%${q}%`;
-    params.push(like, like, like, like);
+    params.push(like, like, like, like, like, like);
   }
   if (sector) {
     sql += " AND f.sector = ?";
