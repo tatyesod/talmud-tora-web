@@ -1,7 +1,7 @@
 // sw.js - Service Worker בסיסי למערכת ניהול תלמוד תורה החדש
 // מאפשר התקנה כאפליקציה (PWA) ומטמון בסיסי לעבודה גם עם חיבור חלש.
 
-const CACHE_NAME = "tt-hachadash-v1";
+const CACHE_NAME = "tt-hachadash-v2";
 const CORE_ASSETS = [
   "/",
   "/css/style.css",
@@ -28,14 +28,18 @@ self.addEventListener("activate", (event) => {
 });
 
 // אסטרטגיה: network-first עם נפילה לקאש - כדי שנתונים תמיד יהיו עדכניים כשיש רשת,
-// אבל האתר עדיין ייפתח (במצב בסיסי) גם ללא חיבור.
+// אבל האתר עדיין ייפתח (במצב בסיסי) גם ללא חיבור. שומרים במטמון רק תגובות
+// תקינות (200 OK) - כדי שתגובה שבורה/חלקית (למשל בגלל ניתוק זמני באמצע דיפלוי)
+// לא תישמר במטמון ותוגש שוב ושוב במקום התמונה/קובץ האמיתי.
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
   event.respondWith(
     fetch(event.request)
       .then((response) => {
-        const copy = response.clone();
-        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy)).catch(() => {});
+        if (response && response.ok) {
+          const copy = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy)).catch(() => {});
+        }
         return response;
       })
       .catch(() => caches.match(event.request))
