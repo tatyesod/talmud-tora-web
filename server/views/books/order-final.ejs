@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <title>הזמנת ספרים - <%= branch %></title>
+  <style>
+    @page { size: A4; margin: 12mm 16mm; }
+    * { box-sizing: border-box; }
+    body { font-family: "David", "Segoe UI", "Arial Hebrew", Arial, sans-serif; direction: rtl; margin: 0; color: #000; font-size: 15px; }
+    .page { max-width: 800px; margin: 0 auto; }
+
+    .header-img { width: 100%; display: block; margin-bottom: 6px; }
+    .bsd { text-align: left; font-weight: bold; margin-bottom: 10px; }
+
+    .date-line { font-weight: bold; font-size: 1.05em; margin-bottom: 14px; }
+    .date-line .value { background: #fff9c4; padding: 1px 10px; }
+
+    .info-block p { margin: 4px 0; }
+    .info-block .label { font-weight: bold; }
+    .info-block .addr-value { background: #fff9c4; padding: 1px 6px; }
+
+    .instructions { font-weight: bold; margin-top: 14px; }
+    .instructions p { margin: 4px 0; }
+    .instructions .note { margin-top: 10px; }
+    .instructions .contact { text-align: center; margin-top: 8px; }
+
+    table.order-table { width: 100%; border-collapse: collapse; margin-top: 26px; font-size: 0.95em; }
+    table.order-table th { background: #2c5f7c; color: #fff; padding: 8px 10px; text-align: right; }
+    table.order-table td { padding: 7px 10px; border-bottom: 1px solid #ddd; }
+    table.order-table tr:nth-child(even) { background: #f7f9fb; }
+    .total-row td { font-weight: 700; border-top: 2px solid #2c5f7c; background: #eef4f8; }
+
+    .footer-note { margin-top: 30px; text-align: center; font-size: 0.8em; color: #555; border-top: 1px solid #ccc; padding-top: 6px; }
+
+    .no-print { }
+    @media print { .no-print { display: none !important; } }
+  </style>
+</head>
+<body onload="window.print()">
+  <div class="page">
+    <img class="header-img" src="/images/book-order-header.jpg" alt="לוגו תלמוד תורה החדש" />
+    <div class="bsd">בס"ד</div>
+
+    <div class="date-line">תאריך: <span class="value"><%= today %></span></div>
+
+    <div class="info-block">
+      <p><span class="label">לכבוד:</span> פניאל הזמנות ספרים</p>
+      <p><span class="label">כתובת אספקה:</span> <span class="addr-value"><%= deliveryAddress %></span></p>
+    </div>
+
+    <div class="instructions">
+      <p>יש לספק את כל ההזמנה בשבוע הקרוב.</p>
+      <p>יש לספק לפי הכמויות הכתובות, ולא בכל פעם קצת.</p>
+      <p class="note">הערות: יש לוודא כי המוביל יכניס את הספרים לתוך המבנה ולא בחוץ ברחוב.</p>
+      <p class="contact">חובה לתאם הגעה במס' – 0527113006 / 0527661757.</p>
+    </div>
+
+    <table class="order-table">
+      <thead><tr><th>שם הספר</th><th>הוצאה</th><th>כמות להזמנה</th></tr></thead>
+      <tbody>
+        <% rows.forEach(r => { %>
+          <tr>
+            <td><%= r.item_name %></td>
+            <td><%= r.publisher || '' %></td>
+            <td><strong><%= r.to_order %></strong></td>
+          </tr>
+        <% }) %>
+        <tr class="total-row"><td colspan="2">סה"כ יחידות</td><td><%= grandQty %></td></tr>
+      </tbody>
+    </table>
+
+    <div class="footer-note">כתובת למשלוח דואר: שטרסר 12 בני ברק</div>
+  </div>
+
+  <div class="no-print" style="text-align:center; margin-top:20px;">
+    <button onclick="window.print()">🖨️ הדפסה / שמירה כ-PDF</button>
+  </div>
+</body>
+</html>

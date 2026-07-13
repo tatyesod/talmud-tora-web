@@ -849,6 +849,44 @@ router.get("/inventory/order", (req, res) => {
   res.render("books/inventory-order", { branches, branch, years, year, rows, grandQty });
 });
 
+// כתובות אספקה לפי סניף - מוצג בטופס ההזמנה הסופי לספק
+const DELIVERY_ADDRESS_BY_BRANCH = {
+  "סוקולוב": "סוקולוב 5 בני ברק",
+  "נפחא": "יצחק נפחא 7 בני ברק",
+  "בן פתחיה": "בן פתחיה 8 בני ברק",
+};
+
+router.get("/inventory/order/export-pdf", (req, res) => {
+  const { branch } = req.query;
+  const years = db.prepare("SELECT DISTINCT year_label FROM book_catalog ORDER BY year_label DESC").all().map(r => r.year_label);
+  const defaultYear = db.prepare("SELECT value FROM settings WHERE key='current_hebrew_year'").get()?.value || years[0] || 'תשפ"ז';
+  const year = req.query.year || defaultYear;
+
+  const rows = db.prepare(`
+    SELECT bp.item_name, bp.publisher,
+           COALESCE(bi.current_stock, 0) AS current_stock,
+           COALESCE(bi.extra_quantity, 5) AS extra_quantity,
+           (
+             SELECT COUNT(*) FROM book_orders bo
+             JOIN book_catalog bc ON bo.catalog_id = bc.id AND bc.item_name = bp.item_name AND bc.year_label = ?
+             JOIN students s ON bo.student_id = s.id
+             LEFT JOIN classes c ON s.class_id = c.id
+             WHERE COALESCE(c.branch, s.branch) = ?
+           ) AS ordered_count
+    FROM book_prices bp
+    LEFT JOIN book_inventory bi ON bi.book_price_id = bp.id AND bi.branch = ?
+    ORDER BY bp.item_name
+  `).all(year, branch, branch)
+    .map((r) => ({ ...r, to_order: r.ordered_count + r.extra_quantity - r.current_stock }))
+    .filter((r) => r.to_order > 0);
+
+  const grandQty = rows.reduce((s, r) => s + r.to_order, 0);
+  const today = new Date().toLocaleDateString("he-IL", { timeZone: "Asia/Jerusalem" });
+  const deliveryAddress = DELIVERY_ADDRESS_BY_BRANCH[branch] || `${branch || ""} בני ברק`;
+
+  res.render("books/order-final", { branch, rows, grandQty, today, deliveryAddress });
+});
+
 router.get("/inventory/order/export", async (req, res) => {
   const { branch } = req.query;
   const years = db.prepare("SELECT DISTINCT year_label FROM book_catalog ORDER BY year_label DESC").all().map(r => r.year_label);

@@ -8,6 +8,7 @@
       <a href="/books/inventory?branch=<%= encodeURIComponent(branch) %>&year=<%= encodeURIComponent(year) %>" class="btn secondary">📦 עדכון מלאי</a>
       <% if (rows.length > 0) { %>
         <a href="/books/inventory/order/export?branch=<%= encodeURIComponent(branch) %>&year=<%= encodeURIComponent(year) %>" class="btn">📥 ייצוא הזמנה ל-Excel</a>
+        <a href="/books/inventory/order/export-pdf?branch=<%= encodeURIComponent(branch) %>&year=<%= encodeURIComponent(year) %>" class="btn" target="_blank">🖨️ יצוא הזמנה סופית (PDF)</a>
       <% } %>
     </div>
   </div>
