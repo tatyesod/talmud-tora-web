@@ -1,9 +1,21 @@
-// לחיצה על מספר טלפון: מעתיקה את המספר ללוח (כמו Ctrl+C),
-// ומציגה הודעה קצרה. הערה: דפדפן לא יכול לדמות לחיצות מקלדת (F7+Enter)
-// ברמת מערכת ההפעלה כלפי תוכנה חיצונית (חסימת אבטחה של דפדפנים) -
-// לכן השלב של F7+Enter בתוכנת החיוג עדיין נדרש באופן ידני, אך כבר
-// המספר מועתק אוטומטית ומוכן בלוח.
+// לחיצה על מספר טלפון - שתי התנהגויות לפי סוג המכשיר:
+// • במחשב (Windows/Mac) - אין חייגן טלפוני אמיתי, אז מעתיקים את המספר ללוח
+//   ומציגים הודעה להמשיך ב-F7+Enter בתוכנת החיוג (כמו קודם).
+// • בנייד/אפליקציה (Android/iOS, כולל ה-APK) - מעתיקים ללוח (ליתר ביטחון)
+//   וגם מפעילים אקטיבית מעבר לחייגן המכשיר (tel:) - לא מסתמכים רק על
+//   ההתנהגות הדיפולטיבית של קישור ה-<a>, כי בתוך WebView עטוף (כמו ה-APK)
+//   זו לא תמיד נתפסת אוטומטית ע"י מערכת ההפעלה.
 (function () {
+  function isMobileDevice() {
+    var ua = navigator.userAgent || "";
+    if (/Android|iPhone|iPad|iPod/i.test(ua)) return true;
+    // גיבוי: מכשיר עם מסך מגע ובלי סימני "Windows"/"Macintosh" מובהקים של מחשב שולחני
+    var hasTouch = (navigator.maxTouchPoints || 0) > 0;
+    var looksDesktop = /Windows NT|Macintosh/i.test(ua);
+    return hasTouch && !looksDesktop;
+  }
+  var isMobile = isMobileDevice();
+
   function showToast(msg) {
     let toast = document.getElementById("phone-toast");
     if (!toast) {
@@ -29,6 +41,17 @@
     e.preventDefault();
     const phone = el.getAttribute("data-phone") || el.textContent.trim();
     if (!phone) return;
+
+    if (isMobile) {
+      // מעתיקים ללוח בלי הודעה חוסמת, ומיד לאחר מכן פותחים אקטיבית את חייגן המכשיר
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(phone).catch(() => {});
+      }
+      window.location.href = "tel:" + phone;
+      return;
+    }
+
+    // במחשב - מעתיקים ללוח לצורך תוכנת החיוג של המשרד
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(phone)
         .then(() => showToast("המספר " + phone + " הועתק — כעת לחצו F7 ואז Enter בתוכנת החיוג"))
