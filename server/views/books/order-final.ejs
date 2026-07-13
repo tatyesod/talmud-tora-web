@@ -13,11 +13,9 @@
     .bsd { text-align: left; font-weight: bold; margin-bottom: 10px; }
 
     .date-line { font-weight: bold; font-size: 1.05em; margin-bottom: 14px; }
-    .date-line .value { background: #fff9c4; padding: 1px 10px; }
 
     .info-block p { margin: 4px 0; }
     .info-block .label { font-weight: bold; }
-    .info-block .addr-value { background: #fff9c4; padding: 1px 6px; }
 
     .instructions { font-weight: bold; margin-top: 14px; }
     .instructions p { margin: 4px 0; }
@@ -41,11 +39,11 @@
     <img class="header-img" src="/images/book-order-header.jpg" alt="לוגו תלמוד תורה החדש" />
     <div class="bsd">בס"ד</div>
 
-    <div class="date-line">תאריך: <span class="value"><%= today %></span></div>
+    <div class="date-line">תאריך: <%= today %></div>
 
     <div class="info-block">
       <p><span class="label">לכבוד:</span> פניאל הזמנות ספרים</p>
-      <p><span class="label">כתובת אספקה:</span> <span class="addr-value"><%= deliveryAddress %></span></p>
+      <p><span class="label">כתובת אספקה:</span> <%= deliveryAddress %></p>
     </div>
 
     <div class="instructions">
