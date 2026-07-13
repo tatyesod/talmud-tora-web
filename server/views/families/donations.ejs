@@ -1,0 +1,58 @@
+<%- include('../partials/header', {title: 'תרומות'}) %>
+
+<div class="card">
+  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+    <h1>💝 תרומות חודשיות</h1>
+    <a href="/families" class="btn secondary">← חזרה למשפחות</a>
+  </div>
+
+  <p style="color:var(--muted); margin:10px 0;">
+    רישום סכום התרומה החודשית שכל משפחה מתחייבת לתרום לתלמוד תורה. הסכום מוצג גם בכרטיס המשפחה, יחד עם שכר הלימוד וסה"כ משוקלל.
+  </p>
+
+  <% if (saved) { %>
+    <div style="background:#e8f5e9; border:1px solid #a5d6a7; color:#2e7d32; border-radius:8px; padding:10px 16px; margin-bottom:10px;">
+      ✅ הסכומים נשמרו בהצלחה.
+    </div>
+  <% } %>
+
+  <form method="GET" action="/families/donations" class="searchbar" style="margin-bottom:14px;">
+    <input type="text" name="q" placeholder="חיפוש לפי שם משפחה, שם אב, שם אם..." value="<%= q %>" autofocus />
+    <button type="submit" class="btn">חיפוש</button>
+  </form>
+
+  <div style="background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:10px 16px; margin-bottom:14px; display:inline-block;">
+    <strong>סה"כ תרומות חודשיות (לפי הסינון הנוכחי):</strong> <%= totalMonthly.toLocaleString() %> ₪
+  </div>
+
+  <% if (families.length === 0) { %>
+    <p class="empty-state">לא נמצאו משפחות</p>
+  <% } else { %>
+    <form method="POST" action="/families/donations/save">
+      <input type="hidden" name="q" value="<%= q %>" />
+      <div class="table-scroll-wrap">
+        <table>
+          <thead><tr><th>משפחה</th><th>שם האב</th><th>שם האם</th><th>תרומה חודשית (₪)</th></tr></thead>
+          <tbody>
+            <% families.forEach(f => { %>
+              <tr>
+                <td>
+                  <input type="hidden" name="family_id" value="<%= f.id %>" />
+                  <a href="/families/<%= f.id %>" target="_blank"><%= f.last_name %></a>
+                </td>
+                <td><%= f.father_name || '' %></td>
+                <td><%= f.mother_name || '' %></td>
+                <td><input type="number" name="monthly_donation_amount" value="<%= f.monthly_donation_amount || '' %>" min="0" step="1" placeholder="0" style="width:110px;" /></td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+      <div class="actions" style="margin-top:14px;">
+        <button type="submit" class="btn">💾 שמירת כל הסכומים</button>
+      </div>
+    </form>
+  <% } %>
+</div>
+
+<%- include('../partials/footer') %>

@@ -1,7 +1,10 @@
 <%- include('../partials/header', {title: 'משפחות', wide: true}) %>
 
 <div class="card">
-  <h1>משפחות</h1>
+  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+    <h1>משפחות</h1>
+    <a href="/families/donations" class="btn secondary">💝 ניהול תרומות חודשיות</a>
+  </div>
   <form class="searchbar auto-filter" method="GET" action="/families">
     <input type="text" name="q" placeholder="חיפוש לפי שם משפחה, שם אב, טלפון..." value="<%= q %>" autofocus />
     <select name="sector">

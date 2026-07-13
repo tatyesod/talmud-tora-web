@@ -239,6 +239,9 @@ const migrations = [
   // סניף ישיר על התלמיד - בלי תלות בכיתה בכלל (יש תלמידים בלי כיתה,
   // או עם כיתה שאין לה עדיין "עדיין לא נכנסו" מתאימה, שעדיין צריכים סניף)
   "ALTER TABLE students ADD COLUMN branch TEXT",
+  // סכום תרומה חודשי שמשפחה אמורה לתרום לתלמוד תורה (רישום סכום בלבד,
+  // בלי מעקב תשלומים פרטני - בדיוק כמו שכר לימוד אבל פשוט יותר)
+  "ALTER TABLE families ADD COLUMN monthly_donation_amount REAL",
 ];
 
 for (const sql of migrations) {

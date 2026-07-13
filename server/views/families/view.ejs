@@ -126,4 +126,20 @@
   <% } %>
 </div>
 
+<div class="card">
+  <h3>💝 תרומה חודשית</h3>
+  <p>
+    <strong>סכום תרומה חודשי:</strong>
+    <%= family.monthly_donation_amount ? family.monthly_donation_amount.toLocaleString() + ' ₪' : 'לא הוגדר' %>
+    <a href="/families/donations?q=<%= encodeURIComponent(family.last_name) %>" class="btn small secondary" style="margin-right:10px;">עדכון סכום</a>
+  </p>
+  <% if (family.monthly_donation_amount) { %>
+    <table style="margin-top:10px;">
+      <tr><th>שכר לימוד חודשי</th><td><%= tuition.netTotal.toLocaleString() %> ₪</td></tr>
+      <tr><th>תרומה חודשית</th><td><%= family.monthly_donation_amount.toLocaleString() %> ₪</td></tr>
+      <tr><th>סה"כ מחויבות חודשית</th><td><strong style="font-size:1.2em; color:var(--primary-dark);"><%= (tuition.netTotal + family.monthly_donation_amount).toLocaleString() %> ₪</strong></td></tr>
+    </table>
+  <% } %>
+</div>
+
 <%- include('../partials/footer') %>

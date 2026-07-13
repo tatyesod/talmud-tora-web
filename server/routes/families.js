@@ -6,6 +6,39 @@ const { calcFamilyTuition } = require("../tuitionCalc");
 const { buildOrderBy } = require("../sortHelper");
 const { checkNoConflict } = require("../concurrency");
 
+// ============ תרומות - סכום חודשי שכל משפחה אמורה לתרום ============
+router.get("/donations", (req, res) => {
+  const { q } = req.query;
+  let sql = `
+    SELECT f.id, f.last_name, f.father_name, f.mother_name, f.monthly_donation_amount
+    FROM families f
+    WHERE EXISTS (SELECT 1 FROM students s WHERE s.family_id = f.id AND s.status NOT IN ('ארכיון', 'לא התקבל'))
+  `;
+  const params = [];
+  if (q) {
+    sql += " AND (f.last_name LIKE ? OR f.father_name LIKE ? OR f.mother_name LIKE ?)";
+    const like = `%${q}%`;
+    params.push(like, like, like);
+  }
+  sql += " ORDER BY f.last_name";
+  const families = db.prepare(sql).all(...params);
+  const totalMonthly = families.reduce((sum, f) => sum + (f.monthly_donation_amount || 0), 0);
+  res.render("families/donations", { families, q: q || "", totalMonthly, saved: req.query.saved === "1" });
+});
+
+router.post("/donations/save", (req, res) => {
+  let ids = req.body.family_id || [];
+  let amounts = req.body.monthly_donation_amount || [];
+  if (!Array.isArray(ids)) ids = [ids];
+  if (!Array.isArray(amounts)) amounts = [amounts];
+  const update = db.prepare("UPDATE families SET monthly_donation_amount = ? WHERE id = ?");
+  ids.forEach((id, i) => {
+    const amt = parseFloat(amounts[i]);
+    update.run(isNaN(amt) || amt === 0 ? null : amt, id);
+  });
+  res.redirect(`/families/donations?saved=1${req.body.q ? "&q=" + encodeURIComponent(req.body.q) : ""}`);
+});
+
 router.get("/", (req, res) => {
   const { q, sector, branch } = req.query;
   const status = req.query.status !== undefined ? req.query.status : "פעיל";
