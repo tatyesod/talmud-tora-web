@@ -1,0 +1,156 @@
+<%- include('../partials/header', {title: 'ייבוא נתונים חיצוניים'}) %>
+
+<div class="card">
+  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+    <h1>📥 ייבוא נתונים ממערכת הסליקה</h1>
+    <a href="/families" class="btn secondary">← חזרה למשפחות</a>
+  </div>
+  <p style="color:var(--muted); margin:10px 0;">
+    כלי חד-פעמי לעדכון תרומות חודשיות ומיילים אצל משפחות קיימות, לפי הקבצים שהתקבלו ממערכת הסליקה.
+    ההתאמה נעשית קודם כל לפי <strong>ת.ז</strong> (של האב או האם), ואם לא נמצאה - לפי שם משפחה (ובמקרה של כמה
+    התאמות, גם לפי הכתובת). משפחות שלא נמצאה עבורן התאמה - לא משתנות, ומופיעות ברשימת "לא נמצאו" למטה כדי שתוכל
+    לבדוק אותן ידנית אם תרצה.
+  </p>
+
+  <div style="display:flex; gap:20px; flex-wrap:wrap; margin:14px 0;">
+    <form method="POST" action="/families/import-external/donations" onsubmit="return confirm('להריץ עדכון תרומות חודשיות מהקובץ? הפעולה מעדכנת ישירות את המשפחות התואמות.');">
+      <button type="submit" class="btn">💝 הרץ עדכון תרומות חודשיות</button>
+    </form>
+    <form method="POST" action="/families/import-external/emails" onsubmit="return confirm('להריץ עדכון מיילים מהקובץ? הפעולה מעדכנת ישירות את המשפחות התואמות.');">
+      <button type="submit" class="btn">📧 הרץ עדכון מיילים</button>
+    </form>
+  </div>
+
+  <% if (donationsResult) { %>
+    <div style="background:#eef6ee; border:1px solid #bcd9bc; border-radius:8px; padding:12px 16px; margin:14px 0; color:#2d7a2d;">
+      ✅ עודכנו <%= donationsResult.updated.length %> משפחות. <%= donationsResult.skipped.length %> שורות לא נמצאה עבורן התאמה.
+    </div>
+
+    <h3>עודכנו בהצלחה (<%= donationsResult.updated.length %>)</h3>
+    <div class="table-scroll-wrap">
+      <table>
+        <thead><tr><th>שם בקובץ</th><th>משפחה במערכת</th><th>סכום שעודכן</th><th>שיטת התאמה</th><th></th></tr></thead>
+        <tbody>
+          <% donationsResult.updated.forEach(r => { %>
+            <tr>
+              <td><%= r.sourceName %></td>
+              <td><%= r.familyLastName %></td>
+              <td><%= r.amount %> ₪</td>
+              <td><%= r.method === 'id' ? 'ת.ז' : (r.method === 'name' ? 'שם משפחה' : 'שם + כתובת') %></td>
+              <td><a href="/families/<%= r.familyId %>" target="_blank" class="btn small secondary">פתח כרטיס</a></td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 style="margin-top:20px;">לא נמצאה התאמה (<%= donationsResult.skipped.length %>)</h3>
+    <div class="table-scroll-wrap">
+      <table>
+        <thead><tr><th>שם בקובץ</th><th>כתובת בקובץ</th><th>סכום</th><th>ת.ז בקובץ</th></tr></thead>
+        <tbody>
+          <% donationsResult.skipped.forEach(r => { %>
+            <tr>
+              <td><%= r.name %></td>
+              <td><%= r.address %></td>
+              <td><%= r.amount %> ₪</td>
+              <td><%= r.idNumber %></td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+
+    <% if (donationsResult.suggestions.length > 0) { %>
+      <h3 style="margin-top:20px; color:#8a6d00;">⚠️ נמצאה התאמה אפשרית לפי שם - דורש אישור ידני (<%= donationsResult.suggestions.length %>)</h3>
+      <p style="color:var(--muted);">אלה <strong>לא עודכנו אוטומטית</strong> - הת.ז בקובץ לא תאמה לאף משפחה, אבל נמצאה משפחה עם שם משפחה זהה. בדוק ועדכן ידנית אם זו אכן אותה משפחה (למשל דרך מסך "ניהול תרומות חודשיות").</p>
+      <div class="table-scroll-wrap">
+        <table>
+          <thead><tr><th>שם בקובץ</th><th>כתובת בקובץ</th><th>סכום</th><th>מועמדים אפשריים במערכת</th></tr></thead>
+          <tbody>
+            <% donationsResult.suggestions.forEach(r => { %>
+              <tr>
+                <td><%= r.name %></td>
+                <td><%= r.address %></td>
+                <td><%= r.amount %> ₪</td>
+                <td>
+                  <% r.candidates.forEach(c => { %>
+                    <a href="/families/<%= c.id %>" target="_blank" class="btn small secondary"><%= c.lastName %><%= c.street ? ' - ' + c.street : '' %></a>
+                  <% }) %>
+                </td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    <% } %>
+  <% } %>
+
+  <% if (emailsResult) { %>
+    <div style="background:#eef6ee; border:1px solid #bcd9bc; border-radius:8px; padding:12px 16px; margin:14px 0; color:#2d7a2d;">
+      ✅ עודכנו <%= emailsResult.updated.length %> משפחות. <%= emailsResult.skipped.length %> שורות לא נמצאה עבורן התאמה.
+    </div>
+
+    <h3>עודכנו בהצלחה (<%= emailsResult.updated.length %>)</h3>
+    <div class="table-scroll-wrap">
+      <table>
+        <thead><tr><th>שם בקובץ</th><th>משפחה במערכת</th><th>מייל שעודכן</th><th>עודכן אצל</th><th>שיטת התאמה</th><th></th></tr></thead>
+        <tbody>
+          <% emailsResult.updated.forEach(r => { %>
+            <tr>
+              <td><%= r.sourceName %></td>
+              <td><%= r.familyLastName %></td>
+              <td><%= r.email %></td>
+              <td><%= r.field === 'father' ? 'אב' : 'אם' %></td>
+              <td><%= r.method === 'id' ? 'ת.ז' : (r.method === 'name' ? 'שם משפחה' : 'שם + כתובת') %></td>
+              <td><a href="/families/<%= r.familyId %>" target="_blank" class="btn small secondary">פתח כרטיס</a></td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 style="margin-top:20px;">לא נמצאה התאמה (<%= emailsResult.skipped.length %>)</h3>
+    <div class="table-scroll-wrap">
+      <table>
+        <thead><tr><th>שם פרטי</th><th>שם משפחה</th><th>מייל</th><th>ת.ז בקובץ</th></tr></thead>
+        <tbody>
+          <% emailsResult.skipped.forEach(r => { %>
+            <tr>
+              <td><%= r.firstName %></td>
+              <td><%= r.lastName %></td>
+              <td><%= r.email %></td>
+              <td><%= r.idNumber %></td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+
+    <% if (emailsResult.suggestions.length > 0) { %>
+      <h3 style="margin-top:20px; color:#8a6d00;">⚠️ נמצאה התאמה אפשרית לפי שם - דורש אישור ידני (<%= emailsResult.suggestions.length %>)</h3>
+      <p style="color:var(--muted);">אלה <strong>לא עודכנו אוטומטית</strong>. בדוק ועדכן ידנית אם זו אכן אותה משפחה.</p>
+      <div class="table-scroll-wrap">
+        <table>
+          <thead><tr><th>שם פרטי</th><th>שם משפחה</th><th>מייל</th><th>מועמדים אפשריים במערכת</th></tr></thead>
+          <tbody>
+            <% emailsResult.suggestions.forEach(r => { %>
+              <tr>
+                <td><%= r.firstName %></td>
+                <td><%= r.lastName %></td>
+                <td><%= r.email %></td>
+                <td>
+                  <% r.candidates.forEach(c => { %>
+                    <a href="/families/<%= c.id %>" target="_blank" class="btn small secondary"><%= c.lastName %><%= c.street ? ' - ' + c.street : '' %></a>
+                  <% }) %>
+                </td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    <% } %>
+  <% } %>
+</div>
+
+<%- include('../partials/footer') %>

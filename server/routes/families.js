@@ -7,6 +7,24 @@ const { buildOrderBy } = require("../sortHelper");
 const { checkNoConflict } = require("../concurrency");
 
 // ============ תרומות - סכום חודשי שכל משפחה אמורה לתרום ============
+// ============ ייבוא נתונים חיצוניים ממערכת הסליקה (תרומות + מיילים) ============
+// הרצה ידנית בלבד, לא אוטומטית - כי מדובר בעדכון נתונים כספיים/אישיים אמיתיים.
+router.get("/import-external", (req, res) => {
+  res.render("families/import-external", { donationsResult: null, emailsResult: null });
+});
+
+router.post("/import-external/donations", (req, res) => {
+  const { runDonationsImport } = require("../externalImport");
+  const donationsResult = runDonationsImport(db);
+  res.render("families/import-external", { donationsResult, emailsResult: null });
+});
+
+router.post("/import-external/emails", (req, res) => {
+  const { runEmailsImport } = require("../externalImport");
+  const emailsResult = runEmailsImport(db);
+  res.render("families/import-external", { donationsResult: null, emailsResult });
+});
+
 router.get("/donations", (req, res) => {
   const { q } = req.query;
   let sql = `
