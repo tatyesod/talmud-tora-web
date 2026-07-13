@@ -718,34 +718,60 @@ router.get("/inventory", (req, res) => {
   const ALL_BRANCHES = ["סוקולוב", "נפחא", "בן פתחיה"];
   const branches = Array.from(new Set([...ALL_BRANCHES, ...classBranches]));
   const branch = req.query.branch || branches[0] || "";
+  const years = db.prepare("SELECT DISTINCT year_label FROM book_catalog ORDER BY year_label DESC").all().map(r => r.year_label);
+  const defaultYear = db.prepare("SELECT value FROM settings WHERE key='current_hebrew_year'").get()?.value || years[0] || 'תשפ"ז';
+  const year = req.query.year || defaultYear;
 
   const items = db.prepare(`
     SELECT bp.id AS book_price_id, bp.item_name, bp.publisher, bp.notes, bp.price,
            COALESCE(bi.current_stock, 0) AS current_stock,
-           COALESCE(bi.desired_stock, 0) AS desired_stock
+           COALESCE(bi.extra_quantity, 5) AS extra_quantity,
+           (
+             SELECT COUNT(*) FROM book_orders bo
+             JOIN book_catalog bc ON bo.catalog_id = bc.id AND bc.item_name = bp.item_name AND bc.year_label = ?
+             JOIN students s ON bo.student_id = s.id
+             LEFT JOIN classes c ON s.class_id = c.id
+             WHERE COALESCE(c.branch, s.branch) = ?
+           ) AS ordered_count
     FROM book_prices bp
     LEFT JOIN book_inventory bi ON bi.book_price_id = bp.id AND bi.branch = ?
     ORDER BY bp.item_name
-  `).all(branch);
+  `).all(year, branch, branch).map((it) => ({
+    ...it,
+    to_order: it.ordered_count + it.extra_quantity - it.current_stock,
+  }));
 
-  res.render("books/inventory", { branches, branch, items, saved: req.query.saved === "1", added: parseInt(req.query.added, 10) || 0 });
+  res.render("books/inventory", { branches, branch, years, year, items, saved: req.query.saved === "1", added: parseInt(req.query.added, 10) || 0 });
 });
 
 router.get("/inventory/print", (req, res) => {
   const branches = db.prepare("SELECT DISTINCT branch FROM classes WHERE branch IS NOT NULL AND branch<>'' ORDER BY branch").all().map(r => r.branch);
   const branch = req.query.branch || branches[0] || "";
+  const years = db.prepare("SELECT DISTINCT year_label FROM book_catalog ORDER BY year_label DESC").all().map(r => r.year_label);
+  const defaultYear = db.prepare("SELECT value FROM settings WHERE key='current_hebrew_year'").get()?.value || years[0] || 'תשפ"ז';
+  const year = req.query.year || defaultYear;
 
   const items = db.prepare(`
     SELECT bp.item_name, bp.publisher, bp.notes,
            COALESCE(bi.current_stock, 0) AS current_stock,
-           COALESCE(bi.desired_stock, 0) AS desired_stock
+           COALESCE(bi.extra_quantity, 5) AS extra_quantity,
+           (
+             SELECT COUNT(*) FROM book_orders bo
+             JOIN book_catalog bc ON bo.catalog_id = bc.id AND bc.item_name = bp.item_name AND bc.year_label = ?
+             JOIN students s ON bo.student_id = s.id
+             LEFT JOIN classes c ON s.class_id = c.id
+             WHERE COALESCE(c.branch, s.branch) = ?
+           ) AS ordered_count
     FROM book_prices bp
     LEFT JOIN book_inventory bi ON bi.book_price_id = bp.id AND bi.branch = ?
     ORDER BY bp.item_name
-  `).all(branch);
+  `).all(year, branch, branch).map((it) => ({
+    ...it,
+    to_order: Math.max(0, it.ordered_count + it.extra_quantity - it.current_stock),
+  }));
 
-  const headers = ["ספר", "הוצאה", "הערות", "מלאי לפי המערכת", "כמות רצויה", "ספירה בפועל (למילוי ידני)"];
-  const rows = items.map(it => [it.item_name, it.publisher || "", it.notes || "", it.current_stock, it.desired_stock, ""]);
+  const headers = ["ספר", "הוצאה", "הערות", "מלאי לפי המערכת", "כמות להזמנה", "ספירה בפועל (למילוי ידני)"];
+  const rows = items.map(it => [it.item_name, it.publisher || "", it.notes || "", it.current_stock, it.to_order, ""]);
 
   res.render("reports/print-view", { title: `דוח ספירת מלאי ספרים${branch ? " - " + branch : ""}`, headers, rows });
 });
@@ -754,25 +780,25 @@ router.post("/inventory/save", (req, res) => {
   const { branch } = req.body;
   let ids = req.body.book_price_id || [];
   let currentStocks = req.body.current_stock || [];
-  let desiredStocks = req.body.desired_stock || [];
+  let extraQuantities = req.body.extra_quantity || [];
   let notesArr = req.body.notes || [];
   let itemNames = req.body.item_name || [];
   let publishers = req.body.publisher || [];
   let prices = req.body.price || [];
   if (!Array.isArray(ids)) ids = [ids];
   if (!Array.isArray(currentStocks)) currentStocks = [currentStocks];
-  if (!Array.isArray(desiredStocks)) desiredStocks = [desiredStocks];
+  if (!Array.isArray(extraQuantities)) extraQuantities = [extraQuantities];
   if (!Array.isArray(notesArr)) notesArr = [notesArr];
   if (!Array.isArray(itemNames)) itemNames = [itemNames];
   if (!Array.isArray(publishers)) publishers = [publishers];
   if (!Array.isArray(prices)) prices = [prices];
 
   const upsert = db.prepare(`
-    INSERT INTO book_inventory (book_price_id, branch, current_stock, desired_stock, updated_at)
+    INSERT INTO book_inventory (book_price_id, branch, current_stock, extra_quantity, updated_at)
     VALUES (?,?,?,?,?)
     ON CONFLICT(book_price_id, branch) DO UPDATE SET
       current_stock = excluded.current_stock,
-      desired_stock = excluded.desired_stock,
+      extra_quantity = excluded.extra_quantity,
       updated_at = excluded.updated_at
   `);
   const updateBook = db.prepare(`
@@ -780,7 +806,7 @@ router.post("/inventory/save", (req, res) => {
   `);
   const now = new Date().toISOString();
   ids.forEach((id, i) => {
-    upsert.run(id, branch, parseInt(currentStocks[i], 10) || 0, parseInt(desiredStocks[i], 10) || 0, now);
+    upsert.run(id, branch, parseInt(currentStocks[i], 10) || 0, parseInt(extraQuantities[i], 10) || 0, now);
     if (itemNames[i] !== undefined) {
       updateBook.run(
         (itemNames[i] || "").trim() || "ללא שם", (publishers[i] || "").trim() || null,
@@ -792,70 +818,83 @@ router.post("/inventory/save", (req, res) => {
   res.redirect(`/books/inventory?branch=${encodeURIComponent(branch)}&saved=1`);
 });
 
-// ============ הזמנת ספרים מהספק - חישוב אוטומטי לפי מלאי מול כמות רצויה ============
+// ============ הזמנת ספרים מהספק - חישוב אוטומטי: הוזמן בפועל + תוספת פחות מלאי נוכחי ============
 router.get("/inventory/order", (req, res) => {
   const branches = db.prepare("SELECT DISTINCT branch FROM classes WHERE branch IS NOT NULL AND branch<>'' ORDER BY branch").all().map(r => r.branch);
   const branch = req.query.branch || branches[0] || "";
+  const years = db.prepare("SELECT DISTINCT year_label FROM book_catalog ORDER BY year_label DESC").all().map(r => r.year_label);
+  const defaultYear = db.prepare("SELECT value FROM settings WHERE key='current_hebrew_year'").get()?.value || years[0] || 'תשפ"ז';
+  const year = req.query.year || defaultYear;
 
   const rows = db.prepare(`
     SELECT bp.item_name, bp.publisher, bp.price,
            COALESCE(bi.current_stock, 0) AS current_stock,
-           COALESCE(bi.desired_stock, 0) AS desired_stock
+           COALESCE(bi.extra_quantity, 5) AS extra_quantity,
+           (
+             SELECT COUNT(*) FROM book_orders bo
+             JOIN book_catalog bc ON bo.catalog_id = bc.id AND bc.item_name = bp.item_name AND bc.year_label = ?
+             JOIN students s ON bo.student_id = s.id
+             LEFT JOIN classes c ON s.class_id = c.id
+             WHERE COALESCE(c.branch, s.branch) = ?
+           ) AS ordered_count
     FROM book_prices bp
     LEFT JOIN book_inventory bi ON bi.book_price_id = bp.id AND bi.branch = ?
-    WHERE COALESCE(bi.desired_stock, 0) > COALESCE(bi.current_stock, 0)
     ORDER BY bp.item_name
-  `).all(branch).map((r) => ({
-    ...r,
-    to_order: r.desired_stock - r.current_stock,
-    line_total: (r.desired_stock - r.current_stock) * r.price,
-  }));
+  `).all(year, branch, branch)
+    .map((r) => ({ ...r, to_order: r.ordered_count + r.extra_quantity - r.current_stock }))
+    .filter((r) => r.to_order > 0);
 
-  const grandTotal = rows.reduce((s, r) => s + r.line_total, 0);
   const grandQty = rows.reduce((s, r) => s + r.to_order, 0);
 
-  res.render("books/inventory-order", { branches, branch, rows, grandTotal, grandQty });
+  res.render("books/inventory-order", { branches, branch, years, year, rows, grandQty });
 });
 
 router.get("/inventory/order/export", async (req, res) => {
   const { branch } = req.query;
+  const years = db.prepare("SELECT DISTINCT year_label FROM book_catalog ORDER BY year_label DESC").all().map(r => r.year_label);
+  const defaultYear = db.prepare("SELECT value FROM settings WHERE key='current_hebrew_year'").get()?.value || years[0] || 'תשפ"ז';
+  const year = req.query.year || defaultYear;
+
   const rows = db.prepare(`
-    SELECT bp.item_name, bp.publisher, bp.price,
+    SELECT bp.item_name, bp.publisher,
            COALESCE(bi.current_stock, 0) AS current_stock,
-           COALESCE(bi.desired_stock, 0) AS desired_stock
+           COALESCE(bi.extra_quantity, 5) AS extra_quantity,
+           (
+             SELECT COUNT(*) FROM book_orders bo
+             JOIN book_catalog bc ON bo.catalog_id = bc.id AND bc.item_name = bp.item_name AND bc.year_label = ?
+             JOIN students s ON bo.student_id = s.id
+             LEFT JOIN classes c ON s.class_id = c.id
+             WHERE COALESCE(c.branch, s.branch) = ?
+           ) AS ordered_count
     FROM book_prices bp
     LEFT JOIN book_inventory bi ON bi.book_price_id = bp.id AND bi.branch = ?
-    WHERE COALESCE(bi.desired_stock, 0) > COALESCE(bi.current_stock, 0)
     ORDER BY bp.item_name
-  `).all(branch).map((r) => ({
-    ...r,
-    to_order: r.desired_stock - r.current_stock,
-    line_total: (r.desired_stock - r.current_stock) * r.price,
-  }));
+  `).all(year, branch, branch)
+    .map((r) => ({ ...r, to_order: r.ordered_count + r.extra_quantity - r.current_stock }))
+    .filter((r) => r.to_order > 0);
 
   const wb = new ExcelJS.Workbook();
   const ws = wb.addWorksheet("הזמנה מהספק", { views: [{ rightToLeft: true }] });
   addExcelHeader(wb, ws, "", `הזמנת ספרים מהספק - סניף ${branch}`, rows.length + 4);
   addLogo(wb, ws, rows.length + 3, 0);
 
-  const hr = ws.addRow(["ספר", "הוצאה", "מלאי נוכחי", "כמות רצויה", "כמות להזמנה", "מחיר יחידה", "סה\"כ"]);
+  const hr = ws.addRow(["ספר", "הוצאה", "כמות"]);
   hr.eachCell((cell) => {
     cell.font = { bold: true, color: { argb: "FFFFFFFF" } };
     cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF2C5F7C" } };
     cell.alignment = { horizontal: "right" };
   });
 
-  let grandTotal = 0, grandQty = 0;
+  let grandQty = 0;
   rows.forEach((r) => {
-    ws.addRow([r.item_name, r.publisher || "", r.current_stock, r.desired_stock, r.to_order, r.price, r.line_total]).alignment = { horizontal: "right" };
-    grandTotal += r.line_total;
+    ws.addRow([r.item_name, r.publisher || "", r.to_order]).alignment = { horizontal: "right" };
     grandQty += r.to_order;
   });
-  const sr = ws.addRow(["סה\"כ", "", "", "", grandQty, "", grandTotal]);
+  const sr = ws.addRow(["סה\"כ", "", grandQty]);
   sr.font = { bold: true };
   sr.eachCell((cell) => { cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFEFF4F8" } }; });
 
-  [28, 16, 12, 12, 14, 12, 12].forEach((w, i) => { ws.getColumn(i + 1).width = w; });
+  [32, 20, 12].forEach((w, i) => { ws.getColumn(i + 1).width = w; });
 
   res.setHeader("Content-Disposition", `attachment; filename="${encodeURIComponent(`הזמנה-מהספק-${branch}.xlsx`)}"`);
   res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");

@@ -242,6 +242,10 @@ const migrations = [
   // סכום תרומה חודשי שמשפחה אמורה לתרום לתלמוד תורה (רישום סכום בלבד,
   // בלי מעקב תשלומים פרטני - בדיוק כמו שכר לימוד אבל פשוט יותר)
   "ALTER TABLE families ADD COLUMN monthly_donation_amount REAL",
+  // תוספת כמות ידנית למלאי ספרים (מעבר למה שהוזמן בפועל דרך הזמנת ספרים
+  // לכיתות) - לכל ספר לפי סניף. ברירת מחדל 5 יח' לכל ספר (מטופל ב-COALESCE
+  // בשאילתות, בלי צורך למלא מראש כל שילוב ספר/סניף אפשרי).
+  "ALTER TABLE book_inventory ADD COLUMN extra_quantity INTEGER",
 ];
 
 for (const sql of migrations) {

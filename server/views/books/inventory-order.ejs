@@ -5,63 +5,62 @@
     <h1>🛒 הזמנת ספרים מהספק</h1>
     <div class="actions">
       <a href="/books" class="btn secondary">← חזרה</a>
-      <a href="/books/inventory?branch=<%= encodeURIComponent(branch) %>" class="btn secondary">📦 עדכון מלאי</a>
+      <a href="/books/inventory?branch=<%= encodeURIComponent(branch) %>&year=<%= encodeURIComponent(year) %>" class="btn secondary">📦 עדכון מלאי</a>
       <% if (rows.length > 0) { %>
-        <a href="/books/inventory/order/export?branch=<%= encodeURIComponent(branch) %>" class="btn">📥 ייצוא הזמנה ל-Excel</a>
+        <a href="/books/inventory/order/export?branch=<%= encodeURIComponent(branch) %>&year=<%= encodeURIComponent(year) %>" class="btn">📥 ייצוא הזמנה ל-Excel</a>
       <% } %>
     </div>
   </div>
 
   <p style="color:var(--muted); font-size:0.9em;">
-    הרשימה מציגה רק ספרים שבהם הכמות הרצויה גבוהה מהמלאי הנוכחי — אלה הספרים שצריך להזמין מהספק, ובאיזו כמות בדיוק.
-    אם ספר לא מופיע כאן, סימן שהמלאי שלו מספיק או שלא הוגדרה לו כמות רצויה.
+    הרשימה מציגה רק ספרים שבאמת צריך להזמין (הוזמן בפועל + תוספת, פחות מלאי נוכחי - יוצא חיובי). אם ספר לא מופיע
+    כאן, סימן שהמלאי הקיים מספיק לכיסוי מה שהוזמן בפועל והתוספת.
   </p>
 
-  <form method="GET" action="/books/inventory/order" style="margin-bottom:14px;">
-    <label><strong>סניף:</strong></label>
-    <select name="branch" onchange="this.form.submit()">
-      <% branches.forEach(b => { %>
-        <option value="<%= b %>" <%= b === branch ? 'selected' : '' %>><%= b %></option>
-      <% }) %>
-    </select>
+  <form method="GET" action="/books/inventory/order" style="margin-bottom:14px; display:flex; gap:14px; flex-wrap:wrap; align-items:center;">
+    <span><label><strong>סניף:</strong></label>
+      <select name="branch" onchange="this.form.submit()">
+        <% branches.forEach(b => { %>
+          <option value="<%= b %>" <%= b === branch ? 'selected' : '' %>><%= b %></option>
+        <% }) %>
+      </select>
+    </span>
+    <span><label><strong>שנת לימודים:</strong></label>
+      <select name="year" onchange="this.form.submit()">
+        <% years.forEach(y => { %>
+          <option value="<%= y %>" <%= y === year ? 'selected' : '' %>><%= y %></option>
+        <% }) %>
+      </select>
+    </span>
   </form>
 
-  <div style="display:flex; gap:14px; flex-wrap:wrap; margin-bottom:18px;">
-    <div style="background:linear-gradient(135deg,#eef3f8,#f5f3ee); border:1px solid #b8cfe0; border-radius:10px; padding:12px 22px; min-width:150px;">
-      <div style="font-size:1.4em; font-weight:800; color:#2c5f7c;"><%= grandQty %></div>
-      <div style="color:var(--muted); font-size:0.85em;">סה"כ יחידות להזמנה</div>
-    </div>
-    <div style="background:linear-gradient(135deg,#eef6ee,#f5f3ee); border:1px solid #bcd9bc; border-radius:10px; padding:12px 22px; min-width:150px;">
-      <div style="font-size:1.4em; font-weight:800; color:#2d7a4f;"><%= grandTotal.toLocaleString() %> ₪</div>
-      <div style="color:var(--muted); font-size:0.85em;">עלות משוערת</div>
-    </div>
+  <div style="background:linear-gradient(135deg,#eef3f8,#f5f3ee); border:1px solid #b8cfe0; border-radius:10px; padding:12px 22px; min-width:150px; display:inline-block; margin-bottom:18px;">
+    <div style="font-size:1.4em; font-weight:800; color:#2c5f7c;"><%= grandQty %></div>
+    <div style="color:var(--muted); font-size:0.85em;">סה"כ יחידות להזמנה</div>
   </div>
 
   <% if (rows.length === 0) { %>
-    <p class="empty-state">אין ספרים שצריך להזמין כרגע בסניף <%= branch %> — המלאי מספיק, או שלא הוגדרו כמויות רצויות.</p>
+    <p class="empty-state">אין ספרים שצריך להזמין כרגע בסניף <%= branch %> — המלאי מכסה את מה שהוזמן בפועל + התוספת.</p>
   <% } else { %>
     <div class="table-scroll-wrap">
       <table>
-        <thead><tr><th>ספר</th><th>הוצאה</th><th>מלאי נוכחי</th><th>כמות רצויה</th><th>כמות להזמנה</th><th>מחיר יחידה</th><th>סה"כ</th></tr></thead>
+        <thead><tr><th>ספר</th><th>הוצאה</th><th>מלאי נוכחי</th><th>הוזמן</th><th>תוספת</th><th>כמות להזמנה</th></tr></thead>
         <tbody>
           <% rows.forEach(r => { %>
             <tr>
               <td><%= r.item_name %></td>
               <td><%= r.publisher || '' %></td>
               <td><%= r.current_stock %></td>
-              <td><%= r.desired_stock %></td>
+              <td><%= r.ordered_count %></td>
+              <td><%= r.extra_quantity %></td>
               <td><strong><%= r.to_order %></strong></td>
-              <td><%= r.price %> ₪</td>
-              <td><%= r.line_total.toLocaleString() %> ₪</td>
             </tr>
           <% }) %>
         </tbody>
         <tfoot>
           <tr style="font-weight:700; background:#f8f9fa;">
-            <td colspan="4">סה"כ</td>
+            <td colspan="5">סה"כ</td>
             <td><%= grandQty %></td>
-            <td></td>
-            <td><%= grandTotal.toLocaleString() %> ₪</td>
           </tr>
         </tfoot>
       </table>
