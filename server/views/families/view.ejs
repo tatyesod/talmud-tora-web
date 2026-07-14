@@ -71,7 +71,7 @@
                 <span style="background:#e8f0f7; color:#2c5f7c; border-radius:10px; padding:2px 8px; font-size:0.85em; font-weight:700;"><%= s.age %></span>
               <% } %>
             </td>
-            <td><%= [s.class_name, s.class_parallel].filter(Boolean).join('') %></td>
+            <td><%- s.class_id ? `<a href="/classes/${s.class_id}">${[s.class_name, s.class_parallel].filter(Boolean).join('')}</a>` : '' %></td>
             <td><%= s.cohort_name || '' %></td>
             <td><%= s.branch || '—' %></td>
             <td><span class="badge <%= s.status !== 'פעיל' ? 'archive' : '' %>"><%= s.status || '' %></span></td>
