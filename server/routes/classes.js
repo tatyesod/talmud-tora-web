@@ -242,6 +242,56 @@ router.delete("/cohorts/:id", (req, res) => {
 // ============ שיבוץ אוטומטי לכיתות "עדיין לא נכנסו" לפי אזור מגורים ============
 const { getZoneForAddress } = require("../streetZones");
 
+// ============ החלפת כיתות - כל תלמידי כיתה א' עוברים לכיתה ב' ולהפך ============
+router.get("/swap", (req, res) => {
+  const classes = db.prepare(`
+    SELECT c.id, c.name, c.parallel, c.branch,
+      (SELECT COUNT(*) FROM students s WHERE s.class_id = c.id AND s.status NOT IN ('ארכיון', 'לא התקבל')) AS student_count
+    FROM classes c ORDER BY c.name, c.parallel
+  `).all();
+  res.render("classes/swap", { classes, result: null });
+});
+
+router.post("/swap/run", (req, res) => {
+  const { class_id_a, class_id_b } = req.body;
+  const classA = db.prepare("SELECT id, name, parallel FROM classes WHERE id = ?").get(class_id_a);
+  const classB = db.prepare("SELECT id, name, parallel FROM classes WHERE id = ?").get(class_id_b);
+  if (!classA || !classB || classA.id === classB.id) {
+    return res.redirect("/classes/swap?error=1");
+  }
+
+  // מבצעים את ההחלפה בטרנזקציה מפורשת, דרך ערך זמני, כדי שלא "יתנגשו" זה בזה באמצע
+  const countA = db.prepare("SELECT COUNT(*) c FROM students WHERE class_id = ?").get(classA.id).c;
+  const countB = db.prepare("SELECT COUNT(*) c FROM students WHERE class_id = ?").get(classB.id).c;
+
+  db.exec("BEGIN TRANSACTION");
+  try {
+    db.prepare("UPDATE students SET class_id = -1 WHERE class_id = ?").run(classA.id);
+    db.prepare("UPDATE students SET class_id = ? WHERE class_id = ?").run(classA.id, classB.id);
+    db.prepare("UPDATE students SET class_id = ? WHERE class_id = -1").run(classB.id);
+    db.exec("COMMIT");
+  } catch (e) {
+    db.exec("ROLLBACK");
+    throw e;
+  }
+
+  const classes = db.prepare(`
+    SELECT c.id, c.name, c.parallel, c.branch,
+      (SELECT COUNT(*) FROM students s WHERE s.class_id = c.id AND s.status NOT IN ('ארכיון', 'לא התקבל')) AS student_count
+    FROM classes c ORDER BY c.name, c.parallel
+  `).all();
+
+  res.render("classes/swap", {
+    classes,
+    result: {
+      classAName: `${classA.name}${classA.parallel ? " (" + classA.parallel + ")" : ""}`,
+      classBName: `${classB.name}${classB.parallel ? " (" + classB.parallel + ")" : ""}`,
+      countA,
+      countB,
+    },
+  });
+});
+
 router.get("/zone-assignment", (req, res) => {
   const { resolveZone } = require("../zoneResolver");
   const cohortId = req.query.cohort_id || "";

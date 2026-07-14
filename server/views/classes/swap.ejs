@@ -1,0 +1,46 @@
+<%- include('../partials/header', {title: 'החלפת כיתות'}) %>
+
+<div class="card">
+  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+    <h1>🔄 החלפת כיתות</h1>
+    <a href="/classes" class="btn secondary">← חזרה לכיתות</a>
+  </div>
+
+  <p style="color:var(--muted); margin:10px 0;">
+    בוחרים שתי כיתות, והמערכת מעבירה את <strong>כל</strong> התלמידים של כיתה א' לכיתה ב', ואת כל התלמידים של כיתה ב' לכיתה א' -
+    בפעולה אחת. שימושי למשל כשמחליטים להחליף בין שתי מקבילות (שם הכיתה, המורה, החדר וכו' לא משתנים - רק שיוך התלמידים).
+  </p>
+
+  <% if (result) { %>
+    <div style="background:#e8f5e9; border:1px solid #a5d6a7; color:#2e7d32; border-radius:8px; padding:12px 16px; margin-bottom:16px;">
+      ✅ ההחלפה בוצעה בהצלחה: <strong><%= result.countA %></strong> תלמידים עברו מ-<strong><%= result.classAName %></strong> ל-<strong><%= result.classBName %></strong>,
+      ו-<strong><%= result.countB %></strong> תלמידים עברו בכיוון ההפוך.
+    </div>
+  <% } %>
+
+  <form method="POST" action="/classes/swap/run" onsubmit="return confirm('לאשר החלפה מלאה בין שתי הכיתות? הפעולה משפיעה על כל התלמידים בשתיהן.');" class="form-grid">
+    <div class="form-group">
+      <label>כיתה א'</label>
+      <select name="class_id_a" required>
+        <option value="">בחר כיתה...</option>
+        <% classes.forEach(c => { %>
+          <option value="<%= c.id %>"><%= c.name %><%= c.parallel ? ' ('+c.parallel+')' : '' %><%= c.branch ? ' - '+c.branch : '' %> — <%= c.student_count %> תלמידים</option>
+        <% }) %>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>כיתה ב'</label>
+      <select name="class_id_b" required>
+        <option value="">בחר כיתה...</option>
+        <% classes.forEach(c => { %>
+          <option value="<%= c.id %>"><%= c.name %><%= c.parallel ? ' ('+c.parallel+')' : '' %><%= c.branch ? ' - '+c.branch : '' %> — <%= c.student_count %> תלמידים</option>
+        <% }) %>
+      </select>
+    </div>
+    <div class="form-group full">
+      <button type="submit" class="btn">🔄 בצע החלפה</button>
+    </div>
+  </form>
+</div>
+
+<%- include('../partials/footer') %>

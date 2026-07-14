@@ -6,6 +6,7 @@
     <h1>כיתות</h1>
     <div style="display:flex; gap:10px;">
       <a href="/classes/zone-assignment" class="btn secondary">🗺️ שיבוץ "עדיין לא נכנסו" לפי אזור</a>
+      <a href="/classes/swap" class="btn secondary">🔄 החלפת כיתות</a>
       <a href="/classes/new" class="btn">+ כיתה חדשה</a>
     </div>
   </div>
@@ -60,8 +61,8 @@
           <tr>
             <td><%= c.name %></td>
             <td><%= c.parallel || '' %></td>
-            <td><%= c.branch || '' %></td>
-            <td><%= c.category_name || '' %><%= c.price != null ? ' ('+c.price+' ₪)' : '' %></td>
+            <td style="white-space:nowrap;"><%= c.branch || '' %></td>
+            <td style="white-space:nowrap;"><%= c.category_name || '' %><%= c.price != null ? ' ('+c.price+' ₪)' : '' %></td>
             <td><%= c.institution_code || '—' %></td>
             <td><%= c.active_count %></td>
             <td><%= c.total_count %></td>
