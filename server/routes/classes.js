@@ -253,43 +253,57 @@ router.get("/swap", (req, res) => {
 });
 
 router.post("/swap/run", (req, res) => {
-  const { class_id_a, class_id_b } = req.body;
-  const classA = db.prepare("SELECT id, name, parallel FROM classes WHERE id = ?").get(class_id_a);
-  const classB = db.prepare("SELECT id, name, parallel FROM classes WHERE id = ?").get(class_id_b);
-  if (!classA || !classB || classA.id === classB.id) {
-    return res.redirect("/classes/swap?error=1");
-  }
-
-  // מבצעים את ההחלפה בטרנזקציה מפורשת, דרך ערך זמני, כדי שלא "יתנגשו" זה בזה באמצע
-  const countA = db.prepare("SELECT COUNT(*) c FROM students WHERE class_id = ?").get(classA.id).c;
-  const countB = db.prepare("SELECT COUNT(*) c FROM students WHERE class_id = ?").get(classB.id).c;
-
-  db.exec("BEGIN TRANSACTION");
   try {
-    db.prepare("UPDATE students SET class_id = -1 WHERE class_id = ?").run(classA.id);
-    db.prepare("UPDATE students SET class_id = ? WHERE class_id = ?").run(classA.id, classB.id);
-    db.prepare("UPDATE students SET class_id = ? WHERE class_id = -1").run(classB.id);
-    db.exec("COMMIT");
+    const { class_id_a, class_id_b } = req.body;
+    const classA = db.prepare("SELECT id, name, parallel FROM classes WHERE id = ?").get(class_id_a);
+    const classB = db.prepare("SELECT id, name, parallel FROM classes WHERE id = ?").get(class_id_b);
+    if (!classA || !classB || classA.id === classB.id) {
+      return res.redirect("/classes/swap?error=1");
+    }
+
+    // מבצעים את ההחלפה: קודם שולפים את רשימות התלמידים של כל כיתה,
+    // ואז מעדכנים ישירות לפי ה-ID שלהם - כך שאין צורך בערך זמני/מלאכותי
+    // לשדה class_id באמצע התהליך (שיכול להיתקל במגבלות לא צפויות).
+    const idsInA = db.prepare("SELECT id FROM students WHERE class_id = ?").all(classA.id).map((r) => r.id);
+    const idsInB = db.prepare("SELECT id FROM students WHERE class_id = ?").all(classB.id).map((r) => r.id);
+    const countA = idsInA.length;
+    const countB = idsInB.length;
+
+    db.exec("BEGIN TRANSACTION");
+    try {
+      const updateStudent = db.prepare("UPDATE students SET class_id = ? WHERE id = ?");
+      idsInA.forEach((id) => updateStudent.run(classB.id, id));
+      idsInB.forEach((id) => updateStudent.run(classA.id, id));
+      db.exec("COMMIT");
+    } catch (e) {
+      db.exec("ROLLBACK");
+      throw e;
+    }
+
+    const classes = db.prepare(`
+      SELECT c.id, c.name, c.parallel, c.branch,
+        (SELECT COUNT(*) FROM students s WHERE s.class_id = c.id AND s.status NOT IN ('ארכיון', 'לא התקבל')) AS student_count
+      FROM classes c ORDER BY c.name, c.parallel
+    `).all();
+
+    res.render("classes/swap", {
+      classes,
+      result: {
+        classAName: `${classA.name}${classA.parallel ? " (" + classA.parallel + ")" : ""}`,
+        classBName: `${classB.name}${classB.parallel ? " (" + classB.parallel + ")" : ""}`,
+        countA,
+        countB,
+      },
+    });
   } catch (e) {
-    db.exec("ROLLBACK");
-    throw e;
+    console.error("שגיאה בהחלפת כיתות:", e.message, e.stack);
+    const classes = db.prepare(`
+      SELECT c.id, c.name, c.parallel, c.branch,
+        (SELECT COUNT(*) FROM students s WHERE s.class_id = c.id AND s.status NOT IN ('ארכיון', 'לא התקבל')) AS student_count
+      FROM classes c ORDER BY c.name, c.parallel
+    `).all();
+    res.render("classes/swap", { classes, result: null, serverError: e.message });
   }
-
-  const classes = db.prepare(`
-    SELECT c.id, c.name, c.parallel, c.branch,
-      (SELECT COUNT(*) FROM students s WHERE s.class_id = c.id AND s.status NOT IN ('ארכיון', 'לא התקבל')) AS student_count
-    FROM classes c ORDER BY c.name, c.parallel
-  `).all();
-
-  res.render("classes/swap", {
-    classes,
-    result: {
-      classAName: `${classA.name}${classA.parallel ? " (" + classA.parallel + ")" : ""}`,
-      classBName: `${classB.name}${classB.parallel ? " (" + classB.parallel + ")" : ""}`,
-      countA,
-      countB,
-    },
-  });
 });
 
 router.get("/zone-assignment", (req, res) => {
