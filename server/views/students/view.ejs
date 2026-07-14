@@ -35,7 +35,7 @@
       <th>מחזור</th><td><%= student.cohort_name || '' %></td>
     </tr>
     <tr><th>הולך לבדו</th><td><%= student.walks_alone || '' %></td><th>קופת חולים</th><td><%= student.health_fund || '' %></td></tr>
-    <tr><th>מגזר</th><td><%= student.sector || '' %></td><th></th><td></td></tr>
+    <tr><th>מגזר</th><td><%= student.sector || '' %></td><th>סמל מוסד</th><td><%= student.institution_code || '' %></td></tr>
     <tr><th>אלרגיות</th><td><%= student.allergies || '' %></td><th>תרופות</th><td><%= student.medications || '' %></td></tr>
     <tr><th>תאריך רישום</th><td><%= student.registration_date_str || '' %></td><th>תאריך קבלה</th><td><%= student.admission_date_str || '' %></td></tr>
     <tr><th>תאריך כניסה</th><td><%= student.entry_date_str || '' %></td><th>תאריך יציאה</th><td><%= student.exit_date_str || '' %></td></tr>
