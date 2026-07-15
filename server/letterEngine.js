@@ -84,7 +84,7 @@ function buildClassData(db, currentClassRow, globalSettings) {
     teacher_name: getTeacherName(db, source.id),
     room_description: source.room_description || "",
     tuition_price: source.price != null ? source.price : "",
-    cohort_name: getCohortName(db, currentClassRow.id),
+    cohort_name: getCohortName(db, source.id),
     hebrew_date: globalSettings.letter_hebrew_date || "",
     hebrew_year: globalSettings.letter_hebrew_year || "",
   };
@@ -92,7 +92,7 @@ function buildClassData(db, currentClassRow, globalSettings) {
 
 function buildRecipientLine(data) {
   if (data.current_class_name && data.current_class_name.startsWith("עדיין לא נכנסו")) {
-    return `לכב' הורי החמד העולים ל${data.class_full_name} (${data.branch}) שיחיו`;
+    return `לכבוד הורי תלמידי החמד העולים ל${data.class_name} (${data.branch}) שיח'`;
   }
   return `לכבוד הורי תלמידי ${data.current_class_full_name} שיחיו`;
 }
