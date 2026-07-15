@@ -388,6 +388,27 @@ try {
   console.error("שגיאה ביצירת כיתות עדיין לא נכנסו:", e.message);
 }
 
+// תיקון חד-פעמי ממוקד: מוסיף את מספר המחזור לשורת הפתיחה של תבנית "מכינה א'" -
+// מחליף רק אם הטקסט המדויק הישן עדיין שם (כלומר לא נערך ידנית בינתיים).
+try {
+  const alreadyFixed = db.prepare("SELECT value FROM settings WHERE key = 'mechina_a_cohort_line_v1'").get();
+  if (!alreadyFixed) {
+    const oldLine = "נקדם בברכה את תלמידי המחזור, ונאחל להם שפע ברכה והצלחה בדרך התורה והיראה.";
+    const newLine = "נקדם בברכה את תלמידי {{cohort_name}}, ונאחל להם שפע ברכה והצלחה בדרך התורה והיראה.";
+    const tpl = db.prepare("SELECT id, body FROM letter_templates WHERE name = ?").get("מכינה א'");
+    if (tpl && tpl.body.includes(oldLine)) {
+      const updatedBody = tpl.body.replace(oldLine, newLine);
+      db.prepare("UPDATE letter_templates SET body = ?, updated_at = ? WHERE id = ?").run(
+        updatedBody, new Date().toISOString(), tpl.id
+      );
+      console.log('[מכתבי שיבוץ] עודכנה שורת המחזור בתבנית "מכינה א\'"');
+    }
+    db.prepare("INSERT INTO settings (key, value) VALUES ('mechina_a_cohort_line_v1', '1')").run();
+  }
+} catch (e) {
+  console.error("שגיאה בעדכון שורת המחזור:", e.message);
+}
+
 // ניקוי חד-פעמי: השדה "מעבר לכיתה" התמלא בעבר אוטומטית בערך המקבילה הקיים,
 // אבל הוחלט שברירת המחדל האמיתית תהיה ריק (ואז המערכת מניחה "אותה מקבילה").
 // דגל ב-settings מבטיח שהניקוי הזה ירוץ פעם אחת בלבד, ולא ימחק ידנית ערכים

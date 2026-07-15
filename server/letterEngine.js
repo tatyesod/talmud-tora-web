@@ -43,6 +43,18 @@ function getTeacherName(db, classId) {
   return teacherRow ? `${teacherRow.first_name || ""} ${teacherRow.last_name || ""}`.trim() : "";
 }
 
+function getCohortName(db, classId) {
+  const row = db.prepare(`
+    SELECT co.name, COUNT(*) AS cnt
+    FROM students s JOIN cohorts co ON s.cohort_id = co.id
+    WHERE s.class_id = ? AND s.status NOT IN ('ארכיון', 'לא התקבל')
+    GROUP BY co.id
+    ORDER BY cnt DESC
+    LIMIT 1
+  `).get(classId);
+  return row ? row.name : "";
+}
+
 // בונה את אובייקט הנתונים למיזוג: currentClassRow היא הכיתה שבה התלמיד נמצא היום,
 // ומתוכה שולפים את next_year_class_id - הכיתה שאליה הוא עולה בשנה הבאה (טרם עם כל
 // הפרטים - מלמד, סניף, חדר, שכ"ל - נלקחים מכיתת היעד, כי זה מה שיהיה נכון בפועל).
@@ -72,6 +84,7 @@ function buildClassData(db, currentClassRow, globalSettings) {
     teacher_name: getTeacherName(db, source.id),
     room_description: source.room_description || "",
     tuition_price: source.price != null ? source.price : "",
+    cohort_name: getCohortName(db, currentClassRow.id),
     hebrew_date: globalSettings.letter_hebrew_date || "",
     hebrew_year: globalSettings.letter_hebrew_year || "",
   };
