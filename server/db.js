@@ -339,6 +339,26 @@ try {
   // אם משהו נכשל - לא קריטי, אפשר ליצור תבניות ידנית דרך המסך
 }
 
+// בדיקה ממוקדת חד-פעמית: אם תבנית "מכינה א'" חסרה מסיבה כלשהי (למשל דיפלוי
+// שלא הספיק להריץ את הזריעה המקורית) - מוסיפים רק אותה, בלי לגעת בשום תבנית
+// אחרת (כדי לא לדרוס עריכות ידניות שנעשו למכתבים אחרים דרך מסך "ניהול תבניות").
+try {
+  const mechinaAExists = db.prepare("SELECT id FROM letter_templates WHERE name = ?").get("מכינה א'");
+  if (!mechinaAExists) {
+    const { SEED_TEMPLATES } = require("./letterTemplatesSeed");
+    const mechinaATemplate = SEED_TEMPLATES.find((t) => t.name === "מכינה א'");
+    if (mechinaATemplate) {
+      const now = new Date().toISOString();
+      db.prepare("INSERT INTO letter_templates (name, body, created_at, updated_at) VALUES (?,?,?,?)").run(
+        mechinaATemplate.name, mechinaATemplate.body, now, now
+      );
+      console.log('[מכתבי שיבוץ] נוספה תבנית "מכינה א\'" שהייתה חסרה');
+    }
+  }
+} catch (e) {
+  console.error("שגיאה בבדיקת תבנית מכינה א':", e.message);
+}
+
 // ניקוי חד-פעמי: השדה "מעבר לכיתה" התמלא בעבר אוטומטית בערך המקבילה הקיים,
 // אבל הוחלט שברירת המחדל האמיתית תהיה ריק (ואז המערכת מניחה "אותה מקבילה").
 // דגל ב-settings מבטיח שהניקוי הזה ירוץ פעם אחת בלבד, ולא ימחק ידנית ערכים
