@@ -359,6 +359,35 @@ try {
   console.error("שגיאה בבדיקת תבנית מכינה א':", e.message);
 }
 
+// תיקון חד-פעמי ממוקד: מוודאים שקיימות 4 כיתות "עדיין לא נכנסו" (מקבילות 1-4,
+// לפי חלוקת האזורים - 1,2 בסוקולוב, 3,4 בבן פתחיה) - נדרש גם לשיבוץ האוטומטי
+// לפי אזור וגם למכתבי השיבוץ (כדי שלכל תלמיד "עדיין לא נכנסו" תהיה כיתה אמיתית
+// לבחור לה תבנית מכתב ויעד). יוצר רק את המקבילות שבאמת חסרות, לא נוגע בקיימות.
+try {
+  const alreadyEnsured = db.prepare("SELECT value FROM settings WHERE key = 'waiting_classes_ensured_v1'").get();
+  if (!alreadyEnsured) {
+    const ZONE_BRANCH = { 1: "סוקולוב", 2: "סוקולוב", 3: "בן פתחיה", 4: "בן פתחיה" };
+    // לוקחים ערכי ברירת מחדל (קטגוריה/סמל מוסד) מכיתת "עדיין לא נכנסו" קיימת אם יש כזו
+    const existingSample = db.prepare("SELECT category_id, institution_code FROM classes WHERE name = 'עדיין לא נכנסו' LIMIT 1").get();
+    const defaultCategoryId = existingSample ? existingSample.category_id : null;
+    const defaultInstitutionCode = existingSample ? existingSample.institution_code : "512384";
+    let created = 0;
+    for (const zone of [1, 2, 3, 4]) {
+      const exists = db.prepare("SELECT id FROM classes WHERE name = 'עדיין לא נכנסו' AND parallel = ?").get(String(zone));
+      if (exists) continue;
+      db.prepare(`
+        INSERT INTO classes (name, parallel, status, category_id, branch, institution_code)
+        VALUES ('עדיין לא נכנסו', ?, 'פעיל', ?, ?, ?)
+      `).run(String(zone), defaultCategoryId, ZONE_BRANCH[zone], defaultInstitutionCode);
+      created++;
+    }
+    console.log(`[כיתות עדיין לא נכנסו] נוצרו ${created} כיתות שהיו חסרות`);
+    db.prepare("INSERT INTO settings (key, value) VALUES ('waiting_classes_ensured_v1', '1')").run();
+  }
+} catch (e) {
+  console.error("שגיאה ביצירת כיתות עדיין לא נכנסו:", e.message);
+}
+
 // ניקוי חד-פעמי: השדה "מעבר לכיתה" התמלא בעבר אוטומטית בערך המקבילה הקיים,
 // אבל הוחלט שברירת המחדל האמיתית תהיה ריק (ואז המערכת מניחה "אותה מקבילה").
 // דגל ב-settings מבטיח שהניקוי הזה ירוץ פעם אחת בלבד, ולא ימחק ידנית ערכים
