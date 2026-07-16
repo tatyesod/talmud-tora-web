@@ -72,6 +72,9 @@
   <% } else { %>
     <form method="POST" action="/books/inventory/save">
       <input type="hidden" name="branch" value="<%= branch %>" />
+      <div class="actions" style="margin-bottom:14px;">
+        <button type="submit" class="btn">💾 שמירת מלאי לסניף <%= branch %></button>
+      </div>
       <div class="table-scroll-wrap">
         <table>
           <thead><tr>
@@ -96,9 +99,6 @@
             <% }) %>
           </tbody>
         </table>
-      </div>
-      <div class="actions" style="margin-top:14px;">
-        <button type="submit" class="btn">💾 שמירת מלאי לסניף <%= branch %></button>
       </div>
     </form>
   <% } %>
