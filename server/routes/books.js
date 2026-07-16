@@ -727,16 +727,21 @@ router.get("/inventory", (req, res) => {
            COALESCE(bi.current_stock, 0) AS current_stock,
            COALESCE(bi.extra_quantity, 5) AS extra_quantity,
            (
-             SELECT COUNT(*) FROM book_orders bo
-             JOIN book_catalog bc ON bo.catalog_id = bc.id AND bc.item_name = bp.item_name AND bc.year_label = ?
-             JOIN students s ON bo.student_id = s.id
-             LEFT JOIN classes c ON s.class_id = c.id
-             WHERE COALESCE(c.branch, s.branch) = ?
+             (SELECT COUNT(*) FROM book_orders bo
+              JOIN book_catalog bc ON bo.catalog_id = bc.id AND bc.item_name = bp.item_name AND bc.year_label = ?
+              JOIN students s ON bo.student_id = s.id
+              LEFT JOIN classes c ON s.class_id = c.id
+              WHERE COALESCE(c.branch, s.branch) = ?)
+             +
+             (SELECT COUNT(*) FROM book_order_extras e
+              JOIN students s2 ON e.student_id = s2.id
+              LEFT JOIN classes c2 ON s2.class_id = c2.id
+              WHERE e.item_name = bp.item_name AND e.year_label = ? AND COALESCE(c2.branch, s2.branch) = ?)
            ) AS ordered_count
     FROM book_prices bp
     LEFT JOIN book_inventory bi ON bi.book_price_id = bp.id AND bi.branch = ?
     ORDER BY bp.item_name
-  `).all(year, branch, branch).map((it) => ({
+  `).all(year, branch, year, branch, branch).map((it) => ({
     ...it,
     to_order: it.ordered_count + it.extra_quantity - it.current_stock,
   }));
@@ -756,16 +761,21 @@ router.get("/inventory/print", (req, res) => {
            COALESCE(bi.current_stock, 0) AS current_stock,
            COALESCE(bi.extra_quantity, 5) AS extra_quantity,
            (
-             SELECT COUNT(*) FROM book_orders bo
-             JOIN book_catalog bc ON bo.catalog_id = bc.id AND bc.item_name = bp.item_name AND bc.year_label = ?
-             JOIN students s ON bo.student_id = s.id
-             LEFT JOIN classes c ON s.class_id = c.id
-             WHERE COALESCE(c.branch, s.branch) = ?
+             (SELECT COUNT(*) FROM book_orders bo
+              JOIN book_catalog bc ON bo.catalog_id = bc.id AND bc.item_name = bp.item_name AND bc.year_label = ?
+              JOIN students s ON bo.student_id = s.id
+              LEFT JOIN classes c ON s.class_id = c.id
+              WHERE COALESCE(c.branch, s.branch) = ?)
+             +
+             (SELECT COUNT(*) FROM book_order_extras e
+              JOIN students s2 ON e.student_id = s2.id
+              LEFT JOIN classes c2 ON s2.class_id = c2.id
+              WHERE e.item_name = bp.item_name AND e.year_label = ? AND COALESCE(c2.branch, s2.branch) = ?)
            ) AS ordered_count
     FROM book_prices bp
     LEFT JOIN book_inventory bi ON bi.book_price_id = bp.id AND bi.branch = ?
     ORDER BY bp.item_name
-  `).all(year, branch, branch).map((it) => ({
+  `).all(year, branch, year, branch, branch).map((it) => ({
     ...it,
     to_order: Math.max(0, it.ordered_count + it.extra_quantity - it.current_stock),
   }));
@@ -831,16 +841,21 @@ router.get("/inventory/order", (req, res) => {
            COALESCE(bi.current_stock, 0) AS current_stock,
            COALESCE(bi.extra_quantity, 5) AS extra_quantity,
            (
-             SELECT COUNT(*) FROM book_orders bo
-             JOIN book_catalog bc ON bo.catalog_id = bc.id AND bc.item_name = bp.item_name AND bc.year_label = ?
-             JOIN students s ON bo.student_id = s.id
-             LEFT JOIN classes c ON s.class_id = c.id
-             WHERE COALESCE(c.branch, s.branch) = ?
+             (SELECT COUNT(*) FROM book_orders bo
+              JOIN book_catalog bc ON bo.catalog_id = bc.id AND bc.item_name = bp.item_name AND bc.year_label = ?
+              JOIN students s ON bo.student_id = s.id
+              LEFT JOIN classes c ON s.class_id = c.id
+              WHERE COALESCE(c.branch, s.branch) = ?)
+             +
+             (SELECT COUNT(*) FROM book_order_extras e
+              JOIN students s2 ON e.student_id = s2.id
+              LEFT JOIN classes c2 ON s2.class_id = c2.id
+              WHERE e.item_name = bp.item_name AND e.year_label = ? AND COALESCE(c2.branch, s2.branch) = ?)
            ) AS ordered_count
     FROM book_prices bp
     LEFT JOIN book_inventory bi ON bi.book_price_id = bp.id AND bi.branch = ?
     ORDER BY bp.item_name
-  `).all(year, branch, branch)
+  `).all(year, branch, year, branch, branch)
     .map((r) => ({ ...r, to_order: r.ordered_count + r.extra_quantity - r.current_stock }))
     .filter((r) => r.to_order > 0);
 
@@ -867,16 +882,21 @@ router.get("/inventory/order/export-pdf", (req, res) => {
            COALESCE(bi.current_stock, 0) AS current_stock,
            COALESCE(bi.extra_quantity, 5) AS extra_quantity,
            (
-             SELECT COUNT(*) FROM book_orders bo
-             JOIN book_catalog bc ON bo.catalog_id = bc.id AND bc.item_name = bp.item_name AND bc.year_label = ?
-             JOIN students s ON bo.student_id = s.id
-             LEFT JOIN classes c ON s.class_id = c.id
-             WHERE COALESCE(c.branch, s.branch) = ?
+             (SELECT COUNT(*) FROM book_orders bo
+              JOIN book_catalog bc ON bo.catalog_id = bc.id AND bc.item_name = bp.item_name AND bc.year_label = ?
+              JOIN students s ON bo.student_id = s.id
+              LEFT JOIN classes c ON s.class_id = c.id
+              WHERE COALESCE(c.branch, s.branch) = ?)
+             +
+             (SELECT COUNT(*) FROM book_order_extras e
+              JOIN students s2 ON e.student_id = s2.id
+              LEFT JOIN classes c2 ON s2.class_id = c2.id
+              WHERE e.item_name = bp.item_name AND e.year_label = ? AND COALESCE(c2.branch, s2.branch) = ?)
            ) AS ordered_count
     FROM book_prices bp
     LEFT JOIN book_inventory bi ON bi.book_price_id = bp.id AND bi.branch = ?
     ORDER BY bp.item_name
-  `).all(year, branch, branch)
+  `).all(year, branch, year, branch, branch)
     .map((r) => ({ ...r, to_order: r.ordered_count + r.extra_quantity - r.current_stock }))
     .filter((r) => r.to_order > 0);
 
@@ -898,16 +918,21 @@ router.get("/inventory/order/export", async (req, res) => {
            COALESCE(bi.current_stock, 0) AS current_stock,
            COALESCE(bi.extra_quantity, 5) AS extra_quantity,
            (
-             SELECT COUNT(*) FROM book_orders bo
-             JOIN book_catalog bc ON bo.catalog_id = bc.id AND bc.item_name = bp.item_name AND bc.year_label = ?
-             JOIN students s ON bo.student_id = s.id
-             LEFT JOIN classes c ON s.class_id = c.id
-             WHERE COALESCE(c.branch, s.branch) = ?
+             (SELECT COUNT(*) FROM book_orders bo
+              JOIN book_catalog bc ON bo.catalog_id = bc.id AND bc.item_name = bp.item_name AND bc.year_label = ?
+              JOIN students s ON bo.student_id = s.id
+              LEFT JOIN classes c ON s.class_id = c.id
+              WHERE COALESCE(c.branch, s.branch) = ?)
+             +
+             (SELECT COUNT(*) FROM book_order_extras e
+              JOIN students s2 ON e.student_id = s2.id
+              LEFT JOIN classes c2 ON s2.class_id = c2.id
+              WHERE e.item_name = bp.item_name AND e.year_label = ? AND COALESCE(c2.branch, s2.branch) = ?)
            ) AS ordered_count
     FROM book_prices bp
     LEFT JOIN book_inventory bi ON bi.book_price_id = bp.id AND bi.branch = ?
     ORDER BY bp.item_name
-  `).all(year, branch, branch)
+  `).all(year, branch, year, branch, branch)
     .map((r) => ({ ...r, to_order: r.ordered_count + r.extra_quantity - r.current_stock }))
     .filter((r) => r.to_order > 0);
 
