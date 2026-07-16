@@ -1,12 +1,11 @@
 <%- include('../partials/header', {title: 'מלאי ספרים', wide: true}) %>
 
 <div class="card">
-  <div class="sticky-filter-header">
+  <div>
     <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
       <h1>📦 מלאי ספרים</h1>
       <div class="actions">
         <a href="/books" class="btn secondary">← חזרה</a>
-        <a href="/books/catalog-manage" class="btn secondary">📖 עריכת קטלוג (שם/מחיר/כיתות)</a>
         <button type="button" class="btn secondary" onclick="window.print()">🖨️ הדפס</button>
         <a href="/books/inventory/print?branch=<%= encodeURIComponent(branch) %>&year=<%= encodeURIComponent(year) %>" class="btn secondary" target="_blank">🖨️ דוח ספירה למילוי ידני</a>
         <a href="/books/inventory/diagnostics?year=<%= encodeURIComponent(year) %>" class="btn secondary">🔍 בדיקת התאמות</a>
@@ -39,14 +38,14 @@
   </div>
 
   <p style="color:var(--muted); font-size:0.9em; margin-top:16px;">
-    שם הספר, הוצאה, מחיר וכיתות השיוך <strong>נקבעים בקטלוג</strong> (כפתור "📖 עריכת קטלוג" למעלה) - כאן ניתן לעדכן רק
+    שם הספר, הוצאה, מחיר וכיתות השיוך <strong>נקבעים במסך "שיוך ספר לכיתה"</strong> (בדף הראשי של הזמנת ספרים) - כאן ניתן לעדכן רק
     <strong>מלאי נוכחי</strong> ו<strong>תוספת</strong> (כמות שתרצו להוסיף מעבר למה שהוזמן בפועל, ברירת מחדל 5 יח').
     <strong>הוזמן</strong> - כמה תלמידים בפועל הזמינו את הספר (מתוך "הזמנת ספרים" לפי כיתות, לסניף ולשנה שנבחרו).
     <strong>כמות להזמנה</strong> מחושבת אוטומטית: הוזמן + תוספת - מלאי נוכחי.
   </p>
 
   <% if (items.length === 0) { %>
-    <p class="empty-state">אין ספרים המשויכים לסניף זה - שייכו ספרים לכיתות הסניף דרך "📖 עריכת קטלוג".</p>
+    <p class="empty-state">אין ספרים המשויכים לסניף זה - שייכו ספרים לכיתות דרך "שיוך ספר לכיתה" בדף הראשי של הזמנת ספרים.</p>
   <% } else { %>
     <form method="POST" action="/books/inventory/save">
       <input type="hidden" name="branch" value="<%= branch %>" />
