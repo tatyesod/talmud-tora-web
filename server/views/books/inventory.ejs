@@ -6,6 +6,7 @@
       <h1>📦 מלאי ספרים</h1>
       <div class="actions">
         <a href="/books" class="btn secondary">← חזרה</a>
+        <a href="/books/catalog-manage" class="btn secondary">📖 עריכת קטלוג (שם/מחיר/כיתות)</a>
         <button type="button" class="btn secondary" onclick="window.print()">🖨️ הדפס</button>
         <a href="/books/inventory/print?branch=<%= encodeURIComponent(branch) %>&year=<%= encodeURIComponent(year) %>" class="btn secondary" target="_blank">🖨️ דוח ספירה למילוי ידני</a>
         <a href="/books/inventory/diagnostics?year=<%= encodeURIComponent(year) %>" class="btn secondary">🔍 בדיקת התאמות</a>
@@ -35,48 +36,17 @@
         ✅ המלאי נשמר בהצלחה.
       </div>
     <% } %>
-    <% if (added > 0) { %>
-      <div style="background:#e8f5e9; border:1px solid #a5d6a7; color:#2e7d32; border-radius:8px; padding:10px 16px; margin-bottom:10px;">
-        ✅ נוספו <%= added %> ספרים חדשים.
-      </div>
-    <% } %>
-
-    <h3 style="margin:14px 0 8px;">➕ הוספת ספרים חדשים</h3>
-    <form method="POST" action="/books/prices/bulk-add" id="add-books-form">
-      <input type="hidden" name="branch" value="<%= branch %>" />
-      <input type="hidden" name="year" value="<%= year %>" />
-      <table id="add-books-table">
-        <thead><tr><th>שם הספר</th><th>הוצאה</th><th>מחיר (₪)</th><th>הערות</th><th>שייך לכיתות</th></tr></thead>
-        <tbody id="add-books-tbody">
-          <tr>
-            <td><input type="text" name="item_name" placeholder="שם הספר" style="min-width:200px;" /></td>
-            <td><input type="text" name="publisher" placeholder="הוצאה" style="min-width:120px;" /></td>
-            <td><input type="number" name="price" step="0.01" min="0" placeholder="מחיר" style="width:90px;" /></td>
-            <td><input type="text" name="notes" placeholder="הערה חופשית (אופציונלי)" style="min-width:140px;" /></td>
-            <td>
-              <select name="classes_0" multiple size="4" style="min-width:130px;">
-                <% classOptions.forEach(c => { %><option value="<%= c %>"><%= c %></option><% }) %>
-              </select>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-      <div class="actions" style="margin-top:10px;">
-        <button type="button" class="btn small secondary" onclick="addBookRow()">+ הוסף שורה</button>
-        <button type="submit" class="btn small">💾 שמור את כל הספרים החדשים</button>
-      </div>
-    </form>
   </div>
 
   <p style="color:var(--muted); font-size:0.9em; margin-top:16px;">
-    <strong>שייך לכיתות</strong> - קובע לאילו כיתות הספר יופיע בקטלוג ההזמנה (מקש Ctrl/Cmd לבחירת כמה כיתות). זהו מקור האמת היחיד - קטלוג ההזמנה של כל כיתה מתעדכן אוטומטית מכאן, כך שלא ייווצרו יותר אי-התאמות שם בין הזמנות למלאי.
-    <strong>הוזמן</strong> - כמה תלמידים בפועל הזמינו את הספר הזה (מתוך "הזמנת ספרים" לפי כיתות, לסניף ולשנה שנבחרו).
-    <strong>תוספת</strong> - כמות נוספת שתרצו להזמין מעבר למה שהוזמן בפועל (למשל למלאי גיבוי) - ברירת המחדל 5 יח' לכל ספר, ניתן לשנות.
-    <strong>כמות להזמנה</strong> מחושבת אוטומטית: הוזמן + תוספת - מלאי נוכחי. זה בדיוק מה שיוזמן במסך "מעבר להזמנה מהספק".
+    שם הספר, הוצאה, מחיר וכיתות השיוך <strong>נקבעים בקטלוג</strong> (כפתור "📖 עריכת קטלוג" למעלה) - כאן ניתן לעדכן רק
+    <strong>מלאי נוכחי</strong> ו<strong>תוספת</strong> (כמות שתרצו להוסיף מעבר למה שהוזמן בפועל, ברירת מחדל 5 יח').
+    <strong>הוזמן</strong> - כמה תלמידים בפועל הזמינו את הספר (מתוך "הזמנת ספרים" לפי כיתות, לסניף ולשנה שנבחרו).
+    <strong>כמות להזמנה</strong> מחושבת אוטומטית: הוזמן + תוספת - מלאי נוכחי.
   </p>
 
   <% if (items.length === 0) { %>
-    <p class="empty-state">אין עדיין ספרים במלאי - אפשר להוסיף למעלה.</p>
+    <p class="empty-state">אין ספרים המשויכים לסניף זה - שייכו ספרים לכיתות הסניף דרך "📖 עריכת קטלוג".</p>
   <% } else { %>
     <form method="POST" action="/books/inventory/save">
       <input type="hidden" name="branch" value="<%= branch %>" />
@@ -88,27 +58,22 @@
         <table>
           <thead><tr>
             <th>ספר</th><th>הוצאה</th><th>הערות</th><th>מחיר</th>
-            <th>מלאי נוכחי</th><th>הוזמן</th><th>תוספת</th><th>כמות להזמנה</th><th>שייך לכיתות</th>
+            <th>מלאי נוכחי</th><th>הוזמן</th><th>תוספת</th><th>כמות להזמנה</th>
           </tr></thead>
           <tbody>
             <% items.forEach((it, i) => { %>
               <tr>
-                <td style="min-width:220px;">
+                <td style="min-width:200px;">
                   <input type="hidden" name="book_price_id" value="<%= it.book_price_id %>" />
-                  <input type="text" name="item_name" value="<%= it.item_name %>" required style="width:100%; min-width:200px;" />
+                  <%= it.item_name %>
                 </td>
-                <td><input type="text" name="publisher" value="<%= it.publisher || '' %>" style="min-width:120px;" /></td>
-                <td><input type="text" name="notes" value="<%= it.notes || '' %>" placeholder="הערה חופשית" style="min-width:140px;" /></td>
-                <td><input type="number" name="price" value="<%= it.price %>" min="0" step="0.01" style="width:80px;" /> ₪</td>
+                <td><%= it.publisher || '' %></td>
+                <td style="color:var(--muted); font-size:0.9em;"><%= it.notes || '' %></td>
+                <td><%= it.price %> ₪</td>
                 <td><input type="number" class="current-stock" data-row="<%= i %>" name="current_stock" value="<%= it.current_stock %>" min="0" style="width:90px;" /></td>
                 <td style="text-align:center; color:var(--muted);"><%= it.ordered_count %></td>
                 <td><input type="number" class="extra-qty" data-row="<%= i %>" name="extra_quantity" value="<%= it.extra_quantity %>" min="0" style="width:90px;" /></td>
                 <td class="to-order-cell" data-row="<%= i %>" data-ordered="<%= it.ordered_count %>" style="text-align:center; font-weight:700;"><%= it.to_order %></td>
-                <td>
-                  <select name="classes_<%= i %>" multiple size="4" style="min-width:130px;">
-                    <% classOptions.forEach(c => { %><option value="<%= c %>" <%= it.classes.includes(c) ? 'selected' : '' %>><%= c %></option><% }) %>
-                  </select>
-                </td>
               </tr>
             <% }) %>
           </tbody>
@@ -119,21 +84,6 @@
 </div>
 
 <script>
-  function addBookRow() {
-    const tbody = document.getElementById('add-books-tbody');
-    const rowIndex = tbody.querySelectorAll('tr').length;
-    const tr = document.createElement('tr');
-    const classOptionsHtml = <%- JSON.stringify(classOptions) %>.map(c => `<option value="${c}">${c}</option>`).join('');
-    tr.innerHTML = `
-      <td><input type="text" name="item_name" placeholder="שם הספר" style="min-width:200px;" /></td>
-      <td><input type="text" name="publisher" placeholder="הוצאה" style="min-width:120px;" /></td>
-      <td><input type="number" name="price" step="0.01" min="0" placeholder="מחיר" style="width:90px;" /></td>
-      <td><input type="text" name="notes" placeholder="הערה חופשית (אופציונלי)" style="min-width:140px;" /></td>
-      <td><select name="classes_${rowIndex}" multiple size="4" style="min-width:130px;">${classOptionsHtml}</select></td>
-    `;
-    tbody.appendChild(tr);
-  }
-
   function recomputeRow(rowIndex) {
     const stockInput = document.querySelector('.current-stock[data-row="' + rowIndex + '"]');
     const extraInput = document.querySelector('.extra-qty[data-row="' + rowIndex + '"]');

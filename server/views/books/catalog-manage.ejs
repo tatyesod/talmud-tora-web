@@ -1,0 +1,102 @@
+<%- include('../partials/header', {title: 'קטלוג ספרים', wide: true}) %>
+
+<div class="card">
+  <div class="sticky-filter-header">
+    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+      <h1>📖 קטלוג ספרים</h1>
+      <div class="actions">
+        <a href="/books" class="btn secondary">← חזרה</a>
+        <a href="/books/inventory" class="btn secondary">📦 מלאי לפי סניף</a>
+      </div>
+    </div>
+
+    <p style="color:var(--muted); font-size:0.9em; margin:10px 0;">
+      זהו <strong>מקור האמת היחיד</strong> לכל ספר: שם, הוצאה, מחיר, ולאילו כיתות (בכל סניף בנפרד) הוא שייך.
+      קטלוג ההזמנה של כל כיתה מתעדכן אוטומטית מכאן - כך שלעולם לא ייווצר הבדל שם בין הזמנה למלאי.
+      במסך "מלאי לפי סניף" אפשר לעדכן רק מלאי נוכחי ותוספת - לא שם/הוצאה/מחיר/שיוך (זה קורה רק כאן).
+    </p>
+
+    <% if (saved) { %>
+      <div style="background:#e8f5e9; border:1px solid #a5d6a7; color:#2e7d32; border-radius:8px; padding:10px 16px; margin-bottom:10px;">
+        ✅ הקטלוג נשמר בהצלחה.
+      </div>
+    <% } %>
+    <% if (added > 0) { %>
+      <div style="background:#e8f5e9; border:1px solid #a5d6a7; color:#2e7d32; border-radius:8px; padding:10px 16px; margin-bottom:10px;">
+        ✅ נוספו <%= added %> ספרים חדשים.
+      </div>
+    <% } %>
+
+    <h3 style="margin:14px 0 8px;">➕ הוספת ספר חדש</h3>
+    <form method="POST" action="/books/catalog-manage/add" id="add-books-form">
+      <table id="add-books-table">
+        <thead><tr><th>שם הספר</th><th>הוצאה</th><th>מחיר (₪)</th><th>הערות</th><th>שייך לכיתה + סניף</th></tr></thead>
+        <tbody id="add-books-tbody">
+          <tr>
+            <td><input type="text" name="item_name" placeholder="שם הספר" style="min-width:200px;" /></td>
+            <td><input type="text" name="publisher" placeholder="הוצאה" style="min-width:120px;" /></td>
+            <td><input type="number" name="price" step="0.01" min="0" placeholder="מחיר" style="width:90px;" /></td>
+            <td><input type="text" name="notes" placeholder="הערה חופשית (אופציונלי)" style="min-width:140px;" /></td>
+            <td>
+              <select name="pairs_0" multiple size="6" style="min-width:180px;">
+                <% classBranchOptions.forEach(o => { %><option value="<%= o.value %>"><%= o.label %></option><% }) %>
+              </select>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="actions" style="margin-top:10px;">
+        <button type="button" class="btn small secondary" onclick="addBookRow()">+ הוסף שורה</button>
+        <button type="submit" class="btn small">💾 שמור ספרים חדשים</button>
+      </div>
+    </form>
+  </div>
+
+  <form method="POST" action="/books/catalog-manage/save">
+    <div class="actions" style="margin-bottom:14px;">
+      <button type="submit" class="btn">💾 שמירת הקטלוג</button>
+    </div>
+    <div class="table-scroll-wrap">
+      <table>
+        <thead><tr><th>שם הספר</th><th>הוצאה</th><th>מחיר</th><th>הערות</th><th>שייך לכיתה + סניף (Ctrl/Cmd לבחירה מרובה)</th></tr></thead>
+        <tbody>
+          <% books.forEach((b, i) => { %>
+            <tr>
+              <td style="min-width:220px;">
+                <input type="hidden" name="book_price_id" value="<%= b.id %>" />
+                <input type="text" name="item_name" value="<%= b.item_name %>" required style="width:100%; min-width:200px;" />
+              </td>
+              <td><input type="text" name="publisher" value="<%= b.publisher || '' %>" style="min-width:120px;" /></td>
+              <td><input type="number" name="price" value="<%= b.price %>" min="0" step="0.01" style="width:80px;" /></td>
+              <td><input type="text" name="notes" value="<%= b.notes || '' %>" placeholder="הערה חופשית" style="min-width:140px;" /></td>
+              <td>
+                <select name="pairs_<%= i %>" multiple size="6" style="min-width:180px;">
+                  <% classBranchOptions.forEach(o => { %><option value="<%= o.value %>" <%= b.assignedPairs.includes(o.value) ? 'selected' : '' %>><%= o.label %></option><% }) %>
+                </select>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  </form>
+</div>
+
+<script>
+  function addBookRow() {
+    const tbody = document.getElementById('add-books-tbody');
+    const rowIndex = tbody.querySelectorAll('tr').length;
+    const optionsHtml = <%- JSON.stringify(classBranchOptions) %>.map(o => `<option value="${o.value}">${o.label}</option>`).join('');
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><input type="text" name="item_name" placeholder="שם הספר" style="min-width:200px;" /></td>
+      <td><input type="text" name="publisher" placeholder="הוצאה" style="min-width:120px;" /></td>
+      <td><input type="number" name="price" step="0.01" min="0" placeholder="מחיר" style="width:90px;" /></td>
+      <td><input type="text" name="notes" placeholder="הערה חופשית (אופציונלי)" style="min-width:140px;" /></td>
+      <td><select name="pairs_${rowIndex}" multiple size="6" style="min-width:180px;">${optionsHtml}</select></td>
+    `;
+    tbody.appendChild(tr);
+  }
+</script>
+
+<%- include('../partials/footer') %>

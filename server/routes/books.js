@@ -15,14 +15,13 @@ const BOOK_CLASS_OPTIONS = [
   "כיתה ה'", "כיתה ו'", "כיתה ז'", "כיתה ח'",
 ];
 
-// מסנכרן את קטלוג ההזמנה של כיתה (book_catalog, לשנה נתונה) מתוך המחירון
-// (book_prices) ושיוכי הכיתות שלו (book_price_classes) - מקור האמת היחיד.
-// לא מוחק פריטים קיימים (כדי לא לפגוע בהזמנות שכבר קיימות עליהם) - רק
-// מוסיף פריטים חדשים ומעדכן מחיר/הוצאה של קיימים, כדי שהשם תמיד יהיה זהה
-// אות-באות בין הקטלוג למחירון.
+// מסנכרן את קטלוג ההזמנה של כיתה (book_catalog, לשנה נתונה) מתוך הקטלוג
+// (book_prices + book_price_classes) - מקור האמת היחיד. לא מוחק פריטים
+// קיימים (כדי לא לפגוע בהזמנות שכבר קיימות עליהם) - רק מוסיף פריטים חדשים
+// ומעדכן מחיר/הוצאה של קיימים, כדי שהשם תמיד יהיה זהה אות-באות בין הקטלוג למחירון.
 function syncCatalogFromPrices(year) {
   const assignments = db.prepare(`
-    SELECT bp.id, bp.item_name, bp.publisher, bp.price, bpc.class_name
+    SELECT DISTINCT bp.id, bp.item_name, bp.publisher, bp.price, bpc.class_name
     FROM book_prices bp
     JOIN book_price_classes bpc ON bpc.book_price_id = bp.id
   `).all();
@@ -44,14 +43,6 @@ function syncCatalogFromPrices(year) {
     }
   }
   return { added, updated };
-}
-
-// מחזיר את שמות הכיתות (ברמת כיתה, לא מקבילה) שבאמת קיימות בסניף נתון -
-// בודק מול כיתות אמיתיות (עם המקבילה שלהן), לא רק שם כללי. למשל אם בסוקולוב
-// יש רק כיתה א' וכיתה ב' (בכל מקבילותיהן), רק שני השמות האלה יחזרו.
-function getRelevantClassNamesForBranch(branch) {
-  if (!branch) return null; // ללא סניף נבחר - לא מסננים (מציגים הכל)
-  return db.prepare("SELECT DISTINCT name FROM classes WHERE branch = ?").all(branch).map((r) => r.name);
 }
 
 // ===== עזר: כיתות ספציפיות (שם + מקבילה) לפי שם =====
@@ -767,6 +758,114 @@ router.delete("/renewals/:id", (req, res) => {
 
 // ============ מלאי ספרים לפי סניף ============
 // ============ בדיקה מקיפה: אילו ספרים בקטלוג/חידושים לא מוצאים התאמה מדויקת ============
+// ============ קטלוג ספרים - מקור האמת: שם, הוצאה, מחיר, כיתה, סניף ============
+// כל שילוב אפשרי של "כיתה @ סניף" לבחירה בטופס השיוך
+function getClassBranchOptions() {
+  const options = [];
+  BOOK_CLASS_OPTIONS.forEach((cls) => {
+    ["סוקולוב", "נפחא", "בן פתחיה"].forEach((br) => {
+      options.push({ value: `${cls}|||${br}`, label: `${cls} - ${br}` });
+    });
+  });
+  return options;
+}
+
+router.get("/catalog-manage", (req, res) => {
+  const books = db.prepare("SELECT * FROM book_prices ORDER BY item_name").all();
+  const assignments = db.prepare("SELECT book_price_id, class_name, branch FROM book_price_classes").all();
+  const assignedByBook = {};
+  assignments.forEach((a) => {
+    if (!assignedByBook[a.book_price_id]) assignedByBook[a.book_price_id] = [];
+    assignedByBook[a.book_price_id].push(`${a.class_name}|||${a.branch}`);
+  });
+  books.forEach((b) => { b.assignedPairs = assignedByBook[b.id] || []; });
+
+  res.render("books/catalog-manage", {
+    books, classBranchOptions: getClassBranchOptions(),
+    saved: req.query.saved === "1", added: parseInt(req.query.added, 10) || 0,
+  });
+});
+
+router.post("/catalog-manage/save", (req, res) => {
+  let ids = req.body.book_price_id || [];
+  let itemNames = req.body.item_name || [];
+  let publishers = req.body.publisher || [];
+  let prices = req.body.price || [];
+  let notesArr = req.body.notes || [];
+  if (!Array.isArray(ids)) ids = [ids];
+  if (!Array.isArray(itemNames)) itemNames = [itemNames];
+  if (!Array.isArray(publishers)) publishers = [publishers];
+  if (!Array.isArray(prices)) prices = [prices];
+  if (!Array.isArray(notesArr)) notesArr = [notesArr];
+
+  const updateBook = db.prepare("UPDATE book_prices SET item_name=?, publisher=?, price=?, notes=?, updated_at=? WHERE id=?");
+  const deletePairs = db.prepare("DELETE FROM book_price_classes WHERE book_price_id = ?");
+  const insertPair = db.prepare("INSERT OR IGNORE INTO book_price_classes (book_price_id, class_name, branch) VALUES (?, ?, ?)");
+  const now = new Date().toISOString();
+
+  ids.forEach((id, i) => {
+    updateBook.run(
+      (itemNames[i] || "").trim() || "ללא שם", (publishers[i] || "").trim() || null,
+      parseFloat(prices[i]) || 0, (notesArr[i] || "").trim() || null, now, id
+    );
+    let selectedPairs = req.body["pairs_" + i] || [];
+    if (!Array.isArray(selectedPairs)) selectedPairs = [selectedPairs];
+    deletePairs.run(id);
+    selectedPairs.forEach((pair) => {
+      const [className, branch] = pair.split("|||");
+      if (className && branch) insertPair.run(id, className, branch);
+    });
+  });
+
+  const year = db.prepare("SELECT value FROM settings WHERE key='current_hebrew_year'").get()?.value
+    || db.prepare("SELECT DISTINCT year_label FROM book_catalog ORDER BY year_label DESC").get()?.year_label;
+  if (year) syncCatalogFromPrices(year);
+
+  res.redirect("/books/catalog-manage?saved=1");
+});
+
+router.post("/catalog-manage/add", (req, res) => {
+  let itemNames = req.body.item_name || [];
+  let publishers = req.body.publisher || [];
+  let prices = req.body.price || [];
+  let notesArr = req.body.notes || [];
+  if (!Array.isArray(itemNames)) itemNames = [itemNames];
+  if (!Array.isArray(publishers)) publishers = [publishers];
+  if (!Array.isArray(prices)) prices = [prices];
+  if (!Array.isArray(notesArr)) notesArr = [notesArr];
+
+  const now = new Date().toISOString();
+  const insert = db.prepare(`
+    INSERT INTO book_prices (item_name, publisher, price, notes, updated_at) VALUES (?,?,?,?,?)
+    ON CONFLICT(item_name) DO UPDATE SET price=excluded.price, publisher=excluded.publisher, notes=excluded.notes, updated_at=excluded.updated_at
+  `);
+  const findId = db.prepare("SELECT id FROM book_prices WHERE item_name = ?");
+  const insertPair = db.prepare("INSERT OR IGNORE INTO book_price_classes (book_price_id, class_name, branch) VALUES (?, ?, ?)");
+  let added = 0;
+  itemNames.forEach((name, i) => {
+    const trimmedName = (name || "").trim();
+    if (!trimmedName) return;
+    const numPrice = parseFloat(prices[i]) || 0;
+    insert.run(trimmedName, (publishers[i] || "").trim(), numPrice, (notesArr[i] || "").trim() || null, now);
+    const bookId = findId.get(trimmedName)?.id;
+    let selectedPairs = req.body["pairs_" + i] || [];
+    if (!Array.isArray(selectedPairs)) selectedPairs = [selectedPairs];
+    if (bookId) {
+      selectedPairs.forEach((pair) => {
+        const [className, branch] = pair.split("|||");
+        if (className && branch) insertPair.run(bookId, className, branch);
+      });
+    }
+    added++;
+  });
+
+  const year = db.prepare("SELECT value FROM settings WHERE key='current_hebrew_year'").get()?.value
+    || db.prepare("SELECT DISTINCT year_label FROM book_catalog ORDER BY year_label DESC").get()?.year_label;
+  if (year) syncCatalogFromPrices(year);
+
+  res.redirect(`/books/catalog-manage?added=${added}`);
+});
+
 router.get("/inventory/diagnostics", (req, res) => {
   const years = db.prepare("SELECT DISTINCT year_label FROM book_catalog ORDER BY year_label DESC").all().map(r => r.year_label);
   const defaultYear = db.prepare("SELECT value FROM settings WHERE key='current_hebrew_year'").get()?.value || years[0] || 'תשפ"ז';
@@ -833,8 +932,8 @@ router.get("/inventory", (req, res) => {
     FROM book_prices bp
     LEFT JOIN book_inventory bi ON bi.book_price_id = bp.id AND bi.branch = ?
     WHERE EXISTS (
-      SELECT 1 FROM book_price_classes bpc JOIN classes cx ON cx.name = bpc.class_name AND cx.branch = ?
-      WHERE bpc.book_price_id = bp.id
+      SELECT 1 FROM book_price_classes bpc
+      WHERE bpc.book_price_id = bp.id AND bpc.branch = ?
     )
     ORDER BY bp.item_name
   `).all(year, branch, year, branch, branch, branch).map((it) => ({
@@ -842,16 +941,8 @@ router.get("/inventory", (req, res) => {
     to_order: it.ordered_count + it.extra_quantity - it.current_stock,
   }));
 
-  const classAssignments = db.prepare("SELECT book_price_id, class_name FROM book_price_classes").all();
-  const classesByBook = {};
-  classAssignments.forEach((a) => {
-    if (!classesByBook[a.book_price_id]) classesByBook[a.book_price_id] = [];
-    classesByBook[a.book_price_id].push(a.class_name);
-  });
-  items.forEach((it) => { it.classes = classesByBook[it.book_price_id] || []; });
-
   res.render("books/inventory", {
-    branches, branch, years, year, items, classOptions: BOOK_CLASS_OPTIONS,
+    branches, branch, years, year, items,
     saved: req.query.saved === "1", added: parseInt(req.query.added, 10) || 0,
   });
 });
@@ -882,8 +973,8 @@ router.get("/inventory/print", (req, res) => {
     FROM book_prices bp
     LEFT JOIN book_inventory bi ON bi.book_price_id = bp.id AND bi.branch = ?
     WHERE EXISTS (
-      SELECT 1 FROM book_price_classes bpc JOIN classes cx ON cx.name = bpc.class_name AND cx.branch = ?
-      WHERE bpc.book_price_id = bp.id
+      SELECT 1 FROM book_price_classes bpc
+      WHERE bpc.book_price_id = bp.id AND bpc.branch = ?
     )
     ORDER BY bp.item_name
   `).all(year, branch, year, branch, branch, branch).map((it) => ({
@@ -902,17 +993,9 @@ router.post("/inventory/save", (req, res) => {
   let ids = req.body.book_price_id || [];
   let currentStocks = req.body.current_stock || [];
   let extraQuantities = req.body.extra_quantity || [];
-  let notesArr = req.body.notes || [];
-  let itemNames = req.body.item_name || [];
-  let publishers = req.body.publisher || [];
-  let prices = req.body.price || [];
   if (!Array.isArray(ids)) ids = [ids];
   if (!Array.isArray(currentStocks)) currentStocks = [currentStocks];
   if (!Array.isArray(extraQuantities)) extraQuantities = [extraQuantities];
-  if (!Array.isArray(notesArr)) notesArr = [notesArr];
-  if (!Array.isArray(itemNames)) itemNames = [itemNames];
-  if (!Array.isArray(publishers)) publishers = [publishers];
-  if (!Array.isArray(prices)) prices = [prices];
 
   const upsert = db.prepare(`
     INSERT INTO book_inventory (book_price_id, branch, current_stock, extra_quantity, updated_at)
@@ -922,31 +1005,10 @@ router.post("/inventory/save", (req, res) => {
       extra_quantity = excluded.extra_quantity,
       updated_at = excluded.updated_at
   `);
-  const updateBook = db.prepare(`
-    UPDATE book_prices SET item_name = ?, publisher = ?, price = ?, notes = ?, updated_at = ? WHERE id = ?
-  `);
-  const deleteClasses = db.prepare("DELETE FROM book_price_classes WHERE book_price_id = ?");
-  const insertClass = db.prepare("INSERT OR IGNORE INTO book_price_classes (book_price_id, class_name) VALUES (?, ?)");
   const now = new Date().toISOString();
   ids.forEach((id, i) => {
     upsert.run(id, branch, parseInt(currentStocks[i], 10) || 0, parseInt(extraQuantities[i], 10) || 0, now);
-    if (itemNames[i] !== undefined) {
-      updateBook.run(
-        (itemNames[i] || "").trim() || "ללא שם", (publishers[i] || "").trim() || null,
-        parseFloat(prices[i]) || 0, (notesArr[i] || "").trim() || null, now, id
-      );
-    }
-    // עדכון שיוך הכיתות של הספר הזה (מוחקים ובונים מחדש - פשוט ובטוח) -
-    // לפי אינדקס השורה (לא לפי ה-ID), כי bracket notation עם מספרי ID גדולים
-    // לא אמין מול ה-parser (qs עלול "לדחוס" מערכים דלילים בצורה לא צפויה).
-    let selectedClasses = req.body["classes_" + i] || [];
-    if (!Array.isArray(selectedClasses)) selectedClasses = [selectedClasses];
-    deleteClasses.run(id);
-    selectedClasses.forEach((cn) => insertClass.run(id, cn));
   });
-
-  // מסנכרנים את הקטלוג לשנה הנוכחית כדי שהשינויים (כולל שיוך כיתות חדש) ישתקפו מיד
-  syncCatalogFromPrices(year || db.prepare("SELECT value FROM settings WHERE key='current_hebrew_year'").get()?.value);
 
   res.redirect(`/books/inventory?branch=${encodeURIComponent(branch)}&year=${encodeURIComponent(year || "")}&saved=1`);
 });
@@ -978,8 +1040,8 @@ router.get("/inventory/order", (req, res) => {
     FROM book_prices bp
     LEFT JOIN book_inventory bi ON bi.book_price_id = bp.id AND bi.branch = ?
     WHERE EXISTS (
-      SELECT 1 FROM book_price_classes bpc JOIN classes cx ON cx.name = bpc.class_name AND cx.branch = ?
-      WHERE bpc.book_price_id = bp.id
+      SELECT 1 FROM book_price_classes bpc
+      WHERE bpc.book_price_id = bp.id AND bpc.branch = ?
     )
     ORDER BY bp.item_name
   `).all(year, branch, year, branch, branch, branch)
@@ -1023,8 +1085,8 @@ router.get("/inventory/order/export-pdf", (req, res) => {
     FROM book_prices bp
     LEFT JOIN book_inventory bi ON bi.book_price_id = bp.id AND bi.branch = ?
     WHERE EXISTS (
-      SELECT 1 FROM book_price_classes bpc JOIN classes cx ON cx.name = bpc.class_name AND cx.branch = ?
-      WHERE bpc.book_price_id = bp.id
+      SELECT 1 FROM book_price_classes bpc
+      WHERE bpc.book_price_id = bp.id AND bpc.branch = ?
     )
     ORDER BY bp.item_name
   `).all(year, branch, year, branch, branch, branch)
@@ -1063,8 +1125,8 @@ router.get("/inventory/order/export", async (req, res) => {
     FROM book_prices bp
     LEFT JOIN book_inventory bi ON bi.book_price_id = bp.id AND bi.branch = ?
     WHERE EXISTS (
-      SELECT 1 FROM book_price_classes bpc JOIN classes cx ON cx.name = bpc.class_name AND cx.branch = ?
-      WHERE bpc.book_price_id = bp.id
+      SELECT 1 FROM book_price_classes bpc
+      WHERE bpc.book_price_id = bp.id AND bpc.branch = ?
     )
     ORDER BY bp.item_name
   `).all(year, branch, year, branch, branch, branch)

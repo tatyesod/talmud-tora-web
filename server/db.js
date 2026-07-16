@@ -246,8 +246,8 @@ const migrations = [
   // לכיתות) - לכל ספר לפי סניף. ברירת מחדל 5 יח' לכל ספר (מטופל ב-COALESCE
   // בשאילתות, בלי צורך למלא מראש כל שילוב ספר/סניף אפשרי).
   "ALTER TABLE book_inventory ADD COLUMN extra_quantity INTEGER",
-  // שיוך ספרים לכיתות - כדי שהמחירון (book_prices) יהיה מקור האמת היחיד
-  // (שם, הוצאה, מחיר, כיתות שייכות), וקטלוג ההזמנה לכל כיתה (book_catalog)
+  // שיוך ספרים לכיתות - כדי שהקטלוג (book_prices) יהיה מקור האמת היחיד
+  // (שם, הוצאה, מחיר, כיתה, סניף), וקטלוג ההזמנה לכל כיתה (book_catalog)
   // יסונכרן ממנו אוטומטית - כך לא ייווצרו יותר אי-התאמות שמות בין הזמנות למלאי.
   `CREATE TABLE IF NOT EXISTS book_price_classes (
     id INTEGER PRIMARY KEY,
@@ -440,25 +440,57 @@ try {
   console.error("שגיאה בתיקון שעת סיום כיתה ח':", e.message);
 }
 
-// תיקון חד-פעמי (וארכיטקטוני): ממלא את שיוך הספרים לכיתות (book_price_classes)
-// מתוך כל ההתאמות הקיימות היום בין book_catalog לבין book_prices (לפי שם
-// זהה, בלי רגישות לרווחים) - כדי לשמר את כל השיוכים שכבר הוגדרו, בלי
-// שיצטרכו להזין הכל מחדש. מכאן והלאה, book_prices הוא מקור האמת היחיד.
+// תיקון חד-פעמי (וארכיטקטוני): בונה מחדש את book_price_classes כדי שהשיוך
+// יהיה מדויק - כיתה **וגם** סניף (לא רק שם כיתה כללי, כי אותו שם כיתה יכול
+// להתקיים בכמה סניפים, וספר לא בהכרח רלוונטי לכולם). ממלא מתוך כל ההתאמות
+// הקיימות היום בין book_catalog לבין book_prices (לפי שם זהה, בלי רגישות
+// לרווחים), ומרחיב כל שם כיתה לכל הסניפים שבהם היא קיימת כברירת מחדל בטוחה
+// (ניתן לצמצם ידנית אח"כ דרך מסך הקטלוג). מכאן והלאה, הקטלוג (book_prices +
+// book_price_classes) הוא מקור האמת היחיד.
 try {
-  const alreadyMigrated = db.prepare("SELECT value FROM settings WHERE key = 'book_price_classes_migrated_v1'").get();
+  const alreadyMigrated = db.prepare("SELECT value FROM settings WHERE key = 'book_price_classes_migrated_v2'").get();
   if (!alreadyMigrated) {
+    db.exec("DROP TABLE IF EXISTS book_price_classes_old");
+    db.exec("ALTER TABLE book_price_classes RENAME TO book_price_classes_old");
+    db.exec(`
+      CREATE TABLE book_price_classes (
+        id INTEGER PRIMARY KEY,
+        book_price_id INTEGER NOT NULL,
+        class_name TEXT NOT NULL,
+        branch TEXT NOT NULL,
+        UNIQUE(book_price_id, class_name, branch)
+      )
+    `);
+    const insert = db.prepare("INSERT OR IGNORE INTO book_price_classes (book_price_id, class_name, branch) VALUES (?, ?, ?)");
+
+    // 1) משמרים כל שיוך קודם (מהגרסה הראשונה, בלי סניף) - מרחיבים לכל סניף שבו הכיתה קיימת
+    let carried = 0;
+    try {
+      const oldPairs = db.prepare("SELECT book_price_id, class_name FROM book_price_classes_old").all();
+      for (const p of oldPairs) {
+        const branchesForClass = db.prepare("SELECT DISTINCT branch FROM classes WHERE name = ? AND branch IS NOT NULL AND branch != ''").all(p.class_name).map((r) => r.branch);
+        branchesForClass.forEach((b) => { insert.run(p.book_price_id, p.class_name, b); carried++; });
+      }
+    } catch (e) { /* אין טבלה ישנה - זו התקנה חדשה, לא קריטי */ }
+
+    // 2) גם ממלאים ישירות מתוך book_catalog (למקרה שיש שם התאמות שלא היו ב-book_price_classes הישנה)
     const pairs = db.prepare(`
       SELECT DISTINCT bp.id AS book_price_id, bc.class_name
       FROM book_catalog bc
       JOIN book_prices bp ON TRIM(bp.item_name) = TRIM(bc.item_name)
     `).all();
-    const insert = db.prepare("INSERT OR IGNORE INTO book_price_classes (book_price_id, class_name) VALUES (?, ?)");
-    pairs.forEach((p) => insert.run(p.book_price_id, p.class_name));
-    console.log(`[מחירון-קטלוג] יובאו ${pairs.length} שיוכי ספר-כיתה קיימים`);
-    db.prepare("INSERT INTO settings (key, value) VALUES ('book_price_classes_migrated_v1', '1')").run();
+    let fromCatalog = 0;
+    for (const p of pairs) {
+      const branchesForClass = db.prepare("SELECT DISTINCT branch FROM classes WHERE name = ? AND branch IS NOT NULL AND branch != ''").all(p.class_name).map((r) => r.branch);
+      branchesForClass.forEach((b) => { insert.run(p.book_price_id, p.class_name, b); fromCatalog++; });
+    }
+
+    db.exec("DROP TABLE IF EXISTS book_price_classes_old");
+    console.log(`[קטלוג ספרים] נבנה מחדש שיוך ספר-כיתה-סניף: ${carried} משוחזרים, ${fromCatalog} מיובאים מהקטלוג`);
+    db.prepare("INSERT INTO settings (key, value) VALUES ('book_price_classes_migrated_v2', '1')").run();
   }
 } catch (e) {
-  console.error("שגיאה בייבוא שיוכי ספר-כיתה:", e.message);
+  console.error("שגיאה בבניית שיוכי ספר-כיתה-סניף:", e.message);
 }
 
 // ניקוי חד-פעמי: השדה "מעבר לכיתה" התמלא בעבר אוטומטית בערך המקבילה הקיים,
