@@ -1,7 +1,7 @@
 <%- include('../partials/header', {title: 'קטלוג ספרים', wide: true}) %>
 
 <div class="card">
-  <div class="sticky-filter-header">
+  <div>
     <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
       <h1>📖 קטלוג ספרים</h1>
       <div class="actions">
@@ -11,9 +11,9 @@
     </div>
 
     <p style="color:var(--muted); font-size:0.9em; margin:10px 0;">
-      זהו <strong>מקור האמת היחיד</strong> לכל ספר: שם, הוצאה, מחיר, ולאילו כיתות (בכל סניף בנפרד) הוא שייך.
-      קטלוג ההזמנה של כל כיתה מתעדכן אוטומטית מכאן - כך שלעולם לא ייווצר הבדל שם בין הזמנה למלאי.
-      במסך "מלאי לפי סניף" אפשר לעדכן רק מלאי נוכחי ותוספת - לא שם/הוצאה/מחיר/שיוך (זה קורה רק כאן).
+      זהו <strong>מקור האמת</strong> לשם, הוצאה ומחיר של כל ספר - שינוי כאן מתעדכן אוטומטית בקטלוג ההזמנה של כל הכיתות.
+      <strong>כיתות</strong> - קובע לאילו כיתות הספר שייך (למשל "בואו חשבון 1" שייך לכיתה ב'). המערכת כבר יודעת
+      באילו סניפים קיימת כל כיתה, ומסננת את מסך "מלאי לפי סניף" אוטומטית בהתאם - אין צורך לציין סניף בנפרד.
     </p>
 
     <% if (saved) { %>
@@ -30,7 +30,7 @@
     <h3 style="margin:14px 0 8px;">➕ הוספת ספר חדש</h3>
     <form method="POST" action="/books/catalog-manage/add" id="add-books-form">
       <table id="add-books-table">
-        <thead><tr><th>שם הספר</th><th>הוצאה</th><th>מחיר (₪)</th><th>הערות</th><th>שייך לכיתה + סניף</th></tr></thead>
+        <thead><tr><th>שם הספר</th><th>הוצאה</th><th>מחיר (₪)</th><th>הערות</th><th>כיתות</th></tr></thead>
         <tbody id="add-books-tbody">
           <tr>
             <td><input type="text" name="item_name" placeholder="שם הספר" style="min-width:200px;" /></td>
@@ -38,9 +38,11 @@
             <td><input type="number" name="price" step="0.01" min="0" placeholder="מחיר" style="width:90px;" /></td>
             <td><input type="text" name="notes" placeholder="הערה חופשית (אופציונלי)" style="min-width:140px;" /></td>
             <td>
-              <select name="pairs_0" multiple size="6" style="min-width:180px;">
-                <% classBranchOptions.forEach(o => { %><option value="<%= o.value %>"><%= o.label %></option><% }) %>
-              </select>
+              <% gradeOptions.forEach(g => { %>
+                <label style="display:inline-block; margin-inline-end:10px; font-weight:normal;">
+                  <input type="checkbox" name="grades_0" value="<%= g %>" style="width:auto;" /> <%= g %>
+                </label>
+              <% }) %>
             </td>
           </tr>
         </tbody>
@@ -58,7 +60,7 @@
     </div>
     <div class="table-scroll-wrap">
       <table>
-        <thead><tr><th>שם הספר</th><th>הוצאה</th><th>מחיר</th><th>הערות</th><th>שייך לכיתה + סניף (Ctrl/Cmd לבחירה מרובה)</th></tr></thead>
+        <thead><tr><th>שם הספר</th><th>הוצאה</th><th>מחיר</th><th>הערות</th><th>כיתות</th></tr></thead>
         <tbody>
           <% books.forEach((b, i) => { %>
             <tr>
@@ -69,10 +71,12 @@
               <td><input type="text" name="publisher" value="<%= b.publisher || '' %>" style="min-width:120px;" /></td>
               <td><input type="number" name="price" value="<%= b.price %>" min="0" step="0.01" style="width:80px;" /></td>
               <td><input type="text" name="notes" value="<%= b.notes || '' %>" placeholder="הערה חופשית" style="min-width:140px;" /></td>
-              <td>
-                <select name="pairs_<%= i %>" multiple size="6" style="min-width:180px;">
-                  <% classBranchOptions.forEach(o => { %><option value="<%= o.value %>" <%= b.assignedPairs.includes(o.value) ? 'selected' : '' %>><%= o.label %></option><% }) %>
-                </select>
+              <td style="white-space:nowrap;">
+                <% gradeOptions.forEach(g => { %>
+                  <label style="display:inline-block; margin-inline-end:10px; font-weight:normal;">
+                    <input type="checkbox" name="grades_<%= i %>" value="<%= g %>" <%= b.assignedGrades.includes(g) ? 'checked' : '' %> style="width:auto;" /> <%= g %>
+                  </label>
+                <% }) %>
               </td>
             </tr>
           <% }) %>
@@ -86,14 +90,17 @@
   function addBookRow() {
     const tbody = document.getElementById('add-books-tbody');
     const rowIndex = tbody.querySelectorAll('tr').length;
-    const optionsHtml = <%- JSON.stringify(classBranchOptions) %>.map(o => `<option value="${o.value}">${o.label}</option>`).join('');
+    const gradeOptions = <%- JSON.stringify(gradeOptions) %>;
+    const checkboxesHtml = gradeOptions.map(g =>
+      `<label style="display:inline-block; margin-inline-end:10px; font-weight:normal;"><input type="checkbox" name="grades_${rowIndex}" value="${g}" style="width:auto;" /> ${g}</label>`
+    ).join('');
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td><input type="text" name="item_name" placeholder="שם הספר" style="min-width:200px;" /></td>
       <td><input type="text" name="publisher" placeholder="הוצאה" style="min-width:120px;" /></td>
       <td><input type="number" name="price" step="0.01" min="0" placeholder="מחיר" style="width:90px;" /></td>
       <td><input type="text" name="notes" placeholder="הערה חופשית (אופציונלי)" style="min-width:140px;" /></td>
-      <td><select name="pairs_${rowIndex}" multiple size="6" style="min-width:180px;">${optionsHtml}</select></td>
+      <td>${checkboxesHtml}</td>
     `;
     tbody.appendChild(tr);
   }
