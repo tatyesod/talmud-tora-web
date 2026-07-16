@@ -1,0 +1,70 @@
+<%- include('../partials/header', {title: 'בדיקת התאמות במלאי ספרים', wide: true}) %>
+
+<div class="card">
+  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+    <h1>🔍 בדיקת התאמות - מלאי ספרים</h1>
+    <a href="/books/inventory?year=<%= encodeURIComponent(year) %>" class="btn secondary">← חזרה למלאי</a>
+  </div>
+
+  <p style="color:var(--muted); margin:10px 0;">
+    כדי שספר יופיע נכון בעמודת "הוזמן" במלאי, שם הספר במחירון (📦 מלאי ספרים) חייב להיות <strong>זהה אות באות</strong>
+    לשם הספר בקטלוג הכיתה (שממנו ההורים מזמינים) וגם בטבלת החידושים. אם השם שונה במשהו - ולו רווח קטן - ההזמנות
+    "נעלמות" מהמלאי, למרות שהן קיימות בפועל. הדף הזה מוצא בשבילך את כל אי-ההתאמות האלה.
+  </p>
+
+  <form method="GET" action="/books/inventory/diagnostics" style="margin:14px 0;">
+    <label><strong>שנה:</strong></label>
+    <select name="year" onchange="this.form.submit()">
+      <% years.forEach(y => { %>
+        <option value="<%= y %>" <%= y === year ? 'selected' : '' %>><%= y %></option>
+      <% }) %>
+    </select>
+  </form>
+
+  <% if (catalogMismatches.length === 0 && extrasMismatches.length === 0) { %>
+    <div style="background:#e8f5e9; border:1px solid #a5d6a7; color:#2e7d32; border-radius:8px; padding:12px 16px;">
+      ✅ לא נמצאו אי-התאמות - כל שמות הספרים בקטלוג ובחידושים תואמים בדיוק למחירון.
+    </div>
+  <% } else { %>
+    <div style="background:#fdecea; border:1px solid #f5c6cb; color:#a94442; border-radius:8px; padding:12px 16px; margin-bottom:16px;">
+      ⚠️ נמצאו <%= catalogMismatches.length + extrasMismatches.length %> שמות ספרים שלא תואמים למחירון - ההזמנות שלהם
+      <strong>לא נספרות</strong> בעמודת "הוזמן" במלאי. לתיקון: פתחו את "💰 מחירון" ואת "הזמנת ספרים" של הכיתה,
+      ווודאו שהשם כתוב בדיוק אותו הדבר בשני המקומות (כולל גרשיים, רווחים, ניקוד).
+    </div>
+
+    <% if (catalogMismatches.length > 0) { %>
+      <h3>קטלוג כיתות (הזמנות רגילות) - <%= catalogMismatches.length %> אי-התאמות</h3>
+      <table>
+        <thead><tr><th>שם הספר בקטלוג הכיתה</th><th>כיתה</th><th>מס' הזמנות שהולכות לאיבוד</th><th></th></tr></thead>
+        <tbody>
+          <% catalogMismatches.forEach(m => { %>
+            <tr>
+              <td><strong><%= m.item_name %></strong></td>
+              <td><%= m.class_name %></td>
+              <td><%= m.order_count %></td>
+              <td style="color:#2c5f9e;"><%= m.closeMatch %></td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    <% } %>
+
+    <% if (extrasMismatches.length > 0) { %>
+      <h3 style="margin-top:20px;">חידושים / הזמנות נוספות - <%= extrasMismatches.length %> אי-התאמות</h3>
+      <table>
+        <thead><tr><th>שם הספר בחידוש</th><th>מס' חידושים שהולכים לאיבוד</th><th></th></tr></thead>
+        <tbody>
+          <% extrasMismatches.forEach(m => { %>
+            <tr>
+              <td><strong><%= m.item_name %></strong></td>
+              <td><%= m.order_count %></td>
+              <td style="color:#2c5f9e;"><%= m.closeMatch %></td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    <% } %>
+  <% } %>
+</div>
+
+<%- include('../partials/footer') %>

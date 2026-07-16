@@ -8,6 +8,7 @@
         <a href="/books" class="btn secondary">← חזרה</a>
         <button type="button" class="btn secondary" onclick="window.print()">🖨️ הדפס</button>
         <a href="/books/inventory/print?branch=<%= encodeURIComponent(branch) %>&year=<%= encodeURIComponent(year) %>" class="btn secondary" target="_blank">🖨️ דוח ספירה למילוי ידני</a>
+        <a href="/books/inventory/diagnostics?year=<%= encodeURIComponent(year) %>" class="btn secondary">🔍 בדיקת התאמות</a>
         <a href="/books/inventory/order?branch=<%= encodeURIComponent(branch) %>&year=<%= encodeURIComponent(year) %>" class="btn">🛒 מעבר להזמנה מהספק</a>
       </div>
     </div>

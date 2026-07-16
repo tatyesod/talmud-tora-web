@@ -713,6 +713,41 @@ router.delete("/renewals/:id", (req, res) => {
 });
 
 // ============ מלאי ספרים לפי סניף ============
+// ============ בדיקה מקיפה: אילו ספרים בקטלוג/חידושים לא מוצאים התאמה מדויקת ============
+router.get("/inventory/diagnostics", (req, res) => {
+  const years = db.prepare("SELECT DISTINCT year_label FROM book_catalog ORDER BY year_label DESC").all().map(r => r.year_label);
+  const defaultYear = db.prepare("SELECT value FROM settings WHERE key='current_hebrew_year'").get()?.value || years[0] || 'תשפ"ז';
+  const year = req.query.year || defaultYear;
+
+  const priceNames = db.prepare("SELECT item_name FROM book_prices").all().map(r => r.item_name);
+  const priceNamesTrimmed = new Set(priceNames.map(n => n.trim()));
+
+  // ספרי קטלוג (הזמנות רגילות) לשנה זו שאין להם התאמה מדויקת במחירון
+  const catalogMismatches = db.prepare(`
+    SELECT DISTINCT bc.item_name, bc.class_name, COUNT(bo.student_id) AS order_count
+    FROM book_catalog bc
+    LEFT JOIN book_orders bo ON bo.catalog_id = bc.id AND bo.year_label = bc.year_label
+    WHERE bc.year_label = ?
+    GROUP BY bc.item_name, bc.class_name
+  `).all(year).filter(r => !priceNames.includes(r.item_name)).map(r => ({
+    ...r,
+    closeMatch: priceNamesTrimmed.has(r.item_name.trim()) ? "(רק רווחים מיותרים - זוהה ותוקן אוטומטית)" : "",
+  }));
+
+  // חידושים (book_order_extras) לשנה זו שאין להם התאמה מדויקת במחירון
+  const extrasMismatches = db.prepare(`
+    SELECT item_name, COUNT(*) AS order_count
+    FROM book_order_extras
+    WHERE year_label = ?
+    GROUP BY item_name
+  `).all(year).filter(r => !priceNames.includes(r.item_name)).map(r => ({
+    ...r,
+    closeMatch: priceNamesTrimmed.has(r.item_name.trim()) ? "(רק רווחים מיותרים - זוהה ותוקן אוטומטית)" : "",
+  }));
+
+  res.render("books/inventory-diagnostics", { years, year, catalogMismatches, extrasMismatches });
+});
+
 router.get("/inventory", (req, res) => {
   const classBranches = db.prepare("SELECT DISTINCT branch FROM classes WHERE branch IS NOT NULL AND branch<>'' ORDER BY branch").all().map(r => r.branch);
   const ALL_BRANCHES = ["סוקולוב", "נפחא", "בן פתחיה"];
@@ -728,7 +763,7 @@ router.get("/inventory", (req, res) => {
            COALESCE(bi.extra_quantity, 5) AS extra_quantity,
            (
              (SELECT COUNT(*) FROM book_orders bo
-              JOIN book_catalog bc ON bo.catalog_id = bc.id AND bc.item_name = bp.item_name AND bc.year_label = ?
+              JOIN book_catalog bc ON bo.catalog_id = bc.id AND TRIM(bc.item_name) = TRIM(bp.item_name) AND bc.year_label = ?
               JOIN students s ON bo.student_id = s.id
               LEFT JOIN classes c ON s.class_id = c.id
               WHERE COALESCE(c.branch, s.branch) = ?)
@@ -736,7 +771,7 @@ router.get("/inventory", (req, res) => {
              (SELECT COUNT(*) FROM book_order_extras e
               JOIN students s2 ON e.student_id = s2.id
               LEFT JOIN classes c2 ON s2.class_id = c2.id
-              WHERE e.item_name = bp.item_name AND e.year_label = ? AND COALESCE(c2.branch, s2.branch) = ?)
+              WHERE TRIM(e.item_name) = TRIM(bp.item_name) AND e.year_label = ? AND COALESCE(c2.branch, s2.branch) = ?)
            ) AS ordered_count
     FROM book_prices bp
     LEFT JOIN book_inventory bi ON bi.book_price_id = bp.id AND bi.branch = ?
@@ -762,7 +797,7 @@ router.get("/inventory/print", (req, res) => {
            COALESCE(bi.extra_quantity, 5) AS extra_quantity,
            (
              (SELECT COUNT(*) FROM book_orders bo
-              JOIN book_catalog bc ON bo.catalog_id = bc.id AND bc.item_name = bp.item_name AND bc.year_label = ?
+              JOIN book_catalog bc ON bo.catalog_id = bc.id AND TRIM(bc.item_name) = TRIM(bp.item_name) AND bc.year_label = ?
               JOIN students s ON bo.student_id = s.id
               LEFT JOIN classes c ON s.class_id = c.id
               WHERE COALESCE(c.branch, s.branch) = ?)
@@ -770,7 +805,7 @@ router.get("/inventory/print", (req, res) => {
              (SELECT COUNT(*) FROM book_order_extras e
               JOIN students s2 ON e.student_id = s2.id
               LEFT JOIN classes c2 ON s2.class_id = c2.id
-              WHERE e.item_name = bp.item_name AND e.year_label = ? AND COALESCE(c2.branch, s2.branch) = ?)
+              WHERE TRIM(e.item_name) = TRIM(bp.item_name) AND e.year_label = ? AND COALESCE(c2.branch, s2.branch) = ?)
            ) AS ordered_count
     FROM book_prices bp
     LEFT JOIN book_inventory bi ON bi.book_price_id = bp.id AND bi.branch = ?
@@ -842,7 +877,7 @@ router.get("/inventory/order", (req, res) => {
            COALESCE(bi.extra_quantity, 5) AS extra_quantity,
            (
              (SELECT COUNT(*) FROM book_orders bo
-              JOIN book_catalog bc ON bo.catalog_id = bc.id AND bc.item_name = bp.item_name AND bc.year_label = ?
+              JOIN book_catalog bc ON bo.catalog_id = bc.id AND TRIM(bc.item_name) = TRIM(bp.item_name) AND bc.year_label = ?
               JOIN students s ON bo.student_id = s.id
               LEFT JOIN classes c ON s.class_id = c.id
               WHERE COALESCE(c.branch, s.branch) = ?)
@@ -850,7 +885,7 @@ router.get("/inventory/order", (req, res) => {
              (SELECT COUNT(*) FROM book_order_extras e
               JOIN students s2 ON e.student_id = s2.id
               LEFT JOIN classes c2 ON s2.class_id = c2.id
-              WHERE e.item_name = bp.item_name AND e.year_label = ? AND COALESCE(c2.branch, s2.branch) = ?)
+              WHERE TRIM(e.item_name) = TRIM(bp.item_name) AND e.year_label = ? AND COALESCE(c2.branch, s2.branch) = ?)
            ) AS ordered_count
     FROM book_prices bp
     LEFT JOIN book_inventory bi ON bi.book_price_id = bp.id AND bi.branch = ?
@@ -883,7 +918,7 @@ router.get("/inventory/order/export-pdf", (req, res) => {
            COALESCE(bi.extra_quantity, 5) AS extra_quantity,
            (
              (SELECT COUNT(*) FROM book_orders bo
-              JOIN book_catalog bc ON bo.catalog_id = bc.id AND bc.item_name = bp.item_name AND bc.year_label = ?
+              JOIN book_catalog bc ON bo.catalog_id = bc.id AND TRIM(bc.item_name) = TRIM(bp.item_name) AND bc.year_label = ?
               JOIN students s ON bo.student_id = s.id
               LEFT JOIN classes c ON s.class_id = c.id
               WHERE COALESCE(c.branch, s.branch) = ?)
@@ -891,7 +926,7 @@ router.get("/inventory/order/export-pdf", (req, res) => {
              (SELECT COUNT(*) FROM book_order_extras e
               JOIN students s2 ON e.student_id = s2.id
               LEFT JOIN classes c2 ON s2.class_id = c2.id
-              WHERE e.item_name = bp.item_name AND e.year_label = ? AND COALESCE(c2.branch, s2.branch) = ?)
+              WHERE TRIM(e.item_name) = TRIM(bp.item_name) AND e.year_label = ? AND COALESCE(c2.branch, s2.branch) = ?)
            ) AS ordered_count
     FROM book_prices bp
     LEFT JOIN book_inventory bi ON bi.book_price_id = bp.id AND bi.branch = ?
@@ -919,7 +954,7 @@ router.get("/inventory/order/export", async (req, res) => {
            COALESCE(bi.extra_quantity, 5) AS extra_quantity,
            (
              (SELECT COUNT(*) FROM book_orders bo
-              JOIN book_catalog bc ON bo.catalog_id = bc.id AND bc.item_name = bp.item_name AND bc.year_label = ?
+              JOIN book_catalog bc ON bo.catalog_id = bc.id AND TRIM(bc.item_name) = TRIM(bp.item_name) AND bc.year_label = ?
               JOIN students s ON bo.student_id = s.id
               LEFT JOIN classes c ON s.class_id = c.id
               WHERE COALESCE(c.branch, s.branch) = ?)
@@ -927,7 +962,7 @@ router.get("/inventory/order/export", async (req, res) => {
              (SELECT COUNT(*) FROM book_order_extras e
               JOIN students s2 ON e.student_id = s2.id
               LEFT JOIN classes c2 ON s2.class_id = c2.id
-              WHERE e.item_name = bp.item_name AND e.year_label = ? AND COALESCE(c2.branch, s2.branch) = ?)
+              WHERE TRIM(e.item_name) = TRIM(bp.item_name) AND e.year_label = ? AND COALESCE(c2.branch, s2.branch) = ?)
            ) AS ordered_count
     FROM book_prices bp
     LEFT JOIN book_inventory bi ON bi.book_price_id = bp.id AND bi.branch = ?
