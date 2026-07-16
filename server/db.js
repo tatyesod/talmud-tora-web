@@ -409,6 +409,28 @@ try {
   console.error("שגיאה בעדכון שורת המחזור:", e.message);
 }
 
+// תיקון חד-פעמי ממוקד: בתבנית "כיתה ח'" הייתה סתירה - שורה אחת אמרה שהלימודים
+// מסתיימים ב-19:00 ושורה אחרת (נכונה) אמרה 19:30. מתקן רק אם הטקסט המדויק
+// הישן עדיין שם (כלומר לא נערך ידנית בינתיים).
+try {
+  const alreadyFixed = db.prepare("SELECT value FROM settings WHERE key = 'kita_h_end_time_fix_v1'").get();
+  if (!alreadyFixed) {
+    const oldLine = 'ולימודי אחה"צ 15:00-19:00.';
+    const newLine = 'ולימודי אחה"צ 15:00-19:30.';
+    const tpl = db.prepare("SELECT id, body FROM letter_templates WHERE name = ?").get("כיתה ח'");
+    if (tpl && tpl.body.includes(oldLine)) {
+      const updatedBody = tpl.body.replace(oldLine, newLine);
+      db.prepare("UPDATE letter_templates SET body = ?, updated_at = ? WHERE id = ?").run(
+        updatedBody, new Date().toISOString(), tpl.id
+      );
+      console.log('[מכתבי שיבוץ] תוקנה שעת סיום הלימודים בתבנית "כיתה ח\'"');
+    }
+    db.prepare("INSERT INTO settings (key, value) VALUES ('kita_h_end_time_fix_v1', '1')").run();
+  }
+} catch (e) {
+  console.error("שגיאה בתיקון שעת סיום כיתה ח':", e.message);
+}
+
 // ניקוי חד-פעמי: השדה "מעבר לכיתה" התמלא בעבר אוטומטית בערך המקבילה הקיים,
 // אבל הוחלט שברירת המחדל האמיתית תהיה ריק (ואז המערכת מניחה "אותה מקבילה").
 // דגל ב-settings מבטיח שהניקוי הזה ירוץ פעם אחת בלבד, ולא ימחק ידנית ערכים
