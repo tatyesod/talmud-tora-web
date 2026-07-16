@@ -46,6 +46,14 @@ function syncCatalogFromPrices(year) {
   return { added, updated };
 }
 
+// מחזיר את שמות הכיתות (ברמת כיתה, לא מקבילה) שבאמת קיימות בסניף נתון -
+// בודק מול כיתות אמיתיות (עם המקבילה שלהן), לא רק שם כללי. למשל אם בסוקולוב
+// יש רק כיתה א' וכיתה ב' (בכל מקבילותיהן), רק שני השמות האלה יחזרו.
+function getRelevantClassNamesForBranch(branch) {
+  if (!branch) return null; // ללא סניף נבחר - לא מסננים (מציגים הכל)
+  return db.prepare("SELECT DISTINCT name FROM classes WHERE branch = ?").all(branch).map((r) => r.name);
+}
+
 // ===== עזר: כיתות ספציפיות (שם + מקבילה) לפי שם =====
 function getSpecificClasses(className) {
   return db.prepare("SELECT id, name, parallel FROM classes WHERE name=? ORDER BY parallel").all(className);
@@ -824,8 +832,12 @@ router.get("/inventory", (req, res) => {
            ) AS ordered_count
     FROM book_prices bp
     LEFT JOIN book_inventory bi ON bi.book_price_id = bp.id AND bi.branch = ?
+    WHERE EXISTS (
+      SELECT 1 FROM book_price_classes bpc JOIN classes cx ON cx.name = bpc.class_name AND cx.branch = ?
+      WHERE bpc.book_price_id = bp.id
+    )
     ORDER BY bp.item_name
-  `).all(year, branch, year, branch, branch).map((it) => ({
+  `).all(year, branch, year, branch, branch, branch).map((it) => ({
     ...it,
     to_order: it.ordered_count + it.extra_quantity - it.current_stock,
   }));
@@ -869,8 +881,12 @@ router.get("/inventory/print", (req, res) => {
            ) AS ordered_count
     FROM book_prices bp
     LEFT JOIN book_inventory bi ON bi.book_price_id = bp.id AND bi.branch = ?
+    WHERE EXISTS (
+      SELECT 1 FROM book_price_classes bpc JOIN classes cx ON cx.name = bpc.class_name AND cx.branch = ?
+      WHERE bpc.book_price_id = bp.id
+    )
     ORDER BY bp.item_name
-  `).all(year, branch, year, branch, branch).map((it) => ({
+  `).all(year, branch, year, branch, branch, branch).map((it) => ({
     ...it,
     to_order: Math.max(0, it.ordered_count + it.extra_quantity - it.current_stock),
   }));
@@ -961,8 +977,12 @@ router.get("/inventory/order", (req, res) => {
            ) AS ordered_count
     FROM book_prices bp
     LEFT JOIN book_inventory bi ON bi.book_price_id = bp.id AND bi.branch = ?
+    WHERE EXISTS (
+      SELECT 1 FROM book_price_classes bpc JOIN classes cx ON cx.name = bpc.class_name AND cx.branch = ?
+      WHERE bpc.book_price_id = bp.id
+    )
     ORDER BY bp.item_name
-  `).all(year, branch, year, branch, branch)
+  `).all(year, branch, year, branch, branch, branch)
     .map((r) => ({ ...r, to_order: r.ordered_count + r.extra_quantity - r.current_stock }))
     .filter((r) => r.to_order > 0);
 
@@ -1002,8 +1022,12 @@ router.get("/inventory/order/export-pdf", (req, res) => {
            ) AS ordered_count
     FROM book_prices bp
     LEFT JOIN book_inventory bi ON bi.book_price_id = bp.id AND bi.branch = ?
+    WHERE EXISTS (
+      SELECT 1 FROM book_price_classes bpc JOIN classes cx ON cx.name = bpc.class_name AND cx.branch = ?
+      WHERE bpc.book_price_id = bp.id
+    )
     ORDER BY bp.item_name
-  `).all(year, branch, year, branch, branch)
+  `).all(year, branch, year, branch, branch, branch)
     .map((r) => ({ ...r, to_order: r.ordered_count + r.extra_quantity - r.current_stock }))
     .filter((r) => r.to_order > 0);
 
@@ -1038,8 +1062,12 @@ router.get("/inventory/order/export", async (req, res) => {
            ) AS ordered_count
     FROM book_prices bp
     LEFT JOIN book_inventory bi ON bi.book_price_id = bp.id AND bi.branch = ?
+    WHERE EXISTS (
+      SELECT 1 FROM book_price_classes bpc JOIN classes cx ON cx.name = bpc.class_name AND cx.branch = ?
+      WHERE bpc.book_price_id = bp.id
+    )
     ORDER BY bp.item_name
-  `).all(year, branch, year, branch, branch)
+  `).all(year, branch, year, branch, branch, branch)
     .map((r) => ({ ...r, to_order: r.ordered_count + r.extra_quantity - r.current_stock }))
     .filter((r) => r.to_order > 0);
 
