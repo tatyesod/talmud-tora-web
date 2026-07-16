@@ -347,7 +347,11 @@
         enctype="multipart/form-data" class="form-grid" style="margin-top:16px;">
     <div class="form-group">
       <label>חודש הדוח</label>
-      <input type="month" name="month_label" required />
+      <select name="month_label" required>
+        <% monthOptions.forEach(m => { %>
+          <option value="<%= m %>" <%= m === currentMonth ? 'selected' : '' %>><%= m %></option>
+        <% }) %>
+      </select>
     </div>
     <div class="form-group">
       <label>תאריך הגשה בפועל</label>

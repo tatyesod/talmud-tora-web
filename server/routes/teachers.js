@@ -30,15 +30,26 @@ const upload = multer({
   },
 });
 
-const HEBREW_GREGORIAN_MONTHS = [
-  "ינואר", "פברואר", "מרץ", "אפריל", "מאי", "יוני",
-  "יולי", "אוגוסט", "ספטמבר", "אוקטובר", "נובמבר", "דצמבר",
+// כל שמות החודשים העבריים האפשריים (גם אדר א'/ב' לשנה מעוברת וגם אדר רגיל,
+// כדי שאפשר יהיה לבחור נכון בכל סוג שנה)
+const HEBREW_MONTH_OPTIONS = [
+  "תשרי", "חשון", "כסלו", "טבת", "שבט", "אדר", "אדר א'", "אדר ב'",
+  "ניסן", "אייר", "סיון", "תמוז", "אב", "אלול",
 ];
+
+function currentHebrewMonthName() {
+  const { year, month } = hd.todayHebrewParts();
+  const names = {
+    1: "ניסן", 2: "אייר", 3: "סיון", 4: "תמוז", 5: "אב", 6: "אלול",
+    7: "תשרי", 8: "חשון", 9: "כסלו", 10: "טבת", 11: "שבט",
+    12: hd.isHebrewLeapYear(year) ? "אדר א'" : "אדר",
+    13: "אדר ב'",
+  };
+  return names[month] || "תשרי";
+}
+
 function formatMonthLabel(monthLabel) {
-  if (!monthLabel) return "";
-  const [y, m] = monthLabel.split("-");
-  const idx = parseInt(m, 10) - 1;
-  return `${HEBREW_GREGORIAN_MONTHS[idx] || m} ${y}`;
+  return monthLabel || "";
 }
 
 function calcAge(accessSerial) {
@@ -144,7 +155,7 @@ router.post("/", (req, res) => {
 });
 
 router.get("/monthly-reports", (req, res) => {
-  const month = req.query.month || new Date().toISOString().slice(0, 7);
+  const month = req.query.month || currentHebrewMonthName();
   const teachers = db.prepare("SELECT id, first_name, last_name FROM teachers ORDER BY last_name, first_name").all();
   const reportsForMonth = db.prepare("SELECT * FROM teacher_monthly_reports WHERE month_label = ?").all(month);
   const reportByTeacher = {};
@@ -164,7 +175,7 @@ router.get("/monthly-reports", (req, res) => {
 
   const submittedCount = rows.filter((r) => r.submitted).length;
   res.render("teachers/monthly-reports", {
-    month, monthDisplay: formatMonthLabel(month), rows, submittedCount, total: rows.length,
+    month, monthDisplay: formatMonthLabel(month), monthOptions: HEBREW_MONTH_OPTIONS, rows, submittedCount, total: rows.length,
   });
 });
 
@@ -304,7 +315,10 @@ router.get("/:id", (req, res) => {
   const prevTeacherId = idx > 0 ? allIds[idx - 1] : null;
   const nextTeacherId = idx >= 0 && idx < allIds.length - 1 ? allIds[idx + 1] : null;
 
-  res.render("teachers/view", { teacher, classes, attendance, attendanceSummary, file, monthlyReports, prevTeacherId, nextTeacherId });
+  res.render("teachers/view", {
+    teacher, classes, attendance, attendanceSummary, file, monthlyReports, prevTeacherId, nextTeacherId,
+    monthOptions: HEBREW_MONTH_OPTIONS, currentMonth: currentHebrewMonthName(),
+  });
 });
 
 router.post("/:id/attendance", (req, res) => {

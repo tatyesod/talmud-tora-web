@@ -8,7 +8,11 @@
 
   <form method="GET" action="/teachers/monthly-reports" style="margin:14px 0;">
     <label>בחר חודש: </label>
-    <input type="month" name="month" value="<%= month %>" onchange="this.form.submit()" />
+    <select name="month" onchange="this.form.submit()">
+      <% monthOptions.forEach(m => { %>
+        <option value="<%= m %>" <%= m === month ? 'selected' : '' %>><%= m %></option>
+      <% }) %>
+    </select>
   </form>
 
   <div class="summary-panel" style="display:inline-block; background:<%= submittedCount === total ? '#e8f5e9' : '#fff3e0' %>;">
