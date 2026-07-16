@@ -4,7 +4,7 @@
   <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
     <h1>📚 הזמנת ספרי לימוד</h1>
     <div class="actions">
-      <a href="/books/catalog-and-prices?year=<%= encodeURIComponent(year) %>" class="btn secondary">📚 קטלוג ומחירון</a>
+      <a href="/books/catalog-and-prices?year=<%= encodeURIComponent(year) %>" class="btn secondary">👁️ צפייה בקטלוג</a>
       <a href="/books/catalog-manage" class="btn secondary">🔗 שיוך ספר לכיתה</a>
       <a href="/books/renewals?year=<%= encodeURIComponent(year) %>" class="btn secondary">🔄 חידוש ספרים</a>
       <a href="/books/report/families?year=<%= encodeURIComponent(year) %>" class="btn secondary">📊 דוח חיובים</a>
@@ -42,7 +42,7 @@
   </div>
 
   <% if (specificClasses.length === 0) { %>
-    <div class="empty-state">אין קטלוג ספרים לשנת <%= year %>.<br/><a href="/books/catalog" class="btn" style="margin-top:12px;">הוסף קטלוג</a></div>
+    <div class="empty-state">אין קטלוג ספרים לשנת <%= year %>.<br/><a href="/books/catalog-manage" class="btn" style="margin-top:12px;">🔗 שיוך ספר לכיתה</a></div>
   <% } else { %>
     <table>
       <thead><tr>
