@@ -717,33 +717,70 @@ router.get("/inventory/diagnostics", (req, res) => {
   const defaultYear = db.prepare("SELECT value FROM settings WHERE key='current_hebrew_year'").get()?.value || years[0] || 'תשפ"ז';
   const year = req.query.year || defaultYear;
 
-  const priceNames = db.prepare("SELECT item_name FROM book_prices").all().map(r => r.item_name);
-  const priceNamesTrimmed = new Set(priceNames.map(n => n.trim()));
+  const allPriceNames = db.prepare("SELECT item_name FROM book_prices ORDER BY item_name").all().map(r => r.item_name);
+  const priceNamesTrimmed = new Set(allPriceNames.map(n => n.trim()));
 
   // ספרי קטלוג (הזמנות רגילות) לשנה זו שאין להם התאמה מדויקת במחירון
   const catalogMismatches = db.prepare(`
-    SELECT DISTINCT bc.item_name, bc.class_name, COUNT(bo.student_id) AS order_count
+    SELECT DISTINCT bc.item_name, bc.class_name, bc.publisher, bc.price, COUNT(bo.student_id) AS order_count
     FROM book_catalog bc
     LEFT JOIN book_orders bo ON bo.catalog_id = bc.id AND bo.year_label = bc.year_label
     WHERE bc.year_label = ?
     GROUP BY bc.item_name, bc.class_name
-  `).all(year).filter(r => !priceNames.includes(r.item_name)).map(r => ({
+  `).all(year).filter(r => !allPriceNames.includes(r.item_name)).map(r => ({
     ...r,
     closeMatch: priceNamesTrimmed.has(r.item_name.trim()) ? "(רק רווחים מיותרים - זוהה ותוקן אוטומטית)" : "",
   }));
 
   // חידושים (book_order_extras) לשנה זו שאין להם התאמה מדויקת במחירון
   const extrasMismatches = db.prepare(`
-    SELECT item_name, COUNT(*) AS order_count
+    SELECT item_name, price, COUNT(*) AS order_count
     FROM book_order_extras
     WHERE year_label = ?
     GROUP BY item_name
-  `).all(year).filter(r => !priceNames.includes(r.item_name)).map(r => ({
+  `).all(year).filter(r => !allPriceNames.includes(r.item_name)).map(r => ({
     ...r,
     closeMatch: priceNamesTrimmed.has(r.item_name.trim()) ? "(רק רווחים מיותרים - זוהה ותוקן אוטומטית)" : "",
   }));
 
-  res.render("books/inventory-diagnostics", { years, year, catalogMismatches, extrasMismatches });
+  res.render("books/inventory-diagnostics", { years, year, catalogMismatches, extrasMismatches, allPriceNames });
+});
+
+// פתרון אי-התאמה: "זה בעצם הספר X מהמחירון" - משנים את שם פריט הקטלוג
+// (בכל השנים) כך שיתאים בדיוק למחירון. לא נוגעים בהזמנות עצמן (הן מקושרות
+// ל-catalog_id, לא לשם), רק בטקסט השם.
+router.post("/inventory/diagnostics/rename-catalog", (req, res) => {
+  const { old_name, new_name, year: yr } = req.body;
+  if (old_name && new_name) {
+    db.prepare("UPDATE book_catalog SET item_name = ? WHERE item_name = ?").run(new_name, old_name);
+  }
+  res.redirect(`/books/inventory/diagnostics?year=${encodeURIComponent(yr || "")}`);
+});
+
+router.post("/inventory/diagnostics/rename-extra", (req, res) => {
+  const { old_name, new_name, year: yr } = req.body;
+  if (old_name && new_name) {
+    db.prepare("UPDATE book_order_extras SET item_name = ? WHERE item_name = ?").run(new_name, old_name);
+  }
+  res.redirect(`/books/inventory/diagnostics?year=${encodeURIComponent(yr || "")}`);
+});
+
+// פתרון אי-התאמה: "זה ספר חדש - תוסיף אותו למחירון בשם הזה בדיוק" - יוצר
+// רשומת מחירון חדשה עם השם המדויק שכבר בשימוש בקטלוג/בחידוש, ומעתיק מחיר
+// והוצאה מהרשומה הקיימת. אם יש class_name (מקטלוג) - משייך גם לכיתה הזו מיד.
+router.post("/inventory/diagnostics/add-as-new", (req, res) => {
+  const { item_name, publisher, price, class_name, year: yr } = req.body;
+  const now = new Date().toISOString();
+  db.prepare(`
+    INSERT INTO book_prices (item_name, publisher, price, updated_at) VALUES (?,?,?,?)
+    ON CONFLICT(item_name) DO NOTHING
+  `).run(item_name, publisher || "", parseFloat(price) || 0, now);
+  if (class_name) {
+    const bookId = db.prepare("SELECT id FROM book_prices WHERE item_name = ?").get(item_name)?.id;
+    if (bookId) db.prepare("INSERT OR IGNORE INTO book_price_grades (book_price_id, class_name) VALUES (?, ?)").run(bookId, class_name);
+  }
+  syncCatalogFromPrices();
+  res.redirect(`/books/inventory/diagnostics?year=${encodeURIComponent(yr || "")}`);
 });
 
 router.get("/inventory", (req, res) => {
