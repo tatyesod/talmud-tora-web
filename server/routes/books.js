@@ -712,12 +712,31 @@ router.post("/catalog-manage/add", (req, res) => {
   res.redirect(`/books/catalog-manage?added=${added}`);
 });
 
+// מנרמל שם ספר לצורך השוואת דמיון - מסיר סוגריים, גרשיים, ניקוד-פיסוק,
+// ומצמצם לרשימת מילים לצורך חישוב חפיפה
+function normalizeForSimilarity(name) {
+  return name
+    .replace(/\([^)]*\)/g, " ") // מסיר תוכן בסוגריים כמו "(כרוך)"
+    .replace(/["'׳״]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+function similarityScore(a, b) {
+  const wordsA = normalizeForSimilarity(a).split(" ").filter(Boolean);
+  const wordsB = normalizeForSimilarity(b).split(" ").filter(Boolean);
+  if (wordsA.length === 0 || wordsB.length === 0) return 0;
+  const setB = new Set(wordsB);
+  const common = wordsA.filter((w) => setB.has(w)).length;
+  return common / Math.min(wordsA.length, wordsB.length);
+}
+
 router.get("/inventory/diagnostics", (req, res) => {
   const years = db.prepare("SELECT DISTINCT year_label FROM book_catalog ORDER BY year_label DESC").all().map(r => r.year_label);
   const defaultYear = db.prepare("SELECT value FROM settings WHERE key='current_hebrew_year'").get()?.value || years[0] || 'תשפ"ז';
   const year = req.query.year || defaultYear;
 
-  const allPriceNames = db.prepare("SELECT item_name FROM book_prices ORDER BY item_name").all().map(r => r.item_name);
+  const allPrices = db.prepare("SELECT id, item_name, publisher, price FROM book_prices ORDER BY item_name").all();
+  const allPriceNames = allPrices.map(r => r.item_name);
   const priceNamesTrimmed = new Set(allPriceNames.map(n => n.trim()));
 
   // ספרי קטלוג (הזמנות רגילות) לשנה זו שאין להם התאמה מדויקת במחירון
@@ -743,8 +762,76 @@ router.get("/inventory/diagnostics", (req, res) => {
     closeMatch: priceNamesTrimmed.has(r.item_name.trim()) ? "(רק רווחים מיותרים - זוהה ותוקן אוטומטית)" : "",
   }));
 
-  res.render("books/inventory-diagnostics", { years, year, catalogMismatches, extrasMismatches, allPriceNames });
+  // ספרים כפולים אפשריים במחירון עצמו - שני שמות שונים, אבל דומים מאוד
+  // (למשל "משנה ברורה חלק ו'" מול "משנה ברורה חלק ו' (כרוך)") - כל אחד בפני
+  // עצמו נמצא במחירון (לכן לא נתפס כ"אי-התאמה"), אבל ההזמנות מתפצלות ביניהם.
+  const possibleDuplicates = [];
+  const seen = new Set();
+  for (let i = 0; i < allPrices.length; i++) {
+    for (let j = i + 1; j < allPrices.length; j++) {
+      const a = allPrices[i], b = allPrices[j];
+      const score = similarityScore(a.item_name, b.item_name);
+      if (score >= 0.6) {
+        const key = [a.id, b.id].sort().join("-");
+        if (seen.has(key)) continue;
+        seen.add(key);
+        possibleDuplicates.push({ a, b, score });
+      }
+    }
+  }
+  possibleDuplicates.sort((x, y) => y.score - x.score);
+
+  res.render("books/inventory-diagnostics", { years, year, catalogMismatches, extrasMismatches, allPriceNames, possibleDuplicates });
 });
+
+// מיזוג שני ספרים כפולים למחירון אחד: משנים את כל ההזמנות/חידושים שהיו
+// תחת השם שנמחק לשם השורד, מעבירים שיוכי כיתה, מסכמים מלאי בפועל (לא
+// מוחקים כמות אמיתית!) - ומוחקים את הרשומה הכפולה.
+router.post("/inventory/diagnostics/merge-books", (req, res) => {
+  const { keep_id, remove_id, year: yr } = req.body;
+  const keep = db.prepare("SELECT * FROM book_prices WHERE id = ?").get(keep_id);
+  const remove = db.prepare("SELECT * FROM book_prices WHERE id = ?").get(remove_id);
+  if (!keep || !remove || keep.id === remove.id) {
+    return res.redirect(`/books/inventory/diagnostics?year=${encodeURIComponent(yr || "")}`);
+  }
+
+  db.exec("BEGIN TRANSACTION");
+  try {
+    // 1) מעבירים כל הזמנה/חידוש שהיה בשם שנמחק, לשם השורד
+    db.prepare("UPDATE book_catalog SET item_name = ? WHERE TRIM(item_name) = TRIM(?)").run(keep.item_name, remove.item_name);
+    db.prepare("UPDATE book_order_extras SET item_name = ? WHERE TRIM(item_name) = TRIM(?)").run(keep.item_name, remove.item_name);
+
+    // 2) מעבירים שיוכי כיתה שלא כבר קיימים אצל השורד
+    const removeGrades = db.prepare("SELECT class_name FROM book_price_grades WHERE book_price_id = ?").all(remove_id);
+    const insertGrade = db.prepare("INSERT OR IGNORE INTO book_price_grades (book_price_id, class_name) VALUES (?, ?)");
+    removeGrades.forEach((g) => insertGrade.run(keep_id, g.class_name));
+    db.prepare("DELETE FROM book_price_grades WHERE book_price_id = ?").run(remove_id);
+
+    // 3) מסכמים מלאי בפועל (לא מאבדים כמות אמיתית שנספרה) - לכל סניף בנפרד
+    const removeStocks = db.prepare("SELECT * FROM book_inventory WHERE book_price_id = ?").all(remove_id);
+    removeStocks.forEach((s) => {
+      const existing = db.prepare("SELECT * FROM book_inventory WHERE book_price_id = ? AND branch = ?").get(keep_id, s.branch);
+      if (existing) {
+        db.prepare("UPDATE book_inventory SET current_stock = ? WHERE id = ?").run(existing.current_stock + s.current_stock, existing.id);
+      } else {
+        db.prepare("INSERT INTO book_inventory (book_price_id, branch, current_stock, extra_quantity, updated_at) VALUES (?,?,?,?,?)")
+          .run(keep_id, s.branch, s.current_stock, s.extra_quantity, new Date().toISOString());
+      }
+    });
+    db.prepare("DELETE FROM book_inventory WHERE book_price_id = ?").run(remove_id);
+
+    // 4) מוחקים את הרשומה הכפולה מהמחירון
+    db.prepare("DELETE FROM book_prices WHERE id = ?").run(remove_id);
+
+    db.exec("COMMIT");
+  } catch (e) {
+    db.exec("ROLLBACK");
+    throw e;
+  }
+
+  res.redirect(`/books/inventory/diagnostics?year=${encodeURIComponent(yr || "")}`);
+});
+
 
 // פתרון אי-התאמה: "זה בעצם הספר X מהמחירון" - משנים את שם פריט הקטלוג
 // (בכל השנים) כך שיתאים בדיוק למחירון. לא נוגעים בהזמנות עצמן (הן מקושרות

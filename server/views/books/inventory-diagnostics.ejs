@@ -108,6 +108,43 @@
       </p>
     <% } %>
   <% } %>
+
+  <% if (possibleDuplicates.length > 0) { %>
+    <h3 style="margin-top:24px;">⚠️ ספרים כפולים אפשריים במחירון - <%= possibleDuplicates.length %> זוגות</h3>
+    <p style="color:var(--muted); font-size:0.9em;">
+      אלה שני שמות <strong>שונים</strong> במחירון שדומים מאוד זה לזה - כל אחד בפני עצמו כן נמצא במחירון, ולכן לא הופיע
+      למעלה כ"אי-התאמה" - אבל בפועל ההזמנות של אותו ספר מתפצלות בין שתי הרשומות. בחרו איזה שם "שורד" ולחצו מיזוג -
+      כל ההזמנות, החידושים, שיוך הכיתות והמלאי בפועל (מסוכם, לא נמחק) יעברו לרשומה השורדת, והכפולה תימחק.
+    </p>
+    <div class="table-scroll-wrap">
+    <table>
+      <thead><tr><th>אפשרות א'</th><th>אפשרות ב'</th><th>מיזוג</th></tr></thead>
+      <tbody>
+        <% possibleDuplicates.forEach(d => { %>
+          <tr>
+            <td><%= d.a.item_name %> <span style="color:var(--muted); font-size:0.85em;">(<%= d.a.publisher || 'ללא הוצאה' %>, <%= d.a.price %> ₪)</span></td>
+            <td><%= d.b.item_name %> <span style="color:var(--muted); font-size:0.85em;">(<%= d.b.publisher || 'ללא הוצאה' %>, <%= d.b.price %> ₪)</span></td>
+            <td style="white-space:nowrap;">
+              <form method="POST" action="/books/inventory/diagnostics/merge-books" style="display:inline-block;" onsubmit="return confirm('למזג לתוך אפשרות א\\' (' + <%- JSON.stringify(d.a.item_name) %> + ')? אפשרות ב\\' תימחק.');">
+                <input type="hidden" name="keep_id" value="<%= d.a.id %>" />
+                <input type="hidden" name="remove_id" value="<%= d.b.id %>" />
+                <input type="hidden" name="year" value="<%= year %>" />
+                <button type="submit" class="btn small secondary">← שמור א', מזג ב'</button>
+              </form>
+              <form method="POST" action="/books/inventory/diagnostics/merge-books" style="display:inline-block; margin-inline-start:6px;" onsubmit="return confirm('למזג לתוך אפשרות ב\\' (' + <%- JSON.stringify(d.b.item_name) %> + ')? אפשרות א\\' תימחק.');">
+                <input type="hidden" name="keep_id" value="<%= d.b.id %>" />
+                <input type="hidden" name="remove_id" value="<%= d.a.id %>" />
+                <input type="hidden" name="year" value="<%= year %>" />
+                <button type="submit" class="btn small secondary">שמור ב', מזג א' →</button>
+              </form>
+              <span style="color:var(--muted); font-size:0.8em; margin-inline-start:6px;">(אלו לא כפולים? פשוט התעלמו)</span>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+    </div>
+  <% } %>
 </div>
 
 <%- include('../partials/footer') %>
