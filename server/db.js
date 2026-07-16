@@ -246,6 +246,15 @@ const migrations = [
   // לכיתות) - לכל ספר לפי סניף. ברירת מחדל 5 יח' לכל ספר (מטופל ב-COALESCE
   // בשאילתות, בלי צורך למלא מראש כל שילוב ספר/סניף אפשרי).
   "ALTER TABLE book_inventory ADD COLUMN extra_quantity INTEGER",
+  // שיוך ספרים לכיתות - כדי שהמחירון (book_prices) יהיה מקור האמת היחיד
+  // (שם, הוצאה, מחיר, כיתות שייכות), וקטלוג ההזמנה לכל כיתה (book_catalog)
+  // יסונכרן ממנו אוטומטית - כך לא ייווצרו יותר אי-התאמות שמות בין הזמנות למלאי.
+  `CREATE TABLE IF NOT EXISTS book_price_classes (
+    id INTEGER PRIMARY KEY,
+    book_price_id INTEGER NOT NULL,
+    class_name TEXT NOT NULL,
+    UNIQUE(book_price_id, class_name)
+  )`,
 ];
 
 for (const sql of migrations) {
@@ -429,6 +438,27 @@ try {
   }
 } catch (e) {
   console.error("שגיאה בתיקון שעת סיום כיתה ח':", e.message);
+}
+
+// תיקון חד-פעמי (וארכיטקטוני): ממלא את שיוך הספרים לכיתות (book_price_classes)
+// מתוך כל ההתאמות הקיימות היום בין book_catalog לבין book_prices (לפי שם
+// זהה, בלי רגישות לרווחים) - כדי לשמר את כל השיוכים שכבר הוגדרו, בלי
+// שיצטרכו להזין הכל מחדש. מכאן והלאה, book_prices הוא מקור האמת היחיד.
+try {
+  const alreadyMigrated = db.prepare("SELECT value FROM settings WHERE key = 'book_price_classes_migrated_v1'").get();
+  if (!alreadyMigrated) {
+    const pairs = db.prepare(`
+      SELECT DISTINCT bp.id AS book_price_id, bc.class_name
+      FROM book_catalog bc
+      JOIN book_prices bp ON TRIM(bp.item_name) = TRIM(bc.item_name)
+    `).all();
+    const insert = db.prepare("INSERT OR IGNORE INTO book_price_classes (book_price_id, class_name) VALUES (?, ?)");
+    pairs.forEach((p) => insert.run(p.book_price_id, p.class_name));
+    console.log(`[מחירון-קטלוג] יובאו ${pairs.length} שיוכי ספר-כיתה קיימים`);
+    db.prepare("INSERT INTO settings (key, value) VALUES ('book_price_classes_migrated_v1', '1')").run();
+  }
+} catch (e) {
+  console.error("שגיאה בייבוא שיוכי ספר-כיתה:", e.message);
 }
 
 // ניקוי חד-פעמי: השדה "מעבר לכיתה" התמלא בעבר אוטומטית בערך המקבילה הקיים,

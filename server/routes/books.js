@@ -7,6 +7,45 @@ const fs = require("fs");
 
 const LOGO_PATH = path.join(__dirname, "..", "public", "images", "logo-reports.jpg");
 
+// כל שמות הכיתות (ברמת כיתה, לא מקבילה) שאפשר לשייך אליהן ספר - מ"עדיין לא
+// נכנסו" ועד כיתה ח', התואם למבנה הקבוע של בית הספר.
+const BOOK_CLASS_OPTIONS = [
+  "עדיין לא נכנסו", "מכינה א'", "מכינה ב'",
+  "כיתה א'", "כיתה ב'", "כיתה ג'", "כיתה ד'",
+  "כיתה ה'", "כיתה ו'", "כיתה ז'", "כיתה ח'",
+];
+
+// מסנכרן את קטלוג ההזמנה של כיתה (book_catalog, לשנה נתונה) מתוך המחירון
+// (book_prices) ושיוכי הכיתות שלו (book_price_classes) - מקור האמת היחיד.
+// לא מוחק פריטים קיימים (כדי לא לפגוע בהזמנות שכבר קיימות עליהם) - רק
+// מוסיף פריטים חדשים ומעדכן מחיר/הוצאה של קיימים, כדי שהשם תמיד יהיה זהה
+// אות-באות בין הקטלוג למחירון.
+function syncCatalogFromPrices(year) {
+  const assignments = db.prepare(`
+    SELECT bp.id, bp.item_name, bp.publisher, bp.price, bpc.class_name
+    FROM book_prices bp
+    JOIN book_price_classes bpc ON bpc.book_price_id = bp.id
+  `).all();
+  let added = 0, updated = 0;
+  for (const a of assignments) {
+    const existing = db.prepare(
+      "SELECT id, price, publisher FROM book_catalog WHERE year_label = ? AND class_name = ? AND item_name = ?"
+    ).get(year, a.class_name, a.item_name);
+    if (existing) {
+      if (existing.price !== a.price || existing.publisher !== a.publisher) {
+        db.prepare("UPDATE book_catalog SET price = ?, publisher = ? WHERE id = ?").run(a.price, a.publisher, existing.id);
+        updated++;
+      }
+    } else {
+      db.prepare(
+        "INSERT INTO book_catalog (year_label, class_name, item_name, publisher, price, sort_order) VALUES (?,?,?,?,?,0)"
+      ).run(year, a.class_name, a.item_name, a.publisher, a.price);
+      added++;
+    }
+  }
+  return { added, updated };
+}
+
 // ===== עזר: כיתות ספציפיות (שם + מקבילה) לפי שם =====
 function getSpecificClasses(className) {
   return db.prepare("SELECT id, name, parallel FROM classes WHERE name=? ORDER BY parallel").all(className);
@@ -545,7 +584,7 @@ router.put("/catalog/:id", (req, res) => {
 // הוספת כמה ספרים חדשים בבת אחת (כמה שורות במסך מלאי) - שומר רק שורות שבהן
 // באמת מולא שם ספר, מתעלם משורות ריקות.
 router.post("/prices/bulk-add", (req, res) => {
-  const { branch } = req.body;
+  const { branch, year } = req.body;
   let itemNames = req.body.item_name || [];
   let publishers = req.body.publisher || [];
   let prices = req.body.price || [];
@@ -560,16 +599,22 @@ router.post("/prices/bulk-add", (req, res) => {
     INSERT INTO book_prices (item_name, publisher, price, notes, updated_at) VALUES (?,?,?,?,?)
     ON CONFLICT(item_name) DO UPDATE SET price=excluded.price, publisher=excluded.publisher, notes=excluded.notes, updated_at=excluded.updated_at
   `);
-  const syncCatalog = db.prepare("UPDATE book_catalog SET price=?, publisher=? WHERE item_name=?");
+  const findId = db.prepare("SELECT id FROM book_prices WHERE item_name = ?");
+  const insertClass = db.prepare("INSERT OR IGNORE INTO book_price_classes (book_price_id, class_name) VALUES (?, ?)");
   let added = 0;
   itemNames.forEach((name, i) => {
     const trimmedName = (name || "").trim();
     if (!trimmedName) return;
     const numPrice = parseFloat(prices[i]) || 0;
     insert.run(trimmedName, (publishers[i] || "").trim(), numPrice, (notesArr[i] || "").trim() || null, now);
-    syncCatalog.run(numPrice, (publishers[i] || "").trim(), trimmedName);
+    const bookId = findId.get(trimmedName)?.id;
+    let selectedClasses = req.body["classes_" + i] || [];
+    if (!Array.isArray(selectedClasses)) selectedClasses = [selectedClasses];
+    if (bookId) selectedClasses.forEach((cn) => insertClass.run(bookId, cn));
     added++;
   });
+
+  syncCatalogFromPrices(year || db.prepare("SELECT value FROM settings WHERE key='current_hebrew_year'").get()?.value);
 
   res.redirect(`/books/inventory?branch=${encodeURIComponent(branch || "")}&added=${added}`);
 });
@@ -757,6 +802,10 @@ router.get("/inventory", (req, res) => {
   const defaultYear = db.prepare("SELECT value FROM settings WHERE key='current_hebrew_year'").get()?.value || years[0] || 'תשפ"ז';
   const year = req.query.year || defaultYear;
 
+  // מסנכרנים את קטלוג ההזמנה לשנה הנוכחית מהמחירון בכל טעינה - כך שכל שינוי
+  // שם/מחיר/שיוך כיתה במחירון מתעדכן אוטומטית בקטלוג בלי פעולה נוספת.
+  syncCatalogFromPrices(year);
+
   const items = db.prepare(`
     SELECT bp.id AS book_price_id, bp.item_name, bp.publisher, bp.notes, bp.price,
            COALESCE(bi.current_stock, 0) AS current_stock,
@@ -781,7 +830,18 @@ router.get("/inventory", (req, res) => {
     to_order: it.ordered_count + it.extra_quantity - it.current_stock,
   }));
 
-  res.render("books/inventory", { branches, branch, years, year, items, saved: req.query.saved === "1", added: parseInt(req.query.added, 10) || 0 });
+  const classAssignments = db.prepare("SELECT book_price_id, class_name FROM book_price_classes").all();
+  const classesByBook = {};
+  classAssignments.forEach((a) => {
+    if (!classesByBook[a.book_price_id]) classesByBook[a.book_price_id] = [];
+    classesByBook[a.book_price_id].push(a.class_name);
+  });
+  items.forEach((it) => { it.classes = classesByBook[it.book_price_id] || []; });
+
+  res.render("books/inventory", {
+    branches, branch, years, year, items, classOptions: BOOK_CLASS_OPTIONS,
+    saved: req.query.saved === "1", added: parseInt(req.query.added, 10) || 0,
+  });
 });
 
 router.get("/inventory/print", (req, res) => {
@@ -822,7 +882,7 @@ router.get("/inventory/print", (req, res) => {
 });
 
 router.post("/inventory/save", (req, res) => {
-  const { branch } = req.body;
+  const { branch, year } = req.body;
   let ids = req.body.book_price_id || [];
   let currentStocks = req.body.current_stock || [];
   let extraQuantities = req.body.extra_quantity || [];
@@ -849,6 +909,8 @@ router.post("/inventory/save", (req, res) => {
   const updateBook = db.prepare(`
     UPDATE book_prices SET item_name = ?, publisher = ?, price = ?, notes = ?, updated_at = ? WHERE id = ?
   `);
+  const deleteClasses = db.prepare("DELETE FROM book_price_classes WHERE book_price_id = ?");
+  const insertClass = db.prepare("INSERT OR IGNORE INTO book_price_classes (book_price_id, class_name) VALUES (?, ?)");
   const now = new Date().toISOString();
   ids.forEach((id, i) => {
     upsert.run(id, branch, parseInt(currentStocks[i], 10) || 0, parseInt(extraQuantities[i], 10) || 0, now);
@@ -858,9 +920,19 @@ router.post("/inventory/save", (req, res) => {
         parseFloat(prices[i]) || 0, (notesArr[i] || "").trim() || null, now, id
       );
     }
+    // עדכון שיוך הכיתות של הספר הזה (מוחקים ובונים מחדש - פשוט ובטוח) -
+    // לפי אינדקס השורה (לא לפי ה-ID), כי bracket notation עם מספרי ID גדולים
+    // לא אמין מול ה-parser (qs עלול "לדחוס" מערכים דלילים בצורה לא צפויה).
+    let selectedClasses = req.body["classes_" + i] || [];
+    if (!Array.isArray(selectedClasses)) selectedClasses = [selectedClasses];
+    deleteClasses.run(id);
+    selectedClasses.forEach((cn) => insertClass.run(id, cn));
   });
 
-  res.redirect(`/books/inventory?branch=${encodeURIComponent(branch)}&saved=1`);
+  // מסנכרנים את הקטלוג לשנה הנוכחית כדי שהשינויים (כולל שיוך כיתות חדש) ישתקפו מיד
+  syncCatalogFromPrices(year || db.prepare("SELECT value FROM settings WHERE key='current_hebrew_year'").get()?.value);
+
+  res.redirect(`/books/inventory?branch=${encodeURIComponent(branch)}&year=${encodeURIComponent(year || "")}&saved=1`);
 });
 
 // ============ הזמנת ספרים מהספק - חישוב אוטומטי: הוזמן בפועל + תוספת פחות מלאי נוכחי ============
