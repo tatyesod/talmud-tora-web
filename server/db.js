@@ -486,52 +486,67 @@ try {
 }
 
 // תיקון חד-פעמי ממוקד: "כלי כתיבה - כיתות א-ג" שייך רק לכיתות א'-ג', ו"כלי
-// כתיבה - כיתות ד-ז" שייך רק לכיתות ד'-ז' - קובעים את השיוך המדויק (לא
-// מוסיפים לכיתות אחרות, ולא נשארים עם שיוך שגוי אם היה כזה).
+// כתיבה - כיתות ד-ז" שייך רק לכיתות ד'-ז' - קובעים את השיוך המדויק, ומכל
+// הזמנה שנמצאה "תקועה" תחת המוצר הלא נכון (למשל תלמיד כיתה ד' עם הזמנה על
+// "כלי כתיבה א-ג") - מעבירים אותה בפועל למוצר הנכון לכיתה שלו (לא רק
+// משאירים כהערה - זו טעות ברורה שיש לה תיקון חד-משמעי, בניגוד למקרה כללי
+// שדורש שיקול דעת).
 try {
-  const alreadyFixed = db.prepare("SELECT value FROM settings WHERE key = 'writing_supplies_grades_fix_v2'").get();
+  const alreadyFixed = db.prepare("SELECT value FROM settings WHERE key = 'writing_supplies_grades_fix_v3'").get();
   if (!alreadyFixed) {
-    const setGrades = (namePattern, grades) => {
-      const book = db.prepare("SELECT id, item_name FROM book_prices WHERE item_name LIKE ? AND item_name LIKE ?").get("%כלי כתיבה%", `%${namePattern}%`);
-      if (!book) return null;
+    const findBook = (namePattern) => db.prepare(
+      "SELECT id, item_name, publisher, price FROM book_prices WHERE item_name LIKE ? AND item_name LIKE ?"
+    ).get("%כלי כתיבה%", `%${namePattern}%`);
+
+    const bookAG = findBook("א-ג");
+    const bookDZ = findBook("ד-ז");
+    const gradesAG = ["כיתה א'", "כיתה ב'", "כיתה ג'"];
+    const gradesDZ = ["כיתה ד'", "כיתה ה'", "כיתה ו'", "כיתה ז'"];
+
+    const setGrades = (book, grades) => {
+      if (!book) return;
       db.prepare("DELETE FROM book_price_grades WHERE book_price_id = ?").run(book.id);
       const insert = db.prepare("INSERT OR IGNORE INTO book_price_grades (book_price_id, class_name) VALUES (?, ?)");
       grades.forEach((g) => insert.run(book.id, g));
-      return book.item_name;
     };
-    const fixedAG = setGrades("א-ג", ["כיתה א'", "כיתה ב'", "כיתה ג'"]);
-    const fixedDZ = setGrades("ד-ז", ["כיתה ד'", "כיתה ה'", "כיתה ו'", "כיתה ז'"]);
-    console.log(`[כלי כתיבה] תוקן שיוך: א-ג=${fixedAG || "לא נמצא"}, ד-ז=${fixedDZ || "לא נמצא"}`);
+    setGrades(bookAG, gradesAG);
+    setGrades(bookDZ, gradesDZ);
+    console.log(`[כלי כתיבה] תוקן שיוך: א-ג=${bookAG ? bookAG.item_name : "לא נמצא"}, ד-ז=${bookDZ ? bookDZ.item_name : "לא נמצא"}`);
 
-    // מנקים שורות קטלוג ישנות שנשארו מהשיוך השגוי הקודם (למשל "כלי כתיבה
-    // א-ג" שנשאר רשום גם בכיתה ד' מלפני התיקון) - אבל ורק אם אין עליהן שום
-    // הזמנה אמיתית, כדי לא לאבד נתונים.
-    const cleanupStale = (bookName, validGrades) => {
-      const staleRows = db.prepare(`
-        SELECT id, class_name FROM book_catalog
-        WHERE item_name = ? AND class_name NOT IN (${validGrades.map(() => "?").join(",")})
-      `).all(bookName, ...validGrades);
-      let removed = 0, kept = 0;
-      staleRows.forEach((row) => {
-        const orderCount = db.prepare("SELECT COUNT(*) c FROM book_orders WHERE catalog_id = ?").get(row.id).c;
-        if (orderCount === 0) {
-          db.prepare("DELETE FROM book_catalog WHERE id = ?").run(row.id);
-          removed++;
-        } else {
-          kept++; // יש הזמנות אמיתיות - לא נוגעים, רק מדווחים
+    // עבור כל שורת קטלוג "תקועה" (מוצר לא נכון לכיתה שלה), מעבירים כל הזמנה
+    // בפועל למוצר הנכון (יוצרים שורת קטלוג ליעד אם עוד אין), ואז מוחקים את
+    // השורה הישנה שהתרוקנה.
+    const fixStrayOrders = (wrongBook, wrongGrades, correctBook) => {
+      if (!wrongBook || !correctBook) return { moved: 0, deleted: 0 };
+      const strayRows = db.prepare(`
+        SELECT id, year_label, class_name FROM book_catalog
+        WHERE item_name = ? AND class_name NOT IN (${wrongGrades.map(() => "?").join(",")})
+      `).all(wrongBook.item_name, ...wrongGrades);
+      let moved = 0, deleted = 0;
+      strayRows.forEach((row) => {
+        let target = db.prepare(
+          "SELECT id FROM book_catalog WHERE year_label = ? AND class_name = ? AND item_name = ?"
+        ).get(row.year_label, row.class_name, correctBook.item_name);
+        if (!target) {
+          const info = db.prepare(
+            "INSERT INTO book_catalog (year_label, class_name, item_name, publisher, price, sort_order) VALUES (?,?,?,?,?,0)"
+          ).run(row.year_label, row.class_name, correctBook.item_name, correctBook.publisher, correctBook.price);
+          target = { id: info.lastInsertRowid };
         }
+        const result = db.prepare("UPDATE book_orders SET catalog_id = ? WHERE catalog_id = ?").run(target.id, row.id);
+        moved += result.changes;
+        db.prepare("DELETE FROM book_catalog WHERE id = ?").run(row.id);
+        deleted++;
       });
-      return { removed, kept };
+      return { moved, deleted };
     };
-    if (fixedAG) {
-      const r = cleanupStale(fixedAG, ["כיתה א'", "כיתה ב'", "כיתה ג'"]);
-      console.log(`[כלי כתיבה א-ג] נוקו ${r.removed} שורות קטלוג ישנות, ${r.kept} נשמרו (יש עליהן הזמנות אמיתיות - דורש בדיקה ידנית)`);
-    }
-    if (fixedDZ) {
-      const r = cleanupStale(fixedDZ, ["כיתה ד'", "כיתה ה'", "כיתה ו'", "כיתה ז'"]);
-      console.log(`[כלי כתיבה ד-ז] נוקו ${r.removed} שורות קטלוג ישנות, ${r.kept} נשמרו (יש עליהן הזמנות אמיתיות - דורש בדיקה ידנית)`);
-    }
-    db.prepare("INSERT INTO settings (key, value) VALUES ('writing_supplies_grades_fix_v2', '1')").run();
+
+    const fixAG = fixStrayOrders(bookAG, gradesAG, bookDZ);
+    console.log(`[כלי כתיבה א-ג] ${fixAG.moved} הזמנות שהיו בטעות תחת א-ג בכיתות ד-ז - הועברו ל"כלי כתיבה ד-ז" הנכון (${fixAG.deleted} שורות ישנות נוקו)`);
+    const fixDZ = fixStrayOrders(bookDZ, gradesDZ, bookAG);
+    console.log(`[כלי כתיבה ד-ז] ${fixDZ.moved} הזמנות שהיו בטעות תחת ד-ז בכיתות א-ג - הועברו ל"כלי כתיבה א-ג" הנכון (${fixDZ.deleted} שורות ישנות נוקו)`);
+
+    db.prepare("INSERT INTO settings (key, value) VALUES ('writing_supplies_grades_fix_v3', '1')").run();
   }
 } catch (e) {
   console.error("שגיאה בתיקון שיוך כלי כתיבה:", e.message);
