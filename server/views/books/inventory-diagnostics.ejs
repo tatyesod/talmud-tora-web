@@ -109,6 +109,38 @@
     <% } %>
   <% } %>
 
+  <% if (duplicateCatalogRows.length > 0) { %>
+    <h3 style="margin-top:24px;">🚨 כפילות ממש בקטלוג הכיתה - <%= duplicateCatalogRows.length %> ספרים</h3>
+    <p style="color:var(--muted); font-size:0.9em;">
+      אותו ספר מופיע <strong>יותר מפעם אחת</strong> ברשימת ההזמנה של אותה כיתה (בדרך כלל בעקבות מיזוג ספרים במחירון) -
+      זה גורם לספר להופיע כפול בעמוד ההזמנה, ולהזמנות האמיתיות להתפצל בין השורות, כך שהמלאי מראה פחות ממה שבאמת הוזמן.
+      לחיצה על "אחד" תעביר את כל ההזמנות לשורה אחת ותמחק את הכפולה.
+    </p>
+    <div class="table-scroll-wrap">
+    <table>
+      <thead><tr><th>ספר</th><th>כיתה</th><th>שורות קטלוג (עם מס' הזמנות בכל אחת)</th><th></th></tr></thead>
+      <tbody>
+        <% duplicateCatalogRows.forEach(d => { %>
+          <tr>
+            <td><%= d.item_name %></td>
+            <td><%= d.class_name %></td>
+            <td><%= d.rows.map(r => `#${r.catalog_id} (${r.order_count} הזמנות)`).join(' + ') %></td>
+            <td>
+              <form method="POST" action="/books/inventory/diagnostics/merge-catalog-rows" style="display:inline;" onsubmit="return confirm('לאחד את כל שורות הקטלוג הכפולות של הספר הזה לשורה אחת?');">
+                <input type="hidden" name="keep_catalog_id" value="<%= d.rows[0].catalog_id %>" />
+                <% d.rows.slice(1).forEach(r => { %>
+                  <input type="hidden" name="remove_catalog_id" value="<%= r.catalog_id %>" />
+                <% }) %>
+                <button type="submit" class="btn small">אחד לשורה אחת</button>
+              </form>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+    </div>
+  <% } %>
+
   <% if (possibleDuplicates.length > 0) { %>
     <h3 style="margin-top:24px;">⚠️ ספרים כפולים אפשריים במחירון - <%= possibleDuplicates.length %> זוגות</h3>
     <p style="color:var(--muted); font-size:0.9em;">

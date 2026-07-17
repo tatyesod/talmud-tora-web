@@ -781,7 +781,47 @@ router.get("/inventory/diagnostics", (req, res) => {
   }
   possibleDuplicates.sort((x, y) => y.score - x.score);
 
-  res.render("books/inventory-diagnostics", { years, year, catalogMismatches, extrasMismatches, allPriceNames, possibleDuplicates });
+  // כפילויות ממש בתוך קטלוג ההזמנה עצמו - אותו שם ספר מופיע יותר מפעם אחת
+  // עבור אותה כיתה ואותה שנה (יכול לקרות למשל אחרי מיזוג במחירון, אם שתי
+  // רשומות שונות התכנסו לאותו שם, אבל שתי שורות הקטלוג בפועל לא אוחדו).
+  // זה גורם להזמנות להתפצל בין שתי שורות קטלוג עם אותו שם, ולעמוד ההזמנה
+  // של הכיתה להראות את הספר פעמיים.
+  const duplicateCatalogRows = db.prepare(`
+    SELECT class_name, item_name, COUNT(*) AS row_count, GROUP_CONCAT(id) AS ids
+    FROM book_catalog
+    WHERE year_label = ?
+    GROUP BY class_name, item_name
+    HAVING COUNT(*) > 1
+  `).all(year).map((r) => {
+    const ids = r.ids.split(",").map(Number);
+    const orderCounts = ids.map((cid) => ({
+      catalog_id: cid,
+      order_count: db.prepare("SELECT COUNT(*) c FROM book_orders WHERE catalog_id = ?").get(cid).c,
+    }));
+    return { class_name: r.class_name, item_name: r.item_name, rows: orderCounts };
+  });
+
+  res.render("books/inventory-diagnostics", { years, year, catalogMismatches, extrasMismatches, allPriceNames, possibleDuplicates, duplicateCatalogRows });
+});
+
+// איחוד שורות קטלוג כפולות (אותו שם, אותה כיתה, אותה שנה) - מעבירים את כל
+// ההזמנות משורת הקטלוג הכפולה לשורה השורדת, ומוחקים את הכפולה.
+router.post("/inventory/diagnostics/merge-catalog-rows", (req, res) => {
+  const { keep_catalog_id, year: yr } = req.body;
+  let removeIds = req.body.remove_catalog_id || [];
+  if (!Array.isArray(removeIds)) removeIds = [removeIds];
+  db.exec("BEGIN TRANSACTION");
+  try {
+    removeIds.forEach((removeId) => {
+      db.prepare("UPDATE book_orders SET catalog_id = ? WHERE catalog_id = ?").run(keep_catalog_id, removeId);
+      db.prepare("DELETE FROM book_catalog WHERE id = ?").run(removeId);
+    });
+    db.exec("COMMIT");
+  } catch (e) {
+    db.exec("ROLLBACK");
+    throw e;
+  }
+  res.redirect(`/books/inventory/diagnostics?year=${encodeURIComponent(yr || "")}`);
 });
 
 // מיזוג שני ספרים כפולים למחירון אחד: משנים את כל ההזמנות/חידושים שהיו
@@ -800,6 +840,24 @@ router.post("/inventory/diagnostics/merge-books", (req, res) => {
     // 1) מעבירים כל הזמנה/חידוש שהיה בשם שנמחק, לשם השורד
     db.prepare("UPDATE book_catalog SET item_name = ? WHERE TRIM(item_name) = TRIM(?)").run(keep.item_name, remove.item_name);
     db.prepare("UPDATE book_order_extras SET item_name = ? WHERE TRIM(item_name) = TRIM(?)").run(keep.item_name, remove.item_name);
+
+    // 1ב) השינוי לעיל עלול ליצור שתי שורות קטלוג זהות (אותה כיתה+שנה+שם) -
+    // מאחדים מיד: מעבירים את כל ההזמנות לשורה הראשונה שנוצרה, ומוחקים את השאר,
+    // כדי שהספר לא יופיע כפול בעמוד ההזמנה של הכיתה.
+    const dupGroups = db.prepare(`
+      SELECT class_name, item_name, GROUP_CONCAT(id) AS ids FROM book_catalog
+      WHERE TRIM(item_name) = TRIM(?)
+      GROUP BY class_name, item_name
+      HAVING COUNT(*) > 1
+    `).all(keep.item_name);
+    dupGroups.forEach((g) => {
+      const ids = g.ids.split(",").map(Number).sort((x, y) => x - y);
+      const survivorId = ids[0];
+      ids.slice(1).forEach((dupId) => {
+        db.prepare("UPDATE book_orders SET catalog_id = ? WHERE catalog_id = ?").run(survivorId, dupId);
+        db.prepare("DELETE FROM book_catalog WHERE id = ?").run(dupId);
+      });
+    });
 
     // 2) מעבירים שיוכי כיתה שלא כבר קיימים אצל השורד
     const removeGrades = db.prepare("SELECT class_name FROM book_price_grades WHERE book_price_id = ?").all(remove_id);
