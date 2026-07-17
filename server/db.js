@@ -634,6 +634,85 @@ try {
   console.error("שגיאה בתיקון שיוך גמרא בבא קמא:", e.message);
 }
 
+// תיקון כללי (לא רק בבא קמא): מוצא אוטומטית **כל** זוג גמרות באותה מסכת -
+// גרסה "עם פירוש" (מהרש"א/טלמן) מול גרסה "בלי פירוש" (עוז והדר) - וקובע
+// לכולן את אותו כלל: עם פירוש רק לכיתה ז', בלי פירוש רק לכיתות ה'-ו'.
+// מזהה זוגות לפי "שם המסכת" (המילים אחרי "גמרא", בלי כל מילות התיאור).
+try {
+  const alreadyFixed = db.prepare("SELECT value FROM settings WHERE key = 'gemara_commentary_split_v1'").get();
+  if (!alreadyFixed) {
+    const tractateKey = (name) => name
+      .replace(/גמרא/g, "")
+      .replace(/\([^)]*\)/g, " ")
+      .replace(/עם מהרש"?א/g, " ")
+      .replace(/טלמן|טלן/g, " ")
+      .replace(/עוז והדר/g, " ")
+      .replace(/["'׳״]/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
+
+    const allGemaras = db.prepare("SELECT id, item_name, publisher, price FROM book_prices WHERE item_name LIKE '%גמרא%'").all();
+    const byTractate = {};
+    allGemaras.forEach((b) => {
+      const key = tractateKey(b.item_name);
+      if (!byTractate[key]) byTractate[key] = [];
+      byTractate[key].push(b);
+    });
+
+    const gradesWith = ["כיתה ז'"];
+    const gradesWithout = ["כיתה ה'", "כיתה ו'"];
+
+    const setGrades = (book, grades) => {
+      db.prepare("DELETE FROM book_price_grades WHERE book_price_id = ?").run(book.id);
+      const insert = db.prepare("INSERT OR IGNORE INTO book_price_grades (book_price_id, class_name) VALUES (?, ?)");
+      grades.forEach((g) => insert.run(book.id, g));
+    };
+    const fixStrayOrders = (wrongBook, wrongGrades, correctBook) => {
+      const strayRows = db.prepare(`
+        SELECT id, year_label, class_name FROM book_catalog
+        WHERE item_name = ? AND class_name NOT IN (${wrongGrades.map(() => "?").join(",")})
+      `).all(wrongBook.item_name, ...wrongGrades);
+      let moved = 0, deleted = 0;
+      strayRows.forEach((row) => {
+        let target = db.prepare(
+          "SELECT id FROM book_catalog WHERE year_label = ? AND class_name = ? AND item_name = ?"
+        ).get(row.year_label, row.class_name, correctBook.item_name);
+        if (!target) {
+          const info = db.prepare(
+            "INSERT INTO book_catalog (year_label, class_name, item_name, publisher, price, sort_order) VALUES (?,?,?,?,?,0)"
+          ).run(row.year_label, row.class_name, correctBook.item_name, correctBook.publisher, correctBook.price);
+          target = { id: info.lastInsertRowid };
+        }
+        const result = db.prepare("UPDATE book_orders SET catalog_id = ? WHERE catalog_id = ?").run(target.id, row.id);
+        moved += result.changes;
+        db.prepare("DELETE FROM book_catalog WHERE id = ?").run(row.id);
+        deleted++;
+      });
+      return { moved, deleted };
+    };
+
+    let fixedTractates = 0;
+    Object.entries(byTractate).forEach(([key, books]) => {
+      if (books.length !== 2 || !key) return; // רק זוגות ברורים - לא נוגעים בשלישיות/יחידות מעורפלות
+      const withBook = books.find((b) => /מהרש|טלמן|טלן/.test(b.item_name) && !/עוז והדר/.test(b.item_name));
+      const withoutBook = books.find((b) => /עוז והדר/.test(b.item_name));
+      if (!withBook || !withoutBook || withBook.id === withoutBook.id) return; // לא זוג "עם/בלי פירוש" מובהק
+
+      setGrades(withBook, gradesWith);
+      setGrades(withoutBook, gradesWithout);
+      const r1 = fixStrayOrders(withBook, gradesWith, withoutBook);
+      const r2 = fixStrayOrders(withoutBook, gradesWithout, withBook);
+      console.log(`[גמרא ${key}] עם פירוש→ז' בלבד, בלי פירוש→ה'-ו' בלבד. הזמנות שהועברו: ${r1.moved + r2.moved}`);
+      fixedTractates++;
+    });
+    console.log(`[גמרא - תיקון כללי] תוקנו ${fixedTractates} מסכתות עם פיצול עם/בלי פירוש`);
+
+    db.prepare("INSERT INTO settings (key, value) VALUES ('gemara_commentary_split_v1', '1')").run();
+  }
+} catch (e) {
+  console.error("שגיאה בתיקון כללי של גמרות עם/בלי פירוש:", e.message);
+}
+
 // ניקוי חד-פעמי: השדה "מעבר לכיתה" התמלא בעבר אוטומטית בערך המקבילה הקיים,
 // אבל הוחלט שברירת המחדל האמיתית תהיה ריק (ואז המערכת מניחה "אותה מקבילה").
 // דגל ב-settings מבטיח שהניקוי הזה ירוץ פעם אחת בלבד, ולא ימחק ידנית ערכים
