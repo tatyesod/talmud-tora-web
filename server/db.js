@@ -485,6 +485,29 @@ try {
   console.error("שגיאה ביצירת שיוכי ספר-כיתה:", e.message);
 }
 
+// תיקון חד-פעמי ממוקד: "כלי כתיבה - כיתות א-ג" שייך רק לכיתות א'-ג', ו"כלי
+// כתיבה - כיתות ד-ז" שייך רק לכיתות ד'-ז' - קובעים את השיוך המדויק (לא
+// מוסיפים לכיתות אחרות, ולא נשארים עם שיוך שגוי אם היה כזה).
+try {
+  const alreadyFixed = db.prepare("SELECT value FROM settings WHERE key = 'writing_supplies_grades_fix_v1'").get();
+  if (!alreadyFixed) {
+    const setGrades = (namePattern, grades) => {
+      const book = db.prepare("SELECT id, item_name FROM book_prices WHERE item_name LIKE ? AND item_name LIKE ?").get("%כלי כתיבה%", `%${namePattern}%`);
+      if (!book) return null;
+      db.prepare("DELETE FROM book_price_grades WHERE book_price_id = ?").run(book.id);
+      const insert = db.prepare("INSERT OR IGNORE INTO book_price_grades (book_price_id, class_name) VALUES (?, ?)");
+      grades.forEach((g) => insert.run(book.id, g));
+      return book.item_name;
+    };
+    const fixedAG = setGrades("א-ג", ["כיתה א'", "כיתה ב'", "כיתה ג'"]);
+    const fixedDZ = setGrades("ד-ז", ["כיתה ד'", "כיתה ה'", "כיתה ו'", "כיתה ז'"]);
+    console.log(`[כלי כתיבה] תוקן שיוך: א-ג=${fixedAG || "לא נמצא"}, ד-ז=${fixedDZ || "לא נמצא"}`);
+    db.prepare("INSERT INTO settings (key, value) VALUES ('writing_supplies_grades_fix_v1', '1')").run();
+  }
+} catch (e) {
+  console.error("שגיאה בתיקון שיוך כלי כתיבה:", e.message);
+}
+
 // ניקוי חד-פעמי: השדה "מעבר לכיתה" התמלא בעבר אוטומטית בערך המקבילה הקיים,
 // אבל הוחלט שברירת המחדל האמיתית תהיה ריק (ואז המערכת מניחה "אותה מקבילה").
 // דגל ב-settings מבטיח שהניקוי הזה ירוץ פעם אחת בלבד, ולא ימחק ידנית ערכים
