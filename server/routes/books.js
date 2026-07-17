@@ -713,7 +713,7 @@ router.post("/catalog-manage/add", (req, res) => {
 });
 
 // מנרמל שם ספר לצורך השוואת דמיון - מסיר סוגריים, גרשיים, ניקוד-פיסוק,
-// ומצמצם לרשימת מילים לצורך חישוב חפיפה
+// ומצמצם לרשימת מילים לצורך בדיקת הכלה
 function normalizeForSimilarity(name) {
   return name
     .replace(/\([^)]*\)/g, " ") // מסיר תוכן בסוגריים כמו "(כרוך)"
@@ -721,13 +721,18 @@ function normalizeForSimilarity(name) {
     .replace(/\s+/g, " ")
     .trim();
 }
-function similarityScore(a, b) {
+// שני שמות נחשבים "כפול אפשרי" רק אם **כל** המילים של השם הקצר מופיעות
+// (כולן!) בשם הארוך - לא סתם רוב המילים. זה בדיוק ההבדל בין הבדל של מילת
+// תיאור (כרוך, עם מהרש"א, לתלמידים - עדיין נחשב כפול) לבין הבדל של מזהה
+// חלק/כיתה אמיתי (חלק 1 מול חלק 2, כיתות א-ג מול ד-ז, סדר מועד מול סדר
+// קדשים - אלה ספרים/מוצרים שונים לגמרי, לא כפילות).
+function isContainedDuplicate(a, b) {
   const wordsA = normalizeForSimilarity(a).split(" ").filter(Boolean);
   const wordsB = normalizeForSimilarity(b).split(" ").filter(Boolean);
-  if (wordsA.length === 0 || wordsB.length === 0) return 0;
-  const setB = new Set(wordsB);
-  const common = wordsA.filter((w) => setB.has(w)).length;
-  return common / Math.min(wordsA.length, wordsB.length);
+  if (wordsA.length === 0 || wordsB.length === 0) return false;
+  const shorter = wordsA.length <= wordsB.length ? wordsA : wordsB;
+  const longerSet = new Set(wordsA.length <= wordsB.length ? wordsB : wordsA);
+  return shorter.every((w) => longerSet.has(w));
 }
 
 router.get("/inventory/diagnostics", (req, res) => {
@@ -770,16 +775,14 @@ router.get("/inventory/diagnostics", (req, res) => {
   for (let i = 0; i < allPrices.length; i++) {
     for (let j = i + 1; j < allPrices.length; j++) {
       const a = allPrices[i], b = allPrices[j];
-      const score = similarityScore(a.item_name, b.item_name);
-      if (score >= 0.6) {
+      if (isContainedDuplicate(a.item_name, b.item_name)) {
         const key = [a.id, b.id].sort().join("-");
         if (seen.has(key)) continue;
         seen.add(key);
-        possibleDuplicates.push({ a, b, score });
+        possibleDuplicates.push({ a, b });
       }
     }
   }
-  possibleDuplicates.sort((x, y) => y.score - x.score);
 
   // כפילויות ממש בתוך קטלוג ההזמנה עצמו - אותו שם ספר מופיע יותר מפעם אחת
   // עבור אותה כיתה ואותה שנה (יכול לקרות למשל אחרי מיזוג במחירון, אם שתי
