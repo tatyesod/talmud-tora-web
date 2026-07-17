@@ -489,7 +489,7 @@ try {
 // כתיבה - כיתות ד-ז" שייך רק לכיתות ד'-ז' - קובעים את השיוך המדויק (לא
 // מוסיפים לכיתות אחרות, ולא נשארים עם שיוך שגוי אם היה כזה).
 try {
-  const alreadyFixed = db.prepare("SELECT value FROM settings WHERE key = 'writing_supplies_grades_fix_v1'").get();
+  const alreadyFixed = db.prepare("SELECT value FROM settings WHERE key = 'writing_supplies_grades_fix_v2'").get();
   if (!alreadyFixed) {
     const setGrades = (namePattern, grades) => {
       const book = db.prepare("SELECT id, item_name FROM book_prices WHERE item_name LIKE ? AND item_name LIKE ?").get("%כלי כתיבה%", `%${namePattern}%`);
@@ -502,7 +502,36 @@ try {
     const fixedAG = setGrades("א-ג", ["כיתה א'", "כיתה ב'", "כיתה ג'"]);
     const fixedDZ = setGrades("ד-ז", ["כיתה ד'", "כיתה ה'", "כיתה ו'", "כיתה ז'"]);
     console.log(`[כלי כתיבה] תוקן שיוך: א-ג=${fixedAG || "לא נמצא"}, ד-ז=${fixedDZ || "לא נמצא"}`);
-    db.prepare("INSERT INTO settings (key, value) VALUES ('writing_supplies_grades_fix_v1', '1')").run();
+
+    // מנקים שורות קטלוג ישנות שנשארו מהשיוך השגוי הקודם (למשל "כלי כתיבה
+    // א-ג" שנשאר רשום גם בכיתה ד' מלפני התיקון) - אבל ורק אם אין עליהן שום
+    // הזמנה אמיתית, כדי לא לאבד נתונים.
+    const cleanupStale = (bookName, validGrades) => {
+      const staleRows = db.prepare(`
+        SELECT id, class_name FROM book_catalog
+        WHERE item_name = ? AND class_name NOT IN (${validGrades.map(() => "?").join(",")})
+      `).all(bookName, ...validGrades);
+      let removed = 0, kept = 0;
+      staleRows.forEach((row) => {
+        const orderCount = db.prepare("SELECT COUNT(*) c FROM book_orders WHERE catalog_id = ?").get(row.id).c;
+        if (orderCount === 0) {
+          db.prepare("DELETE FROM book_catalog WHERE id = ?").run(row.id);
+          removed++;
+        } else {
+          kept++; // יש הזמנות אמיתיות - לא נוגעים, רק מדווחים
+        }
+      });
+      return { removed, kept };
+    };
+    if (fixedAG) {
+      const r = cleanupStale(fixedAG, ["כיתה א'", "כיתה ב'", "כיתה ג'"]);
+      console.log(`[כלי כתיבה א-ג] נוקו ${r.removed} שורות קטלוג ישנות, ${r.kept} נשמרו (יש עליהן הזמנות אמיתיות - דורש בדיקה ידנית)`);
+    }
+    if (fixedDZ) {
+      const r = cleanupStale(fixedDZ, ["כיתה ד'", "כיתה ה'", "כיתה ו'", "כיתה ז'"]);
+      console.log(`[כלי כתיבה ד-ז] נוקו ${r.removed} שורות קטלוג ישנות, ${r.kept} נשמרו (יש עליהן הזמנות אמיתיות - דורש בדיקה ידנית)`);
+    }
+    db.prepare("INSERT INTO settings (key, value) VALUES ('writing_supplies_grades_fix_v2', '1')").run();
   }
 } catch (e) {
   console.error("שגיאה בתיקון שיוך כלי כתיבה:", e.message);
