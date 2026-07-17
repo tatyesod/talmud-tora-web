@@ -109,6 +109,41 @@
     <% } %>
   <% } %>
 
+  <% if (orphanedWithOrders.length > 0) { %>
+    <h3 style="margin-top:24px;">📌 ספרים עם הזמנות אמיתיות בכיתה שכבר לא משויכת - <%= orphanedWithOrders.length %></h3>
+    <p style="color:var(--muted); font-size:0.9em;">
+      אלה ספרים שיש עליהם <strong>הזמנה אמיתית</strong> של תלמיד, אבל הכיתה שהזמינה אותם <strong>כבר לא משויכת</strong>
+      לספר הזה ב"שיוך ספר לכיתה" (למשל בעקבות תיקון שיוך). המערכת לא מחקה את ההזמנה - זו החלטה שרק אתם יכולים
+      לקבל: אם זה בעצם נכון שהכיתה הזו כן צריכה את הספר, לחצו "השאר משויך". אחרת, כדאי לעבור לעמוד ההזמנה של
+      הכיתה ולברר עם המשפחה אם ההזמנה הזו בטעות.
+    </p>
+    <div class="table-scroll-wrap">
+    <table>
+      <thead><tr><th>ספר</th><th>כיתה</th><th>הזמנות</th><th>פעולה</th></tr></thead>
+      <tbody>
+        <% orphanedWithOrders.forEach(o => { %>
+          <tr>
+            <td><%= o.item_name %></td>
+            <td><%= o.class_name %></td>
+            <td><%= o.order_count %></td>
+            <td style="white-space:nowrap;">
+              <form method="POST" action="/books/inventory/diagnostics/keep-class-assignment" style="display:inline;">
+                <input type="hidden" name="item_name" value="<%= o.item_name %>" />
+                <input type="hidden" name="class_name" value="<%= o.class_name %>" />
+                <input type="hidden" name="year" value="<%= year %>" />
+                <button type="submit" class="btn small secondary">✓ השאר משויך לכיתה זו</button>
+              </form>
+              <% if (o.class_id) { %>
+                <a href="/books/class?year=<%= encodeURIComponent(year) %>&class_id=<%= o.class_id %>" target="_blank" class="btn small secondary" style="margin-inline-start:6px;">פתח עמוד הזמנה</a>
+              <% } %>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+    </div>
+  <% } %>
+
   <% if (duplicateCatalogRows.length > 0) { %>
     <h3 style="margin-top:24px;">🚨 כפילות ממש בקטלוג הכיתה - <%= duplicateCatalogRows.length %> ספרים</h3>
     <p style="color:var(--muted); font-size:0.9em;">

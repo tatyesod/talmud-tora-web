@@ -804,7 +804,37 @@ router.get("/inventory/diagnostics", (req, res) => {
     return { class_name: r.class_name, item_name: r.item_name, rows: orderCounts };
   });
 
-  res.render("books/inventory-diagnostics", { years, year, catalogMismatches, extrasMismatches, allPriceNames, possibleDuplicates, duplicateCatalogRows });
+  // ספר בקטלוג של כיתה מסוימת, כשהספר כבר לא משויך לכיתה הזו (דרך "שיוך ספר
+  // לכיתה") - אבל יש עליו הזמנה אמיתית! המערכת לא מוחקת שורות כאלה לבד (כדי
+  // לא לאבד הזמנה של תלמיד), אז זו החלטה שרק המשרד יכול לקבל: להשאיר את
+  // הכיתה הזו משויכת (אם זה בעצם נכון), או לטפל בהזמנה הספציפית ידנית.
+  const orphanedWithOrders = db.prepare(`
+    SELECT bc.id AS catalog_id, bc.item_name, bc.class_name, COUNT(bo.student_id) AS order_count,
+           c.id AS class_id
+    FROM book_catalog bc
+    JOIN book_orders bo ON bo.catalog_id = bc.id
+    JOIN book_prices bp ON TRIM(bp.item_name) = TRIM(bc.item_name)
+    LEFT JOIN classes c ON c.name = bc.class_name
+    WHERE bc.year_label = ?
+      AND NOT EXISTS (
+        SELECT 1 FROM book_price_grades bpg WHERE bpg.book_price_id = bp.id AND bpg.class_name = bc.class_name
+      )
+    GROUP BY bc.id
+  `).all(year);
+
+  res.render("books/inventory-diagnostics", { years, year, catalogMismatches, extrasMismatches, allPriceNames, possibleDuplicates, duplicateCatalogRows, orphanedWithOrders });
+});
+
+// "השאר את הספר משויך לכיתה הזו" - מוסיף את הכיתה בחזרה לשיוך של הספר,
+// כדי שהזמנה קיימת שכבר יש עליה תישאר תקינה והגיונית (הספר יופיע שוב
+// כרשמי בעמוד ההזמנה של אותה כיתה, ויתעדכן גם בקטלוג לשאר השנים/כיתות).
+router.post("/inventory/diagnostics/keep-class-assignment", (req, res) => {
+  const { item_name, class_name, year: yr } = req.body;
+  const book = db.prepare("SELECT id FROM book_prices WHERE TRIM(item_name) = TRIM(?)").get(item_name);
+  if (book) {
+    db.prepare("INSERT OR IGNORE INTO book_price_grades (book_price_id, class_name) VALUES (?, ?)").run(book.id, class_name);
+  }
+  res.redirect(`/books/inventory/diagnostics?year=${encodeURIComponent(yr || "")}`);
 });
 
 // איחוד שורות קטלוג כפולות (אותו שם, אותה כיתה, אותה שנה) - מעבירים את כל
