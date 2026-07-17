@@ -745,6 +745,32 @@ try {
   console.error("שגיאה באיחוד ניסוח ניסיון רב:", e.message);
 }
 
+// תיקון חד-פעמי: בכל מכתבי השיבוץ נכתב "יום ראשון א' אלול" - אבל אם יום
+// שישי הוא א' אלול (וזה נכון ונשאר כך), אז יום ראשון שאחריו הוא בעצם ג'
+// אלול (יומיים אחרי שישי), לא א' אלול. זו טעות עובדתית בתאריך שחוזרת בכל
+// הכיתות (כולל כיתה ח' - זו טעות בתאריך, לא עניין של ניסוח). "יום שישי א'
+// אלול" עצמו נכון ונשאר בלי שינוי.
+try {
+  const alreadyFixed = db.prepare("SELECT value FROM settings WHERE key = 'sunday_date_fix_v1'").get();
+  if (!alreadyFixed) {
+    const oldText = "יום ראשון א' אלול";
+    const newText = "יום ראשון ג' אלול";
+    const templates = db.prepare("SELECT id, name, body FROM letter_templates WHERE body LIKE ?").all(`%${oldText}%`);
+    let fixedCount = 0, occurrencesFixed = 0;
+    templates.forEach((tpl) => {
+      const count = tpl.body.split(oldText).length - 1;
+      const updatedBody = tpl.body.split(oldText).join(newText);
+      db.prepare("UPDATE letter_templates SET body = ?, updated_at = ? WHERE id = ?").run(updatedBody, new Date().toISOString(), tpl.id);
+      fixedCount++;
+      occurrencesFixed += count;
+    });
+    console.log(`[מכתבי שיבוץ] תוקן תאריך "יום ראשון" מא' אלול לג' אלול ב-${fixedCount} תבניות (${occurrencesFixed} מופעים)`);
+    db.prepare("INSERT INTO settings (key, value) VALUES ('sunday_date_fix_v1', '1')").run();
+  }
+} catch (e) {
+  console.error("שגיאה בתיקון תאריך יום ראשון:", e.message);
+}
+
 // ניקוי חד-פעמי: השדה "מעבר לכיתה" התמלא בעבר אוטומטית בערך המקבילה הקיים,
 // אבל הוחלט שברירת המחדל האמיתית תהיה ריק (ואז המערכת מניחה "אותה מקבילה").
 // דגל ב-settings מבטיח שהניקוי הזה ירוץ פעם אחת בלבד, ולא ימחק ידנית ערכים
