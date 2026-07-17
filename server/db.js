@@ -574,6 +574,66 @@ try {
   console.error("שגיאה בהעברת עמודת כלי כתיבה ד-ז:", e.message);
 }
 
+// תיקון חד-פעמי ממוקד: "גמרא בבא קמא (כרוך) טלמן" (עם פירוש/מהרש"א) שייכת
+// רק לכיתה ז', ו"גמרא בבא קמא (כרוך) עוז והדר" (בלי פירוש) שייכת רק לכיתות
+// ו'-ה' - בדיוק כמו התיקון של כלי כתיבה: קובעים שיוך מדויק, ומעבירים כל
+// הזמנה שנמצאת בטעות תחת הגרסה הלא נכונה לגרסה הנכונה עבור הכיתה בפועל.
+try {
+  const alreadyFixed = db.prepare("SELECT value FROM settings WHERE key = 'bava_kama_grades_fix_v1'").get();
+  if (!alreadyFixed) {
+    // "עם מהרש"א"/"טלמן" = עם פירוש; "עוז והדר" = בלי פירוש
+    const bookWith = db.prepare("SELECT id, item_name, publisher, price FROM book_prices WHERE item_name LIKE '%גמרא בבא קמא%' AND (item_name LIKE '%מהרש%' OR item_name LIKE '%טלמן%') AND item_name NOT LIKE '%עוז והדר%'").get();
+    const bookWithout = db.prepare("SELECT id, item_name, publisher, price FROM book_prices WHERE item_name LIKE '%גמרא בבא קמא%' AND item_name LIKE '%עוז והדר%'").get();
+
+    const gradesWith = ["כיתה ז'"];
+    const gradesWithout = ["כיתה ה'", "כיתה ו'"];
+
+    const setGrades = (book, grades) => {
+      if (!book) return;
+      db.prepare("DELETE FROM book_price_grades WHERE book_price_id = ?").run(book.id);
+      const insert = db.prepare("INSERT OR IGNORE INTO book_price_grades (book_price_id, class_name) VALUES (?, ?)");
+      grades.forEach((g) => insert.run(book.id, g));
+    };
+    setGrades(bookWith, gradesWith);
+    setGrades(bookWithout, gradesWithout);
+    console.log(`[גמרא בבא קמא] תוקן שיוך: עם פירוש=${bookWith ? bookWith.item_name : "לא נמצא"}, בלי פירוש=${bookWithout ? bookWithout.item_name : "לא נמצא"}`);
+
+    const fixStrayOrders = (wrongBook, wrongGrades, correctBook) => {
+      if (!wrongBook || !correctBook) return { moved: 0, deleted: 0 };
+      const strayRows = db.prepare(`
+        SELECT id, year_label, class_name FROM book_catalog
+        WHERE item_name = ? AND class_name NOT IN (${wrongGrades.map(() => "?").join(",")})
+      `).all(wrongBook.item_name, ...wrongGrades);
+      let moved = 0, deleted = 0;
+      strayRows.forEach((row) => {
+        let target = db.prepare(
+          "SELECT id FROM book_catalog WHERE year_label = ? AND class_name = ? AND item_name = ?"
+        ).get(row.year_label, row.class_name, correctBook.item_name);
+        if (!target) {
+          const info = db.prepare(
+            "INSERT INTO book_catalog (year_label, class_name, item_name, publisher, price, sort_order) VALUES (?,?,?,?,?,0)"
+          ).run(row.year_label, row.class_name, correctBook.item_name, correctBook.publisher, correctBook.price);
+          target = { id: info.lastInsertRowid };
+        }
+        const result = db.prepare("UPDATE book_orders SET catalog_id = ? WHERE catalog_id = ?").run(target.id, row.id);
+        moved += result.changes;
+        db.prepare("DELETE FROM book_catalog WHERE id = ?").run(row.id);
+        deleted++;
+      });
+      return { moved, deleted };
+    };
+
+    const fixWith = fixStrayOrders(bookWith, gradesWith, bookWithout);
+    console.log(`[גמרא בבא קמא עם פירוש] ${fixWith.moved} הזמנות שהיו בטעות מחוץ לכיתה ז' - הועברו לגרסה בלי פירוש (${fixWith.deleted} שורות ישנות נוקו)`);
+    const fixWithout = fixStrayOrders(bookWithout, gradesWithout, bookWith);
+    console.log(`[גמרא בבא קמא בלי פירוש] ${fixWithout.moved} הזמנות שהיו בטעות בכיתה ז' - הועברו לגרסה עם פירוש (${fixWithout.deleted} שורות ישנות נוקו)`);
+
+    db.prepare("INSERT INTO settings (key, value) VALUES ('bava_kama_grades_fix_v1', '1')").run();
+  }
+} catch (e) {
+  console.error("שגיאה בתיקון שיוך גמרא בבא קמא:", e.message);
+}
+
 // ניקוי חד-פעמי: השדה "מעבר לכיתה" התמלא בעבר אוטומטית בערך המקבילה הקיים,
 // אבל הוחלט שברירת המחדל האמיתית תהיה ריק (ואז המערכת מניחה "אותה מקבילה").
 // דגל ב-settings מבטיח שהניקוי הזה ירוץ פעם אחת בלבד, ולא ימחק ידנית ערכים
