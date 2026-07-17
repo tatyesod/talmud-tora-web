@@ -552,6 +552,28 @@ try {
   console.error("שגיאה בתיקון שיוך כלי כתיבה:", e.message);
 }
 
+// תיקון חד-פעמי: מעבירים את "כלי כתיבה - כיתות ד-ז" לעמודה האחרונה בכל
+// כיתה שהוא מופיע בה (העמודות מסודרות לפי sort_order, אז קובעים לו ערך
+// גבוה מכל שאר הפריטים באותה כיתה/שנה).
+try {
+  const alreadyFixed = db.prepare("SELECT value FROM settings WHERE key = 'writing_supplies_dz_last_column_v1'").get();
+  if (!alreadyFixed) {
+    const rows = db.prepare("SELECT id, year_label, class_name FROM book_catalog WHERE item_name LIKE ? AND item_name LIKE ?").all("%כלי כתיבה%", "%ד-ז%");
+    let updated = 0;
+    rows.forEach((row) => {
+      const maxSort = db.prepare(
+        "SELECT MAX(sort_order) AS m FROM book_catalog WHERE year_label = ? AND class_name = ?"
+      ).get(row.year_label, row.class_name).m || 0;
+      db.prepare("UPDATE book_catalog SET sort_order = ? WHERE id = ?").run(maxSort + 1, row.id);
+      updated++;
+    });
+    console.log(`[כלי כתיבה ד-ז] הועבר לעמודה אחרונה ב-${updated} כיתות`);
+    db.prepare("INSERT INTO settings (key, value) VALUES ('writing_supplies_dz_last_column_v1', '1')").run();
+  }
+} catch (e) {
+  console.error("שגיאה בהעברת עמודת כלי כתיבה ד-ז:", e.message);
+}
+
 // ניקוי חד-פעמי: השדה "מעבר לכיתה" התמלא בעבר אוטומטית בערך המקבילה הקיים,
 // אבל הוחלט שברירת המחדל האמיתית תהיה ריק (ואז המערכת מניחה "אותה מקבילה").
 // דגל ב-settings מבטיח שהניקוי הזה ירוץ פעם אחת בלבד, ולא ימחק ידנית ערכים
