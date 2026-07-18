@@ -806,6 +806,30 @@ try {
   console.error("שגיאה בניקוי קטלוג כללי:", e.message);
 }
 
+// תיקון חד-פעמי ממוקד: משנים את שם "כלי כתיבה - כיתות ד-ז" ל"כלי כתיבה -
+// כיתות ד-ו", ומסירים את כיתה ז' מהשיוך שלו (נשארות רק ד', ה', ו'). משנים
+// את השם גם בקטלוג ההזמנה עצמו (כל השורות עם השם הישן, בכל הכיתות/שנים) -
+// כדי שההזמנות הקיימות ימשיכו להיות מקושרות נכון תחת השם החדש.
+try {
+  const alreadyFixed = db.prepare("SELECT value FROM settings WHERE key = 'writing_supplies_dv_rename_v1'").get();
+  if (!alreadyFixed) {
+    const book = db.prepare("SELECT id, item_name FROM book_prices WHERE item_name LIKE ? AND item_name LIKE ?").get("%כלי כתיבה%", "%ד-ז%");
+    if (book) {
+      const oldName = book.item_name;
+      const newName = oldName.replace("ד-ז", "ד-ו");
+      db.prepare("UPDATE book_prices SET item_name = ?, updated_at = ? WHERE id = ?").run(newName, new Date().toISOString(), book.id);
+      db.prepare("UPDATE book_catalog SET item_name = ? WHERE TRIM(item_name) = TRIM(?)").run(newName, oldName);
+      db.prepare("DELETE FROM book_price_grades WHERE book_price_id = ? AND class_name = ?").run(book.id, "כיתה ז'");
+      console.log(`[כלי כתיבה] שונה שם מ-"${oldName}" ל-"${newName}", והוסרה כיתה ז' מהשיוך`);
+    } else {
+      console.log('[כלי כתיבה] לא נמצא ספר "כלי כתיבה ... ד-ז" לשינוי שם');
+    }
+    db.prepare("INSERT INTO settings (key, value) VALUES ('writing_supplies_dv_rename_v1', '1')").run();
+  }
+} catch (e) {
+  console.error("שגיאה בשינוי שם כלי כתיבה ד-ו:", e.message);
+}
+
 // ניקוי חד-פעמי: השדה "מעבר לכיתה" התמלא בעבר אוטומטית בערך המקבילה הקיים,
 // אבל הוחלט שברירת המחדל האמיתית תהיה ריק (ואז המערכת מניחה "אותה מקבילה").
 // דגל ב-settings מבטיח שהניקוי הזה ירוץ פעם אחת בלבד, ולא ימחק ידנית ערכים
