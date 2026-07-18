@@ -15,9 +15,11 @@ const BOOK_GRADE_OPTIONS = [
 ];
 
 // מסנכרן את קטלוג ההזמנה (book_catalog, לכל השנים) מתוך הקטלוג (book_prices +
-// book_price_grades) - מקור האמת היחיד. לא מוחק פריטים קיימים (כדי לא לפגוע
-// בהזמנות שכבר קיימות) - רק מוסיף חדשים ומעדכן מחיר/הוצאה של קיימים, כדי
-// שהשם תמיד יהיה זהה אות-באות בין הקטלוג למלאי.
+// book_price_grades) - מקור האמת היחיד. מוסיף פריטים חדשים, מעדכן מחיר/הוצאה
+// של קיימים (כדי שהשם תמיד יהיה זהה אות-באות בין הקטלוג למלאי), וגם מנקה
+// שורות שכבר לא משויכות לאותה כיתה - אבל ורק אם אין עליהן הזמנה אמיתית (כדי
+// לא לפגוע בהזמנות קיימות). זה מה ששומר את הקטלוג מסונכרן אוטומטית עם השיוך
+// בלי להשאיר "עמודות מיותרות" תקועות בהזמנת הספרים של הכיתות.
 function syncCatalogFromPrices() {
   const years = db.prepare("SELECT DISTINCT year_label FROM book_catalog").all().map((r) => r.year_label);
   const currentYear = db.prepare("SELECT value FROM settings WHERE key='current_hebrew_year'").get()?.value;
@@ -48,7 +50,31 @@ function syncCatalogFromPrices() {
       }
     });
   });
-  return { added, updated };
+
+  // ניקוי שוטף: מוחקים שורות קטלוג של ספר שכבר לא משויך לאותה כיתה - אבל
+  // ורק אם אין עליהן שום הזמנה אמיתית (זה בדיוק מה שגורם ל"עמודות מיותרות"
+  // כשמשנים שיוך ב"שיוך ספר לכיתה" - בלי הניקוי הזה, השורה הישנה נשארת
+  // תקועה בקטלוג לנצח). שורות עם הזמנה אמיתית לא נמחקות - ימשיכו להופיע
+  // בבדיקת ההתאמות לבדיקה ידנית, כדי לא לאבד הזמנה בטעות.
+  let removed = 0, keptWithOrders = 0;
+  const orphanRows = db.prepare(`
+    SELECT bc.id FROM book_catalog bc
+    JOIN book_prices bp ON TRIM(bp.item_name) = TRIM(bc.item_name)
+    WHERE NOT EXISTS (
+      SELECT 1 FROM book_price_grades bpg WHERE bpg.book_price_id = bp.id AND bpg.class_name = bc.class_name
+    )
+  `).all();
+  orphanRows.forEach((row) => {
+    const orderCount = db.prepare("SELECT COUNT(*) c FROM book_orders WHERE catalog_id = ?").get(row.id).c;
+    if (orderCount === 0) {
+      db.prepare("DELETE FROM book_catalog WHERE id = ?").run(row.id);
+      removed++;
+    } else {
+      keptWithOrders++;
+    }
+  });
+
+  return { added, updated, removed, keptWithOrders };
 }
 
 // ===== עזר: כיתות ספציפיות (שם + מקבילה) לפי שם =====

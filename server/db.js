@@ -771,6 +771,41 @@ try {
   console.error("שגיאה בתיקון תאריך יום ראשון:", e.message);
 }
 
+// ניקוי כללי ומקיף (לא רק ספר-ספר ספציפי): עובר על **כל** שורות קטלוג
+// ההזמנה, בכל הכיתות ובכל השנים, ומוחק כל שורה שהספר שלה כבר לא משויך
+// לאותה כיתה דרך "שיוך ספר לכיתה" - **ורק אם אין עליה אף הזמנה אמיתית**.
+// זה בדיוק הפער שזוהה: אין סנכרון בזמן אמת בין שיוך הספר לבין קטלוג
+// ההזמנה, אז שורות ישנות (מלפני שהשיוך תוקן, או שמעולם לא היו אמורות
+// להיות שם) ממשיכות "להיתקע" ולהופיע כעמודות מיותרות. שורות עם הזמנה
+// אמיתית לא נמחקות - הן ימשיכו להופיע בבדיקת ההתאמות לבדיקה ידנית.
+try {
+  const alreadyFixed = db.prepare("SELECT value FROM settings WHERE key = 'general_orphan_catalog_cleanup_v1'").get();
+  if (!alreadyFixed) {
+    const orphanRows = db.prepare(`
+      SELECT bc.id, bc.item_name, bc.class_name
+      FROM book_catalog bc
+      JOIN book_prices bp ON TRIM(bp.item_name) = TRIM(bc.item_name)
+      WHERE NOT EXISTS (
+        SELECT 1 FROM book_price_grades bpg WHERE bpg.book_price_id = bp.id AND bpg.class_name = bc.class_name
+      )
+    `).all();
+    let removed = 0, keptWithOrders = 0;
+    orphanRows.forEach((row) => {
+      const orderCount = db.prepare("SELECT COUNT(*) c FROM book_orders WHERE catalog_id = ?").get(row.id).c;
+      if (orderCount === 0) {
+        db.prepare("DELETE FROM book_catalog WHERE id = ?").run(row.id);
+        removed++;
+      } else {
+        keptWithOrders++; // יש הזמנה אמיתית - יופיע בבדיקת ההתאמות לבדיקה ידנית, לא נמחק
+      }
+    });
+    console.log(`[ניקוי קטלוג כללי] נוקו ${removed} שורות קטלוג מיותרות (ספר לא משויך לכיתה, בלי הזמנות). ${keptWithOrders} שורות עם הזמנות אמיתיות נשמרו (יופיעו בבדיקת ההתאמות לבדיקה ידנית).`);
+    db.prepare("INSERT INTO settings (key, value) VALUES ('general_orphan_catalog_cleanup_v1', '1')").run();
+  }
+} catch (e) {
+  console.error("שגיאה בניקוי קטלוג כללי:", e.message);
+}
+
 // ניקוי חד-פעמי: השדה "מעבר לכיתה" התמלא בעבר אוטומטית בערך המקבילה הקיים,
 // אבל הוחלט שברירת המחדל האמיתית תהיה ריק (ואז המערכת מניחה "אותה מקבילה").
 // דגל ב-settings מבטיח שהניקוי הזה ירוץ פעם אחת בלבד, ולא ימחק ידנית ערכים
