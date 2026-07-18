@@ -1,0 +1,62 @@
+<%- include('../partials/header', {title: 'תלמידים שלא הזמינו ספרים', wide: true}) %>
+
+<div class="card">
+  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+    <h1>📋 תלמידים שלא הזמינו ספרים כלל</h1>
+    <div class="actions">
+      <a href="/books" class="btn secondary">← חזרה</a>
+      <button type="button" class="btn secondary" onclick="window.print()">🖨️ הדפס</button>
+      <a href="/books/reports/no-orders/export?year=<%= encodeURIComponent(year) %>" class="btn">📥 ייצוא ל-Excel</a>
+    </div>
+  </div>
+
+  <p style="color:var(--muted); font-size:0.9em;">
+    כל תלמיד פעיל (מכיתה א' עד ח') שאין לו <strong>אף הזמנת ספר אחת</strong> לשנה שנבחרה - מחולק לפי כיתות, הכל
+    בדוח אחד. שימושי כדי לוודא שאף תלמיד לא "נפל בין הכיסאות" ופשוט נשכח מלהזמין.
+  </p>
+
+  <form method="GET" action="/books/reports/no-orders" class="no-print" style="margin:14px 0;">
+    <label><strong>שנה:</strong></label>
+    <select name="year" onchange="this.form.submit()">
+      <% years.forEach(y => { %>
+        <option value="<%= y %>" <%= y === year ? 'selected' : '' %>><%= y %></option>
+      <% }) %>
+    </select>
+  </form>
+
+  <% if (total === 0) { %>
+    <div style="background:#e8f5e9; border:1px solid #a5d6a7; color:#2e7d32; border-radius:8px; padding:12px 16px;">
+      ✅ כל התלמידים הזמינו לפחות ספר אחד - אין אף תלמיד ברשימה.
+    </div>
+  <% } else { %>
+    <div style="background:#fdecea; border:1px solid #f5c6cb; color:#a94442; border-radius:8px; padding:12px 16px; margin-bottom:16px;">
+      ⚠️ נמצאו <strong><%= total %></strong> תלמידים שלא ביצעו אף הזמנת ספר לשנת <%= year %>.
+    </div>
+
+    <% Object.keys(grouped).forEach(className => { %>
+      <h3 style="margin-top:22px; border-bottom:1px solid var(--border); padding-bottom:6px;">
+        <%= className %> (<%= grouped[className].length %> תלמידים)
+      </h3>
+      <table>
+        <thead><tr><th>שם התלמיד</th><th>שם האב</th><th>טלפון בית</th><th>נייד אב</th><th>נייד אם</th></tr></thead>
+        <tbody>
+          <% grouped[className].forEach(s => { %>
+            <tr>
+              <td><a href="/students/<%= s.id %>" target="_blank"><%= s.first_name %> <%= s.last_name %></a></td>
+              <td><%= s.father_name || '' %></td>
+              <td><%= s.home_phone || '' %></td>
+              <td><%= s.father_mobile || '' %></td>
+              <td><%= s.mother_mobile || '' %></td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    <% }) %>
+  <% } %>
+</div>
+
+<style>
+  @media print { .no-print { display: none !important; } }
+</style>
+
+<%- include('../partials/footer') %>

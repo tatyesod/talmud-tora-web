@@ -769,6 +769,76 @@ function isContainedDuplicate(a, b, priceA, priceB) {
 }
 
 // ============ בדיקת בריאות מלאה - לפני הוצאת הזמנה אמיתית לספק ============
+// ============ דוח תלמידים שלא הזמינו כלל ספרים (מחולק לפי כיתות) ============
+function getStudentsWithNoOrders(year) {
+  return db.prepare(`
+    SELECT s.id, s.first_name, s.last_name, c.name AS class_name, c.parallel AS class_parallel, c.branch,
+           f.father_name, f.home_phone, f.father_mobile, f.mother_mobile
+    FROM students s
+    JOIN classes c ON s.class_id = c.id
+    LEFT JOIN families f ON s.family_id = f.id
+    WHERE s.status = 'פעיל'
+      AND c.name IN (${BOOK_GRADE_OPTIONS.map(() => "?").join(",")})
+      AND NOT EXISTS (
+        SELECT 1 FROM book_orders bo
+        JOIN book_catalog bc ON bo.catalog_id = bc.id
+        WHERE bo.student_id = s.id AND bc.year_label = ?
+      )
+    ORDER BY c.name, c.parallel, s.last_name, s.first_name
+  `).all(...BOOK_GRADE_OPTIONS, year);
+}
+
+router.get("/reports/no-orders", (req, res) => {
+  const years = db.prepare("SELECT DISTINCT year_label FROM book_catalog ORDER BY year_label DESC").all().map(r => r.year_label);
+  const defaultYear = db.prepare("SELECT value FROM settings WHERE key='current_hebrew_year'").get()?.value || years[0] || 'תשפ"ז';
+  const year = req.query.year || defaultYear;
+  const students = getStudentsWithNoOrders(year);
+
+  const grouped = {};
+  students.forEach((s) => {
+    const key = `${s.class_name}${s.class_parallel ? " " + s.class_parallel : ""}${s.branch ? " (" + s.branch + ")" : ""}`;
+    if (!grouped[key]) grouped[key] = [];
+    grouped[key].push(s);
+  });
+
+  res.render("books/no-orders-report", { year, years, grouped, total: students.length });
+});
+
+router.get("/reports/no-orders/export", async (req, res) => {
+  const years = db.prepare("SELECT DISTINCT year_label FROM book_catalog ORDER BY year_label DESC").all().map(r => r.year_label);
+  const defaultYear = db.prepare("SELECT value FROM settings WHERE key='current_hebrew_year'").get()?.value || years[0] || 'תשפ"ז';
+  const year = req.query.year || defaultYear;
+  const students = getStudentsWithNoOrders(year);
+
+  const wb = new ExcelJS.Workbook();
+  const ws = wb.addWorksheet("לא הזמינו ספרים");
+  ws.views = [{ rightToLeft: true }];
+  ws.columns = [
+    { header: "כיתה", key: "class", width: 20 },
+    { header: "שם התלמיד", key: "name", width: 22 },
+    { header: "שם האב", key: "father", width: 20 },
+    { header: "טלפון בית", key: "home_phone", width: 14 },
+    { header: "נייד אב", key: "father_mobile", width: 14 },
+    { header: "נייד אם", key: "mother_mobile", width: 14 },
+  ];
+  ws.getRow(1).font = { bold: true };
+  students.forEach((s) => {
+    ws.addRow({
+      class: `${s.class_name}${s.class_parallel ? " " + s.class_parallel : ""}${s.branch ? " (" + s.branch + ")" : ""}`,
+      name: `${s.first_name} ${s.last_name}`,
+      father: s.father_name || "",
+      home_phone: s.home_phone || "",
+      father_mobile: s.father_mobile || "",
+      mother_mobile: s.mother_mobile || "",
+    });
+  });
+
+  res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+  res.setHeader("Content-Disposition", `attachment; filename="לא-הזמינו-ספרים-${year}.xlsx"`);
+  await wb.xlsx.write(res);
+  res.end();
+});
+
 router.get("/inventory/health-check", (req, res) => {
   const years = db.prepare("SELECT DISTINCT year_label FROM book_catalog ORDER BY year_label DESC").all().map(r => r.year_label);
   const defaultYear = db.prepare("SELECT value FROM settings WHERE key='current_hebrew_year'").get()?.value || years[0] || 'תשפ"ז';
