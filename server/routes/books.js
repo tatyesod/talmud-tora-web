@@ -761,6 +761,123 @@ function isContainedDuplicate(a, b) {
   return shorter.every((w) => longerSet.has(w));
 }
 
+// ============ בדיקת בריאות מלאה - לפני הוצאת הזמנה אמיתית לספק ============
+router.get("/inventory/health-check", (req, res) => {
+  const years = db.prepare("SELECT DISTINCT year_label FROM book_catalog ORDER BY year_label DESC").all().map(r => r.year_label);
+  const defaultYear = db.prepare("SELECT value FROM settings WHERE key='current_hebrew_year'").get()?.value || years[0] || 'תשפ"ז';
+  const year = req.query.year || defaultYear;
+
+  // 1) סה"כ הזמנות בפועל לשנה זו - מספר גולמי לבדיקת עין מול מה שאתה זוכר/מצפה
+  const totalOrders = db.prepare(`
+    SELECT COUNT(*) c FROM book_orders bo
+    JOIN book_catalog bc ON bo.catalog_id = bc.id
+    WHERE bc.year_label = ?
+  `).get(year).c;
+  const totalExtras = db.prepare("SELECT COUNT(*) c FROM book_order_extras WHERE year_label = ?").get(year).c;
+
+  // 2) כפילות ממש בקטלוג (אותו שם, אותה כיתה, אותה שנה - יותר משורה אחת)
+  const duplicateCatalogRows = db.prepare(`
+    SELECT class_name, item_name, COUNT(*) AS row_count, GROUP_CONCAT(id) AS ids
+    FROM book_catalog WHERE year_label = ?
+    GROUP BY class_name, item_name HAVING COUNT(*) > 1
+  `).all(year).map((r) => {
+    const ids = r.ids.split(",").map(Number);
+    const orderCounts = ids.map((cid) => ({
+      catalog_id: cid,
+      order_count: db.prepare("SELECT COUNT(*) c FROM book_orders WHERE catalog_id = ?").get(cid).c,
+    }));
+    return { class_name: r.class_name, item_name: r.item_name, rows: orderCounts };
+  });
+
+  // 3) ספרים בכיתה שכבר לא משויכת, עם הזמנות אמיתיות (ממתין להחלטה ידנית)
+  const allPriceNames = db.prepare("SELECT item_name FROM book_prices").all().map(r => r.item_name);
+  const orphanedWithOrders = db.prepare(`
+    SELECT bc.id AS catalog_id, bc.item_name, bc.class_name, COUNT(bo.student_id) AS order_count, c.id AS class_id
+    FROM book_catalog bc
+    JOIN book_orders bo ON bo.catalog_id = bc.id
+    JOIN book_prices bp ON TRIM(bp.item_name) = TRIM(bc.item_name)
+    LEFT JOIN classes c ON c.name = bc.class_name
+    WHERE bc.year_label = ?
+      AND NOT EXISTS (SELECT 1 FROM book_price_grades bpg WHERE bpg.book_price_id = bp.id AND bpg.class_name = bc.class_name)
+    GROUP BY bc.id
+  `).all(year);
+
+  // 4) שמות בקטלוג/חידושים שלא תואמים לאף רשומה במחירון (הזמנות "אבודות" מבחינת המלאי)
+  const catalogMismatches = db.prepare(`
+    SELECT DISTINCT bc.item_name, bc.class_name, COUNT(bo.student_id) AS order_count
+    FROM book_catalog bc
+    LEFT JOIN book_orders bo ON bo.catalog_id = bc.id AND bo.year_label = bc.year_label
+    WHERE bc.year_label = ? GROUP BY bc.item_name, bc.class_name
+  `).all(year).filter(r => !allPriceNames.includes(r.item_name));
+  const extrasMismatches = db.prepare(`
+    SELECT item_name, COUNT(*) AS order_count FROM book_order_extras WHERE year_label = ? GROUP BY item_name
+  `).all(year).filter(r => !allPriceNames.includes(r.item_name));
+
+  // 5) ספר משויך לכיתה (דרך שיוך ספר לכיתה) אבל אין לו בכלל שורת קטלוג לשנה
+  // הזו - יכול לקרות אם הסנכרון לא הספיק לרוץ. "חסר" הפוך מ"עודף".
+  const missingCatalogEntries = db.prepare(`
+    SELECT bp.item_name, bpg.class_name
+    FROM book_price_grades bpg
+    JOIN book_prices bp ON bp.id = bpg.book_price_id
+    WHERE NOT EXISTS (
+      SELECT 1 FROM book_catalog bc WHERE bc.year_label = ? AND bc.class_name = bpg.class_name AND TRIM(bc.item_name) = TRIM(bp.item_name)
+    )
+  `).all(year);
+
+  // 6) סיכום לפי כיתה - כמה ספרים שונים, כמה הזמנות סה"כ, כמה תלמידים פעילים
+  // - כדי לתפוס בעין כיתה עם מעט מדי הזמנות ביחס למספר התלמידים בה (חשד לעמודות חסרות)
+  const perClassSummary = db.prepare(`
+    SELECT bc.class_name,
+      COUNT(DISTINCT bc.item_name) AS book_count,
+      (SELECT COUNT(*) FROM book_orders bo JOIN book_catalog bc2 ON bo.catalog_id = bc2.id WHERE bc2.class_name = bc.class_name AND bc2.year_label = ?) AS total_orders
+    FROM book_catalog bc
+    WHERE bc.year_label = ?
+    GROUP BY bc.class_name
+  `).all(year, year).map((row) => {
+    const studentCount = db.prepare(`
+      SELECT COUNT(*) c FROM students s LEFT JOIN classes c ON s.class_id = c.id
+      WHERE c.name = ? AND s.status = 'פעיל'
+    `).get(row.class_name).c;
+    return { ...row, student_count: studentCount };
+  });
+
+  // 7) ספרים כפולים אפשריים במחירון (שמות שונים, אבל ככל הנראה אותו ספר בפועל)
+  function normalizeForSimilarity(name) {
+    return name.replace(/\([^)]*\)/g, " ").replace(/["'׳״]/g, "").replace(/\s+/g, " ").trim();
+  }
+  function isContainedDuplicate(a, b) {
+    const wordsA = normalizeForSimilarity(a).split(" ").filter(Boolean);
+    const wordsB = normalizeForSimilarity(b).split(" ").filter(Boolean);
+    if (wordsA.length === 0 || wordsB.length === 0) return false;
+    const shorter = wordsA.length <= wordsB.length ? wordsA : wordsB;
+    const longerSet = new Set(wordsA.length <= wordsB.length ? wordsB : wordsA);
+    return shorter.every((w) => longerSet.has(w));
+  }
+  const allPrices = db.prepare("SELECT id, item_name, publisher, price FROM book_prices ORDER BY item_name").all();
+  const possibleDuplicates = [];
+  const seen = new Set();
+  for (let i = 0; i < allPrices.length; i++) {
+    for (let j = i + 1; j < allPrices.length; j++) {
+      const a = allPrices[i], b = allPrices[j];
+      if (isContainedDuplicate(a.item_name, b.item_name)) {
+        const key = [a.id, b.id].sort().join("-");
+        if (seen.has(key)) continue;
+        seen.add(key);
+        possibleDuplicates.push({ a, b });
+      }
+    }
+  }
+
+  const issueCount = duplicateCatalogRows.length + orphanedWithOrders.length + catalogMismatches.length
+    + extrasMismatches.length + missingCatalogEntries.length + possibleDuplicates.length;
+
+  res.render("books/inventory-health-check", {
+    year, years, totalOrders, totalExtras, duplicateCatalogRows, orphanedWithOrders,
+    catalogMismatches, extrasMismatches, missingCatalogEntries, perClassSummary,
+    possibleDuplicates, issueCount,
+  });
+});
+
 router.get("/inventory/diagnostics", (req, res) => {
   const years = db.prepare("SELECT DISTINCT year_label FROM book_catalog ORDER BY year_label DESC").all().map(r => r.year_label);
   const defaultYear = db.prepare("SELECT value FROM settings WHERE key='current_hebrew_year'").get()?.value || years[0] || 'תשפ"ז';
