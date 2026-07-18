@@ -749,10 +749,17 @@ function normalizeForSimilarity(name) {
 }
 // שני שמות נחשבים "כפול אפשרי" רק אם **כל** המילים של השם הקצר מופיעות
 // (כולן!) בשם הארוך - לא סתם רוב המילים. זה בדיוק ההבדל בין הבדל של מילת
-// תיאור (כרוך, עם מהרש"א, לתלמידים - עדיין נחשב כפול) לבין הבדל של מזהה
-// חלק/כיתה אמיתי (חלק 1 מול חלק 2, כיתות א-ג מול ד-ז, סדר מועד מול סדר
-// קדשים - אלה ספרים/מוצרים שונים לגמרי, לא כפילות).
-function isContainedDuplicate(a, b) {
+// תיאור (כרוך, לתלמידים - עדיין נחשב כפול) לבין הבדל של מזהה חלק/כיתה
+// אמיתי (חלק 1 מול חלק 2, כיתות א-ג מול ד-ז, סדר מועד מול סדר קדשים - אלה
+// ספרים/מוצרים שונים לגמרי, לא כפילות). **מחיר שונה משמעותית** (מעל 15%)
+// גם לא נחשב כפול - זה סימן חזק ששתי המהדורות שונות בכוונה (למשל עם/בלי
+// פירוש מהרש"א), גם אם השם עצמו לא תמיד מציין את זה במפורש.
+function isContainedDuplicate(a, b, priceA, priceB) {
+  if (priceA != null && priceB != null && priceA > 0 && priceB > 0) {
+    const priceDiffRatio = Math.abs(priceA - priceB) / Math.max(priceA, priceB);
+    if (priceDiffRatio > 0.15) return false;
+  }
+
   const wordsA = normalizeForSimilarity(a).split(" ").filter(Boolean);
   const wordsB = normalizeForSimilarity(b).split(" ").filter(Boolean);
   if (wordsA.length === 0 || wordsB.length === 0) return false;
@@ -845,7 +852,11 @@ router.get("/inventory/health-check", (req, res) => {
   function normalizeForSimilarity(name) {
     return name.replace(/\([^)]*\)/g, " ").replace(/["'׳״]/g, "").replace(/\s+/g, " ").trim();
   }
-  function isContainedDuplicate(a, b) {
+  function isContainedDuplicate(a, b, priceA, priceB) {
+    if (priceA != null && priceB != null && priceA > 0 && priceB > 0) {
+      const priceDiffRatio = Math.abs(priceA - priceB) / Math.max(priceA, priceB);
+      if (priceDiffRatio > 0.15) return false;
+    }
     const wordsA = normalizeForSimilarity(a).split(" ").filter(Boolean);
     const wordsB = normalizeForSimilarity(b).split(" ").filter(Boolean);
     if (wordsA.length === 0 || wordsB.length === 0) return false;
@@ -859,7 +870,7 @@ router.get("/inventory/health-check", (req, res) => {
   for (let i = 0; i < allPrices.length; i++) {
     for (let j = i + 1; j < allPrices.length; j++) {
       const a = allPrices[i], b = allPrices[j];
-      if (isContainedDuplicate(a.item_name, b.item_name)) {
+      if (isContainedDuplicate(a.item_name, b.item_name, a.price, b.price)) {
         const key = [a.id, b.id].sort().join("-");
         if (seen.has(key)) continue;
         seen.add(key);
@@ -918,7 +929,7 @@ router.get("/inventory/diagnostics", (req, res) => {
   for (let i = 0; i < allPrices.length; i++) {
     for (let j = i + 1; j < allPrices.length; j++) {
       const a = allPrices[i], b = allPrices[j];
-      if (isContainedDuplicate(a.item_name, b.item_name)) {
+      if (isContainedDuplicate(a.item_name, b.item_name, a.price, b.price)) {
         const key = [a.id, b.id].sort().join("-");
         if (seen.has(key)) continue;
         seen.add(key);
