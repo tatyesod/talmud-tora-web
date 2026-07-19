@@ -312,10 +312,8 @@
             <td><%= r.notes || '' %></td>
             <td>
               <% if (r.file_path) { %>
-                <% if (r.is_image) { %>
-                  <button type="button" class="btn small secondary" onclick="togglePreview('preview-<%= r.id %>')">👁️ תצוגה מקדימה</button>
-                <% } else if (r.is_pdf) { %>
-                  <a href="<%= r.file_path %>" target="_blank" class="btn small secondary">👁️ צפייה ב-PDF</a>
+                <% if (r.is_image || r.is_pdf) { %>
+                  <button type="button" class="btn small secondary" onclick="togglePreview('preview-<%= r.id %>', <%- JSON.stringify(r.file_path) %>, <%= r.is_pdf ? 'true' : 'false' %>)">👁️ תצוגה מקדימה</button>
                 <% } %>
                 <a href="<%= r.file_path %>" target="_blank" class="btn small secondary">📎 <%= r.file_name || 'פתיחה' %></a>
               <% } else { %>
@@ -329,10 +327,14 @@
               </form>
             </td>
           </tr>
-          <% if (r.file_path && r.is_image) { %>
+          <% if (r.file_path && (r.is_image || r.is_pdf)) { %>
             <tr id="preview-<%= r.id %>" style="display:none;">
               <td colspan="5">
-                <img src="<%= r.file_path %>" alt="תצוגה מקדימה" style="max-width:100%; max-height:600px; border:1px solid var(--border); border-radius:8px;" />
+                <% if (r.is_image) { %>
+                  <img src="<%= r.file_path %>" alt="תצוגה מקדימה" style="max-width:100%; max-height:600px; border:1px solid var(--border); border-radius:8px;" />
+                <% } else { %>
+                  <div id="pdf-container-<%= r.id %>" style="text-align:center; color:var(--muted);">טוען תצוגה מקדימה...</div>
+                <% } %>
               </td>
             </tr>
           <% } %>
@@ -367,10 +369,46 @@
   </form>
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
 <script>
-  function togglePreview(id) {
+  if (window.pdfjsLib) {
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+  }
+
+  function togglePreview(id, filePath, isPdf) {
     const el = document.getElementById(id);
-    el.style.display = el.style.display === 'none' ? '' : 'none';
+    const opening = el.style.display === 'none';
+    el.style.display = opening ? '' : 'none';
+    if (opening && isPdf) {
+      const container = document.getElementById('pdf-container-' + id.replace('preview-', ''));
+      if (container && !container.dataset.rendered) {
+        container.dataset.rendered = '1';
+        // מציירים את ה-PDF ישירות על קנבס בדף עצמו (לא מורידים כקובץ, לא
+        // פותחים כרטיסייה חדשה, לא מסתמכים על שירות חיצוני) - שולפים את
+        // הקובץ עם fetch (עם עוגיית ההתחברות של המשתמש, אז זה עובד גם
+        // לקבצים מוגנים), ואז pdf.js מצייר אותו כתמונה בתוך הדף.
+        fetch(filePath, { credentials: 'same-origin' })
+          .then((r) => r.arrayBuffer())
+          .then((buf) => pdfjsLib.getDocument({ data: buf }).promise)
+          .then((pdf) => pdf.getPage(1))
+          .then((page) => {
+            const scale = 1.3;
+            const viewport = page.getViewport({ scale });
+            const canvas = document.createElement('canvas');
+            canvas.style.maxWidth = '100%';
+            canvas.style.border = '1px solid var(--border)';
+            canvas.style.borderRadius = '8px';
+            canvas.width = viewport.width;
+            canvas.height = viewport.height;
+            container.innerHTML = '';
+            container.appendChild(canvas);
+            return page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+          })
+          .catch(() => {
+            container.innerHTML = '<p class="empty-state">לא ניתן להציג תצוגה מקדימה - יש לפתוח את הקובץ בלינק "📎".</p>';
+          });
+      }
+    }
   }
 </script>
 
