@@ -313,7 +313,7 @@
             <td>
               <% if (r.file_path) { %>
                 <% if (r.is_image || r.is_pdf) { %>
-                  <button type="button" class="btn small secondary" onclick="togglePreview('preview-<%= r.id %>', <%- JSON.stringify(r.file_path) %>, <%= r.is_pdf ? 'true' : 'false' %>)">👁️ תצוגה מקדימה</button>
+                  <button type="button" class="btn small secondary" data-preview-id="preview-<%= r.id %>" data-file-path="<%= r.file_path %>" data-is-pdf="<%= r.is_pdf ? '1' : '' %>" onclick="togglePreview(this)">👁️ תצוגה מקדימה</button>
                 <% } %>
                 <a href="<%= r.file_path %>" target="_blank" class="btn small secondary">📎 <%= r.file_name || 'פתיחה' %></a>
               <% } else { %>
@@ -375,7 +375,10 @@
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
   }
 
-  function togglePreview(id, filePath, isPdf) {
+  function togglePreview(btn) {
+    const id = btn.getAttribute('data-preview-id');
+    const filePath = btn.getAttribute('data-file-path');
+    const isPdf = btn.getAttribute('data-is-pdf') === '1';
     const el = document.getElementById(id);
     const opening = el.style.display === 'none';
     el.style.display = opening ? '' : 'none';
