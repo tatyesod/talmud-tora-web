@@ -53,7 +53,14 @@
 </div>
 
 <div class="card">
-  <h3>תלמידים בכיתה</h3>
+  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+    <h3>תלמידים בכיתה</h3>
+    <% if (students.length > 0) { %>
+      <div class="actions">
+        <button id="dlClassListBtn" type="button" class="btn" onclick="downloadClassListPDF()">📥 הורד רשימת כיתה (PDF)</button>
+      </div>
+    <% } %>
+  </div>
   <% if (students.length === 0) { %>
     <p class="empty-state">אין תלמידים בכיתה זו</p>
   <% } else { %>
@@ -105,5 +112,96 @@
   background: var(--card-bg);
 }
 </style>
+
+<% if (students.length > 0) { %>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script id="class-list-data" type="application/json"><%- JSON.stringify({
+  meta: {
+    institution: "תלמוד תורה החדש",
+    branch: classRow.branch || "",
+    className: classRow.name + (classRow.parallel ? (" " + classRow.parallel) : ""),
+    teacher: teachers.length ? (teachers[0].first_name + " " + teachers[0].last_name) : "",
+  },
+  students: students.map(s => {
+    const address = [s.street, s.house_number].filter(Boolean).join(" ") + (s.city ? (", " + s.city) : "");
+    return {
+      last: s.last_name || "", first: s.nickname || s.first_name || "",
+      address: address.trim().replace(/^,\s*/, ""),
+      main: s.home_phone || "", father: s.father_mobile || "", mother: s.mother_mobile || "",
+    };
+  }),
+}) %></script>
+<script>
+  // בונים PDF בצד הדפדפן בלבד (jsPDF + html2canvas) - עמוד A4 לרוחב אחד,
+  // עם קווים, שכל הכיתה נכנסת בו (מוקטן אוטומטית לפי מספר התלמידים).
+  const __classListData = JSON.parse(document.getElementById('class-list-data').textContent);
+
+  async function buildClassListDoc(meta, students) {
+    const esc = (s) => (s == null ? '' : String(s)).replace(/[&<>]/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+    const today = new Date().toLocaleDateString('he-IL', { timeZone: 'Asia/Jerusalem' });
+    const scale = students.length > 45 ? 2 : 3;
+    const rows = students.map((s, i) => `<tr>
+      <td class="c">${i + 1}</td><td>${esc(s.last)}</td><td>${esc(s.first)}</td>
+      <td>${esc(s.address)}</td><td class="tel">${esc(s.main) || '—'}</td>
+      <td class="tel">${esc(s.father) || '—'}</td><td class="tel">${esc(s.mother) || '—'}</td></tr>`).join('');
+
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'position:fixed;left:-10000px;top:0;background:#fff';
+    wrap.innerHTML = `<div id="__cl" dir="rtl" style="width:1062px;background:#fff;color:#111;font-family:'Segoe UI',Arial,sans-serif;font-size:13px">
+      <style>
+        #__cl .rep-head{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid #222;padding-bottom:5px;margin-bottom:8px}
+        #__cl .rh-inst{font-size:18px;font-weight:800}#__cl .rh-title{font-size:15px;font-weight:700;margin-top:2px}
+        #__cl .rh-meta{font-size:12px;color:#444;text-align:left}
+        #__cl table{width:100%;border-collapse:collapse;table-layout:fixed}
+        #__cl th,#__cl td{border:1px solid #333;padding:4px 6px;text-align:right;word-break:break-word;line-height:1.2}
+        #__cl th{background:#e9e9f2;font-weight:700}#__cl td.c,#__cl th.c{text-align:center}
+        #__cl .tel{direction:ltr;unicode-bidi:plaintext;text-align:right}
+        #__cl tbody tr:nth-child(even){background:#f6f6fb}
+      </style>
+      <div class="rep-head">
+        <div><div class="rh-inst">${esc(meta.institution || '')}</div>
+          <div class="rh-title">רשימת תלמידים — כיתה ${esc(meta.className || '')}${meta.branch ? (' · ' + esc(meta.branch)) : ''}</div></div>
+        <div class="rh-meta">${meta.teacher ? ('מלמד: ' + esc(meta.teacher) + '<br>') : ''}מספר תלמידים: ${students.length}<br>תאריך: ${today}</div>
+      </div>
+      <table>
+        <colgroup><col style="width:4%"><col style="width:15%"><col style="width:13%"><col style="width:27%"><col style="width:14%"><col style="width:14%"><col style="width:13%"></colgroup>
+        <thead><tr><th class="c">#</th><th>שם משפחה</th><th>שם</th><th>כתובת</th><th>טלפון ראשי</th><th>טלפון אב</th><th>טלפון אם</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table></div>`;
+    document.body.appendChild(wrap);
+    try {
+      const canvas = await html2canvas(wrap.querySelector('#__cl'), { scale, backgroundColor: '#ffffff', windowWidth: 1062 });
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' });
+      const pageW = doc.internal.pageSize.getWidth(), pageH = doc.internal.pageSize.getHeight(), m = 22;
+      const availW = pageW - 2 * m, availH = pageH - 2 * m, ratio = canvas.height / canvas.width;
+      let w = availW, h = w * ratio;
+      if (h > availH) { h = availH; w = h / ratio; }
+      doc.addImage(canvas.toDataURL('image/jpeg', 0.85), 'JPEG', (pageW - w) / 2, m, w, h);
+      return doc;
+    } finally {
+      document.body.removeChild(wrap);
+    }
+  }
+
+  async function downloadClassListPDF() {
+    const btn = document.getElementById('dlClassListBtn');
+    const old = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = 'יוצר PDF…';
+    try {
+      const doc = await buildClassListDoc(__classListData.meta, __classListData.students);
+      doc.save(`רשימת כיתה - ${__classListData.meta.className || ''}.pdf`);
+    } catch (e) {
+      console.error(e);
+      alert('אירעה תקלה ביצירת ה-PDF');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = old;
+    }
+  }
+</script>
+<% } %>
 
 <%- include('../partials/footer') %>
