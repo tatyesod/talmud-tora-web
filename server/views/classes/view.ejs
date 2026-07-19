@@ -121,7 +121,7 @@
     institution: "תלמוד תורה החדש",
     branch: classRow.branch || "",
     className: classRow.name + (classRow.parallel ? (" " + classRow.parallel) : ""),
-    teacher: teachers.length ? (teachers[0].first_name + " " + teachers[0].last_name) : "",
+    teacher: teachers.length ? ("הרב " + teachers[0].first_name + " " + teachers[0].last_name) : "",
   },
   students: students.map(s => {
     const address = [s.street, s.house_number].filter(Boolean).join(" ") + (s.city ? (", " + s.city) : "");
@@ -158,10 +158,12 @@
         #__cl th{background:#e9e9f2;font-weight:700}#__cl td.c,#__cl th.c{text-align:center}
         #__cl .tel{direction:ltr;unicode-bidi:plaintext;text-align:right}
         #__cl tbody tr:nth-child(even){background:#f6f6fb}
+        #__cl .rh-logo{display:block;margin:0 auto 8px;max-height:70px;max-width:220px}
       </style>
+      <img class="rh-logo" src="${window.location.origin}/images/logo.png" crossorigin="anonymous" />
       <div class="rep-head">
         <div><div class="rh-inst">${esc(meta.institution || '')}</div>
-          <div class="rh-title">רשימת תלמידים — כיתה ${esc(meta.className || '')}${meta.branch ? (' · ' + esc(meta.branch)) : ''}</div></div>
+          <div class="rh-title">רשימת תלמידים — ${esc(meta.className || '')}${meta.branch ? (' · ' + esc(meta.branch)) : ''}</div></div>
         <div class="rh-meta">${meta.teacher ? ('מלמד: ' + esc(meta.teacher) + '<br>') : ''}מספר תלמידים: ${students.length}<br>תאריך: ${today}</div>
       </div>
       <table>
@@ -171,6 +173,10 @@
       </table></div>`;
     document.body.appendChild(wrap);
     try {
+      const logoImg = wrap.querySelector('.rh-logo');
+      if (logoImg && !logoImg.complete) {
+        await new Promise((resolve) => { logoImg.onload = resolve; logoImg.onerror = resolve; });
+      }
       const canvas = await html2canvas(wrap.querySelector('#__cl'), { scale, backgroundColor: '#ffffff', windowWidth: 1062 });
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' });

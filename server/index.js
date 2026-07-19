@@ -341,10 +341,14 @@ app.get("/", (req, res) => {
     });
   }
 
+  const upcomingEventsCount = db.prepare(
+    "SELECT COUNT(*) c FROM events WHERE event_date >= ?"
+  ).get(hd.todayAccessSerial()).c;
+
   res.render("home", {
     stats, branchStats, unassignedClassCount, mismatchedBranchCount, monthlyTotal, currentYear, hebrewDateToday, dayName,
     myTasks, unreadCount, greeting, fullName, allUsers,
-    studentBirthdays, teacherBirthdays, pendingOrders, myOrderUpdates,
+    studentBirthdays, teacherBirthdays, pendingOrders, myOrderUpdates, upcomingEventsCount,
   });
 });
 
