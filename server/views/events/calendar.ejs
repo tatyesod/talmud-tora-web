@@ -1,0 +1,85 @@
+<%- include('../partials/header', {title: 'לוח שנה - אירועים', wide: true}) %>
+
+<div class="card">
+  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+    <h1>📅 לוח שנה - <%= monthName %> <%= year %> <span style="color:var(--muted); font-weight:normal; font-size:0.7em;">(<%= hebMonthsLabel %>)</span></h1>
+    <div class="actions">
+      <a href="/events/list" class="btn secondary">📋 תצוגת רשימה</a>
+      <a href="/events/new" class="btn">+ אירוע חדש</a>
+    </div>
+  </div>
+
+  <div style="display:flex; justify-content:space-between; align-items:center; margin:14px 0; flex-wrap:wrap; gap:10px;">
+    <div class="actions">
+      <a href="/events/calendar?year=<%= prevYear %>&month=<%= prevMonth %>" class="btn secondary">→ חודש קודם</a>
+      <a href="/events/calendar?year=<%= todayYear %>&month=<%= todayMonth %>" class="btn secondary">היום</a>
+      <a href="/events/calendar?year=<%= nextYear %>&month=<%= nextMonth %>" class="btn secondary">חודש הבא ←</a>
+    </div>
+    <form method="GET" action="/events/calendar" style="display:flex; gap:8px; align-items:center;">
+      <select name="month">
+        <% ["ינואר","פברואר","מרץ","אפריל","מאי","יוני","יולי","אוגוסט","ספטמבר","אוקטובר","נובמבר","דצמבר"].forEach((mn, i) => { %>
+          <option value="<%= i+1 %>" <%= (i+1) === month ? 'selected' : '' %>><%= mn %></option>
+        <% }) %>
+      </select>
+      <select name="year">
+        <% for (let y = todayYear - 3; y <= todayYear + 3; y++) { %>
+          <option value="<%= y %>" <%= y === year ? 'selected' : '' %>><%= y %></option>
+        <% } %>
+      </select>
+      <button type="submit" class="btn small secondary">קפוץ</button>
+    </form>
+  </div>
+
+  <table class="calendar-grid">
+    <thead>
+      <tr>
+        <th>יום א'</th><th>יום ב'</th><th>יום ג'</th><th>יום ד'</th><th>יום ה'</th><th>יום ו'</th><th class="sat-col">שבת</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% weeks.forEach(week => { %>
+        <tr>
+          <% week.forEach(d => { %>
+            <td class="cal-cell <%= d.isCurrentMonth ? '' : 'dim' %> <%= d.isToday ? 'today' : '' %> <%= d.isSaturday ? 'sat-col' : '' %>">
+              <div class="cal-cell-head">
+                <a href="/events/new?date=<%= d.dateStr %>" class="cal-add" title="הוסף אירוע ביום זה">+</a>
+                <span class="cal-daynum"><%= d.day %></span>
+                <span class="cal-hebday"><%= d.hebDay %><% if (d.showHebMonth) { %> <%= d.hebMonthLabel %><% } %></span>
+              </div>
+              <% if (d.holiday) { %><div class="cal-holiday"><%= d.holiday %></div><% } %>
+              <% d.events.forEach(e => { %>
+                <a href="/events/<%= e.id %>" class="cal-event" title="<%= e.title %>"><%= e.title %></a>
+              <% }) %>
+            </td>
+          <% }) %>
+        </tr>
+      <% }) %>
+    </tbody>
+  </table>
+</div>
+
+<style>
+  .calendar-grid { width: 100%; border-collapse: collapse; table-layout: fixed; }
+  .calendar-grid th { background: var(--table-header, #e8ecf0); padding: 8px; text-align: center; border: 1px solid var(--border); }
+  .calendar-grid th.sat-col { color: #a94442; }
+  .cal-cell { border: 1px solid var(--border); vertical-align: top; height: 110px; padding: 4px 6px; position: relative; }
+  .cal-cell.dim { background: #fafafa; color: var(--muted); }
+  .cal-cell.today { background: #fff9db; }
+  .cal-cell.sat-col { background: #fdecea; }
+  .cal-cell.dim.sat-col { background: #fbf3f2; }
+  .cal-cell-head { display: flex; justify-content: space-between; align-items: center; }
+  .cal-daynum { font-weight: 700; font-size: 1.1em; }
+  .cal-hebday { color: #2c5f9e; font-size: 0.8em; font-weight: 600; }
+  .cal-add { color: var(--muted); text-decoration: none; font-weight: 700; font-size: 1.1em; opacity: 0.4; }
+  .cal-add:hover { opacity: 1; }
+  .cal-holiday { color: #a94442; font-size: 0.78em; font-weight: 600; margin: 2px 0; }
+  .cal-event { display: block; background: #e3f2fd; color: #1565c0; border-radius: 4px; padding: 1px 5px; font-size: 0.78em; margin-top: 2px; text-decoration: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .cal-event:hover { background: #bbdefb; }
+  @media (max-width: 900px) {
+    .calendar-grid, .calendar-grid thead, .calendar-grid tbody, .calendar-grid th, .calendar-grid td, .calendar-grid tr { display: block; }
+    .calendar-grid thead { display: none; }
+    .cal-cell { height: auto; min-height: 50px; }
+  }
+</style>
+
+<%- include('../partials/footer') %>

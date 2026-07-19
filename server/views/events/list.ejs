@@ -3,7 +3,10 @@
 <div class="card">
   <div style="display:flex; justify-content:space-between; align-items:center;">
     <h1>אירועים קרובים</h1>
-    <a href="/events/new" class="btn">+ אירוע חדש</a>
+    <div class="actions">
+      <a href="/events/calendar" class="btn secondary">📅 תצוגת לוח שנה</a>
+      <a href="/events/new" class="btn">+ אירוע חדש</a>
+    </div>
   </div>
   <% if (upcoming.length === 0) { %>
     <p class="empty-state">אין אירועים קרובים</p>
