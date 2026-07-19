@@ -122,6 +122,7 @@
     branch: classRow.branch || "",
     className: classRow.name + (classRow.parallel ? (" " + classRow.parallel) : ""),
     teacher: teachers.length ? ("הרב " + teachers[0].first_name + " " + teachers[0].last_name) : "",
+    todayHebrew: todayHebrewStr,
   },
   students: students.map(s => {
     const address = [s.street, s.house_number].filter(Boolean).join(" ") + (s.city ? (", " + s.city) : "");
@@ -139,7 +140,7 @@
 
   async function buildClassListDoc(meta, students) {
     const esc = (s) => (s == null ? '' : String(s)).replace(/[&<>]/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
-    const today = new Date().toLocaleDateString('he-IL', { timeZone: 'Asia/Jerusalem' });
+    const today = meta.todayHebrew;
     const scale = students.length > 45 ? 2 : 3;
     const rows = students.map((s, i) => `<tr>
       <td class="c">${i + 1}</td><td>${esc(s.last)}</td><td>${esc(s.first)}</td>
@@ -150,7 +151,7 @@
     wrap.style.cssText = 'position:fixed;left:-10000px;top:0;background:#fff';
     wrap.innerHTML = `<div id="__cl" dir="rtl" style="width:1062px;background:#fff;color:#111;font-family:'Segoe UI',Arial,sans-serif;font-size:13px">
       <style>
-        #__cl .rep-head{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid #222;padding-bottom:5px;margin-bottom:8px}
+        #__cl .rep-head{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid #222;padding-bottom:4px;margin-bottom:6px}
         #__cl .rh-inst{font-size:18px;font-weight:800}#__cl .rh-title{font-size:15px;font-weight:700;margin-top:2px}
         #__cl .rh-meta{font-size:12px;color:#444;text-align:left}
         #__cl table{width:100%;border-collapse:collapse;table-layout:fixed}
@@ -158,9 +159,9 @@
         #__cl th{background:#e9e9f2;font-weight:700}#__cl td.c,#__cl th.c{text-align:center}
         #__cl .tel{direction:ltr;unicode-bidi:plaintext;text-align:right}
         #__cl tbody tr:nth-child(even){background:#f6f6fb}
-        #__cl .rh-logo{display:block;margin:0 auto 8px;max-height:70px;max-width:220px}
+        #__cl .rh-logo{display:block;margin:0 auto 4px;max-height:40px;max-width:150px}
       </style>
-      <img class="rh-logo" src="${window.location.origin}/images/logo.png" crossorigin="anonymous" />
+      <img class="rh-logo" src="${window.location.origin}/images/logo-reports.jpg" crossorigin="anonymous" />
       <div class="rep-head">
         <div><div class="rh-inst">${esc(meta.institution || '')}</div>
           <div class="rh-title">רשימת תלמידים — ${esc(meta.className || '')}${meta.branch ? (' · ' + esc(meta.branch)) : ''}</div></div>

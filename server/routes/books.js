@@ -4,6 +4,7 @@ const db = require("../db");
 const ExcelJS = require("exceljs");
 const path = require("path");
 const fs = require("fs");
+const hd = require("../hebrewDate");
 
 const LOGO_PATH = path.join(__dirname, "..", "public", "images", "logo-reports.jpg");
 
@@ -1414,7 +1415,7 @@ router.get("/inventory/order/export-pdf", (req, res) => {
     .filter((r) => r.to_order > 0);
 
   const grandQty = rows.reduce((s, r) => s + r.to_order, 0);
-  const today = new Date().toLocaleDateString("he-IL", { timeZone: "Asia/Jerusalem" });
+  const today = hd.serialToHebrewString(hd.todayAccessSerial());
   const deliveryAddress = DELIVERY_ADDRESS_BY_BRANCH[branch] || `${branch || ""} בני ברק`;
 
   res.render("books/order-final", { branch, rows, grandQty, today, deliveryAddress });

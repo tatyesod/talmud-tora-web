@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const db = require("../db");
 const { buildOrderBy } = require("../sortHelper");
+const hd = require("../hebrewDate");
 
 router.get("/", (req, res) => {
   const { q, category, status } = req.query;
@@ -367,7 +368,7 @@ router.get("/:id/order/print", (req, res) => {
   `).all(branch || "", req.params.id).map(r => ({ ...r, to_order: r.desired_stock - r.current_stock }));
 
   const contact = contact_id ? db.prepare("SELECT * FROM supplier_contacts WHERE id = ?").get(contact_id) : null;
-  const today = new Date().toLocaleDateString("he-IL");
+  const today = hd.serialToHebrewString(hd.todayAccessSerial());
 
   res.render("suppliers/order-print", { supplier, branch, rows, contact, today });
 });

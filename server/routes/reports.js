@@ -39,7 +39,7 @@ async function sendWorkbook(res, filename, sheetName, reportTitle, headerRow, da
 
   ws.mergeCells(3, 1, 3, Math.max(1, lastCol - 1));
   const dateCell = ws.getCell(3, 1);
-  dateCell.value = `הופק בתאריך: ${new Date().toLocaleDateString("he-IL")}`;
+  dateCell.value = `הופק בתאריך: ${hd.serialToHebrewString(hd.todayAccessSerial())}`;
   dateCell.font = { size: 9, italic: true, color: { argb: "FF888888" } };
   dateCell.alignment = { horizontal: "right", vertical: "middle" };
 

@@ -23,7 +23,7 @@
       <tr><td class="label">טלפון בית</td><td colspan="3"><%= student.home_phone || '' %></td></tr>
       <tr><td class="label">כתובת</td><td colspan="3"><%= [student.street, student.house_number, student.apartment ? 'דירה '+student.apartment : '', student.city].filter(Boolean).join(', ') %></td></tr>
     </table>
-    <p style="margin-top:40px; font-size:0.8em; color:var(--muted);">הופק ממערכת ניהול תלמוד תורה בתאריך <%= new Date().toLocaleDateString('he-IL') %></p>
+    <p style="margin-top:40px; font-size:0.8em; color:var(--muted);">הופק ממערכת ניהול תלמוד תורה בתאריך <%= todayHebrewStr %></p>
   </div>
 </body>
 </html>
