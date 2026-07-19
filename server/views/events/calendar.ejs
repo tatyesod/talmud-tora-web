@@ -2,7 +2,7 @@
 
 <div class="card">
   <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
-    <h1>📅 לוח שנה - <%= monthName %> <%= year %> <span style="color:var(--muted); font-weight:normal; font-size:0.7em;">(<%= hebMonthsLabel %>)</span></h1>
+    <h1>📅 <%= monthName %> <%= hebrewYearLabel %> <span style="color:var(--muted); font-weight:normal; font-size:0.65em;">(<%= gregRangeLabel %>)</span></h1>
     <div class="actions">
       <a href="/events/list" class="btn secondary">📋 תצוגת רשימה</a>
       <a href="/events/new" class="btn">+ אירוע חדש</a>
@@ -17,14 +17,14 @@
     </div>
     <form method="GET" action="/events/calendar" style="display:flex; gap:8px; align-items:center;">
       <select name="month">
-        <% ["ינואר","פברואר","מרץ","אפריל","מאי","יוני","יולי","אוגוסט","ספטמבר","אוקטובר","נובמבר","דצמבר"].forEach((mn, i) => { %>
-          <option value="<%= i+1 %>" <%= (i+1) === month ? 'selected' : '' %>><%= mn %></option>
+        <% allMonthOptions.forEach(o => { %>
+          <option value="<%= o.value %>" <%= o.value === month ? 'selected' : '' %>><%= o.label %></option>
         <% }) %>
       </select>
       <select name="year">
-        <% for (let y = todayYear - 3; y <= todayYear + 3; y++) { %>
-          <option value="<%= y %>" <%= y === year ? 'selected' : '' %>><%= y %></option>
-        <% } %>
+        <% yearOptions.forEach(o => { %>
+          <option value="<%= o.value %>" <%= o.value === year ? 'selected' : '' %>><%= o.label %></option>
+        <% }) %>
       </select>
       <button type="submit" class="btn small secondary">קפוץ</button>
     </form>
@@ -43,8 +43,8 @@
             <td class="cal-cell <%= d.isCurrentMonth ? '' : 'dim' %> <%= d.isToday ? 'today' : '' %> <%= d.isSaturday ? 'sat-col' : '' %>">
               <div class="cal-cell-head">
                 <a href="/events/new?date=<%= d.dateStr %>" class="cal-add" title="הוסף אירוע ביום זה">+</a>
-                <span class="cal-daynum"><%= d.day %></span>
                 <span class="cal-hebday"><%= d.hebDay %><% if (d.showHebMonth) { %> <%= d.hebMonthLabel %><% } %></span>
+                <span class="cal-gregday"><%= d.gregDay %>/<%= d.gregMonthShort %></span>
               </div>
               <% if (d.holiday) { %><div class="cal-holiday"><%= d.holiday %></div><% } %>
               <% d.events.forEach(e => { %>
@@ -67,9 +67,9 @@
   .cal-cell.today { background: #fff9db; }
   .cal-cell.sat-col { background: #fdecea; }
   .cal-cell.dim.sat-col { background: #fbf3f2; }
-  .cal-cell-head { display: flex; justify-content: space-between; align-items: center; }
-  .cal-daynum { font-weight: 700; font-size: 1.1em; }
-  .cal-hebday { color: #2c5f9e; font-size: 0.8em; font-weight: 600; }
+  .cal-cell-head { display: flex; justify-content: space-between; align-items: center; gap: 4px; }
+  .cal-hebday { font-weight: 700; font-size: 1.15em; }
+  .cal-gregday { color: var(--muted); font-size: 0.75em; }
   .cal-add { color: var(--muted); text-decoration: none; font-weight: 700; font-size: 1.1em; opacity: 0.4; }
   .cal-add:hover { opacity: 1; }
   .cal-holiday { color: #a94442; font-size: 0.78em; font-weight: 600; margin: 2px 0; }

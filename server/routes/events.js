@@ -38,26 +38,53 @@ function withDates(e) {
   };
 }
 
-// ============ תצוגת לוח שנה חודשי - עם ניווט חודש/שנה, ולחיצה על יום פותחת יצירת אירוע ============
-router.get("/calendar", (req, res) => {
-  const today = new Date();
-  const year = parseInt(req.query.year, 10) || today.getFullYear();
-  const month = parseInt(req.query.month, 10) || (today.getMonth() + 1); // 1-12
+// סדר החודשים העבריים בתוך שנה (מתחיל בתשרי, ראש השנה) - לצורך ניווט "חודש
+// קודם/הבא" נכון. בשנה מעוברת יש גם אדר ב' (13) אחרי אדר א' (12).
+function hebrewMonthOrder(year) {
+  return hd.isHebrewLeapYear(year)
+    ? [7, 8, 9, 10, 11, 12, 13, 1, 2, 3, 4, 5, 6]
+    : [7, 8, 9, 10, 11, 12, 1, 2, 3, 4, 5, 6];
+}
+function nextHebrewMonth(year, month) {
+  const order = hebrewMonthOrder(year);
+  const idx = order.indexOf(month);
+  if (idx === order.length - 1) return { year: year + 1, month: 7 };
+  return { year, month: order[idx + 1] };
+}
+function prevHebrewMonth(year, month) {
+  const order = hebrewMonthOrder(year);
+  const idx = order.indexOf(month);
+  if (idx === 0) {
+    const prevOrder = hebrewMonthOrder(year - 1);
+    return { year: year - 1, month: prevOrder[prevOrder.length - 1] };
+  }
+  return { year, month: order[idx - 1] };
+}
 
-  // טווח הלוח: מתחילים ביום ראשון שלפני (או ביום) ה-1 לחודש, מסיימים בשבת
-  // שאחרי (או ב) היום האחרון בחודש - כך שיש תמיד שבועות שלמים בלוח
-  const firstOfMonth = new Date(year, month - 1, 1);
-  const lastOfMonth = new Date(year, month, 0);
-  const gridStart = new Date(firstOfMonth);
-  gridStart.setDate(gridStart.getDate() - gridStart.getDay());
-  const gridEnd = new Date(lastOfMonth);
-  gridEnd.setDate(gridEnd.getDate() + (6 - gridEnd.getDay()));
+// ============ תצוגת לוח שנה חודשי עברי - עם ניווט חודש/שנה עברי, ולחיצה על
+// יום פותחת יצירת אירוע. התאריך הלועזי מוצג כמידע משני. ============
+router.get("/calendar", (req, res) => {
+  const todayParts = hd.todayHebrewParts();
+  const year = parseInt(req.query.year, 10) || todayParts.year;
+  const month = parseInt(req.query.month, 10) || todayParts.month;
 
   const pad = (n) => String(n).padStart(2, "0");
-  const toDateStr = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  const gregKeyOf = (dateObj) => `${dateObj.getUTCFullYear()}-${pad(dateObj.getUTCMonth() + 1)}-${pad(dateObj.getUTCDate())}`;
 
-  const startSerial = hd.gregorianStringToSerial(toDateStr(gridStart));
-  const endSerial = hd.gregorianStringToSerial(toDateStr(gridEnd));
+  // טווח החודש העברי המבוקש (במונחי "יום אבסולוטי" - ספירה ליניארית, כדי
+  // להימנע מהצורך לחשב תאריכים עבריים ידנית - הפונקציות הקיימות כבר עושות
+  // את ההמרות בצורה מדויקת)
+  const startAbsolute = hd.hebrewPartsToAbsolute(year, month, 1);
+  const daysInMonth = hd.daysInHebrewMonth(month, year);
+  const endAbsolute = startAbsolute + daysInMonth - 1;
+
+  const startDateObj = hd.serialToDateObject(hd.absoluteToAccessSerial(startAbsolute));
+  const endDateObj = hd.serialToDateObject(hd.absoluteToAccessSerial(endAbsolute));
+  const gridStartAbsolute = startAbsolute - startDateObj.getUTCDay();
+  const gridEndAbsolute = endAbsolute + (6 - endDateObj.getUTCDay());
+
+  const startSerial = hd.absoluteToAccessSerial(gridStartAbsolute);
+  const endSerial = hd.absoluteToAccessSerial(gridEndAbsolute);
 
   const events = db.prepare(`
     SELECT e.*, c.name AS class_name, c.parallel FROM events e
@@ -67,54 +94,49 @@ router.get("/calendar", (req, res) => {
   `).all(startSerial, endSerial).map(withDates);
   const eventsByDate = {};
   events.forEach((e) => {
-    // מפתח לפי YYYY-MM-DD (לא event_date_str, שזה DD/MM/YYYY לתצוגה) - כדי
-    // שיתאים בדיוק למפתחות הימים בלוח
-    const eventDateObj = hd.serialToDateObject(e.event_date);
-    const key = `${eventDateObj.getUTCFullYear()}-${pad(eventDateObj.getUTCMonth() + 1)}-${pad(eventDateObj.getUTCDate())}`;
+    const key = gregKeyOf(hd.serialToDateObject(e.event_date));
     if (!eventsByDate[key]) eventsByDate[key] = [];
     eventsByDate[key].push(e);
   });
 
-  const todayStr = toDateStr(today);
+  const todayKey = gregKeyOf(hd.serialToDateObject(hd.todayAccessSerial()));
   const weeks = [];
-  let cursor = new Date(gridStart);
-  const hebMonthsInView = new Set();
-  while (cursor <= gridEnd) {
-    const week = [];
-    for (let i = 0; i < 7; i++) {
-      const dateStr = toDateStr(cursor);
-      const serial = hd.gregorianStringToSerial(dateStr);
-      const hebParts = hd.serialToHebrewParts(serial);
-      const hebMonthLabel = hebrewMonthName(hebParts.month, hebParts.year);
-      hebMonthsInView.add(hebMonthLabel);
-      week.push({
-        dateStr,
-        day: cursor.getDate(),
-        isCurrentMonth: cursor.getMonth() === month - 1,
-        isToday: dateStr === todayStr,
-        isSaturday: cursor.getDay() === 6,
-        hebDay: hd.hebrewNumeral(hebParts.day),
-        hebMonthLabel,
-        showHebMonth: hebParts.day === 1,
-        holiday: hebrewHoliday(hebParts.month, hebParts.day, hebParts.year),
-        events: eventsByDate[dateStr] || [],
-      });
-      cursor.setDate(cursor.getDate() + 1);
-    }
-    weeks.push(week);
+  let week = [];
+  for (let absolute = gridStartAbsolute; absolute <= gridEndAbsolute; absolute++) {
+    const serial = hd.absoluteToAccessSerial(absolute);
+    const hebParts = hd.serialToHebrewParts(serial);
+    const gregDateObj = hd.serialToDateObject(serial);
+    const dateKey = gregKeyOf(gregDateObj);
+    const hebMonthLabel = hebrewMonthName(hebParts.month, hebParts.year);
+    week.push({
+      dateStr: hd.serialToInputDate(serial),
+      hebDay: hd.hebrewNumeral(hebParts.day),
+      hebMonthLabel,
+      showHebMonth: hebParts.day === 1,
+      gregDay: gregDateObj.getUTCDate(),
+      gregMonthShort: gregDateObj.getUTCMonth() + 1,
+      isCurrentMonth: hebParts.month === month && hebParts.year === year,
+      isToday: dateKey === todayKey,
+      isSaturday: gregDateObj.getUTCDay() === 6,
+      holiday: hebrewHoliday(hebParts.month, hebParts.day, hebParts.year),
+      events: eventsByDate[dateKey] || [],
+    });
+    if (week.length === 7) { weeks.push(week); week = []; }
   }
 
-  const monthNames = ["ינואר", "פברואר", "מרץ", "אפריל", "מאי", "יוני", "יולי", "אוגוסט", "ספטמבר", "אוקטובר", "נובמבר", "דצמבר"];
-  let prevMonth = month - 1, prevYear = year;
-  if (prevMonth < 1) { prevMonth = 12; prevYear--; }
-  let nextMonth = month + 1, nextYear = year;
-  if (nextMonth > 12) { nextMonth = 1; nextYear++; }
+  const prev = prevHebrewMonth(year, month);
+  const next = nextHebrewMonth(year, month);
+
+  const yearOptions = [];
+  for (let y = year - 3; y <= year + 3; y++) yearOptions.push({ value: y, label: hd.formatHebrewYear(y) });
 
   res.render("events/calendar", {
-    year, month, monthName: monthNames[month - 1], weeks,
-    hebMonthsLabel: Array.from(hebMonthsInView).filter(Boolean).join("-"),
-    prevMonth, prevYear, nextMonth, nextYear,
-    todayMonth: today.getMonth() + 1, todayYear: today.getFullYear(),
+    year, month, monthName: hebrewMonthName(month, year), hebrewYearLabel: hd.formatHebrewYear(year), weeks,
+    gregRangeLabel: `${hd.serialToGregorianString(startSerial)} - ${hd.serialToGregorianString(endSerial)}`,
+    prevMonth: prev.month, prevYear: prev.year, nextMonth: next.month, nextYear: next.year,
+    todayMonth: todayParts.month, todayYear: todayParts.year,
+    allMonthOptions: hebrewMonthOrder(year).map((m) => ({ value: m, label: hebrewMonthName(m, year) })),
+    yearOptions,
   });
 });
 
