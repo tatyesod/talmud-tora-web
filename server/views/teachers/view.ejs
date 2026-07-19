@@ -377,8 +377,11 @@
     if (opening) {
       const iframe = el.querySelector('iframe[data-pdf-path]');
       if (iframe && !iframe.src) {
-        const fileUrl = window.location.origin + iframe.getAttribute('data-pdf-path');
-        iframe.src = 'https://docs.google.com/gview?url=' + encodeURIComponent(fileUrl) + '&embedded=true';
+        // משתמשים בתצוגת ה-PDF המובנית של הדפדפן עצמו (לא בשירות חיצוני כמו
+        // Google Docs Viewer, שדורש שהקובץ יהיה נגיש לציבור באינטרנט - וזה
+        // לא המצב כאן, כי הקובץ מוגן בהתחברות של המערכת. הדפדפן, לעומת זאת,
+        // כבר מחובר ורואה את הקובץ בלי בעיה).
+        iframe.src = iframe.getAttribute('data-pdf-path');
       }
     }
   }
