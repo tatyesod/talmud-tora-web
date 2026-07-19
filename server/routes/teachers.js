@@ -183,7 +183,7 @@ router.get("/monthly-reports", (req, res) => {
 router.get("/staffing-map", (req, res) => {
   const classes = db.prepare(`
     SELECT id, name, parallel, branch FROM classes
-    WHERE status = 'פעיל'
+    WHERE status = 'פעיל' AND name NOT LIKE 'עדיין לא נכנסו%'
     ORDER BY branch, name, parallel
   `).all();
 
