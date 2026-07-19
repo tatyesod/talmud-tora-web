@@ -20,6 +20,8 @@ const BOOK_GRADE_OPTIONS = [
 // שורות שכבר לא משויכות לאותה כיתה - אבל ורק אם אין עליהן הזמנה אמיתית (כדי
 // לא לפגוע בהזמנות קיימות). זה מה ששומר את הקטלוג מסונכרן אוטומטית עם השיוך
 // בלי להשאיר "עמודות מיותרות" תקועות בהזמנת הספרים של הכיתות.
+// בנוי לביצועים: כל הנתונים נשלפים בכמה שאילתות מרוכזות (לא שאילתה בודדת לכל
+// פריט), והכתיבות רצות בטרנזקציה אחת - כדי שהריצה (על כל טעינת מלאי) תהיה מהירה.
 function syncCatalogFromPrices() {
   const years = db.prepare("SELECT DISTINCT year_label FROM book_catalog").all().map((r) => r.year_label);
   const currentYear = db.prepare("SELECT value FROM settings WHERE key='current_hebrew_year'").get()?.value;
@@ -31,31 +33,46 @@ function syncCatalogFromPrices() {
     JOIN book_price_grades bpg ON bpg.book_price_id = bp.id
   `).all();
 
+  // שולפים בבת אחת את כל שורות הקטלוג הקיימות (לשנים הרלוונטיות), לבדיקת
+  // "קיים? מחיר/הוצאה זהים?" מהיר במפה, במקום שאילתה נפרדת לכל שילוב
+  const existingRows = years.length
+    ? db.prepare(`SELECT id, year_label, class_name, item_name, price, publisher FROM book_catalog WHERE year_label IN (${years.map(() => "?").join(",")})`).all(...years)
+    : [];
+  const existingMap = new Map();
+  existingRows.forEach((r) => existingMap.set(`${r.year_label}|${r.class_name}|${r.item_name}`, r));
+
+  const insertStmt = db.prepare("INSERT INTO book_catalog (year_label, class_name, item_name, publisher, price, sort_order) VALUES (?,?,?,?,?,0)");
+  const updateStmt = db.prepare("UPDATE book_catalog SET price = ?, publisher = ? WHERE id = ?");
+
   let added = 0, updated = 0;
-  years.forEach((year) => {
-    assignments.forEach((a) => {
-      const existing = db.prepare(
-        "SELECT id, price, publisher FROM book_catalog WHERE year_label = ? AND class_name = ? AND item_name = ?"
-      ).get(year, a.class_name, a.item_name);
-      if (existing) {
-        if (existing.price !== a.price || existing.publisher !== a.publisher) {
-          db.prepare("UPDATE book_catalog SET price = ?, publisher = ? WHERE id = ?").run(a.price, a.publisher, existing.id);
-          updated++;
+  db.exec("BEGIN TRANSACTION");
+  try {
+    years.forEach((year) => {
+      assignments.forEach((a) => {
+        const existing = existingMap.get(`${year}|${a.class_name}|${a.item_name}`);
+        if (existing) {
+          if (existing.price !== a.price || existing.publisher !== a.publisher) {
+            updateStmt.run(a.price, a.publisher, existing.id);
+            updated++;
+          }
+        } else {
+          insertStmt.run(year, a.class_name, a.item_name, a.publisher, a.price);
+          added++;
         }
-      } else {
-        db.prepare(
-          "INSERT INTO book_catalog (year_label, class_name, item_name, publisher, price, sort_order) VALUES (?,?,?,?,?,0)"
-        ).run(year, a.class_name, a.item_name, a.publisher, a.price);
-        added++;
-      }
+      });
     });
-  });
+    db.exec("COMMIT");
+  } catch (e) {
+    db.exec("ROLLBACK");
+    throw e;
+  }
 
   // ניקוי שוטף: מוחקים שורות קטלוג של ספר שכבר לא משויך לאותה כיתה - אבל
   // ורק אם אין עליהן שום הזמנה אמיתית (זה בדיוק מה שגורם ל"עמודות מיותרות"
   // כשמשנים שיוך ב"שיוך ספר לכיתה" - בלי הניקוי הזה, השורה הישנה נשארת
   // תקועה בקטלוג לנצח). שורות עם הזמנה אמיתית לא נמחקות - ימשיכו להופיע
   // בבדיקת ההתאמות לבדיקה ידנית, כדי לא לאבד הזמנה בטעות.
+  // שולפים גם את ספירת ההזמנות של כולן בבת אחת (במקום שאילתה נפרדת לכל שורה).
   let removed = 0, keptWithOrders = 0;
   const orphanRows = db.prepare(`
     SELECT bc.id FROM book_catalog bc
@@ -64,15 +81,29 @@ function syncCatalogFromPrices() {
       SELECT 1 FROM book_price_grades bpg WHERE bpg.book_price_id = bp.id AND bpg.class_name = bc.class_name
     )
   `).all();
-  orphanRows.forEach((row) => {
-    const orderCount = db.prepare("SELECT COUNT(*) c FROM book_orders WHERE catalog_id = ?").get(row.id).c;
-    if (orderCount === 0) {
-      db.prepare("DELETE FROM book_catalog WHERE id = ?").run(row.id);
-      removed++;
-    } else {
-      keptWithOrders++;
+  if (orphanRows.length) {
+    const orphanIds = orphanRows.map((r) => r.id);
+    const orderCounts = db.prepare(
+      `SELECT catalog_id, COUNT(*) c FROM book_orders WHERE catalog_id IN (${orphanIds.map(() => "?").join(",")}) GROUP BY catalog_id`
+    ).all(...orphanIds);
+    const orderCountMap = new Map(orderCounts.map((r) => [r.catalog_id, r.c]));
+    const deleteStmt = db.prepare("DELETE FROM book_catalog WHERE id = ?");
+    db.exec("BEGIN TRANSACTION");
+    try {
+      orphanRows.forEach((row) => {
+        if (!orderCountMap.has(row.id)) {
+          deleteStmt.run(row.id);
+          removed++;
+        } else {
+          keptWithOrders++;
+        }
+      });
+      db.exec("COMMIT");
+    } catch (e) {
+      db.exec("ROLLBACK");
+      throw e;
     }
-  });
+  }
 
   return { added, updated, removed, keptWithOrders };
 }
