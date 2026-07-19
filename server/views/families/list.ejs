@@ -67,7 +67,8 @@
             <td><%- phoneLink(f.home_phone) %></td>
             <td><%- phoneLink(f.father_mobile) %></td>
             <td><%- phoneLink(f.mother_mobile) %></td>
-            <td class="nowrap-cell"><%= [f.street, f.house_number, f.city].filter(Boolean).join(' ') %></td>
+            <td class="nowrap-cell"><%= [f.street, f.house_number].filter(Boolean).join(' ') %></td>
+            <td class="nowrap-cell"><%= f.city || '' %></td>
             <td class="nowrap-cell"><strong><%= f.tuitionTotal.toLocaleString() %> ₪</strong></td>
             <td class="nowrap-cell">
               <a href="/families/<%= f.id %>" class="btn small secondary">צפייה</a>
