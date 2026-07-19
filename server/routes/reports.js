@@ -231,7 +231,7 @@ router.get("/families-report/export", async (req, res) => {
     SELECT s.first_name, s.last_name, c.name AS class_name, c.parallel
     FROM students s LEFT JOIN classes c ON s.class_id = c.id
     WHERE s.family_id = ? AND s.status='פעיל' AND c.id IS NOT NULL
-    ORDER BY c.name, c.parallel LIMIT 1
+    ORDER BY s.birth_date_civil ASC LIMIT 1
   `);
 
   const header = ["שם משפחה", "שם האב", "שם האם", "טלפון בית", "נייד אב", "נייד אם", "כתובת", "מס' ילדים פעילים", "שם האח הבכור", "כיתת האח הבכור"];
