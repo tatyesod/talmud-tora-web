@@ -1217,6 +1217,23 @@ router.post("/inventory/diagnostics/add-as-new", (req, res) => {
   res.redirect(`/books/inventory/diagnostics?year=${encodeURIComponent(yr || "")}`);
 });
 
+// מחזיר מפה (book_price_id -> כמות שכבר הוזמנה נכון לאיפוס האחרון) לסניף
+// ושנה נתונים - כדי ש"הוזמן" יציג רק הזמנות חדשות מאז ההזמנה האחרונה
+// שיצאה בפועל לספק (ולא יספור שוב מה שכבר נשלח). אם אין איפוס בכלל לסניף
+// הזה - מחזיר מפה ריקה (הכל נחשב "חדש", כמו היום).
+function getCheckpointBaseline(branch, year) {
+  const checkpoint = db.prepare(`
+    SELECT id FROM book_order_checkpoints
+    WHERE branch = ? AND year_label = ?
+    ORDER BY created_at DESC LIMIT 1
+  `).get(branch, year);
+  if (!checkpoint) return new Map();
+  const rows = db.prepare(
+    "SELECT book_price_id, ordered_count FROM book_order_checkpoint_items WHERE checkpoint_id = ?"
+  ).all(checkpoint.id);
+  return new Map(rows.map((r) => [r.book_price_id, r.ordered_count]));
+}
+
 router.get("/inventory", (req, res) => {
   const classBranches = db.prepare("SELECT DISTINCT branch FROM classes WHERE branch IS NOT NULL AND branch<>'' ORDER BY branch").all().map(r => r.branch);
   const ALL_BRANCHES = ["סוקולוב", "נפחא", "בן פתחיה"];
@@ -1229,6 +1246,8 @@ router.get("/inventory", (req, res) => {
   // מסנכרנים שם/מחיר/הוצאה בין הקטלוג לקטלוג ההזמנה בכל טעינה - כך שכל שינוי
   // במחירון מתעדכן אוטומטית בלי פעולה נוספת.
   syncCatalogFromPrices();
+
+  const checkpointBaseline = getCheckpointBaseline(branch, year);
 
   const items = db.prepare(`
     SELECT bp.id AS book_price_id, bp.item_name, bp.publisher, bp.notes, bp.price,
@@ -1245,7 +1264,7 @@ router.get("/inventory", (req, res) => {
               JOIN students s2 ON e.student_id = s2.id
               LEFT JOIN classes c2 ON s2.class_id = c2.id
               WHERE TRIM(e.item_name) = TRIM(bp.item_name) AND e.year_label = ? AND COALESCE(c2.branch, s2.branch) = ?)
-           ) AS ordered_count
+           ) AS ordered_count_raw
     FROM book_prices bp
     LEFT JOIN book_inventory bi ON bi.book_price_id = bp.id AND bi.branch = ?
     WHERE EXISTS (
@@ -1254,10 +1273,11 @@ router.get("/inventory", (req, res) => {
       WHERE bpg.book_price_id = bp.id
     )
     ORDER BY bp.item_name
-  `).all(year, branch, year, branch, branch, branch).map((it) => ({
-    ...it,
-    to_order: it.ordered_count + it.extra_quantity - it.current_stock,
-  }));
+  `).all(year, branch, year, branch, branch, branch).map((it) => {
+    const baseline = checkpointBaseline.get(it.book_price_id) || 0;
+    const ordered_count = Math.max(0, it.ordered_count_raw - baseline);
+    return { ...it, ordered_count, to_order: ordered_count + it.extra_quantity - it.current_stock };
+  });
 
   res.render("books/inventory", {
     branches, branch, years, year, items,
@@ -1272,8 +1292,10 @@ router.get("/inventory/print", (req, res) => {
   const defaultYear = db.prepare("SELECT value FROM settings WHERE key='current_hebrew_year'").get()?.value || years[0] || 'תשפ"ז';
   const year = req.query.year || defaultYear;
 
+  const checkpointBaseline = getCheckpointBaseline(branch, year);
+
   const items = db.prepare(`
-    SELECT bp.item_name, bp.publisher, bp.notes,
+    SELECT bp.id AS book_price_id, bp.item_name, bp.publisher, bp.notes,
            COALESCE(bi.current_stock, 0) AS current_stock,
            COALESCE(bi.extra_quantity, 5) AS extra_quantity,
            (
@@ -1287,7 +1309,7 @@ router.get("/inventory/print", (req, res) => {
               JOIN students s2 ON e.student_id = s2.id
               LEFT JOIN classes c2 ON s2.class_id = c2.id
               WHERE TRIM(e.item_name) = TRIM(bp.item_name) AND e.year_label = ? AND COALESCE(c2.branch, s2.branch) = ?)
-           ) AS ordered_count
+           ) AS ordered_count_raw
     FROM book_prices bp
     LEFT JOIN book_inventory bi ON bi.book_price_id = bp.id AND bi.branch = ?
     WHERE EXISTS (
@@ -1296,10 +1318,11 @@ router.get("/inventory/print", (req, res) => {
       WHERE bpg.book_price_id = bp.id
     )
     ORDER BY bp.item_name
-  `).all(year, branch, year, branch, branch, branch).map((it) => ({
-    ...it,
-    to_order: Math.max(0, it.ordered_count + it.extra_quantity - it.current_stock),
-  }));
+  `).all(year, branch, year, branch, branch, branch).map((it) => {
+    const baseline = checkpointBaseline.get(it.book_price_id) || 0;
+    const ordered_count = Math.max(0, it.ordered_count_raw - baseline);
+    return { ...it, ordered_count, to_order: Math.max(0, ordered_count + it.extra_quantity - it.current_stock) };
+  });
 
   const headers = ["ספר", "הוצאה", "הערות", "מלאי לפי המערכת", "כמות להזמנה", "ספירה בפועל (למילוי ידני)"];
   const rows = items.map(it => [it.item_name, it.publisher || "", it.notes || "", it.current_stock, it.to_order, ""]);
@@ -1340,8 +1363,10 @@ router.get("/inventory/order", (req, res) => {
   const defaultYear = db.prepare("SELECT value FROM settings WHERE key='current_hebrew_year'").get()?.value || years[0] || 'תשפ"ז';
   const year = req.query.year || defaultYear;
 
+  const checkpointBaseline = getCheckpointBaseline(branch, year);
+
   const rows = db.prepare(`
-    SELECT bp.item_name, bp.publisher, bp.price,
+    SELECT bp.id AS book_price_id, bp.item_name, bp.publisher, bp.price,
            COALESCE(bi.current_stock, 0) AS current_stock,
            COALESCE(bi.extra_quantity, 5) AS extra_quantity,
            (
@@ -1355,7 +1380,7 @@ router.get("/inventory/order", (req, res) => {
               JOIN students s2 ON e.student_id = s2.id
               LEFT JOIN classes c2 ON s2.class_id = c2.id
               WHERE TRIM(e.item_name) = TRIM(bp.item_name) AND e.year_label = ? AND COALESCE(c2.branch, s2.branch) = ?)
-           ) AS ordered_count
+           ) AS ordered_count_raw
     FROM book_prices bp
     LEFT JOIN book_inventory bi ON bi.book_price_id = bp.id AND bi.branch = ?
     WHERE EXISTS (
@@ -1365,12 +1390,16 @@ router.get("/inventory/order", (req, res) => {
     )
     ORDER BY bp.item_name
   `).all(year, branch, year, branch, branch, branch)
-    .map((r) => ({ ...r, to_order: r.ordered_count + r.extra_quantity - r.current_stock }))
+    .map((r) => {
+      const baseline = checkpointBaseline.get(r.book_price_id) || 0;
+      const ordered_count = Math.max(0, r.ordered_count_raw - baseline);
+      return { ...r, ordered_count, to_order: ordered_count + r.extra_quantity - r.current_stock };
+    })
     .filter((r) => r.to_order > 0);
 
   const grandQty = rows.reduce((s, r) => s + r.to_order, 0);
 
-  res.render("books/inventory-order", { branches, branch, years, year, rows, grandQty });
+  res.render("books/inventory-order", { branches, branch, years, year, rows, grandQty, reset: req.query.reset === "1" });
 });
 
 // כתובות אספקה לפי סניף - מוצג בטופס ההזמנה הסופי לספק
@@ -1386,8 +1415,10 @@ router.get("/inventory/order/export-pdf", (req, res) => {
   const defaultYear = db.prepare("SELECT value FROM settings WHERE key='current_hebrew_year'").get()?.value || years[0] || 'תשפ"ז';
   const year = req.query.year || defaultYear;
 
+  const checkpointBaseline = getCheckpointBaseline(branch, year);
+
   const rows = db.prepare(`
-    SELECT bp.item_name, bp.publisher,
+    SELECT bp.id AS book_price_id, bp.item_name, bp.publisher,
            COALESCE(bi.current_stock, 0) AS current_stock,
            COALESCE(bi.extra_quantity, 5) AS extra_quantity,
            (
@@ -1401,7 +1432,7 @@ router.get("/inventory/order/export-pdf", (req, res) => {
               JOIN students s2 ON e.student_id = s2.id
               LEFT JOIN classes c2 ON s2.class_id = c2.id
               WHERE TRIM(e.item_name) = TRIM(bp.item_name) AND e.year_label = ? AND COALESCE(c2.branch, s2.branch) = ?)
-           ) AS ordered_count
+           ) AS ordered_count_raw
     FROM book_prices bp
     LEFT JOIN book_inventory bi ON bi.book_price_id = bp.id AND bi.branch = ?
     WHERE EXISTS (
@@ -1411,7 +1442,11 @@ router.get("/inventory/order/export-pdf", (req, res) => {
     )
     ORDER BY bp.item_name
   `).all(year, branch, year, branch, branch, branch)
-    .map((r) => ({ ...r, to_order: r.ordered_count + r.extra_quantity - r.current_stock }))
+    .map((r) => {
+      const baseline = checkpointBaseline.get(r.book_price_id) || 0;
+      const ordered_count = Math.max(0, r.ordered_count_raw - baseline);
+      return { ...r, ordered_count, to_order: ordered_count + r.extra_quantity - r.current_stock };
+    })
     .filter((r) => r.to_order > 0);
 
   const grandQty = rows.reduce((s, r) => s + r.to_order, 0);
@@ -1427,8 +1462,10 @@ router.get("/inventory/order/export", async (req, res) => {
   const defaultYear = db.prepare("SELECT value FROM settings WHERE key='current_hebrew_year'").get()?.value || years[0] || 'תשפ"ז';
   const year = req.query.year || defaultYear;
 
+  const checkpointBaseline = getCheckpointBaseline(branch, year);
+
   const rows = db.prepare(`
-    SELECT bp.item_name, bp.publisher,
+    SELECT bp.id AS book_price_id, bp.item_name, bp.publisher,
            COALESCE(bi.current_stock, 0) AS current_stock,
            COALESCE(bi.extra_quantity, 5) AS extra_quantity,
            (
@@ -1442,7 +1479,7 @@ router.get("/inventory/order/export", async (req, res) => {
               JOIN students s2 ON e.student_id = s2.id
               LEFT JOIN classes c2 ON s2.class_id = c2.id
               WHERE TRIM(e.item_name) = TRIM(bp.item_name) AND e.year_label = ? AND COALESCE(c2.branch, s2.branch) = ?)
-           ) AS ordered_count
+           ) AS ordered_count_raw
     FROM book_prices bp
     LEFT JOIN book_inventory bi ON bi.book_price_id = bp.id AND bi.branch = ?
     WHERE EXISTS (
@@ -1452,7 +1489,11 @@ router.get("/inventory/order/export", async (req, res) => {
     )
     ORDER BY bp.item_name
   `).all(year, branch, year, branch, branch, branch)
-    .map((r) => ({ ...r, to_order: r.ordered_count + r.extra_quantity - r.current_stock }))
+    .map((r) => {
+      const baseline = checkpointBaseline.get(r.book_price_id) || 0;
+      const ordered_count = Math.max(0, r.ordered_count_raw - baseline);
+      return { ...r, ordered_count, to_order: ordered_count + r.extra_quantity - r.current_stock };
+    })
     .filter((r) => r.to_order > 0);
 
   const wb = new ExcelJS.Workbook();
@@ -1481,6 +1522,98 @@ router.get("/inventory/order/export", async (req, res) => {
   res.setHeader("Content-Disposition", `attachment; filename="${encodeURIComponent(`הזמנה-מהספק-${branch}.xlsx`)}"`);
   res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
   await wb.xlsx.write(res); res.end();
+});
+
+// ============ איפוס הזמנה (checkpoint) - רק בלחיצה מפורשת, לעולם לא אוטומטית ============
+router.post("/inventory/checkpoint", (req, res) => {
+  const { branch, year, note } = req.body;
+  const checkpointBaseline = getCheckpointBaseline(branch, year);
+
+  const rows = db.prepare(`
+    SELECT bp.id AS book_price_id, bp.item_name, bp.publisher,
+           COALESCE(bi.current_stock, 0) AS current_stock,
+           COALESCE(bi.extra_quantity, 5) AS extra_quantity,
+           (
+             (SELECT COUNT(*) FROM book_orders bo
+              JOIN book_catalog bc ON bo.catalog_id = bc.id AND TRIM(bc.item_name) = TRIM(bp.item_name) AND bc.year_label = ?
+              JOIN students s ON bo.student_id = s.id
+              LEFT JOIN classes c ON s.class_id = c.id
+              WHERE COALESCE(c.branch, s.branch) = ?)
+             +
+             (SELECT COUNT(*) FROM book_order_extras e
+              JOIN students s2 ON e.student_id = s2.id
+              LEFT JOIN classes c2 ON s2.class_id = c2.id
+              WHERE TRIM(e.item_name) = TRIM(bp.item_name) AND e.year_label = ? AND COALESCE(c2.branch, s2.branch) = ?)
+           ) AS ordered_count_raw
+    FROM book_prices bp
+    LEFT JOIN book_inventory bi ON bi.book_price_id = bp.id AND bi.branch = ?
+    WHERE EXISTS (
+      SELECT 1 FROM book_price_grades bpg
+      JOIN classes cx ON cx.name = bpg.class_name AND cx.branch = ?
+      WHERE bpg.book_price_id = bp.id
+    )
+  `).all(year, branch, year, branch, branch, branch)
+    .map((r) => {
+      const baseline = checkpointBaseline.get(r.book_price_id) || 0;
+      const ordered_count = Math.max(0, r.ordered_count_raw - baseline);
+      return { ...r, ordered_count, to_order: ordered_count + r.extra_quantity - r.current_stock };
+    })
+    .filter((r) => r.to_order > 0);
+
+  db.exec("BEGIN TRANSACTION");
+  try {
+    const info = db.prepare("INSERT INTO book_order_checkpoints (branch, year_label, created_at, note) VALUES (?,?,?,?)")
+      .run(branch, year, new Date().toISOString(), note || null);
+    const checkpointId = info.lastInsertRowid;
+    const insertItem = db.prepare(`
+      INSERT INTO book_order_checkpoint_items (checkpoint_id, book_price_id, item_name, publisher, ordered_count, extra_quantity, current_stock, to_order)
+      VALUES (?,?,?,?,?,?,?,?)
+    `);
+    rows.forEach((r) => {
+      insertItem.run(checkpointId, r.book_price_id, r.item_name, r.publisher, r.ordered_count, r.extra_quantity, r.current_stock, r.to_order);
+    });
+    db.exec("COMMIT");
+  } catch (e) {
+    db.exec("ROLLBACK");
+    throw e;
+  }
+
+  res.redirect(`/books/inventory/order?branch=${encodeURIComponent(branch)}&year=${encodeURIComponent(year)}&reset=1`);
+});
+
+// ============ היסטוריית הזמנות שיצאו לספק (מאורגן לפי שנה) ============
+router.get("/inventory/checkpoints", (req, res) => {
+  const checkpoints = db.prepare("SELECT * FROM book_order_checkpoints ORDER BY year_label DESC, created_at DESC").all();
+  const grouped = {};
+  checkpoints.forEach((c) => {
+    if (!grouped[c.year_label]) grouped[c.year_label] = [];
+    grouped[c.year_label].push(c);
+  });
+  res.render("books/checkpoints-list", { grouped });
+});
+
+router.get("/inventory/checkpoints/:id", (req, res) => {
+  const checkpoint = db.prepare("SELECT * FROM book_order_checkpoints WHERE id = ?").get(req.params.id);
+  if (!checkpoint) return res.redirect("/books/inventory/checkpoints");
+  const items = db.prepare("SELECT * FROM book_order_checkpoint_items WHERE checkpoint_id = ? ORDER BY item_name").all(req.params.id);
+  res.render("books/checkpoint-detail", { checkpoint, items, saved: req.query.saved === "1" });
+});
+
+router.post("/inventory/checkpoints/:id/reconcile", (req, res) => {
+  let itemIds = req.body.item_id || [];
+  let received = req.body.received_quantity || [];
+  let notes = req.body.reconciliation_notes || [];
+  if (!Array.isArray(itemIds)) itemIds = [itemIds];
+  if (!Array.isArray(received)) received = [received];
+  if (!Array.isArray(notes)) notes = [notes];
+
+  const update = db.prepare("UPDATE book_order_checkpoint_items SET received_quantity = ?, reconciliation_notes = ? WHERE id = ?");
+  itemIds.forEach((id, i) => {
+    const val = received[i] === "" ? null : parseInt(received[i], 10);
+    update.run(isNaN(val) ? null : val, (notes[i] || "").trim() || null, id);
+  });
+
+  res.redirect(`/books/inventory/checkpoints/${req.params.id}?saved=1`);
 });
 
 module.exports = router;

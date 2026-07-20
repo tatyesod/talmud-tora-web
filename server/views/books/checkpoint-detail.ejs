@@ -1,0 +1,72 @@
+<%- include('../partials/header', {title: 'בדיקת הזמנה שסופקה', wide: true}) %>
+
+<div class="card">
+  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+    <h1>📦 הזמנה מ-<%= new Date(checkpoint.created_at).toLocaleDateString('he-IL') %> - <%= checkpoint.branch %></h1>
+    <div class="actions">
+      <a href="/books/inventory/checkpoints" class="btn secondary">← חזרה להיסטוריה</a>
+    </div>
+  </div>
+
+  <p style="color:var(--muted); font-size:0.9em;">
+    זו ההזמנה בדיוק כפי שנשלחה לספק (שנת <%= checkpoint.year_label %><% if (checkpoint.note) { %>, הערה: <%= checkpoint.note %><% } %>).
+    אפשר לסמן כאן כמה באמת הגיע מכל ספר - אם יש חוסר או עודף, זה יחושב אוטומטית.
+  </p>
+
+  <% if (saved) { %>
+    <div style="background:#e8f5e9; border:1px solid #a5d6a7; color:#2e7d32; border-radius:8px; padding:10px 16px; margin-bottom:14px;">
+      ✅ הבדיקה נשמרה בהצלחה.
+    </div>
+  <% } %>
+
+  <form method="POST" action="/books/inventory/checkpoints/<%= checkpoint.id %>/reconcile">
+    <div class="actions" style="margin-bottom:14px;">
+      <button type="submit" class="btn">💾 שמור בדיקת אספקה</button>
+    </div>
+    <div class="table-scroll-wrap">
+      <table>
+        <thead><tr><th>ספר</th><th>הוצאה</th><th>הוזמן מהספק</th><th>כמות שהגיעה</th><th>הפרש</th><th>הערות</th></tr></thead>
+        <tbody>
+          <% items.forEach(it => { %>
+            <tr>
+              <td><%= it.item_name %></td>
+              <td><%= it.publisher || '' %></td>
+              <td><strong><%= it.to_order %></strong></td>
+              <td>
+                <input type="hidden" name="item_id" value="<%= it.id %>" />
+                <input type="number" class="received-input" data-order="<%= it.to_order %>" name="received_quantity" value="<%= it.received_quantity != null ? it.received_quantity : '' %>" min="0" style="width:90px;" />
+              </td>
+              <td class="diff-cell" style="font-weight:700;">
+                <% if (it.received_quantity != null) { %>
+                  <% const diff = it.received_quantity - it.to_order; %>
+                  <span style="color:<%= diff === 0 ? '#2e7d32' : (diff < 0 ? '#a94442' : '#8a6d00') %>;">
+                    <%= diff > 0 ? '+' + diff + ' עודף' : (diff < 0 ? diff + ' חוסר' : 'תואם') %>
+                  </span>
+                <% } %>
+              </td>
+              <td><input type="text" name="reconciliation_notes" value="<%= it.reconciliation_notes || '' %>" placeholder="הערה" style="min-width:120px;" /></td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  </form>
+</div>
+
+<script>
+  document.querySelectorAll('.received-input').forEach((input) => {
+    input.addEventListener('input', () => {
+      const row = input.closest('tr');
+      const diffCell = row.querySelector('.diff-cell');
+      const ordered = parseInt(input.getAttribute('data-order'), 10) || 0;
+      const received = input.value === '' ? null : (parseInt(input.value, 10) || 0);
+      if (received === null) { diffCell.innerHTML = ''; return; }
+      const diff = received - ordered;
+      const color = diff === 0 ? '#2e7d32' : (diff < 0 ? '#a94442' : '#8a6d00');
+      const text = diff > 0 ? ('+' + diff + ' עודף') : (diff < 0 ? (diff + ' חוסר') : 'תואם');
+      diffCell.innerHTML = '<span style="color:' + color + ';">' + text + '</span>';
+    });
+  });
+</script>
+
+<%- include('../partials/footer') %>

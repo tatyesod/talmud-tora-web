@@ -846,6 +846,41 @@ try {
   console.error("שגיאה ביצירת טבלת חופשות:", e.message);
 }
 
+// מנגנון "איפוס הזמנה" בהזמנת ספרים: כשמוציאים הזמנה בפועל לספק, לוחצים
+// "איפוס" - זה שומר תמונת מצב (checkpoint) של מה שהוזמן (לפי סניף), ומאותו
+// רגע "כמות להזמנה" מחושבת רק מהזמנות **חדשות** שנוספו אחרי האיפוס - בלי
+// לאבד או למחוק אף הזמנה אמיתית של תלמיד. איפוס קורה **רק** בלחיצה מפורשת,
+// לעולם לא אוטומטית.
+try {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS book_order_checkpoints (
+      id INTEGER PRIMARY KEY,
+      branch TEXT NOT NULL,
+      year_label TEXT NOT NULL,
+      created_at TEXT NOT NULL,
+      note TEXT
+    )
+  `);
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS book_order_checkpoint_items (
+      id INTEGER PRIMARY KEY,
+      checkpoint_id INTEGER NOT NULL,
+      book_price_id INTEGER NOT NULL,
+      item_name TEXT NOT NULL,
+      publisher TEXT,
+      ordered_count INTEGER NOT NULL,
+      extra_quantity INTEGER NOT NULL,
+      current_stock INTEGER NOT NULL,
+      to_order INTEGER NOT NULL,
+      received_quantity INTEGER,
+      reconciliation_notes TEXT,
+      FOREIGN KEY(checkpoint_id) REFERENCES book_order_checkpoints(id)
+    )
+  `);
+} catch (e) {
+  console.error("שגיאה ביצירת טבלאות איפוס הזמנת ספרים:", e.message);
+}
+
 // ניקוי חד-פעמי: השדה "מעבר לכיתה" התמלא בעבר אוטומטית בערך המקבילה הקיים,
 // אבל הוחלט שברירת המחדל האמיתית תהיה ריק (ואז המערכת מניחה "אותה מקבילה").
 // דגל ב-settings מבטיח שהניקוי הזה ירוץ פעם אחת בלבד, ולא ימחק ידנית ערכים

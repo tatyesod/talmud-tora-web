@@ -6,17 +6,30 @@
     <div class="actions">
       <a href="/books" class="btn secondary">← חזרה</a>
       <a href="/books/inventory?branch=<%= encodeURIComponent(branch) %>&year=<%= encodeURIComponent(year) %>" class="btn secondary">📦 עדכון מלאי</a>
+      <a href="/books/inventory/checkpoints" class="btn secondary">📚 היסטוריית הזמנות</a>
       <% if (rows.length > 0) { %>
         <a href="/books/inventory/order/export?branch=<%= encodeURIComponent(branch) %>&year=<%= encodeURIComponent(year) %>" class="btn">📥 ייצוא הזמנה ל-Excel</a>
         <a href="/books/inventory/order/export-pdf?branch=<%= encodeURIComponent(branch) %>&year=<%= encodeURIComponent(year) %>" class="btn" target="_blank">🖨️ יצוא הזמנה סופית (PDF)</a>
+        <form method="POST" action="/books/inventory/checkpoint" style="display:inline;" onsubmit="return confirm('לבצע איפוס הזמנה? הרשימה הנוכחית (<%= rows.length %> ספרים) תישמר בהיסטוריה, ומעתה \\'הוזמן\\' יציג רק הזמנות חדשות מהיום. פעולה זו לא מוחקת אף הזמנה אמיתית.');">
+          <input type="hidden" name="branch" value="<%= branch %>" />
+          <input type="hidden" name="year" value="<%= year %>" />
+          <button type="submit" class="btn" style="background:#a94442;">🔄 בצע איפוס הזמנה</button>
+        </form>
       <% } %>
     </div>
   </div>
 
   <p style="color:var(--muted); font-size:0.9em;">
     הרשימה מציגה רק ספרים שבאמת צריך להזמין (הוזמן בפועל + תוספת, פחות מלאי נוכחי - יוצא חיובי). אם ספר לא מופיע
-    כאן, סימן שהמלאי הקיים מספיק לכיסוי מה שהוזמן בפועל והתוספת.
+    כאן, סימן שהמלאי הקיים מספיק לכיסוי מה שהוזמן בפועל והתוספת. "הוזמן" מציג רק הזמנות חדשות מאז האיפוס האחרון
+    (אם היה) - כדי לראות את כל ההיסטוריה, גשו ל"📚 היסטוריית הזמנות".
   </p>
+
+  <% if (reset) { %>
+    <div style="background:#e8f5e9; border:1px solid #a5d6a7; color:#2e7d32; border-radius:8px; padding:10px 16px; margin-bottom:14px;">
+      ✅ ההזמנה אופסה ונשמרה בהיסטוריה. מעתה "הוזמן" יציג רק הזמנות חדשות.
+    </div>
+  <% } %>
 
   <form method="GET" action="/books/inventory/order" style="margin-bottom:14px; display:flex; gap:14px; flex-wrap:wrap; align-items:center;">
     <span><label><strong>סניף:</strong></label>

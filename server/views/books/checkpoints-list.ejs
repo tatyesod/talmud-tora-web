@@ -1,0 +1,37 @@
+<%- include('../partials/header', {title: 'היסטוריית הזמנות לספק', wide: true}) %>
+
+<div class="card">
+  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+    <h1>📚 היסטוריית הזמנות שיצאו לספק</h1>
+    <a href="/books" class="btn secondary">← חזרה</a>
+  </div>
+
+  <p style="color:var(--muted); font-size:0.9em;">
+    בכל פעם שלוחצים "🔄 בצע איפוס הזמנה" במסך ההזמנה, נשמרת כאן תמונת מצב מלאה של מה שהוזמן באותו רגע - כדי שתוכלו
+    תמיד לחזור ולראות מה בדיוק נשלח לספק, ולבדוק מול מה שבאמת הגיע.
+  </p>
+
+  <% const yearsList = Object.keys(grouped); %>
+  <% if (yearsList.length === 0) { %>
+    <p class="empty-state">אין עדיין היסטוריית הזמנות - היא תיווצר בפעם הראשונה שתלחצו "בצע איפוס הזמנה".</p>
+  <% } else { %>
+    <% yearsList.forEach(yearLabel => { %>
+      <h3 style="margin-top:22px; border-bottom:1px solid var(--border); padding-bottom:6px;"><%= yearLabel %></h3>
+      <table>
+        <thead><tr><th>סניף</th><th>תאריך</th><th>הערה</th><th></th></tr></thead>
+        <tbody>
+          <% grouped[yearLabel].forEach(c => { %>
+            <tr>
+              <td><%= c.branch %></td>
+              <td><%= new Date(c.created_at).toLocaleDateString('he-IL') %></td>
+              <td><%= c.note || '' %></td>
+              <td><a href="/books/inventory/checkpoints/<%= c.id %>" class="btn small secondary">צפייה / בדיקת אספקה</a></td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    <% }) %>
+  <% } %>
+</div>
+
+<%- include('../partials/footer') %>
