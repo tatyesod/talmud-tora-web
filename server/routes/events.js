@@ -78,6 +78,8 @@ router.get("/vacations", (req, res) => {
     ...v,
     start_str: hd.serialToHebrewString(v.start_date),
     end_str: hd.serialToHebrewString(v.end_date),
+    start_parts: hd.serialToHebrewParts(v.start_date),
+    end_parts: hd.serialToHebrewParts(v.end_date),
   }));
   res.render("events/vacations", { vacations, ...hebrewDateOptions() });
 });
@@ -93,6 +95,21 @@ router.post("/vacations", (req, res) => {
   const endSerial = hd.absoluteToAccessSerial(endAbs);
   db.prepare("INSERT INTO vacations (title, start_date, end_date, created_at) VALUES (?,?,?,?)").run(
     title, Math.min(startSerial, endSerial), Math.max(startSerial, endSerial), new Date().toISOString()
+  );
+  res.redirect("/events/vacations");
+});
+
+router.put("/vacations/:id", (req, res) => {
+  const { title, start_day, start_month, start_year, end_day, end_month, end_year } = req.body;
+  if (!title || !start_day || !start_month || !start_year || !end_day || !end_month || !end_year) {
+    return res.redirect("/events/vacations");
+  }
+  const startAbs = hd.hebrewPartsToAbsolute(parseInt(start_year, 10), parseInt(start_month, 10), parseInt(start_day, 10));
+  const endAbs = hd.hebrewPartsToAbsolute(parseInt(end_year, 10), parseInt(end_month, 10), parseInt(end_day, 10));
+  const startSerial = hd.absoluteToAccessSerial(startAbs);
+  const endSerial = hd.absoluteToAccessSerial(endAbs);
+  db.prepare("UPDATE vacations SET title = ?, start_date = ?, end_date = ? WHERE id = ?").run(
+    title, Math.min(startSerial, endSerial), Math.max(startSerial, endSerial), req.params.id
   );
   res.redirect("/events/vacations");
 });

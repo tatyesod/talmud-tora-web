@@ -59,9 +59,50 @@
             <td><%= v.title %></td>
             <td><%= v.start_str %></td>
             <td><%= v.end_str %></td>
-            <td>
+            <td style="white-space:nowrap;">
+              <button type="button" class="btn small secondary" onclick="toggleEdit(<%= v.id %>)">✏️ עריכה</button>
               <form method="POST" action="/events/vacations/<%= v.id %>?_method=DELETE" onsubmit="return confirm('למחוק חופשה זו?');" style="display:inline">
                 <button type="submit" class="btn small danger">מחק</button>
+              </form>
+            </td>
+          </tr>
+          <tr id="edit-row-<%= v.id %>" style="display:none;">
+            <td colspan="4">
+              <form method="POST" action="/events/vacations/<%= v.id %>?_method=PUT" style="display:flex; flex-wrap:wrap; gap:14px; align-items:end; background:var(--bg); padding:12px; border-radius:8px;">
+                <div class="form-group">
+                  <label>שם החופשה</label>
+                  <input type="text" name="title" value="<%= v.title %>" required style="min-width:160px;" />
+                </div>
+                <div class="form-group">
+                  <label>מתאריך (עברי)</label>
+                  <div style="display:flex; gap:6px;">
+                    <select name="start_day" required>
+                      <% days.forEach(d => { %><option value="<%= d.value %>" <%= d.value === v.start_parts.day ? 'selected' : '' %>><%= d.label %></option><% }) %>
+                    </select>
+                    <select name="start_month" required>
+                      <% months.forEach(m => { %><option value="<%= m.value %>" <%= m.value === v.start_parts.month ? 'selected' : '' %>><%= m.label %></option><% }) %>
+                    </select>
+                    <select name="start_year" required>
+                      <% years.forEach(y => { %><option value="<%= y.value %>" <%= y.value === v.start_parts.year ? 'selected' : '' %>><%= y.label %></option><% }) %>
+                    </select>
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label>עד תאריך (עברי)</label>
+                  <div style="display:flex; gap:6px;">
+                    <select name="end_day" required>
+                      <% days.forEach(d => { %><option value="<%= d.value %>" <%= d.value === v.end_parts.day ? 'selected' : '' %>><%= d.label %></option><% }) %>
+                    </select>
+                    <select name="end_month" required>
+                      <% months.forEach(m => { %><option value="<%= m.value %>" <%= m.value === v.end_parts.month ? 'selected' : '' %>><%= m.label %></option><% }) %>
+                    </select>
+                    <select name="end_year" required>
+                      <% years.forEach(y => { %><option value="<%= y.value %>" <%= y.value === v.end_parts.year ? 'selected' : '' %>><%= y.label %></option><% }) %>
+                    </select>
+                  </div>
+                </div>
+                <button type="submit" class="btn small">💾 שמור שינויים</button>
+                <button type="button" class="btn small secondary" onclick="toggleEdit(<%= v.id %>)">ביטול</button>
               </form>
             </td>
           </tr>
@@ -70,5 +111,12 @@
     </table>
   <% } %>
 </div>
+
+<script>
+  function toggleEdit(id) {
+    const row = document.getElementById('edit-row-' + id);
+    row.style.display = row.style.display === 'none' ? '' : 'none';
+  }
+</script>
 
 <%- include('../partials/footer') %>
