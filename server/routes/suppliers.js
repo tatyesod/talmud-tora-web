@@ -338,7 +338,7 @@ router.get("/:id/order", (req, res) => {
   const branch = req.query.branch || branches[0] || "";
 
   const rows = db.prepare(`
-    SELECT si.item_name, si.category, si.price,
+    SELECT si.item_name, si.category, si.price, si.notes,
            COALESCE(sii.current_stock,0) AS current_stock, COALESCE(sii.desired_stock,0) AS desired_stock
     FROM supplier_items si
     LEFT JOIN supplier_item_inventory sii ON sii.supplier_item_id = si.id AND sii.branch = ?
@@ -359,7 +359,7 @@ router.get("/:id/order/print", (req, res) => {
   const { branch, contact_id } = req.query;
 
   const rows = db.prepare(`
-    SELECT si.item_name, si.category,
+    SELECT si.item_name, si.category, si.notes,
            COALESCE(sii.current_stock,0) AS current_stock, COALESCE(sii.desired_stock,0) AS desired_stock
     FROM supplier_items si
     LEFT JOIN supplier_item_inventory sii ON sii.supplier_item_id = si.id AND sii.branch = ?

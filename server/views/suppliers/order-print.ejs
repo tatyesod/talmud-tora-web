@@ -55,17 +55,18 @@
     </table>
 
     <table class="items">
-      <thead><tr><th>מוצר</th><th>קטגוריה</th><th>כמות להזמנה</th></tr></thead>
+      <thead><tr><th>מוצר</th><th>קטגוריה</th><th>הערות</th><th>כמות להזמנה</th></tr></thead>
       <tbody>
         <% let totalQty = 0; %>
         <% rows.forEach(r => { totalQty += r.to_order; %>
           <tr>
             <td><%= r.item_name %></td>
             <td><%= r.category || '' %></td>
+            <td><%= r.notes || '' %></td>
             <td><strong><%= r.to_order %></strong></td>
           </tr>
         <% }) %>
-        <tr class="total-row"><td colspan="2">סה"כ יחידות</td><td><%= totalQty %></td></tr>
+        <tr class="total-row"><td colspan="3">סה"כ יחידות</td><td><%= totalQty %></td></tr>
       </tbody>
     </table>
   </div>

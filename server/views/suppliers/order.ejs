@@ -35,12 +35,13 @@
   <% } else { %>
     <div class="table-scroll-wrap">
       <table>
-        <thead><tr><th>מוצר</th><th>קטגוריה</th><th>מלאי נוכחי</th><th>כמות רצויה</th><th>כמות להזמנה</th><th>מחיר</th><th>סה"כ</th></tr></thead>
+        <thead><tr><th>מוצר</th><th>קטגוריה</th><th>הערות</th><th>מלאי נוכחי</th><th>כמות רצויה</th><th>כמות להזמנה</th><th>מחיר</th><th>סה"כ</th></tr></thead>
         <tbody>
           <% rows.forEach(r => { %>
             <tr>
               <td><%= r.item_name %></td>
               <td><%= r.category || '' %></td>
+              <td style="color:var(--muted); font-size:0.9em;"><%= r.notes || '' %></td>
               <td><%= r.current_stock %></td>
               <td><%= r.desired_stock %></td>
               <td><strong><%= r.to_order %></strong></td>
