@@ -5,6 +5,7 @@
     <h1>📅 <%= monthName %> <%= hebrewYearLabel %> <span style="color:var(--muted); font-weight:normal; font-size:0.65em;">(<%= gregRangeLabel %>)</span></h1>
     <div class="actions">
       <a href="/events/list" class="btn secondary">📋 תצוגת רשימה</a>
+      <a href="/events/vacations" class="btn secondary">🏖️ חופשות</a>
       <a href="/events/new" class="btn">+ אירוע חדש</a>
     </div>
   </div>
@@ -40,12 +41,13 @@
       <% weeks.forEach(week => { %>
         <tr>
           <% week.forEach(d => { %>
-            <td class="cal-cell <%= d.isCurrentMonth ? '' : 'dim' %> <%= d.isToday ? 'today' : '' %> <%= d.isSaturday ? 'sat-col' : '' %>">
+            <td class="cal-cell <%= d.isCurrentMonth ? '' : 'dim' %> <%= d.isToday ? 'today' : '' %> <%= d.isSaturday ? 'sat-col' : '' %> <%= d.isVacation ? 'vacation' : '' %>">
               <div class="cal-cell-head">
                 <a href="/events/new?date=<%= d.dateStr %>" class="cal-add" title="הוסף אירוע ביום זה">+</a>
                 <span class="cal-hebday"><%= d.hebDay %><% if (d.showHebMonth) { %> <%= d.hebMonthLabel %><% } %></span>
                 <span class="cal-gregday"><%= d.gregDay %>/<%= d.gregMonthShort %></span>
               </div>
+              <% if (d.isVacation) { %><div class="cal-vacation"><%= d.vacationTitle %></div><% } %>
               <% if (d.holiday) { %><div class="cal-holiday"><%= d.holiday %></div><% } %>
               <% d.events.forEach(e => { %>
                 <a href="/events/<%= e.id %>" class="cal-event" title="<%= e.title %>"><%= e.title %></a>
@@ -65,7 +67,11 @@
   .cal-cell { border: 1px solid var(--border); vertical-align: top; height: 110px; padding: 4px 6px; position: relative; }
   .cal-cell.dim { background: #fafafa; color: var(--muted); }
   .cal-cell.today { background: #fff9db; }
+  .cal-cell.vacation { background: #f0e6f9; }
+  .cal-cell.vacation.today { background: linear-gradient(135deg, #fff9db 50%, #f0e6f9 50%); }
+  .cal-vacation { color: #6a3d9a; font-size: 0.78em; font-weight: 700; margin: 2px 0; }
   .cal-cell.sat-col { background: #fdecea; }
+  .cal-cell.vacation.sat-col { background: #e6d4f2; }
   .cal-cell.dim.sat-col { background: #fbf3f2; }
   .cal-cell-head { display: flex; justify-content: space-between; align-items: center; gap: 4px; }
   .cal-hebday { font-weight: 700; font-size: 1.15em; }

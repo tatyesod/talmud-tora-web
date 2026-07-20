@@ -830,6 +830,22 @@ try {
   console.error("שגיאה בשינוי שם כלי כתיבה ד-ו:", e.message);
 }
 
+// טבלת חופשות מוסד - תקופות (תאריך התחלה-סוף, לפי סריאל גישה כמו event_date)
+// שיסומנו בצבע שונה על לוח השנה
+try {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS vacations (
+      id INTEGER PRIMARY KEY,
+      title TEXT NOT NULL,
+      start_date INTEGER NOT NULL,
+      end_date INTEGER NOT NULL,
+      created_at TEXT
+    )
+  `);
+} catch (e) {
+  console.error("שגיאה ביצירת טבלת חופשות:", e.message);
+}
+
 // ניקוי חד-פעמי: השדה "מעבר לכיתה" התמלא בעבר אוטומטית בערך המקבילה הקיים,
 // אבל הוחלט שברירת המחדל האמיתית תהיה ריק (ואז המערכת מניחה "אותה מקבילה").
 // דגל ב-settings מבטיח שהניקוי הזה ירוץ פעם אחת בלבד, ולא ימחק ידנית ערכים

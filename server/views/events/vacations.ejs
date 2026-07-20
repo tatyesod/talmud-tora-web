@@ -1,0 +1,74 @@
+<%- include('../partials/header', {title: 'חופשות מוסד'}) %>
+
+<div class="card">
+  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+    <h1>🏖️ חופשות מוסד</h1>
+    <a href="/events/calendar" class="btn secondary">📅 חזרה ללוח השנה</a>
+  </div>
+
+  <p style="color:var(--muted); font-size:0.9em;">
+    כל טווח תאריכים שתגדירו כאן יסומן בצבע שונה בלוח השנה, כדי שיהיה ברור על פני החודש אילו ימים הם חופשה.
+  </p>
+
+  <h3 style="margin-top:20px;">➕ הוספת חופשה</h3>
+  <form method="POST" action="/events/vacations" style="display:flex; flex-wrap:wrap; gap:14px; align-items:end;">
+    <div class="form-group">
+      <label>שם החופשה</label>
+      <input type="text" name="title" placeholder="לדוגמה: חופשת סוכות" required style="min-width:180px;" />
+    </div>
+    <div class="form-group">
+      <label>מתאריך (עברי)</label>
+      <div style="display:flex; gap:6px;">
+        <select name="start_day" required>
+          <% days.forEach(d => { %><option value="<%= d %>"><%= d %></option><% }) %>
+        </select>
+        <select name="start_month" required>
+          <% months.forEach(m => { %><option value="<%= m.value %>" <%= m.value === todayParts.month ? 'selected' : '' %>><%= m.label %></option><% }) %>
+        </select>
+        <select name="start_year" required>
+          <% years.forEach(y => { %><option value="<%= y %>" <%= y === todayParts.year ? 'selected' : '' %>><%= y %></option><% }) %>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>עד תאריך (עברי)</label>
+      <div style="display:flex; gap:6px;">
+        <select name="end_day" required>
+          <% days.forEach(d => { %><option value="<%= d %>"><%= d %></option><% }) %>
+        </select>
+        <select name="end_month" required>
+          <% months.forEach(m => { %><option value="<%= m.value %>" <%= m.value === todayParts.month ? 'selected' : '' %>><%= m.label %></option><% }) %>
+        </select>
+        <select name="end_year" required>
+          <% years.forEach(y => { %><option value="<%= y %>" <%= y === todayParts.year ? 'selected' : '' %>><%= y %></option><% }) %>
+        </select>
+      </div>
+    </div>
+    <button type="submit" class="btn">💾 הוסף חופשה</button>
+  </form>
+
+  <h3 style="margin-top:24px;">רשימת חופשות</h3>
+  <% if (vacations.length === 0) { %>
+    <p class="empty-state">אין עדיין חופשות מוגדרות</p>
+  <% } else { %>
+    <table>
+      <thead><tr><th>שם</th><th>מתאריך</th><th>עד תאריך</th><th></th></tr></thead>
+      <tbody>
+        <% vacations.forEach(v => { %>
+          <tr>
+            <td><%= v.title %></td>
+            <td><%= v.start_str %></td>
+            <td><%= v.end_str %></td>
+            <td>
+              <form method="POST" action="/events/vacations/<%= v.id %>?_method=DELETE" onsubmit="return confirm('למחוק חופשה זו?');" style="display:inline">
+                <button type="submit" class="btn small danger">מחק</button>
+              </form>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  <% } %>
+</div>
+
+<%- include('../partials/footer') %>

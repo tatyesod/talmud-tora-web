@@ -63,6 +63,45 @@ function prevHebrewMonth(year, month) {
 
 // ============ תצוגת לוח שנה חודשי עברי - עם ניווט חודש/שנה עברי, ולחיצה על
 // יום פותחת יצירת אירוע. התאריך הלועזי מוצג כמידע משני. ============
+// ============ חופשות מוסד - תקופות שמסומנות בצבע שונה בלוח השנה ============
+function hebrewDateOptions() {
+  const todayParts = hd.todayHebrewParts();
+  const days = Array.from({ length: 30 }, (_, i) => i + 1);
+  const months = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13].map((m) => ({ value: m, label: hebrewMonthName(m, todayParts.year) }));
+  const years = [];
+  for (let y = todayParts.year - 1; y <= todayParts.year + 3; y++) years.push(y);
+  return { days, months, years, todayParts };
+}
+
+router.get("/vacations", (req, res) => {
+  const vacations = db.prepare("SELECT * FROM vacations ORDER BY start_date DESC").all().map((v) => ({
+    ...v,
+    start_str: hd.serialToHebrewString(v.start_date),
+    end_str: hd.serialToHebrewString(v.end_date),
+  }));
+  res.render("events/vacations", { vacations, ...hebrewDateOptions() });
+});
+
+router.post("/vacations", (req, res) => {
+  const { title, start_day, start_month, start_year, end_day, end_month, end_year } = req.body;
+  if (!title || !start_day || !start_month || !start_year || !end_day || !end_month || !end_year) {
+    return res.redirect("/events/vacations");
+  }
+  const startAbs = hd.hebrewPartsToAbsolute(parseInt(start_year, 10), parseInt(start_month, 10), parseInt(start_day, 10));
+  const endAbs = hd.hebrewPartsToAbsolute(parseInt(end_year, 10), parseInt(end_month, 10), parseInt(end_day, 10));
+  const startSerial = hd.absoluteToAccessSerial(startAbs);
+  const endSerial = hd.absoluteToAccessSerial(endAbs);
+  db.prepare("INSERT INTO vacations (title, start_date, end_date, created_at) VALUES (?,?,?,?)").run(
+    title, Math.min(startSerial, endSerial), Math.max(startSerial, endSerial), new Date().toISOString()
+  );
+  res.redirect("/events/vacations");
+});
+
+router.delete("/vacations/:id", (req, res) => {
+  db.prepare("DELETE FROM vacations WHERE id = ?").run(req.params.id);
+  res.redirect("/events/vacations");
+});
+
 router.get("/calendar", (req, res) => {
   const todayParts = hd.todayHebrewParts();
   const year = parseInt(req.query.year, 10) || todayParts.year;
@@ -99,6 +138,14 @@ router.get("/calendar", (req, res) => {
     eventsByDate[key].push(e);
   });
 
+  // חופשות מוסד שחופפות לטווח המוצג - לא לפי יום בודד, אלא לפי טווח (start-end)
+  const vacations = db.prepare(`
+    SELECT * FROM vacations WHERE start_date <= ? AND end_date >= ?
+  `).all(endSerial, startSerial);
+  function vacationOnSerial(serial) {
+    return vacations.find((v) => serial >= v.start_date && serial <= v.end_date);
+  }
+
   const todayKey = gregKeyOf(hd.serialToDateObject(hd.todayAccessSerial()));
   const weeks = [];
   let week = [];
@@ -108,6 +155,7 @@ router.get("/calendar", (req, res) => {
     const gregDateObj = hd.serialToDateObject(serial);
     const dateKey = gregKeyOf(gregDateObj);
     const hebMonthLabel = hebrewMonthName(hebParts.month, hebParts.year);
+    const vacation = vacationOnSerial(serial);
     week.push({
       dateStr: hd.serialToInputDate(serial),
       hebDay: hd.hebrewNumeral(hebParts.day),
@@ -119,6 +167,8 @@ router.get("/calendar", (req, res) => {
       isToday: dateKey === todayKey,
       isSaturday: gregDateObj.getUTCDay() === 6,
       holiday: hebrewHoliday(hebParts.month, hebParts.day, hebParts.year),
+      isVacation: !!vacation,
+      vacationTitle: vacation ? vacation.title : "",
       events: eventsByDate[dateKey] || [],
     });
     if (week.length === 7) { weeks.push(week); week = []; }
