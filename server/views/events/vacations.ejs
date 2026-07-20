@@ -20,13 +20,13 @@
       <label>מתאריך (עברי)</label>
       <div style="display:flex; gap:6px;">
         <select name="start_day" required>
-          <% days.forEach(d => { %><option value="<%= d %>"><%= d %></option><% }) %>
+          <% days.forEach(d => { %><option value="<%= d.value %>"><%= d.label %></option><% }) %>
         </select>
         <select name="start_month" required>
           <% months.forEach(m => { %><option value="<%= m.value %>" <%= m.value === todayParts.month ? 'selected' : '' %>><%= m.label %></option><% }) %>
         </select>
         <select name="start_year" required>
-          <% years.forEach(y => { %><option value="<%= y %>" <%= y === todayParts.year ? 'selected' : '' %>><%= y %></option><% }) %>
+          <% years.forEach(y => { %><option value="<%= y.value %>" <%= y.value === todayParts.year ? 'selected' : '' %>><%= y.label %></option><% }) %>
         </select>
       </div>
     </div>
@@ -34,13 +34,13 @@
       <label>עד תאריך (עברי)</label>
       <div style="display:flex; gap:6px;">
         <select name="end_day" required>
-          <% days.forEach(d => { %><option value="<%= d %>"><%= d %></option><% }) %>
+          <% days.forEach(d => { %><option value="<%= d.value %>"><%= d.label %></option><% }) %>
         </select>
         <select name="end_month" required>
           <% months.forEach(m => { %><option value="<%= m.value %>" <%= m.value === todayParts.month ? 'selected' : '' %>><%= m.label %></option><% }) %>
         </select>
         <select name="end_year" required>
-          <% years.forEach(y => { %><option value="<%= y %>" <%= y === todayParts.year ? 'selected' : '' %>><%= y %></option><% }) %>
+          <% years.forEach(y => { %><option value="<%= y.value %>" <%= y.value === todayParts.year ? 'selected' : '' %>><%= y.label %></option><% }) %>
         </select>
       </div>
     </div>

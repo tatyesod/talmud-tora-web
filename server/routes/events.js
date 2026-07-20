@@ -66,10 +66,10 @@ function prevHebrewMonth(year, month) {
 // ============ חופשות מוסד - תקופות שמסומנות בצבע שונה בלוח השנה ============
 function hebrewDateOptions() {
   const todayParts = hd.todayHebrewParts();
-  const days = Array.from({ length: 30 }, (_, i) => i + 1);
+  const days = Array.from({ length: 30 }, (_, i) => ({ value: i + 1, label: hd.hebrewNumeral(i + 1) }));
   const months = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13].map((m) => ({ value: m, label: hebrewMonthName(m, todayParts.year) }));
   const years = [];
-  for (let y = todayParts.year - 1; y <= todayParts.year + 3; y++) years.push(y);
+  for (let y = todayParts.year - 1; y <= todayParts.year + 3; y++) years.push({ value: y, label: hd.formatHebrewYear(y) });
   return { days, months, years, todayParts };
 }
 
