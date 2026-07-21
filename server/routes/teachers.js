@@ -6,6 +6,7 @@ const { buildOrderBy } = require("../sortHelper");
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
+const ExcelJS = require("exceljs");
 
 // הגדרת multer להעלאת קבצי תיק עובד
 const DATA_DIR = process.env.RENDER_PERSISTENT_DIR || path.join(__dirname, "..");
@@ -79,9 +80,10 @@ function withDates(t) {
   };
 }
 
-router.get("/", (req, res) => {
+function buildTeachersFilterSql(req) {
   const { q } = req.query;
   const status = req.query.status !== undefined ? req.query.status : "פעיל";
+  const branch = req.query.branch || "";
   let sql = `
     SELECT t.*, ch.name AS chassidut_name,
       (SELECT GROUP_CONCAT(c.name || COALESCE(' '||c.parallel,''), ', ')
@@ -103,7 +105,19 @@ router.get("/", (req, res) => {
     sql += " AND t.status = ?";
     params.push(status);
   }
-  sql += " " + buildOrderBy(
+  if (branch) {
+    sql += ` AND EXISTS (
+      SELECT 1 FROM teacher_classes tc2 JOIN classes c2 ON tc2.class_id = c2.id
+      WHERE tc2.teacher_id = t.id AND c2.branch = ?
+    )`;
+    params.push(branch);
+  }
+  return { sql, params, q: q || "", status: status || "", branch };
+}
+
+router.get("/", (req, res) => {
+  const { sql: baseSql, params, q, status, branch } = buildTeachersFilterSql(req);
+  const sql = baseSql + " " + buildOrderBy(
     req,
     {
       last_name: "t.last_name, t.first_name",
@@ -122,8 +136,53 @@ router.get("/", (req, res) => {
     children_count_display: t.children_count != null ? t.children_count : t.children_count_total,
   }));
   const statuses = db.prepare("SELECT DISTINCT status FROM teachers WHERE status IS NOT NULL ORDER BY status").all();
+  const branches = db.prepare("SELECT DISTINCT branch FROM classes WHERE branch IS NOT NULL AND branch != '' ORDER BY branch").all().map((r) => r.branch);
   const totalChildren = teachers.reduce((sum, t) => sum + (t.children_count_display || 0), 0);
-  res.render("teachers/list", { teachers, statuses, q: q || "", status: status || "", sort: req.query.sort || "", dir: req.query.dir || "", totalChildren });
+  res.render("teachers/list", {
+    teachers, statuses, branches, q, status, branch,
+    sort: req.query.sort || "", dir: req.query.dir || "", totalChildren,
+  });
+});
+
+// ============ הפקת דוח מלמדים (Excel) - לפי אותם סינונים שמוצגים במסך ============
+router.get("/report/export", async (req, res) => {
+  const { sql: baseSql, params, branch, status } = buildTeachersFilterSql(req);
+  const sql = baseSql + " ORDER BY t.last_name, t.first_name";
+  const teachers = db.prepare(sql).all(...params).map((t) => ({
+    ...t,
+    children_count_display: t.children_count != null ? t.children_count : t.children_count_total,
+  }));
+
+  const wb = new ExcelJS.Workbook();
+  const ws = wb.addWorksheet("מלמדים ועובדים", { views: [{ rightToLeft: true }] });
+  ws.columns = [
+    { header: "שם משפחה", key: "last_name", width: 18 },
+    { header: "שם פרטי", key: "first_name", width: 14 },
+    { header: "כתובת", key: "address", width: 26 },
+    { header: "שיבוץ בוקר", key: "morning_classes", width: 16 },
+    { header: "שיבוץ אחה\"צ", key: "afternoon_classes", width: 16 },
+    { header: "טלפון", key: "mobile", width: 14 },
+    { header: "מס' ילדים", key: "children_count_display", width: 10 },
+    { header: "סטטוס", key: "status", width: 10 },
+  ];
+  ws.getRow(1).font = { bold: true };
+  teachers.forEach((t) => {
+    const address = [t.street, t.house_number].filter(Boolean).join(" ") + (t.city ? ", " + t.city : "");
+    ws.addRow({
+      last_name: t.last_name || "", first_name: t.first_name || "", address: address.trim().replace(/^,\s*/, ""),
+      morning_classes: t.morning_classes || "", afternoon_classes: t.afternoon_classes || "",
+      mobile: t.mobile || t.home_phone || "", children_count_display: t.children_count_display ?? "",
+      status: t.status || "",
+    });
+  });
+
+  const titleParts = ["דוח מלמדים ועובדים"];
+  if (branch) titleParts.push("סניף " + branch);
+  if (status) titleParts.push("סטטוס " + status);
+  res.setHeader("Content-Disposition", `attachment; filename="${encodeURIComponent(titleParts.join("-") + ".xlsx")}"`);
+  res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+  await wb.xlsx.write(res);
+  res.end();
 });
 
 router.get("/new", (req, res) => {

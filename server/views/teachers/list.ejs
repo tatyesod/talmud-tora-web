@@ -6,6 +6,7 @@
     <div style="display:flex; gap:10px;">
       <a href="/teachers/staffing-map" class="btn secondary">👥 מצבת מלמדים</a>
       <a href="/teachers/monthly-reports" class="btn secondary">📊 מעקב דוחות חודשיים</a>
+      <a href="/teachers/report/export?q=<%= encodeURIComponent(q) %>&status=<%= encodeURIComponent(status) %>&branch=<%= encodeURIComponent(branch) %>" class="btn secondary">📥 הפקת דוח מלמדים</a>
     </div>
   </div>
   <p style="color:var(--muted); font-size:0.9em; margin-top:-8px;">
@@ -13,11 +14,17 @@
     — שימושי לחישוב תקציב חלוקת מתנות
   </p>
   <form class="searchbar auto-filter" method="GET" action="/teachers">
-    <input type="text" name="q" placeholder="חיפוש לפי שם, ת.ז, נייד..." value="<%= q %>" autofocus />
+    <input type="text" name="q" placeholder="חיפוש לפי שם, ת.ז, נייד..." value="<%= q %>" autofocus dir="rtl" style="unicode-bidi: plaintext;" />
     <select name="status">
       <option value="" <%- status === '' ? 'selected' : '' %>>הצג הכל</option>
       <% statuses.forEach(s => { %>
         <option value="<%= s.status %>" <%= status === s.status ? 'selected' : '' %>><%= s.status %></option>
+      <% }) %>
+    </select>
+    <select name="branch">
+      <option value="" <%= branch === '' ? 'selected' : '' %>>כל הסניפים</option>
+      <% branches.forEach(b => { %>
+        <option value="<%= b %>" <%= branch === b ? 'selected' : '' %>><%= b %></option>
       <% }) %>
     </select>
     <button type="submit" class="btn">חיפוש</button>
