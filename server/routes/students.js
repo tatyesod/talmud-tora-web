@@ -386,6 +386,26 @@ router.put("/students/:id", (req, res) => {
     }
   }
 
+  // יצירת משפחה חדשה אם המשתמש בחר "משפחה חדשה" - זמין גם בעריכה, לא רק
+  // ביצירה, כדי שאפשר יהיה להוסיף הורים לתלמיד שכבר נשמר בלי משפחה
+  if (body.family_mode === "new") {
+    const famFields = [
+      "last_name","sector","father_name","father_id_number","father_email",
+      "mother_name","mother_id_number","mother_email",
+      "home_phone","father_mobile","mother_mobile",
+      "father_workplace","father_work_phone","mother_workplace","mother_work_phone",
+      "street","house_number","apartment","city","zip_code","notes"
+    ];
+    const famCols = famFields.filter(f => body["fam_"+f] !== undefined && body["fam_"+f] !== "");
+    const famVals = famCols.map(f => body["fam_"+f]);
+    if (famCols.length > 0) {
+      const famInfo = db.prepare(
+        `INSERT INTO families (${famCols.join(",")}) VALUES (${famCols.map(()=>"?").join(",")})`
+      ).run(...famVals);
+      body.family_id = famInfo.lastInsertRowid;
+    }
+  }
+
   const cols = STUDENT_FIELDS.filter((c) => c in body);
   const setClause = [...cols.map((c) => `${c} = ?`), "updated_at = ?"].join(", ");
   const values = [...cols.map((c) => normalizeField(c, body[c])), new Date().toISOString()];
