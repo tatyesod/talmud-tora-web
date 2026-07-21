@@ -192,6 +192,8 @@ const FAMILY_FIELDS = [
   "home_phone", "father_mobile", "mother_mobile", "father_workplace", "father_work_phone",
   "mother_workplace", "mother_work_phone", "street", "house_number", "apartment", "city", "zip_code",
   "notes", "billing_company",
+  "paternal_grandparents", "paternal_grandparents_address",
+  "maternal_grandparents", "maternal_grandparents_address",
 ];
 
 router.put("/:id", (req, res) => {

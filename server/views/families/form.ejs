@@ -92,6 +92,16 @@
       </div>
     </fieldset>
 
+    <fieldset>
+      <legend>סבים וסבתות</legend>
+      <div class="form-grid">
+        <div class="form-group"><label>הורי האב (סב וסבתא)</label><input type="text" name="paternal_grandparents" value="<%= family.paternal_grandparents || '' %>" placeholder="שם הסב והסבתא מצד האב" /></div>
+        <div class="form-group"><label>כתובת הורי האב</label><input type="text" name="paternal_grandparents_address" value="<%= family.paternal_grandparents_address || '' %>" /></div>
+        <div class="form-group"><label>הורי האם (סב וסבתא)</label><input type="text" name="maternal_grandparents" value="<%= family.maternal_grandparents || '' %>" placeholder="שם הסב והסבתא מצד האם" /></div>
+        <div class="form-group"><label>כתובת הורי האם</label><input type="text" name="maternal_grandparents_address" value="<%= family.maternal_grandparents_address || '' %>" /></div>
+      </div>
+    </fieldset>
+
     <div class="form-group full" style="margin-bottom:14px;"><label>הערות</label><textarea name="notes"><%= family.notes || '' %></textarea></div>
 
     <div class="actions">

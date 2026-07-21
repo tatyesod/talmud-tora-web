@@ -234,7 +234,9 @@ router.post("/students", (req, res) => {
       "mother_name","mother_id_number","mother_email",
       "home_phone","father_mobile","mother_mobile",
       "father_workplace","father_work_phone","mother_workplace","mother_work_phone",
-      "street","house_number","apartment","city","zip_code","notes"
+      "street","house_number","apartment","city","zip_code","notes",
+      "paternal_grandparents","paternal_grandparents_address",
+      "maternal_grandparents","maternal_grandparents_address"
     ];
     const famCols = famFields.filter(f => body["fam_"+f] !== undefined && body["fam_"+f] !== "");
     const famVals = famCols.map(f => body["fam_"+f]);
@@ -394,7 +396,9 @@ router.put("/students/:id", (req, res) => {
       "mother_name","mother_id_number","mother_email",
       "home_phone","father_mobile","mother_mobile",
       "father_workplace","father_work_phone","mother_workplace","mother_work_phone",
-      "street","house_number","apartment","city","zip_code","notes"
+      "street","house_number","apartment","city","zip_code","notes",
+      "paternal_grandparents","paternal_grandparents_address",
+      "maternal_grandparents","maternal_grandparents_address"
     ];
     const famCols = famFields.filter(f => body["fam_"+f] !== undefined && body["fam_"+f] !== "");
     const famVals = famCols.map(f => body["fam_"+f]);
