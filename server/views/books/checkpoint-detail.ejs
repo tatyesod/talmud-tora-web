@@ -3,24 +3,26 @@
 <div class="card">
   <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
     <h1>📦 הזמנה מ-<%= new Date(checkpoint.created_at).toLocaleDateString('he-IL') %> - <%= checkpoint.branch %></h1>
-    <div class="actions">
+    <div class="actions no-print">
       <a href="/books/inventory/checkpoints" class="btn secondary">← חזרה להיסטוריה</a>
+      <button type="button" class="btn secondary" onclick="window.print()">🖨️ הדפס לבדיקה במחסן</button>
     </div>
   </div>
 
-  <p style="color:var(--muted); font-size:0.9em;">
+  <p style="color:var(--muted); font-size:0.9em;" class="no-print">
     זו ההזמנה בדיוק כפי שנשלחה לספק (שנת <%= checkpoint.year_label %><% if (checkpoint.note) { %>, הערה: <%= checkpoint.note %><% } %>).
-    אפשר לסמן כאן כמה באמת הגיע מכל ספר - אם יש חוסר או עודף, זה יחושב אוטומטית.
+    אפשר לסמן כאן כמה באמת הגיע מכל ספר - אם יש חוסר או עודף, זה יחושב אוטומטית. אפשר גם להדפיס את הדף, לבדוק
+    ידנית במחסן עם עט, ואז לחזור ולהזין את התוצאות כאן במערכת.
   </p>
 
   <% if (saved) { %>
-    <div style="background:#e8f5e9; border:1px solid #a5d6a7; color:#2e7d32; border-radius:8px; padding:10px 16px; margin-bottom:14px;">
+    <div class="no-print" style="background:#e8f5e9; border:1px solid #a5d6a7; color:#2e7d32; border-radius:8px; padding:10px 16px; margin-bottom:14px;">
       ✅ הבדיקה נשמרה בהצלחה.
     </div>
   <% } %>
 
   <form method="POST" action="/books/inventory/checkpoints/<%= checkpoint.id %>/reconcile">
-    <div class="actions" style="margin-bottom:14px;">
+    <div class="actions no-print" style="margin-bottom:14px;">
       <button type="submit" class="btn">💾 שמור בדיקת אספקה</button>
     </div>
     <div class="table-scroll-wrap">
@@ -52,6 +54,23 @@
     </div>
   </form>
 </div>
+
+<style>
+  @media print {
+    .no-print, header.topbar, nav, .topbar { display: none !important; }
+    body { background: #fff; }
+    .card { box-shadow: none; border: none; padding: 0; }
+    table { width: 100%; }
+    th, td { border: 1px solid #999 !important; }
+    /* בהדפסה, שדות הקלט נראים כמו קווים ריקים למילוי בעט, לא תיבות דפדפן קטנות */
+    input[type="number"], input[type="text"] {
+      border: none !important;
+      border-bottom: 1px solid #333 !important;
+      background: transparent !important;
+      min-width: 70px;
+    }
+  }
+</style>
 
 <script>
   document.querySelectorAll('.received-input').forEach((input) => {
