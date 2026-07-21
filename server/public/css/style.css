@@ -167,6 +167,18 @@ legend { color: var(--primary-dark); font-weight: 700; padding: 0 8px; }
   header.topbar, .no-print { display: none !important; }
   body { background: #fff; }
   .print-doc { border: none; box-shadow: none; margin: 0; }
+  /* table-scroll-wrap מגביל גובה עם גלילה בתצוגת מסך (75vh) - בהדפסה זה
+     חייב להיעלם לגמרי, אחרת רק החלק שהיה גלוי במסך בזמן ההדפסה יודפס,
+     והשאר "נחתך" ולא מופיע כלל בדף המודפס */
+  .table-scroll-wrap {
+    overflow: visible !important;
+    max-height: none !important;
+    border: none !important;
+  }
+  .table-scroll-wrap thead th {
+    position: static !important;
+    box-shadow: none !important;
+  }
 }
 
 /* ===== Gmail-style Chat ===== */
