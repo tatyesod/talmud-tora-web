@@ -333,13 +333,7 @@
                 <% if (r.is_image) { %>
                   <img src="<%= r.file_path %>" alt="תצוגה מקדימה" style="max-width:100%; max-height:600px; border:1px solid var(--border); border-radius:8px;" />
                 <% } else { %>
-                  <div id="pdf-toolbar-<%= r.id %>" style="display:none; gap:8px; align-items:center; margin-bottom:8px; flex-wrap:wrap;">
-                    <button type="button" class="btn small secondary" onclick="pdfZoom('<%= r.id %>', 0.2)">🔍+ הגדל</button>
-                    <button type="button" class="btn small secondary" onclick="pdfZoom('<%= r.id %>', -0.2)">🔍- הקטן</button>
-                    <button type="button" class="btn small secondary" onclick="pdfRotate('<%= r.id %>')">↻ סובב</button>
-                    <span id="pdf-pagecount-<%= r.id %>" style="color:var(--muted); font-size:0.9em;"></span>
-                  </div>
-                  <div id="pdf-container-<%= r.id %>" style="text-align:center; color:var(--muted); max-height:700px; overflow-y:auto; border:1px solid var(--border); border-radius:8px; padding:8px;">טוען תצוגה מקדימה...</div>
+                  <div id="pdf-container-<%= r.id %>" style="text-align:center; color:var(--muted);">טוען תצוגה מקדימה...</div>
                 <% } %>
               </td>
             </tr>
@@ -381,10 +375,6 @@
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
   }
 
-  // מצב לכל תצוגת PDF פתוחה (מסמך, מידת הגדלה, סיבוב) - כדי שאפשר יהיה
-  // להגדיל/להקטין/לסובב בלי לטעון את הקובץ מחדש בכל פעם
-  const pdfPreviewState = {};
-
   function togglePreview(btn) {
     const id = btn.getAttribute('data-preview-id');
     const filePath = btn.getAttribute('data-file-path');
@@ -393,10 +383,9 @@
     const opening = el.style.display === 'none';
     el.style.display = opening ? '' : 'none';
     if (opening && isPdf) {
-      const reportId = id.replace('preview-', '');
-      if (!pdfPreviewState[reportId]) {
-        pdfPreviewState[reportId] = { scale: 1.3, rotation: 0 };
-        const container = document.getElementById('pdf-container-' + reportId);
+      const container = document.getElementById('pdf-container-' + id.replace('preview-', ''));
+      if (container && !container.dataset.rendered) {
+        container.dataset.rendered = '1';
         // מציירים את ה-PDF ישירות על קנבס בדף עצמו (לא מורידים כקובץ, לא
         // פותחים כרטיסייה חדשה, לא מסתמכים על שירות חיצוני) - שולפים את
         // הקובץ עם fetch (עם עוגיית ההתחברות של המשתמש, אז זה עובד גם
@@ -404,52 +393,25 @@
         fetch(filePath, { credentials: 'same-origin' })
           .then((r) => r.arrayBuffer())
           .then((buf) => pdfjsLib.getDocument({ data: buf }).promise)
-          .then((pdf) => {
-            pdfPreviewState[reportId].pdfDoc = pdf;
-            document.getElementById('pdf-pagecount-' + reportId).textContent = pdf.numPages + ' עמודים';
-            document.getElementById('pdf-toolbar-' + reportId).style.display = 'flex';
-            return renderAllPages(reportId);
+          .then((pdf) => pdf.getPage(1))
+          .then((page) => {
+            const scale = 1.3;
+            const viewport = page.getViewport({ scale });
+            const canvas = document.createElement('canvas');
+            canvas.style.maxWidth = '100%';
+            canvas.style.border = '1px solid var(--border)';
+            canvas.style.borderRadius = '8px';
+            canvas.width = viewport.width;
+            canvas.height = viewport.height;
+            container.innerHTML = '';
+            container.appendChild(canvas);
+            return page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
           })
           .catch(() => {
             container.innerHTML = '<p class="empty-state">לא ניתן להציג תצוגה מקדימה - יש לפתוח את הקובץ בלינק "📎".</p>';
           });
       }
     }
-  }
-
-  function renderAllPages(reportId) {
-    const state = pdfPreviewState[reportId];
-    const container = document.getElementById('pdf-container-' + reportId);
-    if (!state || !state.pdfDoc) return Promise.resolve();
-    container.innerHTML = '';
-    const pageNumbers = Array.from({ length: state.pdfDoc.numPages }, (_, i) => i + 1);
-    return pageNumbers.reduce((chain, pageNum) => chain.then(() =>
-      state.pdfDoc.getPage(pageNum).then((page) => {
-        const viewport = page.getViewport({ scale: state.scale, rotation: state.rotation });
-        const canvas = document.createElement('canvas');
-        canvas.style.display = 'block';
-        canvas.style.margin = '0 auto 10px';
-        canvas.style.maxWidth = '100%';
-        canvas.width = viewport.width;
-        canvas.height = viewport.height;
-        container.appendChild(canvas);
-        return page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
-      })
-    ), Promise.resolve());
-  }
-
-  function pdfZoom(reportId, delta) {
-    const state = pdfPreviewState[reportId];
-    if (!state) return;
-    state.scale = Math.max(0.5, Math.min(3, state.scale + delta));
-    renderAllPages(reportId);
-  }
-
-  function pdfRotate(reportId) {
-    const state = pdfPreviewState[reportId];
-    if (!state) return;
-    state.rotation = (state.rotation + 90) % 360;
-    renderAllPages(reportId);
   }
 </script>
 
