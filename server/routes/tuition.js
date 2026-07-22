@@ -127,6 +127,101 @@ router.get("/export", async (req, res) => {
   await sendWorkbook(res, "חישוב שכר לימוד לפי משפחה.xlsx", "שכר לימוד", "חישוב שכר לימוד לפי משפחה", header, data);
 });
 
+// --- ייצוא פילוג שכר לימוד לפי חברת גביה - כל משפחה וכמה שכ"ל גובים לה (בלי תרומות) ---
+router.get("/export-by-billing-company", async (req, res) => {
+  const familiesTuition = calcAllFamiliesTuition();
+
+  // מקבצים לפי חברת גביה (משפחות בלי חברת גביה מקובצות תחת "ללא חברת גביה")
+  const groups = {};
+  familiesTuition.forEach((f) => {
+    const key = f.billing_company || "ללא חברת גביה";
+    if (!groups[key]) groups[key] = [];
+    groups[key].push(f);
+  });
+  const companyNames = Object.keys(groups).sort((a, b) => a.localeCompare(b, "he"));
+
+  const wb = new ExcelJS.Workbook();
+  wb.creator = "מערכת ניהול תלמוד תורה החדש";
+  const ws = wb.addWorksheet("פילוג לפי חברת גביה", { views: [{ rightToLeft: true }] });
+
+  const headerRow = ["משפחה", "אב", "מס' ילדים", "סכום לתשלום"];
+  const lastCol = headerRow.length;
+
+  ws.mergeCells(1, 1, 1, lastCol - 1);
+  const titleCell = ws.getCell(1, 1);
+  titleCell.value = "תלמוד תורה החדש";
+  titleCell.font = { size: 16, bold: true, color: { argb: "FF2C5F7C" } };
+  titleCell.alignment = { horizontal: "right", vertical: "middle" };
+  ws.getRow(1).height = 28;
+
+  ws.mergeCells(2, 1, 2, lastCol - 1);
+  const subtitleCell = ws.getCell(2, 1);
+  subtitleCell.value = "פילוג שכר לימוד לפי חברת גביה (ללא תרומות)";
+  subtitleCell.font = { size: 12, bold: true, color: { argb: "FF555555" } };
+  subtitleCell.alignment = { horizontal: "right", vertical: "middle" };
+
+  ws.mergeCells(3, 1, 3, lastCol - 1);
+  const dateCell = ws.getCell(3, 1);
+  dateCell.value = `הופק בתאריך: ${hd.serialToHebrewString(hd.todayAccessSerial())}`;
+  dateCell.font = { size: 9, italic: true, color: { argb: "FF888888" } };
+  dateCell.alignment = { horizontal: "right", vertical: "middle" };
+
+  if (fs.existsSync(LOGO_PATH)) {
+    try {
+      const imageId = wb.addImage({ filename: LOGO_PATH, extension: LOGO_EXT });
+      ws.addImage(imageId, { tl: { col: lastCol - 1, row: 0 }, ext: { width: 68, height: 59 } });
+    } catch (e) { /* לא קריטי */ }
+  }
+
+  ws.addRow([]);
+  const headerExcelRow = ws.addRow(headerRow);
+  headerExcelRow.font = { bold: true, color: { argb: "FFFFFFFF" } };
+  headerExcelRow.eachCell((cell) => {
+    cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF2C5F7C" } };
+    cell.alignment = { horizontal: "right", vertical: "middle" };
+  });
+  headerExcelRow.height = 20;
+
+  let grandTotal = 0;
+  companyNames.forEach((companyName) => {
+    const families = groups[companyName];
+    const companyTotal = families.reduce((sum, f) => sum + f.netTotal, 0);
+    grandTotal += companyTotal;
+
+    // שורת כותרת חברת הגביה
+    const companyRow = ws.addRow([companyName, "", "", ""]);
+    ws.mergeCells(companyRow.number, 1, companyRow.number, lastCol - 1);
+    companyRow.font = { bold: true, color: { argb: "FFFFFFFF" } };
+    companyRow.getCell(1).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF5B7C99" } };
+    companyRow.getCell(1).alignment = { horizontal: "right" };
+
+    families.forEach((f) => {
+      const r = ws.addRow([f.last_name || "", f.father_name || "", f.activeCount, f.netTotal]);
+      r.alignment = { horizontal: "right" };
+    });
+
+    // שורת סיכום לחברת הגביה
+    const subtotalRow = ws.addRow(["סה\"כ " + companyName, "", "", companyTotal]);
+    subtotalRow.font = { bold: true };
+    subtotalRow.eachCell((cell) => { cell.border = { top: { style: "thin" } }; });
+    ws.addRow([]);
+  });
+
+  const grandTotalRow = ws.addRow(["סה\"כ כללי (כל המשפחות)", "", "", grandTotal]);
+  grandTotalRow.font = { bold: true, size: 12 };
+  grandTotalRow.eachCell((cell) => {
+    cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFE8ECF0" } };
+    cell.border = { top: { style: "double" } };
+  });
+
+  ws.columns = [{ width: 22 }, { width: 18 }, { width: 12 }, { width: 16 }];
+
+  res.setHeader("Content-Disposition", `attachment; filename="${encodeURIComponent("פילוג שכר לימוד לפי חברת גביה.xlsx")}"`);
+  res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+  await wb.xlsx.write(res);
+  res.end();
+});
+
 // ============ קטגוריות שכר לימוד - עריכה ============
 router.get("/categories/new", (req, res) => {
   const allClasses = db.prepare("SELECT id, name, parallel, category_id FROM classes ORDER BY name, parallel").all();
