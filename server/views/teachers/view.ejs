@@ -304,6 +304,7 @@
 </div>
 <% } %>
 
+<% if (isTeachingStaff) { %>
 <div class="card">
   <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
     <h3>דוחות חודשיים</h3>
@@ -380,6 +381,7 @@
     </div>
   </form>
 </div>
+<% } %>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
 <script>

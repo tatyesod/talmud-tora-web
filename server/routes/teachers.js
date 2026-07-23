@@ -247,7 +247,15 @@ router.post("/", (req, res) => {
 
 router.get("/monthly-reports", (req, res) => {
   const month = req.query.month || currentHebrewMonthName();
-  const teachers = db.prepare("SELECT id, first_name, last_name FROM teachers ORDER BY last_name, first_name").all();
+  // רק עובדי הוראה בפועל (שיבוץ בוקר או אחה"צ) מגישים דוח חודשי - לא עוזרים
+  // ולא צוות כללי (מזכיר/תחזוקן/ניקיון וכו')
+  const teachers = db.prepare(`
+    SELECT id, first_name, last_name FROM teachers t
+    WHERE EXISTS (
+      SELECT 1 FROM teacher_classes tc WHERE tc.teacher_id = t.id AND tc.role IN ('בוקר', 'אחה"צ')
+    )
+    ORDER BY last_name, first_name
+  `).all();
   const reportsForMonth = db.prepare("SELECT * FROM teacher_monthly_reports WHERE month_label = ?").all(month);
   const reportByTeacher = {};
   reportsForMonth.forEach((r) => { reportByTeacher[r.teacher_id] = r; });
@@ -458,9 +466,13 @@ router.get("/:id", (req, res) => {
     ...staffRoleAssignments.map((r) => r.name + (r.branch ? ` (${r.branch})` : "")),
   ];
 
+  // רק עובד הוראה בפועל (שיבוץ בוקר/אחה"צ) מגיש דוח חודשי - לא עוזר ולא
+  // צוות כללי (מזכיר/תחזוקן/ניקיון וכו')
+  const isTeachingStaff = classes.some((c) => c.role === "בוקר" || c.role === 'אחה"צ');
+
   res.render("teachers/view", {
     teacher, classes, attendance, attendanceSummary, file, monthlyReports, prevTeacherId, nextTeacherId,
-    monthOptions: HEBREW_MONTH_OPTIONS, currentMonth: currentHebrewMonthName(), roleDescriptions,
+    monthOptions: HEBREW_MONTH_OPTIONS, currentMonth: currentHebrewMonthName(), roleDescriptions, isTeachingStaff,
   });
 });
 
