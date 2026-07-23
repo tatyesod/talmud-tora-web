@@ -91,7 +91,10 @@ function buildTeachersFilterSql(req) {
        WHERE tc.teacher_id=t.id AND tc.role='בוקר') AS morning_classes,
       (SELECT GROUP_CONCAT(c.name || COALESCE(' '||c.parallel,''), ', ')
        FROM teacher_classes tc JOIN classes c ON tc.class_id=c.id
-       WHERE tc.teacher_id=t.id AND tc.role='אחה"צ') AS afternoon_classes
+       WHERE tc.teacher_id=t.id AND tc.role='אחה"צ') AS afternoon_classes,
+      (SELECT GROUP_CONCAT(sr.name || COALESCE(' ('||sr.branch||')',''), ', ')
+       FROM staff_role_assignments sra JOIN staff_roles sr ON sra.staff_role_id = sr.id
+       WHERE sra.teacher_id=t.id) AS staff_roles_display
     FROM teachers t
     LEFT JOIN chassidut ch ON t.chassidut_id = ch.id WHERE 1=1
   `;
@@ -108,13 +111,22 @@ function buildTeachersFilterSql(req) {
   if (branch) {
     // סניף הבוקר הוא הקובע - אם למלמד יש שיבוץ בוקר, זה מה שנבדק (בלי קשר
     // לאיפה האחה"צ שלו). רק אם אין לו בכלל שיבוץ בוקר, בודקים לפי האחה"צ.
-    sql += ` AND COALESCE(
-      (SELECT c2.branch FROM teacher_classes tc2 JOIN classes c2 ON tc2.class_id = c2.id
-       WHERE tc2.teacher_id = t.id AND tc2.role = 'בוקר' LIMIT 1),
-      (SELECT c2.branch FROM teacher_classes tc2 JOIN classes c2 ON tc2.class_id = c2.id
-       WHERE tc2.teacher_id = t.id AND tc2.role = 'אחה"צ' LIMIT 1)
-    ) = ?`;
-    params.push(branch);
+    // בנוסף, גם תפקידי צוות נוספים (מזכיר/תחזוקן/מורת שילוב וכו') שמשויכים
+    // לסניף הזה נחשבים - כדי שעובדים שאינם בהוראה בכלל (אין להם שום שיבוץ
+    // כיתה) עדיין ייכללו בסינון הנכון.
+    sql += ` AND (
+      COALESCE(
+        (SELECT c2.branch FROM teacher_classes tc2 JOIN classes c2 ON tc2.class_id = c2.id
+         WHERE tc2.teacher_id = t.id AND tc2.role = 'בוקר' LIMIT 1),
+        (SELECT c2.branch FROM teacher_classes tc2 JOIN classes c2 ON tc2.class_id = c2.id
+         WHERE tc2.teacher_id = t.id AND tc2.role = 'אחה"צ' LIMIT 1)
+      ) = ?
+      OR EXISTS (
+        SELECT 1 FROM staff_role_assignments sra JOIN staff_roles sr ON sra.staff_role_id = sr.id
+        WHERE sra.teacher_id = t.id AND sr.branch = ?
+      )
+    )`;
+    params.push(branch, branch);
   }
   return { sql, params, q: q || "", status: status || "", branch };
 }
@@ -191,7 +203,8 @@ router.get("/report/export", async (req, res) => {
 
 router.get("/new", (req, res) => {
   const chassidut = db.prepare("SELECT id, name FROM chassidut ORDER BY name").all();
-  res.render("teachers/form", { teacher: {}, mode: "new", chassidut });
+  const staffRoles = db.prepare("SELECT * FROM staff_roles ORDER BY branch IS NOT NULL, branch, name").all();
+  res.render("teachers/form", { teacher: {}, mode: "new", chassidut, staffRoles, selectedStaffRoleIds: [] });
 });
 
 const TEACHER_FIELDS = [
@@ -214,6 +227,12 @@ router.post("/", (req, res) => {
   const info = db
     .prepare(`INSERT INTO teachers (${cols.join(",")}) VALUES (${cols.map(() => "?").join(",")})`)
     .run(...values);
+
+  let staffRoleIds = body.staff_role_ids || [];
+  if (!Array.isArray(staffRoleIds)) staffRoleIds = [staffRoleIds];
+  const insertRole = db.prepare("INSERT OR IGNORE INTO staff_role_assignments (teacher_id, staff_role_id) VALUES (?, ?)");
+  staffRoleIds.forEach((id) => insertRole.run(info.lastInsertRowid, id));
+
   res.redirect(`/teachers/${info.lastInsertRowid}`);
 });
 
@@ -243,6 +262,38 @@ router.get("/monthly-reports", (req, res) => {
 });
 
 // ============ מצבת מלמדים - מפת שיבוץ לכל הכיתות ============
+// ============ תפקידי צוות נוספים (לא-הוראה) - ניהול והקצאה ============
+router.get("/staff-roles", (req, res) => {
+  const roles = db.prepare("SELECT * FROM staff_roles ORDER BY branch IS NOT NULL, branch, name").all();
+  const branches = db.prepare("SELECT DISTINCT branch FROM classes WHERE branch IS NOT NULL AND branch != '' ORDER BY branch").all().map((r) => r.branch);
+  const rolesWithCounts = roles.map((r) => ({
+    ...r,
+    assignedCount: db.prepare("SELECT COUNT(*) c FROM staff_role_assignments WHERE staff_role_id = ?").get(r.id).c,
+  }));
+  res.render("teachers/staff-roles", { roles: rolesWithCounts, branches });
+});
+
+router.post("/staff-roles", (req, res) => {
+  const { name, branch } = req.body;
+  if (name && name.trim()) {
+    db.prepare("INSERT OR IGNORE INTO staff_roles (name, branch) VALUES (?, ?)").run(name.trim(), branch || null);
+  }
+  res.redirect("/teachers/staff-roles");
+});
+
+router.delete("/staff-roles/:id", (req, res) => {
+  db.exec("BEGIN TRANSACTION");
+  try {
+    db.prepare("DELETE FROM staff_role_assignments WHERE staff_role_id = ?").run(req.params.id);
+    db.prepare("DELETE FROM staff_roles WHERE id = ?").run(req.params.id);
+    db.exec("COMMIT");
+  } catch (e) {
+    db.exec("ROLLBACK");
+    throw e;
+  }
+  res.redirect("/teachers/staff-roles");
+});
+
 router.get("/staffing-map", (req, res) => {
   const classes = db.prepare(`
     SELECT id, name, parallel, branch FROM classes
@@ -480,6 +531,8 @@ router.get("/:id/edit", (req, res) => {
       ORDER BY c.name, c.parallel
     `)
     .all(req.params.id);
+  const staffRoles = db.prepare("SELECT * FROM staff_roles ORDER BY branch IS NOT NULL, branch, name").all();
+  const selectedStaffRoleIds = db.prepare("SELECT staff_role_id FROM staff_role_assignments WHERE teacher_id = ?").all(req.params.id).map((r) => r.staff_role_id);
   res.render("teachers/form", {
     teacher: {
       ...teacher,
@@ -488,7 +541,7 @@ router.get("/:id/edit", (req, res) => {
       entry_date: hd.serialToInputDate(teacher.entry_date),
       exit_date: hd.serialToInputDate(teacher.exit_date),
     },
-    mode: "edit", chassidut, allClasses, assignments,
+    mode: "edit", chassidut, allClasses, assignments, staffRoles, selectedStaffRoleIds,
     assignError: req.query.assignError || null,
   });
 });
@@ -531,6 +584,13 @@ router.put("/:id", (req, res) => {
   const values = cols.map((c) => normalizeField(c, body[c]));
   values.push(req.params.id);
   db.prepare(`UPDATE teachers SET ${setClause} WHERE id = ?`).run(...values);
+
+  let staffRoleIds = body.staff_role_ids || [];
+  if (!Array.isArray(staffRoleIds)) staffRoleIds = [staffRoleIds];
+  db.prepare("DELETE FROM staff_role_assignments WHERE teacher_id = ?").run(req.params.id);
+  const insertRole = db.prepare("INSERT OR IGNORE INTO staff_role_assignments (teacher_id, staff_role_id) VALUES (?, ?)");
+  staffRoleIds.forEach((id) => insertRole.run(req.params.id, id));
+
   res.redirect(`/teachers/${req.params.id}`);
 });
 

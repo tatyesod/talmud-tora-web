@@ -46,6 +46,26 @@
         <div class="form-group full"><label>הערות</label><textarea name="notes"><%= teacher.notes || '' %></textarea></div>
       </div>
     </fieldset>
+
+    <fieldset>
+      <legend>תפקידים נוספים (לא הוראה)</legend>
+      <% if (staffRoles.length === 0) { %>
+        <p style="color:var(--muted); font-size:0.9em;">
+          אין עדיין תפקידים מוגדרים. אפשר להוסיף תפקידים (מזכיר, תחזוקן, מורת שילוב וכו') דרך
+          <a href="/teachers/staff-roles" target="_blank">ניהול תפקידי צוות</a>.
+        </p>
+      <% } else { %>
+        <div style="display:flex; flex-wrap:wrap; gap:14px;">
+          <% staffRoles.forEach(r => { %>
+            <label style="display:flex; align-items:center; gap:6px; cursor:pointer; font-weight:normal;">
+              <input type="checkbox" name="staff_role_ids" value="<%= r.id %>" style="width:auto;"
+                <%= selectedStaffRoleIds.includes(r.id) ? 'checked' : '' %> />
+              <%= r.name %><%= r.branch ? ' (' + r.branch + ')' : '' %>
+            </label>
+          <% }) %>
+        </div>
+      <% } %>
+    </fieldset>
     <div class="actions">
       <button type="submit" class="btn">שמירה</button>
       <a href="<%= mode === 'new' ? '/teachers' : '/teachers/' + teacher.id %>" class="btn secondary">ביטול</a>

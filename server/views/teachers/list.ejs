@@ -6,6 +6,7 @@
     <div style="display:flex; gap:10px;">
       <a href="/teachers/staffing-map" class="btn secondary">👥 מצבת מלמדים</a>
       <a href="/teachers/monthly-reports" class="btn secondary">📊 מעקב דוחות חודשיים</a>
+      <a href="/teachers/staff-roles" class="btn secondary">👔 תפקידי צוות נוספים</a>
       <a href="/teachers/report/export?q=<%= encodeURIComponent(q) %>&status=<%= encodeURIComponent(status) %>&branch=<%= encodeURIComponent(branch) %>" class="btn secondary">📥 הפקת דוח מלמדים</a>
     </div>
   </div>
@@ -43,6 +44,7 @@
         <th>כתובת</th>
         <th>שיבוץ בוקר</th>
         <th>שיבוץ אחה"צ</th>
+        <th>תפקידים נוספים</th>
         <th><a href="<%= sortUrl('mobile') %>">טלפון<%= sortIndicator('mobile') %></a></th>
         <th><a href="<%= sortUrl('children_count') %>">מס' ילדים<%= sortIndicator('children_count') %></a></th>
         <th><a href="<%= sortUrl('status') %>">סטטוס<%= sortIndicator('status') %></a></th>
@@ -58,6 +60,7 @@
             <td style="font-size:0.88em;"><%= address.trim().replace(/^,\s*/, '') || '' %></td>
             <td style="font-size:0.85em;"><%= t.morning_classes || '' %></td>
             <td style="font-size:0.85em;"><%= t.afternoon_classes || '' %></td>
+            <td style="font-size:0.85em;"><%= t.staff_roles_display || '' %></td>
             <td><%- phoneLink(t.mobile || t.home_phone) %></td>
             <td><%= t.children_count_display != null ? t.children_count_display : '' %></td>
             <td><span class="badge <%= t.status !== 'פעיל' ? 'archive' : '' %>"><%= t.status || '' %></span></td>

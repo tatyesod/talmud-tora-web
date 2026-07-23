@@ -881,6 +881,48 @@ try {
   console.error("שגיאה ביצירת טבלאות איפוס הזמנת ספרים:", e.message);
 }
 
+// תפקידי צוות נוספים (לא-הוראה) - כל תפקיד יכול להיות משויך לסניף ספציפי
+// (למשל "מזכיר נפחא") או להיות כללי/לכל הסניפים (branch=NULL, למשל "מנהל
+// הת\"ת"). זה פותר את הבעיה שעובדים שאינם מלמדים (מזכירות, תחזוקה, ניקיון,
+// שילוב) לא היו משויכים לאף כיתה, ולכן לא נכללו בסינון לפי סניף.
+try {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS staff_roles (
+      id INTEGER PRIMARY KEY,
+      name TEXT NOT NULL,
+      branch TEXT,
+      UNIQUE(name, branch)
+    )
+  `);
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS staff_role_assignments (
+      id INTEGER PRIMARY KEY,
+      teacher_id INTEGER NOT NULL,
+      staff_role_id INTEGER NOT NULL,
+      UNIQUE(teacher_id, staff_role_id)
+    )
+  `);
+
+  const alreadySeeded = db.prepare("SELECT value FROM settings WHERE key = 'staff_roles_seeded_v1'").get();
+  if (!alreadySeeded) {
+    const roles = [
+      { name: "מנהל הת\"ת", branch: null },
+      { name: "מזכיר", branch: "נפחא" },
+      { name: "מזכיר", branch: "סוקולוב" },
+      { name: "מזכיר", branch: "בן פתחיה" },
+      { name: "תחזוקן", branch: null },
+      { name: "עובד ניקיון", branch: null },
+      { name: "מורת שילוב", branch: "סוקולוב" },
+      { name: "מורת שילוב", branch: "בן פתחיה" },
+    ];
+    const insertRole = db.prepare("INSERT OR IGNORE INTO staff_roles (name, branch) VALUES (?, ?)");
+    roles.forEach((r) => insertRole.run(r.name, r.branch));
+    db.prepare("INSERT INTO settings (key, value) VALUES ('staff_roles_seeded_v1', '1')").run();
+  }
+} catch (e) {
+  console.error("שגיאה ביצירת תפקידי צוות:", e.message);
+}
+
 // ניקוי חד-פעמי: השדה "מעבר לכיתה" התמלא בעבר אוטומטית בערך המקבילה הקיים,
 // אבל הוחלט שברירת המחדל האמיתית תהיה ריק (ואז המערכת מניחה "אותה מקבילה").
 // דגל ב-settings מבטיח שהניקוי הזה ירוץ פעם אחת בלבד, ולא ימחק ידנית ערכים
