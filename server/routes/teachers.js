@@ -106,10 +106,14 @@ function buildTeachersFilterSql(req) {
     params.push(status);
   }
   if (branch) {
-    sql += ` AND EXISTS (
-      SELECT 1 FROM teacher_classes tc2 JOIN classes c2 ON tc2.class_id = c2.id
-      WHERE tc2.teacher_id = t.id AND c2.branch = ?
-    )`;
+    // סניף הבוקר הוא הקובע - אם למלמד יש שיבוץ בוקר, זה מה שנבדק (בלי קשר
+    // לאיפה האחה"צ שלו). רק אם אין לו בכלל שיבוץ בוקר, בודקים לפי האחה"צ.
+    sql += ` AND COALESCE(
+      (SELECT c2.branch FROM teacher_classes tc2 JOIN classes c2 ON tc2.class_id = c2.id
+       WHERE tc2.teacher_id = t.id AND tc2.role = 'בוקר' LIMIT 1),
+      (SELECT c2.branch FROM teacher_classes tc2 JOIN classes c2 ON tc2.class_id = c2.id
+       WHERE tc2.teacher_id = t.id AND tc2.role = 'אחה"צ' LIMIT 1)
+    ) = ?`;
     params.push(branch);
   }
   return { sql, params, q: q || "", status: status || "", branch };
