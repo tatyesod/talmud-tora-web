@@ -92,6 +92,9 @@ function buildTeachersFilterSql(req) {
       (SELECT GROUP_CONCAT(c.name || COALESCE(' '||c.parallel,''), ', ')
        FROM teacher_classes tc JOIN classes c ON tc.class_id=c.id
        WHERE tc.teacher_id=t.id AND tc.role='אחה"צ') AS afternoon_classes,
+      (SELECT GROUP_CONCAT(c.name || COALESCE(' '||c.parallel,''), ', ')
+       FROM teacher_classes tc JOIN classes c ON tc.class_id=c.id
+       WHERE tc.teacher_id=t.id AND tc.role='עוזר') AS helper_classes,
       (SELECT GROUP_CONCAT(sr.name || COALESCE(' ('||sr.branch||')',''), ', ')
        FROM staff_role_assignments sra JOIN staff_roles sr ON sra.staff_role_id = sr.id
        WHERE sra.teacher_id=t.id) AS staff_roles_display
@@ -110,7 +113,8 @@ function buildTeachersFilterSql(req) {
   }
   if (branch) {
     // סניף הבוקר הוא הקובע - אם למלמד יש שיבוץ בוקר, זה מה שנבדק (בלי קשר
-    // לאיפה האחה"צ שלו). רק אם אין לו בכלל שיבוץ בוקר, בודקים לפי האחה"צ.
+    // לאיפה האחה"צ שלו). אם אין שיבוץ בוקר - בודקים אחה"צ. אם אין גם וגם -
+    // בודקים לפי שיבוץ "עוזר" (למי שהוא רק עוזר, בלי שיבוץ משמרת קבועה).
     // בנוסף, גם תפקידי צוות נוספים (מזכיר/תחזוקן/מורת שילוב וכו') שמשויכים
     // לסניף הזה נחשבים - כדי שעובדים שאינם בהוראה בכלל (אין להם שום שיבוץ
     // כיתה) עדיין ייכללו בסינון הנכון.
@@ -119,7 +123,9 @@ function buildTeachersFilterSql(req) {
         (SELECT c2.branch FROM teacher_classes tc2 JOIN classes c2 ON tc2.class_id = c2.id
          WHERE tc2.teacher_id = t.id AND tc2.role = 'בוקר' LIMIT 1),
         (SELECT c2.branch FROM teacher_classes tc2 JOIN classes c2 ON tc2.class_id = c2.id
-         WHERE tc2.teacher_id = t.id AND tc2.role = 'אחה"צ' LIMIT 1)
+         WHERE tc2.teacher_id = t.id AND tc2.role = 'אחה"צ' LIMIT 1),
+        (SELECT c2.branch FROM teacher_classes tc2 JOIN classes c2 ON tc2.class_id = c2.id
+         WHERE tc2.teacher_id = t.id AND tc2.role = 'עוזר' LIMIT 1)
       ) = ?
       OR EXISTS (
         SELECT 1 FROM staff_role_assignments sra JOIN staff_roles sr ON sra.staff_role_id = sr.id
@@ -177,6 +183,8 @@ router.get("/report/export", async (req, res) => {
     { header: "כתובת", key: "address", width: 26 },
     { header: "שיבוץ בוקר", key: "morning_classes", width: 16 },
     { header: "שיבוץ אחה\"צ", key: "afternoon_classes", width: 16 },
+    { header: "עוזר", key: "helper_classes", width: 16 },
+    { header: "תפקידים נוספים", key: "staff_roles_display", width: 20 },
     { header: "טלפון", key: "mobile", width: 14 },
     { header: "מס' ילדים", key: "children_count_display", width: 10 },
     { header: "סטטוס", key: "status", width: 10 },
@@ -187,6 +195,7 @@ router.get("/report/export", async (req, res) => {
     ws.addRow({
       last_name: t.last_name || "", first_name: t.first_name || "", address: address.trim().replace(/^,\s*/, ""),
       morning_classes: t.morning_classes || "", afternoon_classes: t.afternoon_classes || "",
+      helper_classes: t.helper_classes || "", staff_roles_display: t.staff_roles_display || "",
       mobile: t.mobile || t.home_phone || "", children_count_display: t.children_count_display ?? "",
       status: t.status || "",
     });
