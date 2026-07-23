@@ -923,6 +923,44 @@ try {
   console.error("שגיאה ביצירת תפקידי צוות:", e.message);
 }
 
+// המרה חד-פעמית: דוחות חודשיים ישנים שנשמרו עם חודש לועזי (למשל "2026-07")
+// מלפני שהמסך עבר לחודשים עבריים - אם לא ממירים אותם, מסך "מעקב דוחות
+// חודשיים" מסנן לפי שם חודש עברי ("אב") ולא מוצא התאמה, אז מלמד שבאמת
+// הגיש דוח מוצג בטעות כ"לא הגיש". ממירים לפי היום ה-15 בחודש הלועזי (יום
+// ייצוגי), שמומר לחודש העברי המתאים.
+try {
+  const alreadyConverted = db.prepare("SELECT value FROM settings WHERE key = 'monthly_report_hebrew_month_fix_v1'").get();
+  if (!alreadyConverted) {
+    const hd = require("./hebrewDate");
+    const HEBREW_NAMES = {
+      1: "ניסן", 2: "אייר", 3: "סיון", 4: "תמוז", 5: "אב", 6: "אלול",
+      7: "תשרי", 8: "חשון", 9: "כסלו", 10: "טבת", 11: "שבט",
+      12: null, // מתמלא בהתאם לשנה (אדר / אדר א')
+      13: "אדר ב'",
+    };
+    const oldRows = db.prepare("SELECT DISTINCT month_label FROM teacher_monthly_reports WHERE month_label LIKE '____-__'").all();
+    let convertedCount = 0;
+    oldRows.forEach((row) => {
+      const m = row.month_label.match(/^(\d{4})-(\d{2})$/);
+      if (!m) return;
+      const gregYear = parseInt(m[1], 10), gregMonth = parseInt(m[2], 10);
+      const serial = hd.gregorianStringToSerial(`${gregYear}-${String(gregMonth).padStart(2, "0")}-15`);
+      const hebParts = hd.serialToHebrewParts(serial);
+      const hebName = hebParts.month === 12
+        ? (hd.isHebrewLeapYear(hebParts.year) ? "אדר א'" : "אדר")
+        : HEBREW_NAMES[hebParts.month];
+      if (hebName) {
+        const result = db.prepare("UPDATE teacher_monthly_reports SET month_label = ? WHERE month_label = ?").run(hebName, row.month_label);
+        convertedCount += result.changes;
+      }
+    });
+    console.log(`[דוחות חודשיים] הומרו ${convertedCount} רשומות מפורמט לועזי לחודש עברי`);
+    db.prepare("INSERT INTO settings (key, value) VALUES ('monthly_report_hebrew_month_fix_v1', '1')").run();
+  }
+} catch (e) {
+  console.error("שגיאה בהמרת חודשי דוחות ישנים:", e.message);
+}
+
 // ניקוי חד-פעמי: השדה "מעבר לכיתה" התמלא בעבר אוטומטית בערך המקבילה הקיים,
 // אבל הוחלט שברירת המחדל האמיתית תהיה ריק (ואז המערכת מניחה "אותה מקבילה").
 // דגל ב-settings מבטיח שהניקוי הזה ירוץ פעם אחת בלבד, ולא ימחק ידנית ערכים
