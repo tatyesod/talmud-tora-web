@@ -961,6 +961,42 @@ try {
   console.error("שגיאה בהמרת חודשי דוחות ישנים:", e.message);
 }
 
+// מוסיפים שדה "שנת הגשה" (שנה"ל עברית) לדוחות חודשיים - כי הגשת דוחות
+// חוזרת על עצמה כל שנה, וצריך להבדיל בין "אב תשפ"ו" ל"אב תשפ"ז". ממלאים
+// רשומות קיימות לפי תאריך ההגשה בפועל (או תאריך היצירה כגיבוי).
+try {
+  const cols = db.prepare("PRAGMA table_info(teacher_monthly_reports)").all().map((c) => c.name);
+  if (!cols.includes("year_label")) {
+    db.exec("ALTER TABLE teacher_monthly_reports ADD COLUMN year_label TEXT");
+  }
+  const alreadyBackfilled = db.prepare("SELECT value FROM settings WHERE key = 'monthly_report_year_label_v1'").get();
+  if (!alreadyBackfilled) {
+    const hd = require("./hebrewDate");
+    const defaultYear = db.prepare("SELECT value FROM settings WHERE key='current_hebrew_year'").get()?.value || hd.formatHebrewYear(hd.todayHebrewParts().year);
+    const rows = db.prepare("SELECT id, submitted_date, created_at FROM teacher_monthly_reports WHERE year_label IS NULL").all();
+    let filled = 0;
+    rows.forEach((row) => {
+      let yearLabel = defaultYear;
+      const dateStr = row.submitted_date || row.created_at;
+      if (dateStr) {
+        try {
+          const d = new Date(dateStr);
+          if (!isNaN(d.getTime())) {
+            const serial = hd.gregorianStringToSerial(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`);
+            yearLabel = hd.formatHebrewYear(hd.serialToHebrewParts(serial).year);
+          }
+        } catch (e) { /* נשאר בברירת המחדל */ }
+      }
+      db.prepare("UPDATE teacher_monthly_reports SET year_label = ? WHERE id = ?").run(yearLabel, row.id);
+      filled++;
+    });
+    console.log(`[דוחות חודשיים] מולאה שנת הגשה ל-${filled} רשומות ישנות`);
+    db.prepare("INSERT INTO settings (key, value) VALUES ('monthly_report_year_label_v1', '1')").run();
+  }
+} catch (e) {
+  console.error("שגיאה בהוספת שנת הגשה לדוחות חודשיים:", e.message);
+}
+
 // ניקוי חד-פעמי: השדה "מעבר לכיתה" התמלא בעבר אוטומטית בערך המקבילה הקיים,
 // אבל הוחלט שברירת המחדל האמיתית תהיה ריק (ואז המערכת מניחה "אותה מקבילה").
 // דגל ב-settings מבטיח שהניקוי הזה ירוץ פעם אחת בלבד, ולא ימחק ידנית ערכים

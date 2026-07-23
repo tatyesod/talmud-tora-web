@@ -2,17 +2,27 @@
 
 <div class="card">
   <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
-    <h1>מעקב הגשת דוחות חודשיים - <%= monthDisplay %></h1>
+    <h1>מעקב הגשת דוחות חודשיים - <%= monthDisplay %> <%= year %></h1>
     <a href="/teachers" class="btn small secondary">← חזרה למלמדים</a>
   </div>
 
-  <form method="GET" action="/teachers/monthly-reports" style="margin:14px 0;">
-    <label>בחר חודש: </label>
-    <select name="month" onchange="this.form.submit()">
-      <% monthOptions.forEach(m => { %>
-        <option value="<%= m %>" <%= m === month ? 'selected' : '' %>><%= m %></option>
-      <% }) %>
-    </select>
+  <form method="GET" action="/teachers/monthly-reports" style="margin:14px 0; display:flex; gap:14px; align-items:center;">
+    <div>
+      <label>תקופת הגשה: </label>
+      <select name="month" onchange="this.form.submit()">
+        <% monthOptions.forEach(m => { %>
+          <option value="<%= m %>" <%= m === month ? 'selected' : '' %>><%= m %></option>
+        <% }) %>
+      </select>
+    </div>
+    <div>
+      <label>שנה"ל: </label>
+      <select name="year" onchange="this.form.submit()">
+        <% yearOptions.forEach(y => { %>
+          <option value="<%= y %>" <%= y === year ? 'selected' : '' %>><%= y %></option>
+        <% }) %>
+      </select>
+    </div>
   </form>
 
   <div class="summary-panel" style="display:inline-block; background:<%= submittedCount === total ? '#e8f5e9' : '#fff3e0' %>;">

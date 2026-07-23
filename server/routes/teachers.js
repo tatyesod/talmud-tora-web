@@ -38,6 +38,10 @@ const HEBREW_MONTH_OPTIONS = [
   "ניסן", "אייר", "סיון", "תמוז", "אב", "אלול",
 ];
 
+// הגשת דוחות חודשיים היא אחת לחודשיים בלבד, בחודשים עבריים קבועים אלה -
+// לא בכל 12/13 החודשים
+const REPORT_PERIOD_MONTHS = ["תשרי", "כסלו", "שבט", "ניסן", "סיון", "אב"];
+
 function currentHebrewMonthName() {
   const { year, month } = hd.todayHebrewParts();
   const names = {
@@ -47,6 +51,27 @@ function currentHebrewMonthName() {
     13: "אדר ב'",
   };
   return names[month] || "תשרי";
+}
+
+// מחזיר את חודש התקופה הנוכחית מתוך REPORT_PERIOD_MONTHS - "מעגל" קדימה עד
+// שמגיעים לאחד מחודשי ההגשה (כדי שברירת המחדל תמיד תהיה תקופה אמיתית)
+function currentReportPeriodMonth() {
+  const order = ["תשרי", "חשון", "כסלו", "טבת", "שבט", "אדר", "אדר א'", "אדר ב'", "ניסן", "אייר", "סיון", "תמוז", "אב", "אלול"];
+  const current = currentHebrewMonthName();
+  const startIdx = order.indexOf(current);
+  for (let i = 0; i < order.length; i++) {
+    const candidate = order[(startIdx + i) % order.length];
+    if (REPORT_PERIOD_MONTHS.includes(candidate)) return candidate;
+  }
+  return REPORT_PERIOD_MONTHS[0];
+}
+
+// רשימת שנות לימוד (שנה"ל) לבחירה - השנה הנוכחית, ועוד כמה שנים אחורה/קדימה
+function schoolYearOptions() {
+  const currentYear = hd.todayHebrewParts().year;
+  const years = [];
+  for (let y = currentYear + 1; y >= currentYear - 3; y--) years.push(hd.formatHebrewYear(y));
+  return years;
 }
 
 function formatMonthLabel(monthLabel) {
@@ -246,7 +271,8 @@ router.post("/", (req, res) => {
 });
 
 router.get("/monthly-reports", (req, res) => {
-  const month = req.query.month || currentHebrewMonthName();
+  const month = req.query.month || currentReportPeriodMonth();
+  const year = req.query.year || db.prepare("SELECT value FROM settings WHERE key='current_hebrew_year'").get()?.value || hd.formatHebrewYear(hd.todayHebrewParts().year);
   // רק עובדי הוראה בפועל (שיבוץ בוקר או אחה"צ) מגישים דוח חודשי - לא עוזרים
   // ולא צוות כללי (מזכיר/תחזוקן/ניקיון וכו')
   const teachers = db.prepare(`
@@ -256,7 +282,7 @@ router.get("/monthly-reports", (req, res) => {
     )
     ORDER BY last_name, first_name
   `).all();
-  const reportsForMonth = db.prepare("SELECT * FROM teacher_monthly_reports WHERE month_label = ?").all(month);
+  const reportsForMonth = db.prepare("SELECT * FROM teacher_monthly_reports WHERE month_label = ? AND year_label = ?").all(month, year);
   const reportByTeacher = {};
   reportsForMonth.forEach((r) => { reportByTeacher[r.teacher_id] = r; });
 
@@ -274,7 +300,8 @@ router.get("/monthly-reports", (req, res) => {
 
   const submittedCount = rows.filter((r) => r.submitted).length;
   res.render("teachers/monthly-reports", {
-    month, monthDisplay: formatMonthLabel(month), monthOptions: HEBREW_MONTH_OPTIONS, rows, submittedCount, total: rows.length,
+    month, year, monthDisplay: formatMonthLabel(month), monthOptions: REPORT_PERIOD_MONTHS, yearOptions: schoolYearOptions(),
+    rows, submittedCount, total: rows.length,
   });
 });
 
@@ -430,7 +457,7 @@ router.get("/:id", (req, res) => {
     : null;
 
   const monthlyReports = db
-    .prepare("SELECT * FROM teacher_monthly_reports WHERE teacher_id = ? ORDER BY month_label DESC")
+    .prepare("SELECT * FROM teacher_monthly_reports WHERE teacher_id = ? ORDER BY year_label DESC, month_label DESC")
     .all(req.params.id)
     .map((r) => ({
       ...r,
@@ -472,7 +499,9 @@ router.get("/:id", (req, res) => {
 
   res.render("teachers/view", {
     teacher, classes, attendance, attendanceSummary, file, monthlyReports, prevTeacherId, nextTeacherId,
-    monthOptions: HEBREW_MONTH_OPTIONS, currentMonth: currentHebrewMonthName(), roleDescriptions, isTeachingStaff,
+    monthOptions: REPORT_PERIOD_MONTHS, currentMonth: currentReportPeriodMonth(), yearOptions: schoolYearOptions(),
+    currentYear: db.prepare("SELECT value FROM settings WHERE key='current_hebrew_year'").get()?.value || hd.formatHebrewYear(hd.todayHebrewParts().year),
+    roleDescriptions, isTeachingStaff,
   });
 });
 
@@ -528,14 +557,15 @@ router.post("/:id/file", upload.single("attachment"), (req, res) => {
 // ============ דוחות חודשיים ============
 
 router.post("/:id/monthly-report", upload.single("attachment"), (req, res) => {
-  const { month_label, submitted_date, notes } = req.body;
+  const { month_label, year_label, submitted_date, notes } = req.body;
   const file_path = req.file ? `/uploads/teachers/${req.file.filename}` : null;
   const file_name = req.file ? Buffer.from(req.file.originalname, "latin1").toString("utf8") : null;
   db.prepare(`
-    INSERT INTO teacher_monthly_reports (teacher_id, month_label, submitted_date, file_path, file_name, notes, created_at)
-    VALUES (?,?,?,?,?,?,?)
+    INSERT INTO teacher_monthly_reports (teacher_id, month_label, year_label, submitted_date, file_path, file_name, notes, created_at)
+    VALUES (?,?,?,?,?,?,?,?)
   `).run(
-    req.params.id, month_label, submitted_date || new Date().toISOString().slice(0, 10),
+    req.params.id, month_label, year_label || hd.formatHebrewYear(hd.todayHebrewParts().year),
+    submitted_date || new Date().toISOString().slice(0, 10),
     file_path, file_name, notes || null, new Date().toISOString()
   );
   res.redirect(`/teachers/${req.params.id}`);

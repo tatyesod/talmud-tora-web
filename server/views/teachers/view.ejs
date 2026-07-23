@@ -316,10 +316,11 @@
     <p class="empty-state">אין עדיין דוחות חודשיים רשומים</p>
   <% } else { %>
     <table>
-      <thead><tr><th>חודש</th><th>תאריך הגשה</th><th>הערות</th><th>קובץ</th><th></th></tr></thead>
+      <thead><tr><th>שנה"ל</th><th>חודש</th><th>תאריך הגשה</th><th>הערות</th><th>קובץ</th><th></th></tr></thead>
       <tbody>
         <% monthlyReports.forEach(r => { %>
           <tr>
+            <td><%= r.year_label || '' %></td>
             <td><strong><%= r.month_display %></strong></td>
             <td><%= r.submitted_date_str %></td>
             <td><%= r.notes || '' %></td>
@@ -342,7 +343,7 @@
           </tr>
           <% if (r.file_path && (r.is_image || r.is_pdf)) { %>
             <tr id="preview-<%= r.id %>" style="display:none;">
-              <td colspan="5">
+              <td colspan="6">
                 <% if (r.is_image) { %>
                   <img src="<%= r.file_path %>" alt="תצוגה מקדימה" style="max-width:100%; max-height:600px; border:1px solid var(--border); border-radius:8px;" />
                 <% } else { %>
@@ -359,10 +360,18 @@
   <form method="POST" action="/teachers/<%= teacher.id %>/monthly-report"
         enctype="multipart/form-data" class="form-grid" style="margin-top:16px;">
     <div class="form-group">
-      <label>חודש הדוח</label>
+      <label>חודש הדוח (תקופת הגשה)</label>
       <select name="month_label" required>
         <% monthOptions.forEach(m => { %>
           <option value="<%= m %>" <%= m === currentMonth ? 'selected' : '' %>><%= m %></option>
+        <% }) %>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>שנה"ל</label>
+      <select name="year_label" required>
+        <% yearOptions.forEach(y => { %>
+          <option value="<%= y %>" <%= y === currentYear ? 'selected' : '' %>><%= y %></option>
         <% }) %>
       </select>
     </div>
