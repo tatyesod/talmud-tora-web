@@ -438,9 +438,29 @@ router.get("/:id", (req, res) => {
   const prevTeacherId = idx > 0 ? allIds[idx - 1] : null;
   const nextTeacherId = idx >= 0 && idx < allIds.length - 1 ? allIds[idx + 1] : null;
 
+  // בונים תיאור תפקיד קריא: לכל שיבוץ הוראה (בוקר/אחה"צ/עוזר) שורה, ולכל
+  // תפקיד צוות נוסף (מזכיר/תחזוקן/מורת שילוב וכו') שורה - כדי שיהיה ברור
+  // בכרטיס האישי מה בדיוק התפקיד של האדם, לא רק ברשימה הכללית.
+  const staffRoleAssignments = db.prepare(`
+    SELECT sr.name, sr.branch FROM staff_role_assignments sra
+    JOIN staff_roles sr ON sra.staff_role_id = sr.id
+    WHERE sra.teacher_id = ?
+  `).all(req.params.id);
+  const roleDescriptions = [
+    ...classes.map((c) => {
+      const rawName = c.name + (c.parallel ? " " + c.parallel : "");
+      // "כיתה" כתווית כללית לפני שם הכיתה - אבל בלי לכפול אם השם כבר מתחיל
+      // ב"כיתה" (כמו "כיתה ג'"), רק כשזה נדרש (כמו "מכינה א'" -> "כיתה מכינה א'")
+      const className = /^כיתה\s/.test(c.name) ? rawName : `כיתה ${rawName}`;
+      if (c.role === "עוזר") return `עוזר ${className}`;
+      return `מלמד ${className} ${c.role || ""}`.trim();
+    }),
+    ...staffRoleAssignments.map((r) => r.name + (r.branch ? ` (${r.branch})` : "")),
+  ];
+
   res.render("teachers/view", {
     teacher, classes, attendance, attendanceSummary, file, monthlyReports, prevTeacherId, nextTeacherId,
-    monthOptions: HEBREW_MONTH_OPTIONS, currentMonth: currentHebrewMonthName(),
+    monthOptions: HEBREW_MONTH_OPTIONS, currentMonth: currentHebrewMonthName(), roleDescriptions,
   });
 });
 

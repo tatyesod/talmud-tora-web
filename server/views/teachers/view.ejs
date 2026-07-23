@@ -95,6 +95,18 @@
       <th>מס' ילדים</th><td><%= teacher.children_count_total != null ? teacher.children_count_total : '' %></td>
       <th>סטטוס</th><td><span class="badge <%= teacher.status !== 'פעיל' ? 'archive' : '' %>"><%= teacher.status || '' %></span></td>
     </tr>
+    <tr>
+      <th>תפקיד</th>
+      <td colspan="3">
+        <% if (roleDescriptions.length === 0) { %>
+          <span style="color:var(--muted);">— אין שיבוץ —</span>
+        <% } else { %>
+          <% roleDescriptions.forEach(desc => { %>
+            <span style="display:inline-block; background:#e8f0f7; color:#2c5f7c; border-radius:10px; padding:2px 10px; font-size:0.9em; margin:2px 4px 2px 0;"><%= desc %></span>
+          <% }) %>
+        <% } %>
+      </td>
+    </tr>
     <tr><th>הערות</th><td colspan="3"><%= teacher.notes || '' %></td></tr>
   </table>
 </div>
