@@ -402,18 +402,27 @@ router.get("/health-declaration/view", (req, res) => {
 
 // ============ כמות שולחנות וכסאות בכיתה - לפי סניפים ============
 router.get("/furniture-count", (req, res) => {
+  const { GRADE_ORDER } = require("../yearManager");
   const rows = db.prepare(`
     SELECT c.id, c.name, c.parallel, c.branch, c.room_description, COUNT(s.id) AS student_count
     FROM classes c
     LEFT JOIN students s ON s.class_id = c.id AND s.status = 'פעיל'
     WHERE c.status = 'פעיל' AND c.name NOT LIKE 'עדיין לא נכנסו%'
     GROUP BY c.id
-    ORDER BY c.branch, c.name, c.parallel
+    ORDER BY c.branch
   `).all().map((c) => ({
     ...c,
     chairs: c.student_count,
     tables: Math.ceil(c.student_count / 2),
   }));
+
+  // מיון לפי גיל התלמידים (מכינה א' -> מכינה ב' -> כיתה א' -> ... -> כיתה
+  // ח'), ואז לפי מספר הכיתה - לא אלפביתי
+  rows.sort((a, b) => {
+    const gradeA = GRADE_ORDER.indexOf(a.name), gradeB = GRADE_ORDER.indexOf(b.name);
+    if (gradeA !== gradeB) return (gradeA === -1 ? 999 : gradeA) - (gradeB === -1 ? 999 : gradeB);
+    return (parseInt(a.parallel, 10) || 0) - (parseInt(b.parallel, 10) || 0);
+  });
 
   const grouped = {};
   rows.forEach((r) => {
