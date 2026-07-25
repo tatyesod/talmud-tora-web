@@ -1,0 +1,62 @@
+<%- include('../partials/header', {title: 'כמות שולחנות וכסאות בכיתה'}) %>
+
+<div class="card">
+  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;" class="no-print">
+    <h1>🪑 כמות שולחנות וכסאות בכיתה</h1>
+    <div class="actions">
+      <a href="/reports" class="btn secondary">← חזרה לדוחות</a>
+      <button type="button" class="btn" onclick="window.print()">🖨️ הדפס</button>
+    </div>
+  </div>
+
+  <p style="color:var(--muted); font-size:0.9em;" class="no-print">
+    כיסאות = מספר התלמידים הפעילים בכיתה. שולחנות = מספר התלמידים חלקי 2, מעוגל כלפי מעלה (שני תלמידים לשולחן).
+  </p>
+
+  <div style="text-align:left; color:var(--muted); font-size:0.85em; margin-bottom:10px;">הופק בתאריך: <%= todayHebrewStr %></div>
+
+  <% Object.keys(grouped).forEach(branchName => { %>
+    <h3 style="margin-top:20px; border-bottom:2px solid var(--border); padding-bottom:6px;"><%= branchName %></h3>
+    <table>
+      <thead><tr><th>כיתה</th><th>מס' תלמידים</th><th>כיסאות</th><th>שולחנות</th></tr></thead>
+      <tbody>
+        <% let branchChairs = 0, branchTables = 0; %>
+        <% grouped[branchName].forEach(c => { branchChairs += c.chairs; branchTables += c.tables; %>
+          <tr>
+            <td><%= c.name %><%= c.parallel ? ' ' + c.parallel : '' %></td>
+            <td><%= c.student_count %></td>
+            <td><strong><%= c.chairs %></strong></td>
+            <td><strong><%= c.tables %></strong></td>
+          </tr>
+        <% }) %>
+        <tr class="total-row" style="font-weight:700; border-top:2px solid var(--border);">
+          <td>סה"כ <%= branchName %></td>
+          <td></td>
+          <td><%= branchChairs %></td>
+          <td><%= branchTables %></td>
+        </tr>
+      </tbody>
+    </table>
+  <% }) %>
+
+  <h3 style="margin-top:26px;">סה"כ כללי (כל הסניפים)</h3>
+  <table>
+    <tbody>
+      <tr style="font-weight:700; font-size:1.05em;">
+        <td>כיסאות</td><td><%= grandChairs %></td>
+        <td>שולחנות</td><td><%= grandTables %></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<style>
+  @media print {
+    .no-print, header.topbar, nav, .topbar { display: none !important; }
+    body { background: #fff; }
+    .card { box-shadow: none; border: none; }
+    th, td { border: 1px solid #999 !important; }
+  }
+</style>
+
+<%- include('../partials/footer') %>

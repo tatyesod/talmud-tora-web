@@ -400,6 +400,36 @@ router.get("/health-declaration/view", (req, res) => {
   res.render("reports/health-declaration-print", { students });
 });
 
+// ============ כמות שולחנות וכסאות בכיתה - לפי סניפים ============
+router.get("/furniture-count", (req, res) => {
+  const rows = db.prepare(`
+    SELECT c.id, c.name, c.parallel, c.branch, COUNT(s.id) AS student_count
+    FROM classes c
+    LEFT JOIN students s ON s.class_id = c.id AND s.status = 'פעיל'
+    WHERE c.status = 'פעיל'
+    GROUP BY c.id
+    ORDER BY c.branch, c.name, c.parallel
+  `).all().map((c) => ({
+    ...c,
+    chairs: c.student_count,
+    tables: Math.ceil(c.student_count / 2),
+  }));
+
+  const grouped = {};
+  rows.forEach((r) => {
+    const key = r.branch || "ללא סניף";
+    if (!grouped[key]) grouped[key] = [];
+    grouped[key].push(r);
+  });
+
+  const grandChairs = rows.reduce((sum, r) => sum + r.chairs, 0);
+  const grandTables = rows.reduce((sum, r) => sum + r.tables, 0);
+
+  res.render("reports/furniture-count", {
+    grouped, grandChairs, grandTables, todayHebrewStr: hd.serialToHebrewString(hd.todayAccessSerial()),
+  });
+});
+
 // ============ רישום גני ילדים (מכינה א'-ב') לפי תבנית משרד החינוך ============
 router.get("/gan-export", async (req, res) => {
   const classes = db.prepare(`
