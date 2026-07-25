@@ -18,12 +18,13 @@
   <% Object.keys(grouped).forEach(branchName => { %>
     <h3 style="margin-top:20px; border-bottom:2px solid var(--border); padding-bottom:6px;"><%= branchName %></h3>
     <table>
-      <thead><tr><th>כיתה</th><th>מס' תלמידים</th><th>כיסאות</th><th>שולחנות</th></tr></thead>
+      <thead><tr><th>כיתה</th><th>מיקום</th><th>מס' תלמידים</th><th>כיסאות</th><th>שולחנות</th></tr></thead>
       <tbody>
         <% let branchChairs = 0, branchTables = 0; %>
         <% grouped[branchName].forEach(c => { branchChairs += c.chairs; branchTables += c.tables; %>
           <tr>
             <td><%= c.name %><%= c.parallel ? ' ' + c.parallel : '' %></td>
+            <td><%= c.room_description || '' %></td>
             <td><%= c.student_count %></td>
             <td><strong><%= c.chairs %></strong></td>
             <td><strong><%= c.tables %></strong></td>
@@ -31,6 +32,7 @@
         <% }) %>
         <tr class="total-row" style="font-weight:700; border-top:2px solid var(--border);">
           <td>סה"כ <%= branchName %></td>
+          <td></td>
           <td></td>
           <td><%= branchChairs %></td>
           <td><%= branchTables %></td>

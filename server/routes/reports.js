@@ -403,10 +403,10 @@ router.get("/health-declaration/view", (req, res) => {
 // ============ כמות שולחנות וכסאות בכיתה - לפי סניפים ============
 router.get("/furniture-count", (req, res) => {
   const rows = db.prepare(`
-    SELECT c.id, c.name, c.parallel, c.branch, COUNT(s.id) AS student_count
+    SELECT c.id, c.name, c.parallel, c.branch, c.room_description, COUNT(s.id) AS student_count
     FROM classes c
     LEFT JOIN students s ON s.class_id = c.id AND s.status = 'פעיל'
-    WHERE c.status = 'פעיל'
+    WHERE c.status = 'פעיל' AND c.name NOT LIKE 'עדיין לא נכנסו%'
     GROUP BY c.id
     ORDER BY c.branch, c.name, c.parallel
   `).all().map((c) => ({
