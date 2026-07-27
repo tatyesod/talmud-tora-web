@@ -57,7 +57,9 @@
                   <td class="sticky-col"><strong><%= s.last_name %> <%= s.first_name %></strong></td>
                   <% campaign.criteria.forEach((cr, i) => { %>
                     <td style="text-align:center;">
-                      <input type="number" name="count_<%= s.id %>_<%= cr.id %>" min="0" value="<%= s.counts[i] %>" style="width:60px; text-align:center; padding:3px;" />
+                      <input type="number" name="count_<%= s.id %>_<%= cr.id %>" min="0"
+                        <%= s.counts[i] > 0 ? ('value="' + s.counts[i] + '"') : 'placeholder="0"' %>
+                        style="width:60px; text-align:center; padding:3px;" />
                     </td>
                   <% }) %>
                   <td style="text-align:center; font-weight:800;"><%= s.totalPoints %></td>
