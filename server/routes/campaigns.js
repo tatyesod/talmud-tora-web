@@ -161,22 +161,35 @@ router.get("/:id", (req, res) => {
   res.render("campaigns/detail", { campaign: enriched, classId: classId ? String(classId) : "", students: studentRows, saved: req.query.saved === "1" });
 });
 
-router.post("/:id/set-count", (req, res) => {
-  const { student_id, criterion_id, class_id, count } = req.body;
-  const target = Math.max(0, parseInt(count, 10) || 0);
-  const existing = db.prepare(
-    "SELECT id FROM campaign_awards WHERE campaign_id=? AND student_id=? AND criterion_id=? ORDER BY id"
-  ).all(req.params.id, student_id, criterion_id);
+router.post("/:id/set-counts", (req, res) => {
+  const { class_id } = req.body;
+  const today = new Date().toISOString().slice(0, 10);
+  const nowIso = new Date().toISOString();
+  const insert = db.prepare("INSERT INTO campaign_awards (campaign_id, criterion_id, student_id, awarded_date, created_at) VALUES (?,?,?,?,?)");
+  const del = db.prepare("DELETE FROM campaign_awards WHERE id = ?");
+  const selectExisting = db.prepare("SELECT id FROM campaign_awards WHERE campaign_id=? AND student_id=? AND criterion_id=? ORDER BY id");
 
-  if (existing.length < target) {
-    const insert = db.prepare("INSERT INTO campaign_awards (campaign_id, criterion_id, student_id, awarded_date, created_at) VALUES (?,?,?,?,?)");
-    const toAdd = target - existing.length;
-    const today = new Date().toISOString().slice(0, 10);
-    for (let i = 0; i < toAdd; i++) insert.run(req.params.id, criterion_id, student_id, today, new Date().toISOString());
-  } else if (existing.length > target) {
-    const toRemove = existing.slice(0, existing.length - target);
-    const del = db.prepare("DELETE FROM campaign_awards WHERE id = ?");
-    toRemove.forEach((row) => del.run(row.id));
+  // כל שדות count_<student_id>_<criterion_id> בטופס - שומר את כל הטבלה
+  // בבת אחת, בלי צורך לשמור כל תא בנפרד
+  db.exec("BEGIN TRANSACTION");
+  try {
+    Object.keys(req.body).forEach((key) => {
+      const m = key.match(/^count_(\d+)_(\d+)$/);
+      if (!m) return;
+      const [, studentId, criterionId] = m;
+      const target = Math.max(0, parseInt(req.body[key], 10) || 0);
+      const existing = selectExisting.all(req.params.id, studentId, criterionId);
+      if (existing.length < target) {
+        const toAdd = target - existing.length;
+        for (let i = 0; i < toAdd; i++) insert.run(req.params.id, criterionId, studentId, today, nowIso);
+      } else if (existing.length > target) {
+        existing.slice(0, existing.length - target).forEach((row) => del.run(row.id));
+      }
+    });
+    db.exec("COMMIT");
+  } catch (e) {
+    db.exec("ROLLBACK");
+    throw e;
   }
 
   res.redirect(`/campaigns/${req.params.id}?class_id=${encodeURIComponent(class_id || "")}&saved=1`);

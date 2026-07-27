@@ -13,7 +13,7 @@
   <% if (campaign.notes) { %><p style="color:var(--muted); font-size:0.9em;"><%= campaign.notes %></p><% } %>
 
   <% if (saved) { %>
-    <div style="background:#e8f5e9; border:1px solid #a5d6a7; color:#2e7d32; border-radius:8px; padding:8px 14px; margin-bottom:12px;">✅ עודכן.</div>
+    <div style="background:#e8f5e9; border:1px solid #a5d6a7; color:#2e7d32; border-radius:8px; padding:8px 14px; margin-bottom:12px;">✅ נשמר בהצלחה.</div>
   <% } %>
 
   <% if (campaign.classes.length === 0) { %>
@@ -34,38 +34,65 @@
     <% if (students.length === 0) { %>
       <p class="empty-state">אין תלמידים פעילים בכיתה זו</p>
     <% } else { %>
-      <div class="table-scroll-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>תלמיד</th>
-              <% campaign.criteria.forEach(cr => { %><th style="text-align:center;"><%= cr.name %><br><span style="font-weight:normal; color:var(--muted); font-size:0.85em;">(<%= cr.points %> נק')</span></th><% }) %>
-              <th>סה"כ נקודות</th>
-            </tr>
-          </thead>
-          <tbody>
-            <% students.forEach(s => { %>
+      <form method="POST" action="/campaigns/<%= campaign.id %>/set-counts">
+        <input type="hidden" name="class_id" value="<%= classId %>" />
+
+        <div class="campaign-save-bar">
+          <span style="color:var(--muted); font-size:0.9em;">מלאו כמה שצריך, ולבסוף לחצו שמירה אחת לכל הטבלה.</span>
+          <button type="submit" class="btn">💾 שמור את כל הטבלה</button>
+        </div>
+
+        <div class="table-scroll-wrap campaign-table-wrap">
+          <table class="campaign-table">
+            <thead>
               <tr>
-                <td><strong><%= s.last_name %> <%= s.first_name %></strong></td>
-                <% campaign.criteria.forEach((cr, i) => { %>
-                  <td style="text-align:center; white-space:nowrap;">
-                    <form method="POST" action="/campaigns/<%= campaign.id %>/set-count" style="display:flex; gap:4px; align-items:center; justify-content:center;">
-                      <input type="hidden" name="student_id" value="<%= s.id %>" />
-                      <input type="hidden" name="criterion_id" value="<%= cr.id %>" />
-                      <input type="hidden" name="class_id" value="<%= classId %>" />
-                      <input type="number" name="count" min="0" value="<%= s.counts[i] %>" style="width:60px; text-align:center; padding:3px;" />
-                      <button type="submit" class="btn small secondary" style="padding:2px 8px;">✓</button>
-                    </form>
-                  </td>
-                <% }) %>
-                <td style="text-align:center; font-weight:800;"><%= s.totalPoints %></td>
+                <th class="sticky-col">תלמיד</th>
+                <% campaign.criteria.forEach(cr => { %><th style="text-align:center;"><%= cr.name %><br><span style="font-weight:normal; color:var(--muted); font-size:0.85em;">(<%= cr.points %> נק')</span></th><% }) %>
+                <th>סה"כ נקודות</th>
               </tr>
-            <% }) %>
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              <% students.forEach(s => { %>
+                <tr>
+                  <td class="sticky-col"><strong><%= s.last_name %> <%= s.first_name %></strong></td>
+                  <% campaign.criteria.forEach((cr, i) => { %>
+                    <td style="text-align:center;">
+                      <input type="number" name="count_<%= s.id %>_<%= cr.id %>" min="0" value="<%= s.counts[i] %>" style="width:60px; text-align:center; padding:3px;" />
+                    </td>
+                  <% }) %>
+                  <td style="text-align:center; font-weight:800;"><%= s.totalPoints %></td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="campaign-save-bar" style="margin-top:10px;">
+          <button type="submit" class="btn">💾 שמור את כל הטבלה</button>
+        </div>
+      </form>
     <% } %>
   <% } %>
 </div>
+
+<style>
+  .campaign-save-bar {
+    position: sticky; top: 0; z-index: 20;
+    background: var(--card-bg, #fff);
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 8px 4px; margin-bottom: 6px;
+    border-bottom: 1px solid var(--border);
+  }
+  .campaign-table-wrap { max-height: 65vh; }
+  .campaign-table thead th {
+    position: sticky; top: 0; z-index: 11;
+    background: var(--table-header, #e8ecf0);
+  }
+  .campaign-table .sticky-col {
+    position: sticky; right: 0; z-index: 6;
+    background: var(--card-bg, #fff);
+  }
+  .campaign-table thead .sticky-col { z-index: 12; background: var(--table-header, #e8ecf0); }
+</style>
 
 <%- include('../partials/footer') %>
