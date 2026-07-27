@@ -1234,6 +1234,159 @@ function getCheckpointBaseline(branch, year) {
   return new Map(rows.map((r) => [r.book_price_id, r.ordered_count]));
 }
 
+// ============ דוח סיכום כיתות x ספרים - כמה מכל ספר הזמינה כל כיתה ============
+router.get("/class-summary", (req, res) => {
+  const { GRADE_ORDER } = require("../yearManager");
+  const years = db.prepare("SELECT DISTINCT year_label FROM book_catalog ORDER BY year_label DESC").all().map(r => r.year_label);
+  const defaultYear = db.prepare("SELECT value FROM settings WHERE key='current_hebrew_year'").get()?.value || years[0] || 'תשפ"ז';
+  const year = req.query.year || defaultYear;
+  const branches = db.prepare("SELECT DISTINCT branch FROM classes WHERE branch IS NOT NULL AND branch != '' ORDER BY branch").all().map(r => r.branch);
+  const branch = req.query.branch || branches[0] || "";
+
+  // כל הספרים שמופיעים בקטלוג ההזמנה של הסניף/שנה הזו - העמודות
+  const books = db.prepare(`
+    SELECT DISTINCT bc.item_name
+    FROM book_catalog bc
+    JOIN classes c ON c.name = bc.class_name AND c.branch = ?
+    WHERE bc.year_label = ?
+    ORDER BY bc.sort_order, bc.item_name
+  `).all(branch, year).map(r => r.item_name);
+
+  // כל הכיתות הפעילות בסניף - השורות, ממוינות לפי גיל (לא אלפביתי)
+  const classes = db.prepare(`
+    SELECT id, name, parallel FROM classes
+    WHERE branch = ? AND status = 'פעיל' AND name NOT LIKE 'עדיין לא נכנסו%'
+  `).all(branch).sort((a, b) => {
+    const gA = GRADE_ORDER.indexOf(a.name), gB = GRADE_ORDER.indexOf(b.name);
+    if (gA !== gB) return (gA === -1 ? 999 : gA) - (gB === -1 ? 999 : gB);
+    return (parseInt(a.parallel, 10) || 0) - (parseInt(b.parallel, 10) || 0);
+  });
+
+  // סופרים הזמנות לפי (כיתה, שם ספר) - גם הזמנות רגילות וגם חידושים
+  const counts = {}; // counts[class_id][item_name] = count
+  classes.forEach((c) => { counts[c.id] = {}; });
+
+  const regularOrders = db.prepare(`
+    SELECT s.class_id, bc.item_name, COUNT(*) AS cnt
+    FROM book_orders bo
+    JOIN book_catalog bc ON bo.catalog_id = bc.id AND bc.year_label = ?
+    JOIN students s ON bo.student_id = s.id
+    WHERE s.class_id IN (${classes.map(() => "?").join(",") || "0"})
+    GROUP BY s.class_id, bc.item_name
+  `).all(year, ...classes.map(c => c.id));
+  regularOrders.forEach((r) => {
+    if (!counts[r.class_id]) counts[r.class_id] = {};
+    counts[r.class_id][r.item_name] = (counts[r.class_id][r.item_name] || 0) + r.cnt;
+  });
+
+  const extraOrders = db.prepare(`
+    SELECT s.class_id, e.item_name, COUNT(*) AS cnt
+    FROM book_order_extras e
+    JOIN students s ON e.student_id = s.id
+    WHERE e.year_label = ? AND s.class_id IN (${classes.map(() => "?").join(",") || "0"})
+    GROUP BY s.class_id, e.item_name
+  `).all(year, ...classes.map(c => c.id));
+  extraOrders.forEach((r) => {
+    if (!counts[r.class_id]) counts[r.class_id] = {};
+    counts[r.class_id][r.item_name] = (counts[r.class_id][r.item_name] || 0) + r.cnt;
+  });
+
+  const matrix = classes.map((c) => {
+    const rowCounts = books.map((bookName) => counts[c.id]?.[bookName] || 0);
+    return {
+      className: c.name + (c.parallel ? " " + c.parallel : ""),
+      counts: rowCounts,
+      rowTotal: rowCounts.reduce((s, n) => s + n, 0),
+    };
+  });
+  const columnTotals = books.map((_, i) => matrix.reduce((s, row) => s + row.counts[i], 0));
+  const grandTotal = columnTotals.reduce((s, n) => s + n, 0);
+
+  res.render("books/class-summary", { years, year, branches, branch, books, matrix, columnTotals, grandTotal });
+});
+
+router.get("/class-summary/export", async (req, res) => {
+  const { GRADE_ORDER } = require("../yearManager");
+  const years = db.prepare("SELECT DISTINCT year_label FROM book_catalog ORDER BY year_label DESC").all().map(r => r.year_label);
+  const defaultYear = db.prepare("SELECT value FROM settings WHERE key='current_hebrew_year'").get()?.value || years[0] || 'תשפ"ז';
+  const year = req.query.year || defaultYear;
+  const branch = req.query.branch || "";
+
+  const books = db.prepare(`
+    SELECT DISTINCT bc.item_name
+    FROM book_catalog bc
+    JOIN classes c ON c.name = bc.class_name AND c.branch = ?
+    WHERE bc.year_label = ?
+    ORDER BY bc.sort_order, bc.item_name
+  `).all(branch, year).map(r => r.item_name);
+
+  const classes = db.prepare(`
+    SELECT id, name, parallel FROM classes
+    WHERE branch = ? AND status = 'פעיל' AND name NOT LIKE 'עדיין לא נכנסו%'
+  `).all(branch).sort((a, b) => {
+    const gA = GRADE_ORDER.indexOf(a.name), gB = GRADE_ORDER.indexOf(b.name);
+    if (gA !== gB) return (gA === -1 ? 999 : gA) - (gB === -1 ? 999 : gB);
+    return (parseInt(a.parallel, 10) || 0) - (parseInt(b.parallel, 10) || 0);
+  });
+
+  const counts = {};
+  classes.forEach((c) => { counts[c.id] = {}; });
+  const regularOrders = db.prepare(`
+    SELECT s.class_id, bc.item_name, COUNT(*) AS cnt
+    FROM book_orders bo
+    JOIN book_catalog bc ON bo.catalog_id = bc.id AND bc.year_label = ?
+    JOIN students s ON bo.student_id = s.id
+    WHERE s.class_id IN (${classes.map(() => "?").join(",") || "0"})
+    GROUP BY s.class_id, bc.item_name
+  `).all(year, ...classes.map(c => c.id));
+  regularOrders.forEach((r) => {
+    if (!counts[r.class_id]) counts[r.class_id] = {};
+    counts[r.class_id][r.item_name] = (counts[r.class_id][r.item_name] || 0) + r.cnt;
+  });
+  const extraOrders = db.prepare(`
+    SELECT s.class_id, e.item_name, COUNT(*) AS cnt
+    FROM book_order_extras e
+    JOIN students s ON e.student_id = s.id
+    WHERE e.year_label = ? AND s.class_id IN (${classes.map(() => "?").join(",") || "0"})
+    GROUP BY s.class_id, e.item_name
+  `).all(year, ...classes.map(c => c.id));
+  extraOrders.forEach((r) => {
+    if (!counts[r.class_id]) counts[r.class_id] = {};
+    counts[r.class_id][r.item_name] = (counts[r.class_id][r.item_name] || 0) + r.cnt;
+  });
+
+  const wb = new ExcelJS.Workbook();
+  const ws = wb.addWorksheet("סיכום כיתות וספרים", { views: [{ rightToLeft: true }] });
+  ws.columns = [{ header: "כיתה", key: "className", width: 16 }, ...books.map((b, i) => ({ header: b, key: "b" + i, width: 14 })), { header: "סה\"כ כיתה", key: "rowTotal", width: 12 }];
+  ws.getRow(1).font = { bold: true };
+  ws.getRow(1).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFE8ECF0" } };
+
+  classes.forEach((c) => {
+    const rowCounts = books.map((bookName) => counts[c.id]?.[bookName] || 0);
+    const rowObj = { className: c.name + (c.parallel ? " " + c.parallel : "") };
+    books.forEach((b, i) => { rowObj["b" + i] = rowCounts[i] || ""; });
+    rowObj.rowTotal = rowCounts.reduce((s, n) => s + n, 0);
+    ws.addRow(rowObj);
+  });
+
+  const totalRowObj = { className: "סה\"כ לכל הכיתות" };
+  let grandTotal = 0;
+  books.forEach((b, i) => {
+    const colTotal = classes.reduce((s, c) => s + (counts[c.id]?.[b] || 0), 0);
+    totalRowObj["b" + i] = colTotal;
+    grandTotal += colTotal;
+  });
+  totalRowObj.rowTotal = grandTotal;
+  const totalRow = ws.addRow(totalRowObj);
+  totalRow.font = { bold: true };
+  totalRow.eachCell((cell) => { cell.border = { top: { style: "double" } }; });
+
+  res.setHeader("Content-Disposition", `attachment; filename="${encodeURIComponent("סיכום הזמנות לפי כיתה - " + branch + ".xlsx")}"`);
+  res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+  await wb.xlsx.write(res);
+  res.end();
+});
+
 router.get("/inventory", (req, res) => {
   const classBranches = db.prepare("SELECT DISTINCT branch FROM classes WHERE branch IS NOT NULL AND branch<>'' ORDER BY branch").all().map(r => r.branch);
   const ALL_BRANCHES = ["סוקולוב", "נפחא", "בן פתחיה"];

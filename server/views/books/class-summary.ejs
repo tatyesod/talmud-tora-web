@@ -1,0 +1,79 @@
+<%- include('../partials/header', {title: 'סיכום הזמנות לפי כיתה וספר', wide: true}) %>
+
+<div class="card">
+  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+    <h1>📊 סיכום הזמנות לפי כיתה וספר</h1>
+    <div class="actions">
+      <a href="/books" class="btn secondary">← חזרה</a>
+      <% if (books.length > 0) { %>
+        <a href="/books/class-summary/export?branch=<%= encodeURIComponent(branch) %>&year=<%= encodeURIComponent(year) %>" class="btn">📥 ייצוא ל-Excel</a>
+        <button type="button" class="btn secondary" onclick="window.print()">🖨️ הדפס</button>
+      <% } %>
+    </div>
+  </div>
+
+  <p style="color:var(--muted); font-size:0.9em;" class="no-print">
+    לכל כיתה - כמה מכל ספר הוזמן (הזמנות רגילות + חידושים). בשורה האחרונה - סה"כ לכל ספר, על פני כל הכיתות, כדי
+    לדעת כמה להכין מכל ספר וספר.
+  </p>
+
+  <form method="GET" action="/books/class-summary" class="no-print" style="display:flex; gap:14px; margin:14px 0;">
+    <div>
+      <label>סניף: </label>
+      <select name="branch" onchange="this.form.submit()">
+        <% branches.forEach(b => { %>
+          <option value="<%= b %>" <%= b === branch ? 'selected' : '' %>><%= b %></option>
+        <% }) %>
+      </select>
+    </div>
+    <div>
+      <label>שנה: </label>
+      <select name="year" onchange="this.form.submit()">
+        <% years.forEach(y => { %>
+          <option value="<%= y %>" <%= y === year ? 'selected' : '' %>><%= y %></option>
+        <% }) %>
+      </select>
+    </div>
+  </form>
+
+  <% if (books.length === 0) { %>
+    <p class="empty-state">אין קטלוג ספרים לסניף/שנה שנבחרו</p>
+  <% } else { %>
+    <div class="table-scroll-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th style="position:sticky; right:0; z-index:11; background:var(--table-header, #e8ecf0);">כיתה</th>
+            <% books.forEach(b => { %><th style="min-width:90px;"><%= b %></th><% }) %>
+            <th style="font-weight:800;">סה"כ כיתה</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% matrix.forEach(row => { %>
+            <tr>
+              <td style="position:sticky; right:0; z-index:5; background:var(--card-bg, #fff); font-weight:700;"><%= row.className %></td>
+              <% row.counts.forEach(c => { %><td style="text-align:center;"><%= c > 0 ? c : '' %></td><% }) %>
+              <td style="text-align:center; font-weight:700;"><%= row.rowTotal %></td>
+            </tr>
+          <% }) %>
+        </tbody>
+        <tfoot>
+          <tr style="font-weight:800; border-top:2px solid var(--border);">
+            <td style="position:sticky; right:0; z-index:5; background:var(--table-header, #e8ecf0);">סה"כ לכל הכיתות</td>
+            <% columnTotals.forEach(t => { %><td style="text-align:center;"><%= t %></td><% }) %>
+            <td style="text-align:center;"><%= grandTotal %></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  <% } %>
+</div>
+
+<style>
+  @media print {
+    .no-print, header.topbar, nav { display: none !important; }
+    .table-scroll-wrap { overflow: visible !important; max-height: none !important; }
+  }
+</style>
+
+<%- include('../partials/footer') %>
