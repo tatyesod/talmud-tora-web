@@ -40,34 +40,50 @@
     <p class="empty-state">אין קטלוג ספרים לסניף/שנה שנבחרו</p>
   <% } else { %>
     <div class="table-scroll-wrap">
-      <table>
+      <table class="matrix-table">
         <thead>
           <tr>
-            <th style="position:sticky; right:0; z-index:11; background:var(--table-header, #e8ecf0);">כיתה</th>
-            <% books.forEach(b => { %><th style="min-width:90px;"><%= b %></th><% }) %>
-            <th style="font-weight:800;">סה"כ כיתה</th>
+            <th class="sticky-col" style="background:var(--table-header, #e8ecf0);">כיתה</th>
+            <% books.forEach(b => { %>
+              <th class="rotated-th"><div><span><%= b %></span></div></th>
+            <% }) %>
+            <th style="font-weight:800; min-width:70px;">סה"כ<br>כיתה</th>
           </tr>
         </thead>
         <tbody>
-          <% matrix.forEach(row => { %>
-            <tr>
-              <td style="position:sticky; right:0; z-index:5; background:var(--card-bg, #fff); font-weight:700;"><%= row.className %></td>
-              <% row.counts.forEach(c => { %><td style="text-align:center;"><%= c > 0 ? c : '' %></td><% }) %>
-              <td style="text-align:center; font-weight:700;"><%= row.rowTotal %></td>
+          <% matrix.forEach((row, i) => { %>
+            <tr class="<%= i % 2 === 1 ? 'zebra' : '' %>">
+              <td class="sticky-col" style="background:<%= i % 2 === 1 ? 'var(--zebra-bg, #f7f8fa)' : 'var(--card-bg, #fff)' %>; font-weight:700;"><%= row.className %></td>
+              <% row.counts.forEach(c => { %><td class="count-cell <%= c > 0 ? 'has-count' : '' %>"><%= c > 0 ? c : '·' %></td><% }) %>
+              <td class="count-cell" style="font-weight:700;"><%= row.rowTotal %></td>
             </tr>
           <% }) %>
         </tbody>
         <tfoot>
           <tr style="font-weight:800; border-top:2px solid var(--border);">
-            <td style="position:sticky; right:0; z-index:5; background:var(--table-header, #e8ecf0);">סה"כ לכל הכיתות</td>
-            <% columnTotals.forEach(t => { %><td style="text-align:center;"><%= t %></td><% }) %>
-            <td style="text-align:center;"><%= grandTotal %></td>
+            <td class="sticky-col" style="background:var(--table-header, #e8ecf0);">סה"כ לכל הכיתות</td>
+            <% columnTotals.forEach(t => { %><td class="count-cell"><%= t %></td><% }) %>
+            <td class="count-cell"><%= grandTotal %></td>
           </tr>
         </tfoot>
       </table>
     </div>
   <% } %>
 </div>
+
+<style>
+  .matrix-table { border-collapse: collapse; }
+  .matrix-table th, .matrix-table td { border: 1px solid var(--border); }
+  .matrix-table .sticky-col { position: sticky; right: 0; z-index: 6; min-width: 110px; text-align: right; padding: 6px 10px; }
+  thead .sticky-col { z-index: 12; }
+  .rotated-th { min-width: 34px; max-width: 34px; height: 130px; padding: 0; vertical-align: bottom; }
+  .rotated-th > div { display: flex; align-items: center; justify-content: flex-start; width: 34px; }
+  .rotated-th span { writing-mode: vertical-rl; transform: rotate(180deg); white-space: nowrap; font-size: 0.82em; font-weight: 600; padding-bottom: 6px; }
+  .count-cell { text-align: center; min-width: 34px; padding: 6px 4px; color: var(--muted); }
+  .count-cell.has-count { color: inherit; font-weight: 700; background: #eef5fb; }
+  tr.zebra td:not(.sticky-col) { background: var(--zebra-bg, #fafbfc); }
+  tr.zebra td.has-count { background: #e4eef7; }
+</style>
 
 <style>
   @media print {
