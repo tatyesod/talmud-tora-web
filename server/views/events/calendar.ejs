@@ -50,8 +50,16 @@
               </div>
               <% if (d.isVacation) { %><div class="cal-vacation"><%= d.vacationTitle %></div><% } %>
               <% if (d.holiday) { %><div class="cal-holiday"><%= d.holiday %></div><% } %>
+              <% d.birthdays.forEach(b => { %>
+                <a href="<%= b.href %>" class="cal-birthday" title="יום הולדת: <%= b.name %>">🎂 <%= b.name %></a>
+              <% }) %>
               <% d.events.forEach(e => { %>
                 <a href="/events/<%= e.id %>" class="cal-event" title="<%= e.title %>"><%= e.title %></a>
+              <% }) %>
+              <% d.tasks.forEach(t => { %>
+                <div class="cal-task <%= t.done ? 'done' : '' %> <%= t.isShared ? 'shared' : '' %>" title="<%= t.isShared ? 'משימה כללית' : 'משימה אישית' %>: <%= t.title %>">
+                  <%= t.isShared ? '👥' : '📌' %> <%= t.title %>
+                </div>
               <% }) %>
             </td>
           <% }) %>
@@ -82,6 +90,11 @@
   .cal-holiday { color: #a94442; font-size: 0.78em; font-weight: 600; margin: 2px 0; }
   .cal-event { display: block; background: #e3f2fd; color: #1565c0; border-radius: 4px; padding: 1px 5px; font-size: 0.78em; margin-top: 2px; text-decoration: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .cal-event:hover { background: #bbdefb; }
+  .cal-birthday { display: block; background: #fff0f6; color: #ad1457; border-radius: 4px; padding: 1px 5px; font-size: 0.78em; margin-top: 2px; text-decoration: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .cal-birthday:hover { background: #fce4ec; }
+  .cal-task { background: #fff8e1; color: #8a6d00; border-radius: 4px; padding: 1px 5px; font-size: 0.78em; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .cal-task.shared { background: #e8f5e9; color: #2e7d32; }
+  .cal-task.done { opacity: 0.55; text-decoration: line-through; }
   @media (max-width: 900px) {
     .calendar-grid, .calendar-grid thead, .calendar-grid tbody, .calendar-grid th, .calendar-grid td, .calendar-grid tr { display: block; }
     .calendar-grid thead { display: none; }

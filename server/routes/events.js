@@ -252,6 +252,42 @@ router.get("/calendar", (req, res) => {
     return vacations.find((v) => serial >= v.start_date && serial <= v.end_date);
   }
 
+  // משימות אישיות (של המשתמש המחובר בלבד) עם תאריך יעד בטווח המוצג
+  const myTasksRaw = db.prepare(`
+    SELECT id, title, done, due_date FROM tasks WHERE user_id = ? AND due_date >= ? AND due_date <= ?
+  `).all(req.currentUser.id, startSerial, endSerial);
+  const tasksBySerial = {};
+  myTasksRaw.forEach((t) => {
+    if (!tasksBySerial[t.due_date]) tasksBySerial[t.due_date] = [];
+    tasksBySerial[t.due_date].push({ ...t, isShared: false });
+  });
+
+  // משימות כלליות (משותפות לכולם) עם תאריך יעד בטווח המוצג
+  const sharedTasksRaw = db.prepare(`
+    SELECT id, title, done, due_date, assigned_label FROM shared_tasks WHERE due_date >= ? AND due_date <= ?
+  `).all(startSerial, endSerial);
+  sharedTasksRaw.forEach((t) => {
+    if (!tasksBySerial[t.due_date]) tasksBySerial[t.due_date] = [];
+    tasksBySerial[t.due_date].push({ ...t, isShared: true });
+  });
+
+  // ימי הולדת (תלמידים + צוות) - לפי תאריך הלידה העברי, שחוזר כל שנה. בודקים
+  // את השנה העברית של הטווח וגם שנה לפני/אחרי, כדי לכסות מעברי שנה בקצוות הלוח
+  const { hebrewBirthdayAbsoluteForYear } = require("../birthdays");
+  const students = db.prepare("SELECT id, first_name, last_name, birth_date_civil FROM students WHERE status='פעיל' AND birth_date_civil IS NOT NULL").all();
+  const teachers = db.prepare("SELECT id, first_name, last_name, birth_date_civil FROM teachers WHERE status='פעיל' AND birth_date_civil IS NOT NULL").all();
+  const birthdaysByAbsolute = {};
+  const addBirthday = (person, kind, hrefBase) => {
+    [year - 1, year, year + 1].forEach((y) => {
+      const abs = hebrewBirthdayAbsoluteForYear(person.birth_date_civil, y);
+      if (abs == null || abs < gridStartAbsolute || abs > gridEndAbsolute) return;
+      if (!birthdaysByAbsolute[abs]) birthdaysByAbsolute[abs] = [];
+      birthdaysByAbsolute[abs].push({ name: `${person.last_name || ""} ${person.first_name || ""}`.trim(), kind, href: `${hrefBase}/${person.id}` });
+    });
+  };
+  students.forEach((s) => addBirthday(s, "student", "/students"));
+  teachers.forEach((t) => addBirthday(t, "teacher", "/teachers"));
+
   const todayKey = gregKeyOf(hd.serialToDateObject(hd.todayAccessSerial()));
   const weeks = [];
   let week = [];
@@ -276,6 +312,8 @@ router.get("/calendar", (req, res) => {
       isVacation: !!vacation,
       vacationTitle: vacation ? vacation.title : "",
       events: eventsByDate[dateKey] || [],
+      tasks: tasksBySerial[serial] || [],
+      birthdays: birthdaysByAbsolute[absolute] || [],
     });
     if (week.length === 7) { weeks.push(week); week = []; }
   }

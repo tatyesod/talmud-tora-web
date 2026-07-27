@@ -1170,6 +1170,17 @@ try {
   // לא קריטי - אפשר להוסיף פריטים ידנית דרך המסך
 }
 
+// מוסיפים "תאריך יעד" למשימות כלליות (shared_tasks) - כדי שאפשר יהיה להציג
+// אותן בלוח השנה, לצד משימות אישיות, ימי הולדת וכו'
+try {
+  const cols = db.prepare("PRAGMA table_info(shared_tasks)").all().map((c) => c.name);
+  if (!cols.includes("due_date")) {
+    db.exec("ALTER TABLE shared_tasks ADD COLUMN due_date INTEGER");
+  }
+} catch (e) {
+  console.error("שגיאה בהוספת תאריך יעד למשימות כלליות:", e.message);
+}
+
 function cleanShutdown() {
   try {
     db.exec("PRAGMA wal_checkpoint(TRUNCATE);");

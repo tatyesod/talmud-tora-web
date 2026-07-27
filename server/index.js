@@ -487,11 +487,12 @@ app.get("/api/shared-tasks", (req, res) => {
 
 app.post("/api/shared-tasks", (req, res) => {
   const db = require("./db");
-  const { title, assigned_label } = req.body;
+  const hd = require("./hebrewDate");
+  const { title, assigned_label, due_date } = req.body;
   if (!title || !title.trim()) return res.status(400).json({ error: "כותרת חסרה" });
   const info = db.prepare(
-    "INSERT INTO shared_tasks (title, assigned_label, created_by, created_at) VALUES (?,?,?,?)"
-  ).run(title.trim(), assigned_label || "כולם", req.currentUser.id, new Date().toISOString());
+    "INSERT INTO shared_tasks (title, assigned_label, created_by, created_at, due_date) VALUES (?,?,?,?,?)"
+  ).run(title.trim(), assigned_label || "כולם", req.currentUser.id, new Date().toISOString(), due_date ? hd.gregorianStringToSerial(due_date) : null);
   res.json({ id: info.lastInsertRowid });
 });
 

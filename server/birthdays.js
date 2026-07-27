@@ -64,4 +64,16 @@ function daysAwayLabel(daysAway) {
   return `בעוד ${daysAway} ימים`;
 }
 
-module.exports = { upcomingBirthdays, daysAwayLabel, LOOKAHEAD_DAYS };
+// מחזיר את היום המוחלט (absolute day) של יום ההולדת העברי של מישהו, עבור
+// שנה עברית *נתונה* - לא רק "הקרוב ביותר". משמש להצגת ימי הולדת על גבי לוח
+// שנה (שמראה טווח ימים, לא רק היום הנוכחי).
+function hebrewBirthdayAbsoluteForYear(birthSerial, targetYear) {
+  const birth = hd.serialToHebrewParts(birthSerial);
+  if (!birth) return null;
+  const month = adjustedHebrewMonth(birth.month, birth.year, targetYear);
+  const maxDay = hd.daysInHebrewMonth(month, targetYear);
+  const day = Math.min(birth.day, maxDay);
+  return hd.hebrewPartsToAbsolute(targetYear, month, day);
+}
+
+module.exports = { upcomingBirthdays, daysAwayLabel, LOOKAHEAD_DAYS, hebrewBirthdayAbsoluteForYear };
