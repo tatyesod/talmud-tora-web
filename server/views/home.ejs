@@ -29,6 +29,7 @@
     <a href="/year" class="year-pill">שנת לימודים: <strong><%= currentYear %></strong></a>
     <a href="/messages" class="year-pill">💬 הודעות<% if (unreadCount > 0) { %> <span class="unread-badge"><%= unreadCount %></span><% } %></a>
     <a href="https://calendar.google.com" target="_blank" rel="noopener noreferrer" class="year-pill">📅 יומן גוגל שלי</a>
+    <a href="https://mail.google.com/mail/u/0/#inbox" target="_blank" rel="noopener noreferrer" class="year-pill">📧 ג'ימייל שלי</a>
     <% if (isAdmin) { %><a href="/users" class="year-pill">👥 משתמשים</a><% } %>
     <a href="/profile" class="year-pill">👤 <%= user %></a>
     <form action="/logout" method="POST">
