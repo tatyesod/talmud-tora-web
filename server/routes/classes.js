@@ -397,6 +397,33 @@ router.post("/zone-assignment/apply", (req, res) => {
   res.redirect(`/classes/zone-assignment?${qs}`);
 });
 
+// ============ חומר לימודי - קישור לתיקיית דרופבוקס של כל כיתה ============
+router.get("/study-materials", (req, res) => {
+  const { GRADE_ORDER } = require("../yearManager");
+  const classes = db.prepare(`
+    SELECT id, name, parallel, branch, dropbox_path FROM classes
+    WHERE status = 'פעיל' AND name NOT LIKE 'עדיין לא נכנסו%'
+  `).all().sort((a, b) => {
+    if (a.branch !== b.branch) return (a.branch || "").localeCompare(b.branch || "", "he");
+    const gA = GRADE_ORDER.indexOf(a.name), gB = GRADE_ORDER.indexOf(b.name);
+    if (gA !== gB) return (gA === -1 ? 999 : gA) - (gB === -1 ? 999 : gB);
+    return (parseInt(a.parallel, 10) || 0) - (parseInt(b.parallel, 10) || 0);
+  });
+  const grouped = {};
+  classes.forEach((c) => {
+    const key = c.branch || "ללא סניף";
+    if (!grouped[key]) grouped[key] = [];
+    grouped[key].push(c);
+  });
+  res.render("classes/study-materials", { grouped, saved: req.query.saved === "1" });
+});
+
+router.post("/study-materials/:id", (req, res) => {
+  const { dropbox_path } = req.body;
+  db.prepare("UPDATE classes SET dropbox_path = ? WHERE id = ?").run((dropbox_path || "").trim() || null, req.params.id);
+  res.redirect("/classes/study-materials?saved=1");
+});
+
 // --- צפייה בכיתה (תמיד אחרון, כדי לא להתנגש עם /new ו-/cohorts) ---
 router.get("/:id", (req, res) => {
   const classRow = db

@@ -167,6 +167,7 @@ const migrations = [
   "DELETE FROM messages WHERE sender_id NOT IN (SELECT id FROM users) OR recipient_id NOT IN (SELECT id FROM users)",
   "ALTER TABLE classes ADD COLUMN room_description TEXT",
   "ALTER TABLE classes ADD COLUMN letter_template_id INTEGER",
+  "ALTER TABLE classes ADD COLUMN dropbox_path TEXT",
   `CREATE TABLE IF NOT EXISTS letter_templates (
     id INTEGER PRIMARY KEY,
     name TEXT NOT NULL,

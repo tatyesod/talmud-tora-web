@@ -1,0 +1,60 @@
+<%- include('../partials/header', {title: 'חומר לימודי', wide: true}) %>
+
+<div class="card">
+  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+    <h1>🗂️ חומר לימודי</h1>
+    <a href="/classes" class="btn secondary">← חזרה לכיתות</a>
+  </div>
+
+  <p style="color:var(--muted); font-size:0.9em; line-height:1.6;">
+    לכל כיתה - נתיב לתיקיית החומר הלימודי שלה בדרופבוקס. הזינו את הנתיב <strong>החל מתוך תיקיית "לימודי"</strong>
+    (בלי אות הכונן ובלי "Dropbox" בהתחלה) - למשל: <code>כיתות א-ח\5כיתה א3 - הרב מרדכי זלצר</code>.
+    כפתור "📂 פתח בדרופבוקס" ינסה לפתוח את זה ישירות בסייר הקבצים - <strong>זו תכונה בבדיקה</strong>, אם היא לא עובדת
+    אצלכם, יש גם כפתור "העתק נתיב" לפתיחה ידנית.
+  </p>
+
+  <% if (saved) { %>
+    <div style="background:#e8f5e9; border:1px solid #a5d6a7; color:#2e7d32; border-radius:8px; padding:8px 14px; margin-bottom:12px;">✅ הנתיב נשמר.</div>
+  <% } %>
+
+  <% Object.keys(grouped).forEach(branchName => { %>
+    <h3 style="margin-top:22px; border-bottom:2px solid var(--border); padding-bottom:6px;"><%= branchName %></h3>
+    <table>
+      <thead><tr><th>כיתה</th><th>נתיב תיקיית דרופבוקס</th><th></th></tr></thead>
+      <tbody>
+        <% grouped[branchName].forEach(c => { %>
+          <tr>
+            <td style="white-space:nowrap;"><strong><%= c.name %><%= c.parallel ? ' '+c.parallel : '' %></strong></td>
+            <td>
+              <form method="POST" action="/classes/study-materials/<%= c.id %>" style="display:flex; gap:6px; align-items:center;">
+                <input type="text" name="dropbox_path" value="<%= c.dropbox_path || '' %>" placeholder="כיתות א-ח\שם התיקייה" style="flex:1; direction:ltr; text-align:right; font-family:monospace; font-size:0.85em;" />
+                <button type="submit" class="btn small secondary">💾 שמור</button>
+              </form>
+            </td>
+            <td style="white-space:nowrap;">
+              <% if (c.dropbox_path) { %>
+                <a href="dropbox://open?path=/<%= encodeURI(c.dropbox_path.replace(/\\/g,'/')) %>" class="btn small">📂 פתח בדרופבוקס</a>
+                <button type="button" class="btn small secondary copy-path-btn" data-path="<%= c.dropbox_path %>">📋 העתק נתיב</button>
+              <% } %>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  <% }) %>
+</div>
+
+<script>
+  document.querySelectorAll('.copy-path-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const path = btn.getAttribute('data-path');
+      navigator.clipboard.writeText(path).then(() => {
+        const original = btn.textContent;
+        btn.textContent = '✅ הועתק';
+        setTimeout(() => { btn.textContent = original; }, 2000);
+      });
+    });
+  });
+</script>
+
+<%- include('../partials/footer') %>
