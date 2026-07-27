@@ -161,6 +161,27 @@ router.get("/:id", (req, res) => {
   res.render("campaigns/detail", { campaign: enriched, classId: classId ? String(classId) : "", students: studentRows, saved: req.query.saved === "1" });
 });
 
+router.post("/:id/set-count", (req, res) => {
+  const { student_id, criterion_id, class_id, count } = req.body;
+  const target = Math.max(0, parseInt(count, 10) || 0);
+  const existing = db.prepare(
+    "SELECT id FROM campaign_awards WHERE campaign_id=? AND student_id=? AND criterion_id=? ORDER BY id"
+  ).all(req.params.id, student_id, criterion_id);
+
+  if (existing.length < target) {
+    const insert = db.prepare("INSERT INTO campaign_awards (campaign_id, criterion_id, student_id, awarded_date, created_at) VALUES (?,?,?,?,?)");
+    const toAdd = target - existing.length;
+    const today = new Date().toISOString().slice(0, 10);
+    for (let i = 0; i < toAdd; i++) insert.run(req.params.id, criterion_id, student_id, today, new Date().toISOString());
+  } else if (existing.length > target) {
+    const toRemove = existing.slice(0, existing.length - target);
+    const del = db.prepare("DELETE FROM campaign_awards WHERE id = ?");
+    toRemove.forEach((row) => del.run(row.id));
+  }
+
+  res.redirect(`/campaigns/${req.params.id}?class_id=${encodeURIComponent(class_id || "")}&saved=1`);
+});
+
 router.post("/:id/award", (req, res) => {
   const { student_id, criterion_id, class_id } = req.body;
   if (student_id && criterion_id) {

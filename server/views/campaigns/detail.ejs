@@ -39,7 +39,7 @@
           <thead>
             <tr>
               <th>תלמיד</th>
-              <% campaign.criteria.forEach(cr => { %><th><%= cr.name %><br><span style="font-weight:normal; color:var(--muted); font-size:0.85em;">(<%= cr.points %> נק')</span></th><% }) %>
+              <% campaign.criteria.forEach(cr => { %><th style="text-align:center;"><%= cr.name %><br><span style="font-weight:normal; color:var(--muted); font-size:0.85em;">(<%= cr.points %> נק')</span></th><% }) %>
               <th>סה"כ נקודות</th>
             </tr>
           </thead>
@@ -49,18 +49,12 @@
                 <td><strong><%= s.last_name %> <%= s.first_name %></strong></td>
                 <% campaign.criteria.forEach((cr, i) => { %>
                   <td style="text-align:center; white-space:nowrap;">
-                    <form method="POST" action="/campaigns/<%= campaign.id %>/unaward" style="display:inline;">
+                    <form method="POST" action="/campaigns/<%= campaign.id %>/set-count" style="display:flex; gap:4px; align-items:center; justify-content:center;">
                       <input type="hidden" name="student_id" value="<%= s.id %>" />
                       <input type="hidden" name="criterion_id" value="<%= cr.id %>" />
                       <input type="hidden" name="class_id" value="<%= classId %>" />
-                      <button type="submit" class="btn small secondary" style="padding:2px 8px;" <%= s.counts[i] === 0 ? 'disabled' : '' %>>－</button>
-                    </form>
-                    <strong style="display:inline-block; min-width:20px;"><%= s.counts[i] %></strong>
-                    <form method="POST" action="/campaigns/<%= campaign.id %>/award" style="display:inline;">
-                      <input type="hidden" name="student_id" value="<%= s.id %>" />
-                      <input type="hidden" name="criterion_id" value="<%= cr.id %>" />
-                      <input type="hidden" name="class_id" value="<%= classId %>" />
-                      <button type="submit" class="btn small" style="padding:2px 8px;">＋</button>
+                      <input type="number" name="count" min="0" value="<%= s.counts[i] %>" style="width:60px; text-align:center; padding:3px;" />
+                      <button type="submit" class="btn small secondary" style="padding:2px 8px;">✓</button>
                     </form>
                   </td>
                 <% }) %>
