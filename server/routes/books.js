@@ -306,14 +306,19 @@ router.get("/report/class", async (req, res) => {
   headerRow.height = 45;
 
   let grandTotal = 0;
+  const bookCounts = catalog.map(() => 0);
   for (const s of students) {
-    const items = catalog.map(c => ordersSet.has(`${s.id}_${c.id}`) ? "✓" : "");
+    const items = catalog.map((c, i) => {
+      const ordered = ordersSet.has(`${s.id}_${c.id}`);
+      if (ordered) bookCounts[i]++;
+      return ordered ? "✓" : "";
+    });
     const total = catalog.reduce((sum, c) => sum + (ordersSet.has(`${s.id}_${c.id}`) ? c.price : 0), 0);
     grandTotal += total;
     const row = ws.addRow([s.first_name, s.last_name || s.family_last || "", ...items, total || ""]);
     row.alignment = { horizontal: "right" };
   }
-  const sr = ws.addRow(["", "סה\"כ", ...catalog.map(() => ""), grandTotal]);
+  const sr = ws.addRow(["", "סה\"כ", ...bookCounts, grandTotal]);
   sr.font = { bold: true };
   sr.eachCell(cell => { cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFEFF4F8" } }; });
 
