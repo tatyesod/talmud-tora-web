@@ -396,6 +396,7 @@ app.use("/suppliers", require("./routes/suppliers"));
 app.use("/letters", require("./routes/letters"));
 app.use("/parent-comm", require("./routes/parent-comm"));
 app.use("/events", require("./routes/events"));
+app.use("/campaigns", require("./routes/campaigns"));
 app.use("/inventory", require("./routes/inventory"));
 app.use("/expenses", require("./routes/expenses"));
 app.use("/books", require("./routes/books"));

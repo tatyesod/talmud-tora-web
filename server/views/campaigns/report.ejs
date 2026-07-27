@@ -1,0 +1,63 @@
+<%- include('../partials/header', {title: 'דוח ' + campaign.name, wide: true}) %>
+
+<div class="card">
+  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+    <h1>📊 דוח מבצע - <%= campaign.name %></h1>
+    <div class="actions no-print">
+      <a href="/campaigns/<%= campaign.id %>" class="btn secondary">← חזרה לכרטיסים</a>
+      <button type="button" class="btn secondary" onclick="window.print()">🖨️ הדפס</button>
+    </div>
+  </div>
+
+  <form method="POST" action="/campaigns/<%= campaign.id %>/conversion-rate" class="no-print" style="display:flex; gap:10px; align-items:end; margin:14px 0;">
+    <div class="form-group">
+      <label>שיעור המרה - כמה ש"ח לנקודה</label>
+      <input type="number" step="0.01" name="conversion_rate" value="<%= campaign.conversion_rate != null ? campaign.conversion_rate : '' %>" placeholder="למשל 0.5" style="width:140px;" />
+    </div>
+    <button type="submit" class="btn small secondary">עדכן</button>
+  </form>
+
+  <% classSections.forEach(section => { %>
+    <h3 style="margin-top:24px; border-bottom:2px solid var(--border); padding-bottom:6px;"><%= section.className %></h3>
+    <% if (section.rows.length === 0) { %>
+      <p class="empty-state" style="font-size:0.85em;">אין תלמידים פעילים בכיתה זו</p>
+    <% } else { %>
+      <table>
+        <thead>
+          <tr>
+            <th>תלמיד</th>
+            <th>כמות כרטיסים</th>
+            <th>סה"כ נקודות</th>
+            <% if (campaign.conversion_rate != null) { %><th>סכום (₪)</th><% } %>
+          </tr>
+        </thead>
+        <tbody>
+          <% section.rows.forEach(r => { %>
+            <tr>
+              <td><%= r.name %></td>
+              <td style="text-align:center;"><%= r.cardCount %></td>
+              <td style="text-align:center; font-weight:700;"><%= r.totalPoints %></td>
+              <% if (campaign.conversion_rate != null) { %><td style="text-align:center;"><%= r.money %> ₪</td><% } %>
+            </tr>
+          <% }) %>
+        </tbody>
+        <tfoot>
+          <tr style="font-weight:800; border-top:2px solid var(--border);">
+            <td>סה"כ כיתה</td>
+            <td style="text-align:center;"><%= section.rows.reduce((s,r) => s+r.cardCount, 0) %></td>
+            <td style="text-align:center;"><%= section.rows.reduce((s,r) => s+r.totalPoints, 0) %></td>
+            <% if (campaign.conversion_rate != null) { %><td style="text-align:center;"><%= section.rows.reduce((s,r) => s+(r.money||0), 0).toFixed(2) %> ₪</td><% } %>
+          </tr>
+        </tfoot>
+      </table>
+    <% } %>
+  <% }) %>
+</div>
+
+<style>
+  @media print {
+    .no-print, header.topbar, nav { display: none !important; }
+  }
+</style>
+
+<%- include('../partials/footer') %>

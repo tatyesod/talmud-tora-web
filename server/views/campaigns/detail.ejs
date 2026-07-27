@@ -1,0 +1,77 @@
+<%- include('../partials/header', {title: campaign.name, wide: true}) %>
+
+<div class="card">
+  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+    <h1>🎯 <%= campaign.name %></h1>
+    <div class="actions">
+      <a href="/campaigns" class="btn secondary">← חזרה לרשימה</a>
+      <a href="/campaigns/<%= campaign.id %>/report" class="btn secondary">📊 דוח מבצע</a>
+      <a href="/campaigns/<%= campaign.id %>/edit" class="btn secondary">✏️ עריכה</a>
+    </div>
+  </div>
+
+  <% if (campaign.notes) { %><p style="color:var(--muted); font-size:0.9em;"><%= campaign.notes %></p><% } %>
+
+  <% if (saved) { %>
+    <div style="background:#e8f5e9; border:1px solid #a5d6a7; color:#2e7d32; border-radius:8px; padding:8px 14px; margin-bottom:12px;">✅ עודכן.</div>
+  <% } %>
+
+  <% if (campaign.classes.length === 0) { %>
+    <p class="empty-state">אין כיתות משויכות למבצע - <a href="/campaigns/<%= campaign.id %>/edit">ערכו את המבצע</a> כדי לבחור כיתות.</p>
+  <% } else if (campaign.criteria.length === 0) { %>
+    <p class="empty-state">אין קריטריונים מוגדרים - <a href="/campaigns/<%= campaign.id %>/edit">ערכו את המבצע</a> כדי להוסיף.</p>
+  <% } else { %>
+
+    <form method="GET" action="/campaigns/<%= campaign.id %>" style="margin:14px 0;">
+      <label>כיתה: </label>
+      <select name="class_id" onchange="this.form.submit()">
+        <% campaign.classes.forEach(c => { %>
+          <option value="<%= c.id %>" <%= String(c.id) === classId ? 'selected' : '' %>><%= c.name %><%= c.parallel ? ' '+c.parallel : '' %> (<%= c.branch %>)</option>
+        <% }) %>
+      </select>
+    </form>
+
+    <% if (students.length === 0) { %>
+      <p class="empty-state">אין תלמידים פעילים בכיתה זו</p>
+    <% } else { %>
+      <div class="table-scroll-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>תלמיד</th>
+              <% campaign.criteria.forEach(cr => { %><th><%= cr.name %><br><span style="font-weight:normal; color:var(--muted); font-size:0.85em;">(<%= cr.points %> נק')</span></th><% }) %>
+              <th>סה"כ נקודות</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% students.forEach(s => { %>
+              <tr>
+                <td><strong><%= s.last_name %> <%= s.first_name %></strong></td>
+                <% campaign.criteria.forEach((cr, i) => { %>
+                  <td style="text-align:center; white-space:nowrap;">
+                    <form method="POST" action="/campaigns/<%= campaign.id %>/unaward" style="display:inline;">
+                      <input type="hidden" name="student_id" value="<%= s.id %>" />
+                      <input type="hidden" name="criterion_id" value="<%= cr.id %>" />
+                      <input type="hidden" name="class_id" value="<%= classId %>" />
+                      <button type="submit" class="btn small secondary" style="padding:2px 8px;" <%= s.counts[i] === 0 ? 'disabled' : '' %>>－</button>
+                    </form>
+                    <strong style="display:inline-block; min-width:20px;"><%= s.counts[i] %></strong>
+                    <form method="POST" action="/campaigns/<%= campaign.id %>/award" style="display:inline;">
+                      <input type="hidden" name="student_id" value="<%= s.id %>" />
+                      <input type="hidden" name="criterion_id" value="<%= cr.id %>" />
+                      <input type="hidden" name="class_id" value="<%= classId %>" />
+                      <button type="submit" class="btn small" style="padding:2px 8px;">＋</button>
+                    </form>
+                  </td>
+                <% }) %>
+                <td style="text-align:center; font-weight:800;"><%= s.totalPoints %></td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    <% } %>
+  <% } %>
+</div>
+
+<%- include('../partials/footer') %>

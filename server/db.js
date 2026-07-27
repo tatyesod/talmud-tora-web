@@ -997,6 +997,53 @@ try {
   console.error("שגיאה בהוספת שנת הגשה לדוחות חודשיים:", e.message);
 }
 
+// מערכת "מבצעים כיתתיים" - מבצע גמיש: שם, כיתות יעד, קריטריונים (עם ניקוד
+// שונה לכל אחד), ואיסוף "כרטיסים" לתלמידים לפי קריטריון. שיעור ההמרה
+// נקודות->כסף הוא שיקול דעת המנהל, ולכן שדה חופשי שאפשר לעדכן בכל שלב
+// (כולל בזמן הפקת הדוח הסופי) - לא נוסחה קבועה.
+try {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS campaigns (
+      id INTEGER PRIMARY KEY,
+      name TEXT NOT NULL,
+      notes TEXT,
+      conversion_rate REAL,
+      status TEXT DEFAULT 'פעיל',
+      created_at TEXT
+    )
+  `);
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS campaign_classes (
+      id INTEGER PRIMARY KEY,
+      campaign_id INTEGER NOT NULL,
+      class_id INTEGER NOT NULL,
+      UNIQUE(campaign_id, class_id)
+    )
+  `);
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS campaign_criteria (
+      id INTEGER PRIMARY KEY,
+      campaign_id INTEGER NOT NULL,
+      name TEXT NOT NULL,
+      points REAL NOT NULL,
+      sort_order INTEGER DEFAULT 0
+    )
+  `);
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS campaign_awards (
+      id INTEGER PRIMARY KEY,
+      campaign_id INTEGER NOT NULL,
+      criterion_id INTEGER NOT NULL,
+      student_id INTEGER NOT NULL,
+      awarded_date TEXT,
+      notes TEXT,
+      created_at TEXT
+    )
+  `);
+} catch (e) {
+  console.error("שגיאה ביצירת טבלאות מבצעים כיתתיים:", e.message);
+}
+
 // ניקוי חד-פעמי: השדה "מעבר לכיתה" התמלא בעבר אוטומטית בערך המקבילה הקיים,
 // אבל הוחלט שברירת המחדל האמיתית תהיה ריק (ואז המערכת מניחה "אותה מקבילה").
 // דגל ב-settings מבטיח שהניקוי הזה ירוץ פעם אחת בלבד, ולא ימחק ידנית ערכים

@@ -1,0 +1,88 @@
+<%- include('../partials/header', {title: mode === 'new' ? 'מבצע חדש' : 'עריכת מבצע'}) %>
+
+<div class="card">
+  <h1><%= mode === 'new' ? '🎯 מבצע כיתתי חדש' : '✏️ עריכת מבצע' %></h1>
+
+  <form method="POST" action="<%= mode === 'new' ? '/campaigns' : '/campaigns/' + campaign.id + '?_method=PUT' %>">
+    <fieldset>
+      <legend>פרטי המבצע</legend>
+      <div class="form-grid">
+        <div class="form-group full">
+          <label>שם המבצע</label>
+          <input type="text" name="name" value="<%= campaign.name || '' %>" placeholder="לדוגמה: כרטיסי מנהל, מצטיין בכל" required />
+        </div>
+        <div class="form-group full">
+          <label>הערות (רקע/מטרת המבצע)</label>
+          <textarea name="notes" rows="2"><%= campaign.notes || '' %></textarea>
+        </div>
+        <div class="form-group">
+          <label>שיעור המרה - כמה ש"ח לנקודה (אופציונלי, אפשר לקבוע גם מאוחר יותר בדוח)</label>
+          <input type="number" step="0.01" name="conversion_rate" value="<%= campaign.conversion_rate != null ? campaign.conversion_rate : '' %>" placeholder="למשל 0.5" />
+        </div>
+        <% if (mode === 'edit') { %>
+        <div class="form-group">
+          <label>סטטוס</label>
+          <select name="status">
+            <option value="פעיל" <%= campaign.status === 'פעיל' ? 'selected' : '' %>>פעיל</option>
+            <option value="הסתיים" <%= campaign.status === 'הסתיים' ? 'selected' : '' %>>הסתיים</option>
+          </select>
+        </div>
+        <% } %>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>כיתות יעד</legend>
+      <p style="color:var(--muted); font-size:0.85em; margin-top:0;">אפשר לבחור כיתה אחת או כמה כיתות (גם על פני כמה סניפים).</p>
+      <div style="display:flex; flex-wrap:wrap; gap:10px;">
+        <% classes.forEach(c => { %>
+          <label style="display:flex; align-items:center; gap:6px; cursor:pointer; font-weight:normal; border:1px solid var(--border); border-radius:8px; padding:4px 10px;">
+            <input type="checkbox" name="class_ids" value="<%= c.id %>" style="width:auto;" <%= selectedClassIds.includes(c.id) ? 'checked' : '' %> />
+            <%= c.name %><%= c.parallel ? ' '+c.parallel : '' %> <span style="color:var(--muted); font-size:0.85em;">(<%= c.branch %>)</span>
+          </label>
+        <% }) %>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>קריטריונים לצבירת כרטיסים</legend>
+      <p style="color:var(--muted); font-size:0.85em; margin-top:0;">
+        לכל סיבה לקבלת כרטיס (תפילה, מבחן, הגעה בזמן וכו') - שם ומספר נקודות. אפשר להוסיף כמה שצריך.
+      </p>
+      <div id="criteria-rows">
+        <% campaign.criteria.forEach((cr, i) => { %>
+          <div class="criterion-row" style="display:flex; gap:10px; align-items:center; margin-bottom:8px;">
+            <input type="hidden" name="criterion_id" value="<%= cr.id || 'new' %>" />
+            <input type="text" name="criterion_name" value="<%= cr.name || '' %>" placeholder="שם הקריטריון (למשל: תפילה)" style="flex:2;" />
+            <input type="number" step="0.5" name="criterion_points" value="<%= cr.points != null ? cr.points : '' %>" placeholder="נקודות" style="flex:1;" />
+            <button type="button" class="btn small danger" onclick="this.parentElement.remove()">✕</button>
+          </div>
+        <% }) %>
+      </div>
+      <button type="button" class="btn small secondary" onclick="addCriterionRow()">+ הוסף קריטריון</button>
+    </fieldset>
+
+    <div class="form-group full">
+      <button type="submit" class="btn">💾 שמור מבצע</button>
+      <a href="/campaigns" class="btn secondary">ביטול</a>
+    </div>
+  </form>
+</div>
+
+<script>
+  function addCriterionRow() {
+    const container = document.getElementById('criteria-rows');
+    const row = document.createElement('div');
+    row.className = 'criterion-row';
+    row.style.cssText = 'display:flex; gap:10px; align-items:center; margin-bottom:8px;';
+    row.innerHTML = `
+      <input type="hidden" name="criterion_id" value="new" />
+      <input type="text" name="criterion_name" placeholder="שם הקריטריון (למשל: תפילה)" style="flex:2;" />
+      <input type="number" step="0.5" name="criterion_points" placeholder="נקודות" style="flex:1;" />
+      <button type="button" class="btn small danger" onclick="this.parentElement.remove()">✕</button>
+    `;
+    container.appendChild(row);
+  }
+</script>
+
+<%- include('../partials/footer') %>

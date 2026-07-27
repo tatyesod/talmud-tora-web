@@ -1,0 +1,39 @@
+<%- include('../partials/header', {title: 'מבצעים כיתתיים', wide: true}) %>
+
+<div class="card">
+  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+    <h1>🎯 מבצעים כיתתיים</h1>
+    <a href="/campaigns/new" class="btn">+ מבצע חדש</a>
+  </div>
+
+  <p style="color:var(--muted); font-size:0.9em;">
+    כל מבצע מוגדר בעצמכם: שם, כיתות יעד, וקריטריונים לצבירת כרטיסים (עם ניקוד שונה לכל קריטריון). בכל שלב אפשר
+    להעניק כרטיסים לתלמידים, ובסוף להפיק דוח כיתתי עם סה"כ נקודות ואפשרות המרה לסכום כספי.
+  </p>
+
+  <% if (campaigns.length === 0) { %>
+    <p class="empty-state">אין עדיין מבצעים - לחצו "+ מבצע חדש" כדי להתחיל.</p>
+  <% } else { %>
+    <table>
+      <thead><tr><th>שם המבצע</th><th>כיתות</th><th>קריטריונים</th><th>כרטיסים שניתנו</th><th>סטטוס</th><th></th></tr></thead>
+      <tbody>
+        <% campaigns.forEach(c => { %>
+          <tr>
+            <td><a href="/campaigns/<%= c.id %>"><strong><%= c.name %></strong></a></td>
+            <td style="font-size:0.9em;"><%= c.classes.map(cl => cl.name + (cl.parallel ? ' '+cl.parallel : '')).join(', ') %></td>
+            <td style="font-size:0.9em;"><%= c.criteria.map(cr => cr.name + ' ('+cr.points+')').join(', ') %></td>
+            <td><%= c.totalAwards %></td>
+            <td><span class="badge <%= c.status !== 'פעיל' ? 'archive' : '' %>"><%= c.status %></span></td>
+            <td style="white-space:nowrap;">
+              <a href="/campaigns/<%= c.id %>" class="btn small secondary">כרטיסים</a>
+              <a href="/campaigns/<%= c.id %>/report" class="btn small secondary">דוח</a>
+              <a href="/campaigns/<%= c.id %>/edit" class="btn small secondary">עריכה</a>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  <% } %>
+</div>
+
+<%- include('../partials/footer') %>
