@@ -1248,11 +1248,12 @@ router.get("/class-summary", (req, res) => {
   const branches = db.prepare("SELECT DISTINCT branch FROM classes WHERE branch IS NOT NULL AND branch != '' ORDER BY branch").all().map(r => r.branch);
   const branch = req.query.branch || branches[0] || "";
 
-  // כל הכיתות הפעילות בסניף - ממוינות לפי גיל (לא אלפביתי)
+  // כל הכיתות הפעילות בסניף - רק כאלה שבאמת מזמינות ספרים (מכינה א'/ב' לא
+  // מזמינות ספרים בכלל) - ממוינות לפי גיל (לא אלפביתי)
   const classes = db.prepare(`
     SELECT id, name, parallel FROM classes
-    WHERE branch = ? AND status = 'פעיל' AND name NOT LIKE 'עדיין לא נכנסו%'
-  `).all(branch).sort((a, b) => {
+    WHERE branch = ? AND status = 'פעיל' AND name IN (${BOOK_GRADE_OPTIONS.map(() => "?").join(",")})
+  `).all(branch, ...BOOK_GRADE_OPTIONS).sort((a, b) => {
     const gA = GRADE_ORDER.indexOf(a.name), gB = GRADE_ORDER.indexOf(b.name);
     if (gA !== gB) return (gA === -1 ? 999 : gA) - (gB === -1 ? 999 : gB);
     return (parseInt(a.parallel, 10) || 0) - (parseInt(b.parallel, 10) || 0);
@@ -1319,8 +1320,8 @@ router.get("/class-summary/export", async (req, res) => {
 
   const classes = db.prepare(`
     SELECT id, name, parallel FROM classes
-    WHERE branch = ? AND status = 'פעיל' AND name NOT LIKE 'עדיין לא נכנסו%'
-  `).all(branch).sort((a, b) => {
+    WHERE branch = ? AND status = 'פעיל' AND name IN (${BOOK_GRADE_OPTIONS.map(() => "?").join(",")})
+  `).all(branch, ...BOOK_GRADE_OPTIONS).sort((a, b) => {
     const gA = GRADE_ORDER.indexOf(a.name), gB = GRADE_ORDER.indexOf(b.name);
     if (gA !== gB) return (gA === -1 ? 999 : gA) - (gB === -1 ? 999 : gB);
     return (parseInt(a.parallel, 10) || 0) - (parseInt(b.parallel, 10) || 0);
