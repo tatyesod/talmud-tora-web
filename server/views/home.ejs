@@ -28,8 +28,8 @@
     <span class="bsd">בס"ד</span>
     <a href="/year" class="year-pill">שנת לימודים: <strong><%= currentYear %></strong></a>
     <a href="/messages" class="year-pill">💬 הודעות<% if (unreadCount > 0) { %> <span class="unread-badge"><%= unreadCount %></span><% } %></a>
-    <a href="https://calendar.google.com" target="my-google-calendar" rel="noopener noreferrer" class="year-pill">📅 יומן גוגל שלי</a>
-    <a href="https://mail.google.com/mail/u/0/#inbox" target="my-gmail" rel="noopener noreferrer" class="year-pill">📧 ג'ימייל שלי</a>
+    <button type="button" class="year-pill" onclick="openOrFocus('calendar', 'https://calendar.google.com')" style="cursor:pointer;">📅 יומן גוגל שלי</button>
+    <button type="button" class="year-pill" onclick="openOrFocus('gmail', 'https://mail.google.com/mail/u/0/#inbox')" style="cursor:pointer;">📧 ג'ימייל שלי</button>
     <% if (isAdmin) { %><a href="/users" class="year-pill">👥 משתמשים</a><% } %>
     <a href="/profile" class="year-pill">👤 <%= user %></a>
     <form action="/logout" method="POST">
@@ -485,6 +485,19 @@
   <script src="/js/messages-preview.js"></script>
   <script src="/js/notifications.js"></script>
   <script src="/js/shared-tasks.js"></script>
+  <script>
+  // פותח טאב חדש לג'ימייל/יומן, אבל אם כבר יש כזה פתוח (מלחיצה קודמת
+  // באותו טעינת-דף) - קופץ אליו ישירות במקום לפתוח עוד אחד
+  const externalTabs = {};
+  function openOrFocus(key, url) {
+    const existing = externalTabs[key];
+    if (existing && !existing.closed) {
+      existing.focus();
+      return;
+    }
+    externalTabs[key] = window.open(url, '_blank');
+  }
+  </script>
   <script>
   // ===== גרירת כרטיסי ניווט =====
   (function() {
