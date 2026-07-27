@@ -73,6 +73,95 @@ function hebrewDateOptions() {
   return { days, months, years, todayParts };
 }
 
+// ============ פיד יומן (ICS) להרשמה חד-פעמית ביומן גוגל - חד-כיווני ============
+// מייצר קובץ ICS תקני עם כל האירועים והחופשות. מוגן בטוקן סודי בכתובת עצמה
+// (לא דורש התחברות/הרשאה של גוגל) - כל מי שמקבל את הכתובת יכול "להירשם"
+// אליה פעם אחת ביומן שלו, וגוגל תשאב עדכונים אוטומטית מעת לעת.
+function getOrCreateFeedToken() {
+  let row = db.prepare("SELECT value FROM settings WHERE key = 'calendar_feed_token'").get();
+  if (row) return row.value;
+  const token = require("crypto").randomBytes(20).toString("hex");
+  db.prepare("INSERT INTO settings (key, value) VALUES ('calendar_feed_token', ?)").run(token);
+  return token;
+}
+
+function icsEscape(text) {
+  return String(text || "").replace(/[\\,;]/g, (c) => "\\" + c).replace(/\n/g, "\\n");
+}
+function serialToIcsDate(serial) {
+  // ICS לאירועי "יום שלם" דורש פורמט YYYYMMDD (בלי מקפים)
+  return (hd.serialToInputDate(serial) || "").replace(/-/g, "");
+}
+function addDaysToIcsDate(icsDate, days) {
+  const y = parseInt(icsDate.slice(0, 4), 10), m = parseInt(icsDate.slice(4, 6), 10), d = parseInt(icsDate.slice(6, 8), 10);
+  const date = new Date(Date.UTC(y, m - 1, d));
+  date.setUTCDate(date.getUTCDate() + days);
+  const pad = (n) => String(n).padStart(2, "0");
+  return `${date.getUTCFullYear()}${pad(date.getUTCMonth() + 1)}${pad(date.getUTCDate())}`;
+}
+
+router.get("/feed/:token.ics", (req, res) => {
+  const expectedToken = getOrCreateFeedToken();
+  if (req.params.token !== expectedToken) return res.status(404).send("Not found");
+
+  const events = db.prepare("SELECT * FROM events ORDER BY event_date").all();
+  const vacations = db.prepare("SELECT * FROM vacations ORDER BY start_date").all();
+
+  const lines = [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//תלמוד תורה החדש//לוח שנה//HE",
+    "CALSCALE:GREGORIAN",
+    "X-WR-CALNAME:תלמוד תורה החדש - אירועים וחופשות",
+    "X-WR-TIMEZONE:Asia/Jerusalem",
+  ];
+
+  events.forEach((e) => {
+    const startIcs = serialToIcsDate(e.event_date);
+    if (!startIcs) return;
+    const endSerial = e.event_date_end || e.event_date;
+    const endIcs = addDaysToIcsDate(serialToIcsDate(endSerial), 1); // DTEND ב-ICS לא כולל, אז מוסיפים יום
+    lines.push(
+      "BEGIN:VEVENT",
+      `UID:event-${e.id}@talmud-tora-web`,
+      `DTSTAMP:${new Date().toISOString().replace(/[-:]/g, "").split(".")[0]}Z`,
+      `DTSTART;VALUE=DATE:${startIcs}`,
+      `DTEND;VALUE=DATE:${endIcs}`,
+      `SUMMARY:${icsEscape(e.title)}`,
+      e.description ? `DESCRIPTION:${icsEscape(e.description)}` : null,
+      "END:VEVENT"
+    );
+  });
+
+  vacations.forEach((v) => {
+    const startIcs = serialToIcsDate(v.start_date);
+    if (!startIcs) return;
+    const endIcs = addDaysToIcsDate(serialToIcsDate(v.end_date), 1);
+    lines.push(
+      "BEGIN:VEVENT",
+      `UID:vacation-${v.id}@talmud-tora-web`,
+      `DTSTAMP:${new Date().toISOString().replace(/[-:]/g, "").split(".")[0]}Z`,
+      `DTSTART;VALUE=DATE:${startIcs}`,
+      `DTEND;VALUE=DATE:${endIcs}`,
+      `SUMMARY:🏖️ ${icsEscape(v.title)}`,
+      "END:VEVENT"
+    );
+  });
+
+  lines.push("END:VCALENDAR");
+  const icsContent = lines.filter(Boolean).join("\r\n");
+
+  res.setHeader("Content-Type", "text/calendar; charset=utf-8");
+  res.setHeader("Content-Disposition", 'inline; filename="talmud-tora-calendar.ics"');
+  res.send(icsContent);
+});
+
+router.get("/feed-info", (req, res) => {
+  const token = getOrCreateFeedToken();
+  const feedUrl = `${req.protocol}://${req.get("host")}/events/feed/${token}.ics`;
+  res.render("events/feed-info", { feedUrl });
+});
+
 router.get("/vacations", (req, res) => {
   const vacations = db.prepare("SELECT * FROM vacations ORDER BY start_date DESC").all().map((v) => ({
     ...v,

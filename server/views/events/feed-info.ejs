@@ -1,0 +1,52 @@
+<%- include('../partials/header', {title: 'חיבור ליומן גוגל'}) %>
+
+<div class="card">
+  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+    <h1>📅 חיבור אירועים וחופשות ליומן גוגל</h1>
+    <a href="/events/calendar" class="btn secondary">← חזרה ללוח השנה</a>
+  </div>
+
+  <p style="color:var(--muted); font-size:0.95em; line-height:1.6;">
+    כל מי שמוסיף את הקישור הזה ביומן גוגל שלו (פעם אחת בלבד) - יראה בו אוטומטית את כל האירועים והחופשות
+    שמוגדרים במערכת, מתעדכן מעצמו. <strong>זה חד-כיווני</strong> - מה שמוסיפים כאן במערכת מופיע ביומן,
+    אבל שינויים ביומן האישי לא חוזרים למערכת.
+  </p>
+
+  <div style="background:var(--bg); border:1px solid var(--border); border-radius:10px; padding:14px 18px; margin:16px 0;">
+    <label style="font-weight:700;">כתובת הפיד (שמרו על זה פרטי - זו הכתובת שמגינה על הנתונים שלכם):</label>
+    <div style="display:flex; gap:8px; margin-top:8px;">
+      <input id="feed-url" type="text" value="<%= feedUrl %>" readonly style="flex:1; direction:ltr; font-family:monospace; font-size:0.85em;" />
+      <button type="button" class="btn small" onclick="copyFeedUrl()">📋 העתק</button>
+    </div>
+    <p id="copy-confirm" style="color:#2e7d32; font-size:0.85em; display:none; margin-top:6px;">✅ הועתק!</p>
+  </div>
+
+  <h3>איך מוסיפים ביומן גוגל:</h3>
+  <ol style="line-height:2; font-size:0.95em;">
+    <li>העתיקו את הכתובת למעלה (כפתור "העתק")</li>
+    <li>פתחו את <a href="https://calendar.google.com" target="_blank">יומן גוגל</a> במחשב (לא באפליקציה בטלפון)</li>
+    <li>בצד שמאל, ליד "יומנים אחרים" (Other calendars) - לחצו על ה-"+"</li>
+    <li>בחרו "מיומן URL" (From URL)</li>
+    <li>הדביקו את הכתובת שהעתקתם, ולחצו "הוסף יומן" (Add calendar)</li>
+    <li>זהו! היומן החדש יופיע ברשימה - ייקח לגוגל מספר שעות עד שהאירועים הראשונים יופיעו (זה נורמלי, גוגל לא מרענן מיד)</li>
+  </ol>
+
+  <p style="color:var(--muted); font-size:0.85em; margin-top:20px;">
+    שימו לב: הוספה מבוצעת דרך הדפדפן במחשב בלבד (לא ניתן להוסיף יומן-URL ישירות מאפליקציית הטלפון) - אבל אחרי
+    שמוסיפים אותו במחשב, הוא יופיע אוטומטית גם באפליקציה בטלפון.
+  </p>
+</div>
+
+<script>
+  function copyFeedUrl() {
+    const input = document.getElementById('feed-url');
+    input.select();
+    navigator.clipboard.writeText(input.value).then(() => {
+      const confirm = document.getElementById('copy-confirm');
+      confirm.style.display = 'block';
+      setTimeout(() => { confirm.style.display = 'none'; }, 2500);
+    });
+  }
+</script>
+
+<%- include('../partials/footer') %>

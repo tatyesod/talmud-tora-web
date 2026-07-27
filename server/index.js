@@ -111,8 +111,9 @@ app.use((req, res, next) => {
 });
 
 function requireLogin(req, res, next) {
-  // דלג על נתיבי proxy ציבוריים
-  if (req.path.startsWith("/api/proxy") || req.path.startsWith("/api/jewish-calendar")) return next();
+  // דלג על נתיבי proxy ציבוריים, וגם על פיד היומן (מוגן בטוקן סודי בכתובת
+  // עצמה, לא בהתחברות - כי שרתי גוגל קלנדר לא יכולים "להתחבר" למערכת)
+  if (req.path.startsWith("/api/proxy") || req.path.startsWith("/api/jewish-calendar") || req.path.startsWith("/events/feed/")) return next();
   if (req.session.userId) return next();
   return res.redirect("/login");
 }
