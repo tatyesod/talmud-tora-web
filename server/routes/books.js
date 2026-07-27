@@ -1248,16 +1248,7 @@ router.get("/class-summary", (req, res) => {
   const branches = db.prepare("SELECT DISTINCT branch FROM classes WHERE branch IS NOT NULL AND branch != '' ORDER BY branch").all().map(r => r.branch);
   const branch = req.query.branch || branches[0] || "";
 
-  // כל הספרים שמופיעים בקטלוג ההזמנה של הסניף/שנה הזו - העמודות
-  const books = db.prepare(`
-    SELECT DISTINCT bc.item_name
-    FROM book_catalog bc
-    JOIN classes c ON c.name = bc.class_name AND c.branch = ?
-    WHERE bc.year_label = ?
-    ORDER BY bc.sort_order, bc.item_name
-  `).all(branch, year).map(r => r.item_name);
-
-  // כל הכיתות הפעילות בסניף - השורות, ממוינות לפי גיל (לא אלפביתי)
+  // כל הכיתות הפעילות בסניף - ממוינות לפי גיל (לא אלפביתי)
   const classes = db.prepare(`
     SELECT id, name, parallel FROM classes
     WHERE branch = ? AND status = 'פעיל' AND name NOT LIKE 'עדיין לא נכנסו%'
@@ -1296,18 +1287,27 @@ router.get("/class-summary", (req, res) => {
     counts[r.class_id][r.item_name] = (counts[r.class_id][r.item_name] || 0) + r.cnt;
   });
 
-  const matrix = classes.map((c) => {
-    const rowCounts = books.map((bookName) => counts[c.id]?.[bookName] || 0);
+  // לכל כיתה - הספרים ששייכים לה בקטלוג (רק אלה, לא כל ספרי הסניף), עם כמות
+  // ההזמנות (רגילות + חידושים) עבור כל ספר
+  const perClassLists = classes.map((c) => {
+    const classBooks = db.prepare(`
+      SELECT item_name FROM book_catalog WHERE year_label = ? AND class_name = ? ORDER BY sort_order, item_name
+    `).all(year, c.name);
+
+    const items = classBooks.map((b) => ({
+      itemName: b.item_name,
+      count: counts[c.id]?.[b.item_name] || 0,
+    }));
+    const classTotal = items.reduce((s, it) => s + it.count, 0);
+
     return {
       className: c.name + (c.parallel ? " " + c.parallel : ""),
-      counts: rowCounts,
-      rowTotal: rowCounts.reduce((s, n) => s + n, 0),
+      items,
+      classTotal,
     };
   });
-  const columnTotals = books.map((_, i) => matrix.reduce((s, row) => s + row.counts[i], 0));
-  const grandTotal = columnTotals.reduce((s, n) => s + n, 0);
 
-  res.render("books/class-summary", { years, year, branches, branch, books, matrix, columnTotals, grandTotal });
+  res.render("books/class-summary", { years, year, branches, branch, perClassLists });
 });
 
 router.get("/class-summary/export", async (req, res) => {
@@ -1316,14 +1316,6 @@ router.get("/class-summary/export", async (req, res) => {
   const defaultYear = db.prepare("SELECT value FROM settings WHERE key='current_hebrew_year'").get()?.value || years[0] || 'תשפ"ז';
   const year = req.query.year || defaultYear;
   const branch = req.query.branch || "";
-
-  const books = db.prepare(`
-    SELECT DISTINCT bc.item_name
-    FROM book_catalog bc
-    JOIN classes c ON c.name = bc.class_name AND c.branch = ?
-    WHERE bc.year_label = ?
-    ORDER BY bc.sort_order, bc.item_name
-  `).all(branch, year).map(r => r.item_name);
 
   const classes = db.prepare(`
     SELECT id, name, parallel FROM classes
@@ -1361,30 +1353,29 @@ router.get("/class-summary/export", async (req, res) => {
   });
 
   const wb = new ExcelJS.Workbook();
-  const ws = wb.addWorksheet("סיכום כיתות וספרים", { views: [{ rightToLeft: true }] });
-  ws.columns = [{ header: "כיתה", key: "className", width: 16 }, ...books.map((b, i) => ({ header: b, key: "b" + i, width: 14 })), { header: "סה\"כ כיתה", key: "rowTotal", width: 12 }];
-  ws.getRow(1).font = { bold: true };
-  ws.getRow(1).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFE8ECF0" } };
-
   classes.forEach((c) => {
-    const rowCounts = books.map((bookName) => counts[c.id]?.[bookName] || 0);
-    const rowObj = { className: c.name + (c.parallel ? " " + c.parallel : "") };
-    books.forEach((b, i) => { rowObj["b" + i] = rowCounts[i] || ""; });
-    rowObj.rowTotal = rowCounts.reduce((s, n) => s + n, 0);
-    ws.addRow(rowObj);
-  });
+    const className = c.name + (c.parallel ? " " + c.parallel : "");
+    const classBooks = db.prepare(`
+      SELECT item_name FROM book_catalog WHERE year_label = ? AND class_name = ? ORDER BY sort_order, item_name
+    `).all(year, c.name);
 
-  const totalRowObj = { className: "סה\"כ לכל הכיתות" };
-  let grandTotal = 0;
-  books.forEach((b, i) => {
-    const colTotal = classes.reduce((s, c) => s + (counts[c.id]?.[b] || 0), 0);
-    totalRowObj["b" + i] = colTotal;
-    grandTotal += colTotal;
+    // שם גיליון תקין באקסל: עד 31 תווים, בלי / \ ? * [ ]
+    const sheetName = className.replace(/[/\\?*[\]]/g, "").slice(0, 31) || `כיתה ${c.id}`;
+    const ws = wb.addWorksheet(sheetName, { views: [{ rightToLeft: true }] });
+    ws.columns = [{ header: "ספר", key: "item_name", width: 34 }, { header: "כמות להכנה", key: "count", width: 14 }];
+    ws.getRow(1).font = { bold: true, color: { argb: "FFFFFFFF" } };
+    ws.getRow(1).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF2C5F7C" } };
+
+    let classTotal = 0;
+    classBooks.forEach((b) => {
+      const count = counts[c.id]?.[b.item_name] || 0;
+      classTotal += count;
+      ws.addRow({ item_name: b.item_name, count: count || "" });
+    });
+    const totalRow = ws.addRow({ item_name: "סה\"כ", count: classTotal });
+    totalRow.font = { bold: true };
+    totalRow.eachCell((cell) => { cell.border = { top: { style: "double" } }; cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFEFF4F8" } }; });
   });
-  totalRowObj.rowTotal = grandTotal;
-  const totalRow = ws.addRow(totalRowObj);
-  totalRow.font = { bold: true };
-  totalRow.eachCell((cell) => { cell.border = { top: { style: "double" } }; });
 
   res.setHeader("Content-Disposition", `attachment; filename="${encodeURIComponent("סיכום הזמנות לפי כיתה - " + branch + ".xlsx")}"`);
   res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
