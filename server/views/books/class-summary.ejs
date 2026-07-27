@@ -78,9 +78,21 @@
   .class-list-card th, .class-list-card td { padding: 4px 6px; border-bottom: 1px solid var(--border); }
   .class-list-card tr.has-count { background: #eef5fb; }
   @media print {
+    @page { size: landscape; margin: 10mm; }
     .no-print, header.topbar, nav { display: none !important; }
-    .class-lists-grid { display: block; }
-    .class-list-card { max-width: none; margin-bottom: 16px; }
+    body { background: #fff; }
+    .card { box-shadow: none; border: none; padding: 0; }
+    .class-lists-grid { display: flex; flex-wrap: wrap; gap: 10px; }
+    .class-list-card {
+      flex: 0 0 calc(25% - 8px);
+      max-width: calc(25% - 8px);
+      padding: 8px 10px;
+      font-size: 0.85em;
+      page-break-inside: avoid;
+    }
+    .class-list-card h3 { font-size: 1em; margin-bottom: 4px; padding-bottom: 4px; }
+    .class-list-card table { font-size: 0.85em; }
+    .class-list-card th, .class-list-card td { padding: 2px 4px; }
   }
 </style>
 
