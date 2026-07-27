@@ -6,15 +6,31 @@
     <a href="/classes" class="btn secondary">← חזרה לכיתות</a>
   </div>
 
+  <% if (!driveLetter) { %>
+    <div style="background:#fff8e1; border:1px solid #ffca28; border-radius:10px; padding:14px 18px; margin:14px 0;">
+      <p style="margin:0 0 8px; font-weight:700;">שלב הגדרה חד-פעמי - כדי שהכפתורים יפתחו ישירות בקליק אחד:</p>
+      <p style="margin:0 0 10px; font-size:0.9em; color:var(--muted);">
+        אצלך במחשב, דרופבוקס נמצא על איזה כונן? (לדוגמה: אם בסייר הקבצים אתה רואה "Dropbox" תחת "OS (C:)" - הכונן שלך הוא C).
+        זה נשמר פעם אחת לחשבון שלך, ולא צריך להזין שוב.
+      </p>
+      <form method="POST" action="/classes/study-materials/set-drive-letter" style="display:flex; gap:8px; align-items:center;">
+        <label>אות הכונן: </label>
+        <input type="text" name="drive_letter" maxlength="1" placeholder="C" required style="width:50px; text-align:center; text-transform:uppercase;" />
+        <button type="submit" class="btn small">💾 שמור</button>
+      </form>
+    </div>
+  <% } %>
+
   <p style="color:var(--muted); font-size:0.9em; line-height:1.6;">
     לכל כיתה - נתיב לתיקיית החומר הלימודי שלה בדרופבוקס. הזינו את הנתיב <strong>החל מתוך תיקיית "לימודי"</strong>
     (בלי אות הכונן ובלי "Dropbox" בהתחלה) - למשל: <code>כיתות א-ח\5כיתה א3 - הרב מרדכי זלצר</code>.
-    כפתור "📂 פתח בדרופבוקס" ינסה לפתוח את זה ישירות בסייר הקבצים - <strong>זו תכונה בבדיקה</strong>, אם היא לא עובדת
-    אצלכם, יש גם כפתור "העתק נתיב" לפתיחה ידנית.
+    <% if (driveLetter) { %>
+      אחרי שההגדרה החד-פעמית בוצעה, כפתור "📂 פתח" יפתח ישירות בקליק אחד.
+    <% } %>
   </p>
 
   <% if (saved) { %>
-    <div style="background:#e8f5e9; border:1px solid #a5d6a7; color:#2e7d32; border-radius:8px; padding:8px 14px; margin-bottom:12px;">✅ הנתיב נשמר.</div>
+    <div style="background:#e8f5e9; border:1px solid #a5d6a7; color:#2e7d32; border-radius:8px; padding:8px 14px; margin-bottom:12px;">✅ נשמר.</div>
   <% } %>
 
   <% Object.keys(grouped).forEach(branchName => { %>
@@ -33,7 +49,9 @@
             </td>
             <td style="white-space:nowrap;">
               <% if (c.dropbox_path) { %>
-                <a href="dropbox://open?path=/<%= encodeURI(c.dropbox_path.replace(/\\/g,'/')) %>" class="btn small">📂 פתח בדרופבוקס</a>
+                <% if (driveLetter) { %>
+                  <a href="file:///<%= driveLetter %>:/Dropbox/תלמוד תורה החדש/לימודי/<%= encodeURI(c.dropbox_path.replace(/\\/g,'/')) %>" class="btn small">📂 פתח</a>
+                <% } %>
                 <button type="button" class="btn small secondary copy-path-btn" data-path="<%= c.dropbox_path %>">📋 העתק נתיב</button>
               <% } %>
             </td>

@@ -40,7 +40,7 @@ app.use(
 app.use((req, res, next) => {
   if (req.session.userId) {
     const db = require("./db");
-    const u = db.prepare("SELECT id, username, display_name, full_name, role_title, is_admin, force_password_change FROM users WHERE id = ?").get(req.session.userId);
+    const u = db.prepare("SELECT id, username, display_name, full_name, role_title, is_admin, force_password_change, drive_letter FROM users WHERE id = ?").get(req.session.userId);
     if (u) {
       req.currentUser = u;
       res.locals.user = u.display_name || u.username;

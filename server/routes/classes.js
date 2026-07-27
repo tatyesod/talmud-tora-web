@@ -415,7 +415,16 @@ router.get("/study-materials", (req, res) => {
     if (!grouped[key]) grouped[key] = [];
     grouped[key].push(c);
   });
-  res.render("classes/study-materials", { grouped, saved: req.query.saved === "1" });
+  res.render("classes/study-materials", { grouped, saved: req.query.saved === "1", driveLetter: req.currentUser.drive_letter || "" });
+});
+
+router.post("/study-materials/set-drive-letter", (req, res) => {
+  const { drive_letter } = req.body;
+  const clean = (drive_letter || "").trim().toUpperCase().replace(/[^A-Z]/g, "").slice(0, 1);
+  if (clean) {
+    db.prepare("UPDATE users SET drive_letter = ? WHERE id = ?").run(clean, req.currentUser.id);
+  }
+  res.redirect("/classes/study-materials");
 });
 
 router.post("/study-materials/:id", (req, res) => {
