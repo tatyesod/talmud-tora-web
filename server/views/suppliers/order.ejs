@@ -75,7 +75,7 @@
       <button type="submit" class="btn">📄 הפקת מסמך הזמנה להדפסה</button>
     </form>
 
-    <form method="POST" action="/suppliers/<%= supplier.id %>/order/checkpoint" style="margin-top:14px;" onsubmit="return confirm('לבצע איפוס הזמנה? הרשימה הנוכחית (<%= rows.length %> מוצרים) תישמר בהיסטוריה, כדי שתוכלו לבדוק אח\\'כ מה באמת הגיע.');">
+    <form method="POST" action="/suppliers/<%= supplier.id %>/order/checkpoint" style="margin-top:14px;" onsubmit="if(!confirm('לבצע איפוס הזמנה? הרשימה הנוכחית (<%= rows.length %> מוצרים) תישמר בהיסטוריה, כדי שתוכלו לבדוק אח\\'כ מה באמת הגיע.')) return false; const btn=this.querySelector('button[type=submit]'); btn.disabled=true; btn.textContent='⏳ מבצע איפוס...'; return true;">
       <input type="hidden" name="branch" value="<%= branch %>" />
       <button type="submit" class="btn" style="background:#a94442;">🔄 בצע איפוס הזמנה (שמור לבדיקת אספקה)</button>
     </form>

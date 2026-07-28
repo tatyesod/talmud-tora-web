@@ -393,6 +393,19 @@ router.get("/:id/checkpoints", (req, res) => {
   res.render("suppliers/checkpoints-list", { supplier, checkpoints });
 });
 
+router.delete("/:id/checkpoints/:checkpointId", (req, res) => {
+  db.exec("BEGIN TRANSACTION");
+  try {
+    db.prepare("DELETE FROM supplier_order_checkpoint_items WHERE checkpoint_id = ?").run(req.params.checkpointId);
+    db.prepare("DELETE FROM supplier_order_checkpoints WHERE id = ? AND supplier_id = ?").run(req.params.checkpointId, req.params.id);
+    db.exec("COMMIT");
+  } catch (e) {
+    db.exec("ROLLBACK");
+    throw e;
+  }
+  res.redirect(`/suppliers/${req.params.id}/checkpoints`);
+});
+
 router.get("/:id/checkpoints/:checkpointId", (req, res) => {
   const supplier = db.prepare("SELECT * FROM suppliers WHERE id = ?").get(req.params.id);
   if (!supplier) return res.status(404).render("404");

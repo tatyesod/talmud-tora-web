@@ -1742,6 +1742,19 @@ router.get("/inventory/checkpoints", (req, res) => {
   res.render("books/checkpoints-list", { grouped });
 });
 
+router.delete("/inventory/checkpoints/:id", (req, res) => {
+  db.exec("BEGIN TRANSACTION");
+  try {
+    db.prepare("DELETE FROM book_order_checkpoint_items WHERE checkpoint_id = ?").run(req.params.id);
+    db.prepare("DELETE FROM book_order_checkpoints WHERE id = ?").run(req.params.id);
+    db.exec("COMMIT");
+  } catch (e) {
+    db.exec("ROLLBACK");
+    throw e;
+  }
+  res.redirect("/books/inventory/checkpoints");
+});
+
 router.get("/inventory/checkpoints/:id", (req, res) => {
   const checkpoint = db.prepare("SELECT * FROM book_order_checkpoints WHERE id = ?").get(req.params.id);
   if (!checkpoint) return res.redirect("/books/inventory/checkpoints");

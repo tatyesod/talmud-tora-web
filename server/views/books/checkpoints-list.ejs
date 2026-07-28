@@ -25,7 +25,12 @@
               <td><%= c.branch %></td>
               <td><%= new Date(c.created_at).toLocaleDateString('he-IL') %></td>
               <td><%= c.note || '' %></td>
-              <td><a href="/books/inventory/checkpoints/<%= c.id %>" class="btn small secondary">צפייה / בדיקת אספקה</a></td>
+              <td>
+                <a href="/books/inventory/checkpoints/<%= c.id %>" class="btn small secondary">צפייה / בדיקת אספקה</a>
+                <form method="POST" action="/books/inventory/checkpoints/<%= c.id %>?_method=DELETE" style="display:inline" onsubmit="return confirm('למחוק את ההזמנה הזו מההיסטוריה? לא ניתן לשחזר.');">
+                  <button type="submit" class="btn small danger">מחק</button>
+                </form>
+              </td>
             </tr>
           <% }) %>
         </tbody>

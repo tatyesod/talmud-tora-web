@@ -10,7 +10,7 @@
       <% if (rows.length > 0) { %>
         <a href="/books/inventory/order/export?branch=<%= encodeURIComponent(branch) %>&year=<%= encodeURIComponent(year) %>" class="btn">📥 ייצוא הזמנה ל-Excel</a>
         <a href="/books/inventory/order/export-pdf?branch=<%= encodeURIComponent(branch) %>&year=<%= encodeURIComponent(year) %>" class="btn" target="_blank">🖨️ יצוא הזמנה סופית (PDF)</a>
-        <form method="POST" action="/books/inventory/checkpoint" style="display:inline;" onsubmit="return confirm('לבצע איפוס הזמנה? הרשימה הנוכחית (<%= rows.length %> ספרים) תישמר בהיסטוריה, ומעתה \\'הוזמן\\' יציג רק הזמנות חדשות מהיום. פעולה זו לא מוחקת אף הזמנה אמיתית.');">
+        <form method="POST" action="/books/inventory/checkpoint" style="display:inline;" onsubmit="if(!confirm('לבצע איפוס הזמנה? הרשימה הנוכחית (<%= rows.length %> ספרים) תישמר בהיסטוריה, ומעתה \\'הוזמן\\' יציג רק הזמנות חדשות מהיום. פעולה זו לא מוחקת אף הזמנה אמיתית.')) return false; const btn=this.querySelector('button[type=submit]'); btn.disabled=true; btn.textContent='⏳ מבצע איפוס...'; return true;">
           <input type="hidden" name="branch" value="<%= branch %>" />
           <input type="hidden" name="year" value="<%= year %>" />
           <button type="submit" class="btn" style="background:#a94442;">🔄 בצע איפוס הזמנה</button>
