@@ -338,7 +338,7 @@ router.get("/:id/order", (req, res) => {
   const branch = req.query.branch || branches[0] || "";
 
   const rows = db.prepare(`
-    SELECT si.item_name, si.category, si.price, si.notes,
+    SELECT si.id AS supplier_item_id, si.item_name, si.category, si.price, si.notes,
            COALESCE(sii.current_stock,0) AS current_stock, COALESCE(sii.desired_stock,0) AS desired_stock
     FROM supplier_items si
     LEFT JOIN supplier_item_inventory sii ON sii.supplier_item_id = si.id AND sii.branch = ?
@@ -350,7 +350,73 @@ router.get("/:id/order", (req, res) => {
   const grandTotal = rows.reduce((s, r) => s + r.line_total, 0);
   const grandQty = rows.reduce((s, r) => s + r.to_order, 0);
 
-  res.render("suppliers/order", { supplier, branches, branch, rows, contacts, grandTotal, grandQty });
+  res.render("suppliers/order", { supplier, branches, branch, rows, contacts, grandTotal, grandQty, reset: req.query.reset === "1" });
+});
+
+// ============ בדיקת אספקה - איפוס הזמנה ============
+router.post("/:id/order/checkpoint", (req, res) => {
+  const { branch, note } = req.body;
+  const rows = db.prepare(`
+    SELECT si.id AS supplier_item_id, si.item_name, si.category,
+           COALESCE(sii.current_stock,0) AS current_stock, COALESCE(sii.desired_stock,0) AS desired_stock
+    FROM supplier_items si
+    LEFT JOIN supplier_item_inventory sii ON sii.supplier_item_id = si.id AND sii.branch = ?
+    WHERE si.supplier_id = ? AND COALESCE(sii.desired_stock,0) > COALESCE(sii.current_stock,0)
+    ORDER BY si.category, si.item_name
+  `).all(branch, req.params.id).map(r => ({ ...r, to_order: r.desired_stock - r.current_stock }));
+
+  db.exec("BEGIN TRANSACTION");
+  try {
+    const info = db.prepare("INSERT INTO supplier_order_checkpoints (supplier_id, branch, created_at, note) VALUES (?,?,?,?)")
+      .run(req.params.id, branch, new Date().toISOString(), note || null);
+    const checkpointId = info.lastInsertRowid;
+    const insertItem = db.prepare(`
+      INSERT INTO supplier_order_checkpoint_items (checkpoint_id, supplier_item_id, item_name, category, current_stock, desired_stock, to_order)
+      VALUES (?,?,?,?,?,?,?)
+    `);
+    rows.forEach((r) => {
+      insertItem.run(checkpointId, r.supplier_item_id, r.item_name, r.category, r.current_stock, r.desired_stock, r.to_order);
+    });
+    db.exec("COMMIT");
+  } catch (e) {
+    db.exec("ROLLBACK");
+    throw e;
+  }
+
+  res.redirect(`/suppliers/${req.params.id}/order?branch=${encodeURIComponent(branch)}&reset=1`);
+});
+
+router.get("/:id/checkpoints", (req, res) => {
+  const supplier = db.prepare("SELECT * FROM suppliers WHERE id = ?").get(req.params.id);
+  if (!supplier) return res.status(404).render("404");
+  const checkpoints = db.prepare("SELECT * FROM supplier_order_checkpoints WHERE supplier_id = ? ORDER BY created_at DESC").all(req.params.id);
+  res.render("suppliers/checkpoints-list", { supplier, checkpoints });
+});
+
+router.get("/:id/checkpoints/:checkpointId", (req, res) => {
+  const supplier = db.prepare("SELECT * FROM suppliers WHERE id = ?").get(req.params.id);
+  if (!supplier) return res.status(404).render("404");
+  const checkpoint = db.prepare("SELECT * FROM supplier_order_checkpoints WHERE id = ? AND supplier_id = ?").get(req.params.checkpointId, req.params.id);
+  if (!checkpoint) return res.status(404).render("404");
+  const items = db.prepare("SELECT * FROM supplier_order_checkpoint_items WHERE checkpoint_id = ? ORDER BY category, item_name").all(req.params.checkpointId);
+  res.render("suppliers/checkpoint-detail", { supplier, checkpoint, items, saved: req.query.saved === "1" });
+});
+
+router.post("/:id/checkpoints/:checkpointId/reconcile", (req, res) => {
+  let itemIds = req.body.item_id || [];
+  let received = req.body.received_quantity || [];
+  let notes = req.body.reconciliation_notes || [];
+  if (!Array.isArray(itemIds)) itemIds = [itemIds];
+  if (!Array.isArray(received)) received = [received];
+  if (!Array.isArray(notes)) notes = [notes];
+
+  const update = db.prepare("UPDATE supplier_order_checkpoint_items SET received_quantity = ?, reconciliation_notes = ? WHERE id = ?");
+  itemIds.forEach((id, i) => {
+    const val = received[i] === "" ? null : parseInt(received[i], 10);
+    update.run(isNaN(val) ? null : val, (notes[i] || "").trim() || null, id);
+  });
+
+  res.redirect(`/suppliers/${req.params.id}/checkpoints/${req.params.checkpointId}?saved=1`);
 });
 
 router.get("/:id/order/print", (req, res) => {

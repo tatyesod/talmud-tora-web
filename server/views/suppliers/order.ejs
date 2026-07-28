@@ -5,10 +5,17 @@
     <h1>🛒 הזמנה — <%= supplier.name %></h1>
     <div class="actions">
       <a href="/suppliers/<%= supplier.id %>/inventory?branch=<%= encodeURIComponent(branch) %>" class="btn secondary">📦 עדכון מלאי</a>
+      <a href="/suppliers/<%= supplier.id %>/checkpoints" class="btn secondary">📚 היסטוריית הזמנות</a>
       <a href="/suppliers/<%= supplier.id %>" class="btn secondary">← כרטיס הספק</a>
       <a href="javascript:history.back()" class="btn secondary">חזרה</a>
     </div>
   </div>
+
+  <% if (typeof reset !== 'undefined' && reset) { %>
+    <div style="background:#e8f5e9; border:1px solid #a5d6a7; color:#2e7d32; border-radius:8px; padding:10px 16px; margin-bottom:14px;">
+      ✅ ההזמנה אופסה ונשמרה בהיסטוריה.
+    </div>
+  <% } %>
 
   <form method="GET" action="/suppliers/<%= supplier.id %>/order" style="margin-bottom:14px;">
     <label><strong>סניף:</strong></label>
@@ -66,6 +73,11 @@
         </select>
       </div>
       <button type="submit" class="btn">📄 הפקת מסמך הזמנה להדפסה</button>
+    </form>
+
+    <form method="POST" action="/suppliers/<%= supplier.id %>/order/checkpoint" style="margin-top:14px;" onsubmit="return confirm('לבצע איפוס הזמנה? הרשימה הנוכחית (<%= rows.length %> מוצרים) תישמר בהיסטוריה, כדי שתוכלו לבדוק אח\\'כ מה באמת הגיע.');">
+      <input type="hidden" name="branch" value="<%= branch %>" />
+      <button type="submit" class="btn" style="background:#a94442;">🔄 בצע איפוס הזמנה (שמור לבדיקת אספקה)</button>
     </form>
   <% } %>
 </div>

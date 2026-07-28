@@ -216,6 +216,29 @@ const migrations = [
     updated_at TEXT,
     UNIQUE(supplier_item_id, branch)
   )`,
+  // מנגנון "בדיקת אספקה" להזמנות ספקים כלליות - כמו בהזמנת ספרים: "בצע
+  // איפוס הזמנה" שומר תמונת מצב של מה שהוזמן, ומאפשר אח"כ לסמן כמה באמת
+  // הגיע מכל מוצר ולבדוק חוסרים/עודפים
+  `CREATE TABLE IF NOT EXISTS supplier_order_checkpoints (
+    id INTEGER PRIMARY KEY,
+    supplier_id INTEGER NOT NULL,
+    branch TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    note TEXT
+  )`,
+  `CREATE TABLE IF NOT EXISTS supplier_order_checkpoint_items (
+    id INTEGER PRIMARY KEY,
+    checkpoint_id INTEGER NOT NULL,
+    supplier_item_id INTEGER,
+    item_name TEXT NOT NULL,
+    category TEXT,
+    current_stock INTEGER NOT NULL,
+    desired_stock INTEGER NOT NULL,
+    to_order INTEGER NOT NULL,
+    received_quantity INTEGER,
+    reconciliation_notes TEXT,
+    FOREIGN KEY(checkpoint_id) REFERENCES supplier_order_checkpoints(id)
+  )`,
   // מייבא את איש הקשר הקיים כבר בכרטיס הספק כאיש קשר ראשון בטבלת אנשי הקשר החדשה,
   // כדי לא לאבד מידע שכבר הוזן, ולתמוך מכאן והלאה בכמה אנשי קשר לספק
   `INSERT INTO supplier_contacts (supplier_id, contact_name, phone, created_at)
