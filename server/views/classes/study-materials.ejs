@@ -1,59 +1,83 @@
 <%- include('../partials/header', {title: 'חומר לימודי', wide: true}) %>
 
-<div class="card">
-  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+<div class="study-hero">
+  <div class="study-hero-text">
     <h1>🗂️ חומר לימודי</h1>
-    <a href="/classes" class="btn secondary">← חזרה לכיתות</a>
+    <p>לחצו על כיתה כדי לעבור ישר לתיקיית החומר הלימודי שלה בדרופבוקס</p>
   </div>
-
-  <p style="color:var(--muted); font-size:0.9em; line-height:1.6;">
-    לכל כיתה - <strong>קישור שיתוף</strong> מדרופבוקס לתיקיית החומר הלימודי שלה. איך משיגים אותו: באתר דרופבוקס,
-    נכנסים לתיקייה הרצויה, לוחצים על "Share" (שיתוף), ואז "Copy link" (העתק קישור) - ומדביקים אותו כאן.
-    זה קישור ישיר שדרופבוקס עצמו יוצר, ולכן תמיד מדויק - בלי צורך שנבנה נתיב בעצמנו.
-  </p>
-
-  <% if (saved) { %>
-    <div style="background:#e8f5e9; border:1px solid #a5d6a7; color:#2e7d32; border-radius:8px; padding:8px 14px; margin-bottom:12px;">✅ נשמר.</div>
-  <% } %>
-
-  <% Object.keys(grouped).forEach(branchName => { %>
-    <h3 style="margin-top:22px; border-bottom:2px solid var(--border); padding-bottom:6px;"><%= branchName %></h3>
-    <table>
-      <thead><tr><th>כיתה</th><th>קישור שיתוף דרופבוקס</th><th></th></tr></thead>
-      <tbody>
-        <% grouped[branchName].forEach(c => { %>
-          <tr>
-            <td style="white-space:nowrap;"><strong><%= c.name %><%= c.parallel ? ' '+c.parallel : '' %></strong></td>
-            <td>
-              <form method="POST" action="/classes/study-materials/<%= c.id %>" style="display:flex; gap:6px; align-items:center;">
-                <input type="text" name="dropbox_path" value="<%= c.dropbox_path || '' %>" placeholder="https://www.dropbox.com/scl/fo/..." style="flex:1; direction:ltr; text-align:right; font-family:monospace; font-size:0.85em;" />
-                <button type="submit" class="btn small secondary">💾 שמור</button>
-              </form>
-            </td>
-            <td style="white-space:nowrap;">
-              <% if (c.dropbox_path) { %>
-                <a href="<%= c.dropbox_path %>" target="dropbox-web" class="btn small">🌐 פתח בדרופבוקס</a>
-                <button type="button" class="btn small secondary copy-path-btn" data-path="<%= c.dropbox_path %>">📋 העתק קישור</button>
-              <% } %>
-            </td>
-          </tr>
-        <% }) %>
-      </tbody>
-    </table>
-  <% }) %>
+  <a href="/classes/study-materials/edit" class="btn secondary study-edit-btn">✏️ עריכת קישורים</a>
 </div>
 
-<script>
-  document.querySelectorAll('.copy-path-btn').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      const path = btn.getAttribute('data-path');
-      navigator.clipboard.writeText(path).then(() => {
-        const original = btn.textContent;
-        btn.textContent = '✅ הועתק';
-        setTimeout(() => { btn.textContent = original; }, 2000);
-      });
-    });
-  });
-</script>
+<% Object.keys(grouped).forEach(branchName => { %>
+  <div class="study-branch-section">
+    <h2 class="study-branch-title"><span class="study-branch-dot"></span><%= branchName %></h2>
+    <div class="study-grid">
+      <% grouped[branchName].forEach(c => { %>
+        <% if (c.dropbox_path) { %>
+          <a href="<%= c.dropbox_path %>" target="dropbox-web" class="study-card">
+            <div class="study-card-icon">📁</div>
+            <div class="study-card-name"><%= c.name %><%= c.parallel ? ' ' + c.parallel : '' %></div>
+            <div class="study-card-hint">פתח בדרופבוקס ←</div>
+          </a>
+        <% } else { %>
+          <a href="/classes/study-materials/edit" class="study-card study-card-empty">
+            <div class="study-card-icon">➕</div>
+            <div class="study-card-name"><%= c.name %><%= c.parallel ? ' ' + c.parallel : '' %></div>
+            <div class="study-card-hint">אין עדיין קישור - לחצו להוספה</div>
+          </a>
+        <% } %>
+      <% }) %>
+    </div>
+  </div>
+<% }) %>
+
+<style>
+  .study-hero {
+    display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;
+    background: linear-gradient(135deg, #1f4e6b, #2c5f7c 55%, #3d7a9e);
+    color: #fff; border-radius: 16px; padding: 26px 30px; margin-bottom: 26px;
+    box-shadow: 0 6px 20px rgba(31,78,107,0.25);
+  }
+  .study-hero-text h1 { margin: 0 0 6px; font-size: 1.6em; color: #fff; }
+  .study-hero-text p { margin: 0; color: rgba(255,255,255,0.85); font-size: 0.95em; }
+  .study-edit-btn { background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.4); color: #fff; white-space: nowrap; }
+  .study-edit-btn:hover { background: rgba(255,255,255,0.28); }
+
+  .study-branch-section { margin-bottom: 30px; }
+  .study-branch-title {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 1.2em; color: #2c5f7c; margin-bottom: 14px;
+    padding-bottom: 8px; border-bottom: 2px solid #e0e8ef;
+  }
+  .study-branch-dot { width: 10px; height: 10px; border-radius: 50%; background: #2c5f7c; display: inline-block; }
+
+  .study-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 16px;
+  }
+  .study-card {
+    display: flex; flex-direction: column; align-items: center; text-align: center; gap: 6px;
+    background: #fff; border: 1px solid #e0e8ef; border-radius: 14px; padding: 22px 14px;
+    text-decoration: none; color: inherit;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+    transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+  }
+  .study-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 22px rgba(44,95,124,0.18);
+    border-color: #2c5f7c;
+  }
+  .study-card-icon { font-size: 2.1em; }
+  .study-card-name { font-weight: 800; font-size: 1.08em; color: #1f4e6b; }
+  .study-card-hint { font-size: 0.78em; color: var(--muted); }
+
+  .study-card-empty { opacity: 0.6; border-style: dashed; }
+  .study-card-empty:hover { opacity: 0.9; border-color: #999; }
+  .study-card-empty .study-card-name { color: var(--muted); }
+
+  @media (max-width: 480px) {
+    .study-hero { flex-direction: column; align-items: flex-start; }
+    .study-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+  }
+</style>
 
 <%- include('../partials/footer') %>
