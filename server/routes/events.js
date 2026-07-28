@@ -112,7 +112,7 @@ router.get("/feed/:token.ics", (req, res) => {
     "VERSION:2.0",
     "PRODID:-//תלמוד תורה החדש//לוח שנה//HE",
     "CALSCALE:GREGORIAN",
-    "X-WR-CALNAME:תלמוד תורה החדש - אירועים וחופשות",
+    "X-WR-CALNAME:תלמוד תורה החדש - אירועים, חופשות, משימות וימי הולדת",
     "X-WR-TIMEZONE:Asia/Jerusalem",
   ];
 
@@ -147,6 +147,55 @@ router.get("/feed/:token.ics", (req, res) => {
       "END:VEVENT"
     );
   });
+
+  // משימות כלליות (משותפות לכולם) עם תאריך יעד - לא משימות אישיות, כי הפיד
+  // הזה משותף לכולם ולא "יודע" מי בדיוק נכנס אליו
+  const sharedTasks = db.prepare("SELECT * FROM shared_tasks WHERE due_date IS NOT NULL").all();
+  sharedTasks.forEach((t) => {
+    const startIcs = serialToIcsDate(t.due_date);
+    if (!startIcs) return;
+    const endIcs = addDaysToIcsDate(startIcs, 1);
+    lines.push(
+      "BEGIN:VEVENT",
+      `UID:shared-task-${t.id}@talmud-tora-web`,
+      `DTSTAMP:${new Date().toISOString().replace(/[-:]/g, "").split(".")[0]}Z`,
+      `DTSTART;VALUE=DATE:${startIcs}`,
+      `DTEND;VALUE=DATE:${endIcs}`,
+      `SUMMARY:👥 ${icsEscape(t.title)}`,
+      "END:VEVENT"
+    );
+  });
+
+  // ימי הולדת (תלמידים + צוות) - לפי התאריך העברי, מחושבים לשנה העברית
+  // הנוכחית והבאה (כדי שתמיד יהיה יום הולדת קרוב זמין, גם אחרי שהקודם עבר)
+  const { hebrewBirthdayAbsoluteForYear } = require("../birthdays");
+  const currentHebYear = hd.todayHebrewParts().year;
+  const students = db.prepare("SELECT id, first_name, last_name, birth_date_civil FROM students WHERE status='פעיל' AND birth_date_civil IS NOT NULL").all();
+  const teachers = db.prepare("SELECT id, first_name, last_name, birth_date_civil FROM teachers WHERE status='פעיל' AND birth_date_civil IS NOT NULL").all();
+  const addBirthdayEvents = (people, kind) => {
+    people.forEach((p) => {
+      [currentHebYear, currentHebYear + 1].forEach((y) => {
+        const abs = hebrewBirthdayAbsoluteForYear(p.birth_date_civil, y);
+        if (abs == null) return;
+        const serial = hd.absoluteToAccessSerial(abs);
+        const startIcs = serialToIcsDate(serial);
+        if (!startIcs) return;
+        const endIcs = addDaysToIcsDate(startIcs, 1);
+        const name = `${p.last_name || ""} ${p.first_name || ""}`.trim();
+        lines.push(
+          "BEGIN:VEVENT",
+          `UID:birthday-${kind}-${p.id}-${y}@talmud-tora-web`,
+          `DTSTAMP:${new Date().toISOString().replace(/[-:]/g, "").split(".")[0]}Z`,
+          `DTSTART;VALUE=DATE:${startIcs}`,
+          `DTEND;VALUE=DATE:${endIcs}`,
+          `SUMMARY:🎂 ${icsEscape(name)}`,
+          "END:VEVENT"
+        );
+      });
+    });
+  };
+  addBirthdayEvents(students, "student");
+  addBirthdayEvents(teachers, "teacher");
 
   lines.push("END:VCALENDAR");
   const icsContent = lines.filter(Boolean).join("\r\n");
