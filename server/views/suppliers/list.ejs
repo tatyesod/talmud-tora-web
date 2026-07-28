@@ -1,4 +1,4 @@
-<%- include('../partials/header', {title: 'ספקים והזמנות'}) %>
+<%- include('../partials/header', {title: 'ספקים והזמנות', wide: true}) %>
 
 <div class="card">
   <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
@@ -48,9 +48,10 @@
             <td><%- phoneLink(s.phone) %></td>
             <td><%- emailLink(s.email) %></td>
             <td><span class="badge <%= s.status !== 'פעיל' ? 'archive' : '' %>"><%= s.status || '' %></span></td>
-            <td>
+            <td style="white-space:nowrap;">
               <a href="/suppliers/<%= s.id %>" class="btn small secondary">צפייה</a>
               <a href="/suppliers/<%= s.id %>/inventory" class="btn small secondary">📦 מלאי</a>
+              <a href="/suppliers/<%= s.id %>/checkpoints" class="btn small secondary">📚 היסטוריית הזמנות</a>
               <a href="/suppliers/orders/new?supplier_id=<%= s.id %>" class="btn small secondary">🔔 בקשת הזמנה (לאישור)</a>
             </td>
           </tr>
