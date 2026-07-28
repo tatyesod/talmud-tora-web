@@ -7,10 +7,9 @@
   </div>
 
   <p style="color:var(--muted); font-size:0.9em; line-height:1.6;">
-    לכל כיתה - נתיב לתיקיית החומר הלימודי שלה בדרופבוקס. הזינו את הנתיב <strong>החל מתוך תיקיית "לימודי"</strong>
-    (בלי אות הכונן ובלי "Dropbox" בהתחלה) - למשל: <code>כיתות א-ח\5כיתה א3 - הרב מרדכי זלצר</code>.
-    כפתור "🌐 פתח באתר דרופבוקס" יעביר אתכם ישירות לתיקייה **באתר** דרופבוקס (בדפדפן) - צריך להיות מחוברים
-    לחשבון הדרופבוקס של המוסד בדפדפן (פעם אחת, ואז זה נשמר).
+    לכל כיתה - <strong>קישור שיתוף</strong> מדרופבוקס לתיקיית החומר הלימודי שלה. איך משיגים אותו: באתר דרופבוקס,
+    נכנסים לתיקייה הרצויה, לוחצים על "Share" (שיתוף), ואז "Copy link" (העתק קישור) - ומדביקים אותו כאן.
+    זה קישור ישיר שדרופבוקס עצמו יוצר, ולכן תמיד מדויק - בלי צורך שנבנה נתיב בעצמנו.
   </p>
 
   <% if (saved) { %>
@@ -20,21 +19,21 @@
   <% Object.keys(grouped).forEach(branchName => { %>
     <h3 style="margin-top:22px; border-bottom:2px solid var(--border); padding-bottom:6px;"><%= branchName %></h3>
     <table>
-      <thead><tr><th>כיתה</th><th>נתיב תיקיית דרופבוקס</th><th></th></tr></thead>
+      <thead><tr><th>כיתה</th><th>קישור שיתוף דרופבוקס</th><th></th></tr></thead>
       <tbody>
         <% grouped[branchName].forEach(c => { %>
           <tr>
             <td style="white-space:nowrap;"><strong><%= c.name %><%= c.parallel ? ' '+c.parallel : '' %></strong></td>
             <td>
               <form method="POST" action="/classes/study-materials/<%= c.id %>" style="display:flex; gap:6px; align-items:center;">
-                <input type="text" name="dropbox_path" value="<%= c.dropbox_path || '' %>" placeholder="כיתות א-ח\שם התיקייה" style="flex:1; direction:ltr; text-align:right; font-family:monospace; font-size:0.85em;" />
+                <input type="text" name="dropbox_path" value="<%= c.dropbox_path || '' %>" placeholder="https://www.dropbox.com/scl/fo/..." style="flex:1; direction:ltr; text-align:right; font-family:monospace; font-size:0.85em;" />
                 <button type="submit" class="btn small secondary">💾 שמור</button>
               </form>
             </td>
             <td style="white-space:nowrap;">
               <% if (c.dropbox_path) { %>
-                <a href="https://www.dropbox.com/home/<%= encodeURIComponent(('תלמוד תורה החדש/לימודי/' + c.dropbox_path.replace(/\\/g,'/'))) %>" target="dropbox-web" class="btn small">🌐 פתח באתר דרופבוקס</a>
-                <button type="button" class="btn small secondary copy-path-btn" data-path="<%= c.dropbox_path %>">📋 העתק נתיב</button>
+                <a href="<%= c.dropbox_path %>" target="dropbox-web" class="btn small">🌐 פתח בדרופבוקס</a>
+                <button type="button" class="btn small secondary copy-path-btn" data-path="<%= c.dropbox_path %>">📋 העתק קישור</button>
               <% } %>
             </td>
           </tr>
