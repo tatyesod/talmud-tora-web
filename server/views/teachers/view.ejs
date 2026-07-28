@@ -108,6 +108,19 @@
       </td>
     </tr>
     <tr><th>הערות</th><td colspan="3"><%= teacher.notes || '' %></td></tr>
+    <% const classesWithMaterials = classes.filter(c => c.dropbox_path); %>
+    <% if (classesWithMaterials.length > 0) { %>
+      <tr>
+        <th>חומר לימודי</th>
+        <td colspan="3">
+          <% classesWithMaterials.forEach(c => { %>
+            <a href="<%= c.dropbox_path %>" target="dropbox-web" class="btn small secondary" style="margin:2px 4px 2px 0;">
+              🗂️ <%= c.name %><%= c.parallel ? ' '+c.parallel : '' %>
+            </a>
+          <% }) %>
+        </td>
+      </tr>
+    <% } %>
   </table>
 </div>
 

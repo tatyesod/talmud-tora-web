@@ -7,6 +7,9 @@
       <% if (prevId) { %><a href="/classes/<%= prevId %>" class="btn small secondary">→ הקודמת</a><% } %>
       <% if (nextId) { %><a href="/classes/<%= nextId %>" class="btn small secondary">הבאה ←</a><% } %>
       <a href="/classes/<%= classRow.id %>/edit" class="btn">עריכה</a>
+      <% if (classRow.dropbox_path) { %>
+        <a href="<%= classRow.dropbox_path %>" target="dropbox-web" class="btn secondary">🗂️ חומר לימודי</a>
+      <% } %>
       <form method="POST" action="/classes/<%= classRow.id %>?_method=DELETE" onsubmit="return confirm('האם למחוק את הכיתה?');" style="display:inline">
         <button type="submit" class="btn danger">מחיקה</button>
       </form>

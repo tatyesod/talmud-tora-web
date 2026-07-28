@@ -70,6 +70,9 @@
             <td style="white-space:nowrap;">
               <a href="/classes/<%= c.id %>" class="btn small secondary">צפייה</a>
               <a href="/classes/<%= c.id %>/edit" class="btn small secondary">עריכה</a>
+              <% if (c.dropbox_path) { %>
+                <a href="<%= c.dropbox_path %>" target="dropbox-web" class="btn small secondary" title="חומר לימודי">🗂️</a>
+              <% } %>
             </td>
           </tr>
         <% }) %>
