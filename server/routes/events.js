@@ -181,7 +181,7 @@ router.get("/feed/:token.ics", (req, res) => {
         const startIcs = serialToIcsDate(serial);
         if (!startIcs) return;
         const endIcs = addDaysToIcsDate(startIcs, 1);
-        const name = `${p.last_name || ""} ${p.first_name || ""}`.trim();
+        const name = `${kind === "teacher" ? "הרב " : ""}${p.last_name || ""} ${p.first_name || ""}`.trim();
         lines.push(
           "BEGIN:VEVENT",
           `UID:birthday-${kind}-${p.id}-${y}@talmud-tora-web`,
@@ -331,7 +331,7 @@ router.get("/calendar", (req, res) => {
       const abs = hebrewBirthdayAbsoluteForYear(person.birth_date_civil, y);
       if (abs == null || abs < gridStartAbsolute || abs > gridEndAbsolute) return;
       if (!birthdaysByAbsolute[abs]) birthdaysByAbsolute[abs] = [];
-      birthdaysByAbsolute[abs].push({ name: `${person.last_name || ""} ${person.first_name || ""}`.trim(), kind, href: `${hrefBase}/${person.id}` });
+      birthdaysByAbsolute[abs].push({ name: `${kind === "teacher" ? "הרב " : ""}${person.last_name || ""} ${person.first_name || ""}`.trim(), kind, href: `${hrefBase}/${person.id}` });
     });
   };
   students.forEach((s) => addBirthday(s, "student", "/students"));
