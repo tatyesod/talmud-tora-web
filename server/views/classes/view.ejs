@@ -48,7 +48,7 @@
       <thead><tr><th>תפקיד</th><th>שם</th><th>נייד</th></tr></thead>
       <tbody>
         <% teachers.forEach(t => { %>
-          <tr><td><%= t.role || '' %></td><td><a href="/teachers/<%= t.id %>"><%= t.first_name %> <%= t.last_name %></a></td><td><%- phoneLink(t.mobile) %></td></tr>
+          <tr><td><%= t.role || '' %></td><td><a href="/teachers/<%= t.id %>">הרב <%= t.first_name %> <%= t.last_name %></a></td><td><%- phoneLink(t.mobile) %></td></tr>
         <% }) %>
       </tbody>
     </table>

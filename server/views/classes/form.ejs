@@ -118,7 +118,7 @@
       <select name="teacher_id" required>
         <option value="">בחר מלמד</option>
         <% allTeachers.forEach(t => { %>
-          <option value="<%= t.id %>"><%= t.last_name || '' %> <%= t.first_name %></option>
+          <option value="<%= t.id %>">הרב <%= t.last_name || '' %> <%= t.first_name %></option>
         <% }) %>
       </select>
     </div>

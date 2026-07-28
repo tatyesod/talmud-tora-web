@@ -290,7 +290,7 @@ router.get("/monthly-reports", (req, res) => {
     const r = reportByTeacher[t.id];
     return {
       teacher_id: t.id,
-      teacher_name: `${t.last_name || ""} ${t.first_name || ""}`.trim(),
+      teacher_name: `הרב ${t.last_name || ""} ${t.first_name || ""}`.trim(),
       submitted: !!r,
       submitted_date_str: r && r.submitted_date ? new Date(r.submitted_date).toLocaleDateString("he-IL") : "",
       file_path: r ? r.file_path : null,

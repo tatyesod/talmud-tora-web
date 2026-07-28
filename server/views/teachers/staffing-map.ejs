@@ -49,7 +49,7 @@
                     <select name="teacher_id" onchange="this.form.submit()">
                       <option value="">— חסר —</option>
                       <% allTeachers.forEach(t => { %>
-                        <option value="<%= t.id %>" <%= r.morning && r.morning.teacher_id === t.id ? 'selected' : '' %>><%= t.last_name %> <%= t.first_name %></option>
+                        <option value="<%= t.id %>" <%= r.morning && r.morning.teacher_id === t.id ? 'selected' : '' %>>הרב <%= t.last_name %> <%= t.first_name %></option>
                       <% }) %>
                     </select>
                   </form>
@@ -67,7 +67,7 @@
                       <select name="teacher_id" onchange="this.form.submit()">
                         <option value="">— חסר —</option>
                         <% allTeachers.forEach(t => { %>
-                          <option value="<%= t.id %>" <%= r.afternoon && r.afternoon.teacher_id === t.id ? 'selected' : '' %>><%= t.last_name %> <%= t.first_name %></option>
+                          <option value="<%= t.id %>" <%= r.afternoon && r.afternoon.teacher_id === t.id ? 'selected' : '' %>>הרב <%= t.last_name %> <%= t.first_name %></option>
                         <% }) %>
                       </select>
                     </form>
@@ -84,7 +84,7 @@
                       <select name="teacher_id" onchange="this.form.submit()">
                         <option value="">— חסר —</option>
                         <% allTeachers.forEach(t => { %>
-                          <option value="<%= t.id %>" <%= r.helper && r.helper.teacher_id === t.id ? 'selected' : '' %>><%= t.last_name %> <%= t.first_name %></option>
+                          <option value="<%= t.id %>" <%= r.helper && r.helper.teacher_id === t.id ? 'selected' : '' %>>הרב <%= t.last_name %> <%= t.first_name %></option>
                         <% }) %>
                       </select>
                     </form>

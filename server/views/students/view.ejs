@@ -51,7 +51,7 @@
       <% const address = [t.street, t.house_number, t.apartment ? 'דירה '+t.apartment : '', t.city].filter(Boolean).join(', '); %>
       <tr>
         <td><%= t.role || '' %></td>
-        <td><a href="/teachers/<%= t.id %>"><%= t.first_name %> <%= t.last_name %></a></td>
+        <td><a href="/teachers/<%= t.id %>">הרב <%= t.first_name %> <%= t.last_name %></a></td>
         <td><%- phoneLink(t.mobile || t.home_phone) %></td>
         <td><%= address %></td>
       </tr>

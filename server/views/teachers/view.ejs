@@ -1,4 +1,4 @@
-<%- include('../partials/header', {title: (teacher.first_name||'')+' '+(teacher.last_name||'')}) %>
+<%- include('../partials/header', {title: 'הרב ' + (teacher.first_name||'')+' '+(teacher.last_name||'')}) %>
 
 <% if (prevTeacherId) { %>
   <a href="/teachers/<%= prevTeacherId %>" class="teacher-nav-arrow teacher-nav-prev" title="המלמד הקודם">›</a>
@@ -44,7 +44,7 @@
 
 <div class="card">
   <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:10px;">
-    <h1><%= teacher.first_name %> <%= teacher.last_name %> <span class="badge <%= teacher.status !== 'פעיל' ? 'archive' : '' %>"><%= teacher.status || '' %></span></h1>
+    <h1>הרב <%= teacher.first_name %> <%= teacher.last_name %> <span class="badge <%= teacher.status !== 'פעיל' ? 'archive' : '' %>"><%= teacher.status || '' %></span></h1>
     <div class="actions">
       <a href="/teachers/<%= teacher.id %>/edit" class="btn">עריכה</a>
       <form method="POST" action="/teachers/<%= teacher.id %>?_method=DELETE" onsubmit="return confirm('האם למחוק?');" style="display:inline">
