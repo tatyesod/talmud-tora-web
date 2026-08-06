@@ -229,7 +229,7 @@ router.get("/families-report/export", async (req, res) => {
 
   const rows = db.prepare(sql).all(...params);
   const eldestClassStmt = db.prepare(`
-    SELECT s.first_name, s.last_name, c.name AS class_name, c.parallel
+    SELECT s.first_name, s.nickname, s.last_name, c.name AS class_name, c.parallel
     FROM students s LEFT JOIN classes c ON s.class_id = c.id
     WHERE s.family_id = ? AND s.status='פעיל' AND c.id IS NOT NULL
     ORDER BY s.birth_date_civil ASC LIMIT 1
@@ -238,7 +238,7 @@ router.get("/families-report/export", async (req, res) => {
   const header = ["שם משפחה", "שם האב", "שם האם", "טלפון בית", "נייד אב", "נייד אם", "כתובת", "מס' ילדים פעילים", "שם האח הבכור", "כיתת האח הבכור"];
   const enriched = rows.map((r) => {
     const eldest = eldestClassStmt.get(r.id);
-    const eldestName = eldest ? `${eldest.first_name || ""} ${eldest.last_name || ""}`.trim() : "";
+    const eldestName = eldest ? `${eldest.nickname || eldest.first_name || ""} ${eldest.last_name || ""}`.trim() : "";
     const eldestClass = eldest?.class_name ? eldest.class_name + (eldest.parallel ? " " + eldest.parallel : "") : "";
     return { r, eldestName, eldestClass };
   });
@@ -570,15 +570,15 @@ router.get("/print-view", (req, res) => {
 
   if (type === "full-student-list") {
     title = "רשימת תלמידים מלא";
-    headers = ["שם משפחה", "שם פרטי", "כיתה", "סטטוס", "טלפון בית", "נייד אב", "נייד אם", "כתובת"];
-    let sql = `SELECT s.last_name, s.first_name, c.name||' '||COALESCE(c.parallel,'') AS cls,
+    headers = ["שם משפחה", "שם פרטי", "שם חיבה", "כיתה", "סטטוס", "טלפון בית", "נייד אב", "נייד אם", "כתובת"];
+    let sql = `SELECT s.last_name, s.first_name, s.nickname, c.name||' '||COALESCE(c.parallel,'') AS cls,
       s.status, f.home_phone, f.father_mobile, f.mother_mobile, f.street||' '||COALESCE(f.house_number,'')||' '||COALESCE(f.city,'') AS addr
       FROM students s LEFT JOIN classes c ON s.class_id=c.id LEFT JOIN families f ON s.family_id=f.id WHERE 1=1`;
     const params = [];
     if (status) { sql += " AND s.status=?"; params.push(status); }
     if (classIds.length > 0) { sql += ` AND s.class_id IN (${classIds.map(()=>"?").join(",")})`; params.push(...classIds); }
     sql += " ORDER BY c.name, c.parallel, s.last_name, s.first_name";
-    rows = db.prepare(sql).all(...params).map(r => [r.last_name, r.first_name, r.cls, r.status, r.home_phone, r.father_mobile, r.mother_mobile, r.addr]);
+    rows = db.prepare(sql).all(...params).map(r => [r.last_name, r.first_name, r.nickname, r.cls, r.status, r.home_phone, r.father_mobile, r.mother_mobile, r.addr]);
 
   } else if (type === "families-report") {
     title = "דוח משפחות";
