@@ -116,7 +116,7 @@ router.get("/class-list/export", async (req, res) => {
   const status = req.query.status || "";
 
   let sql = `
-    SELECT s.last_name, s.first_name, c.name AS class_name, c.parallel,
+    SELECT s.last_name, s.first_name, s.nickname, c.name AS class_name, c.parallel,
            f.street, f.house_number, f.city, f.home_phone, f.father_mobile, f.mother_mobile
     FROM students s
     LEFT JOIN classes c ON s.class_id = c.id
@@ -135,10 +135,11 @@ router.get("/class-list/export", async (req, res) => {
   sql += " ORDER BY c.name, c.parallel, s.last_name, s.first_name";
 
   const rows = db.prepare(sql).all(...params);
-  const header = ["שם משפחה", "שם פרטי", "כתה", "כתובת", "טלפון בבית", "נייד אב", "נייד אם"];
+  const header = ["שם משפחה", "שם פרטי", "שם חיבה", "כתה", "כתובת", "טלפון בבית", "נייד אב", "נייד אם"];
   const data = rows.map((r) => [
     r.last_name || "",
     r.first_name || "",
+    r.nickname || "",
     r.class_name ? r.class_name + (r.parallel ? " " + r.parallel : "") : "",
     buildAddress(r),
     r.home_phone || "",
@@ -164,7 +165,7 @@ router.get("/full-student-list/export", async (req, res) => {
   classIds = classIds.filter(Boolean);
 
   let sql = `
-    SELECT s.last_name, s.first_name, s.id_number, c.name AS class_name, c.parallel,
+    SELECT s.last_name, s.first_name, s.nickname, s.id_number, c.name AS class_name, c.parallel,
            s.status, f.father_name, f.mother_name, f.home_phone, f.father_mobile,
            f.mother_mobile, f.street, f.house_number, f.city, s.birth_date_civil
     FROM students s
@@ -185,11 +186,11 @@ router.get("/full-student-list/export", async (req, res) => {
   const rows = db.prepare(sql).all(...params);
 
   const header = [
-    "שם משפחה", "שם פרטי", "ת.ז", "כתה", "סטטוס", "שם האב", "שם האם",
+    "שם משפחה", "שם פרטי", "שם חיבה", "ת.ז", "כתה", "סטטוס", "שם האב", "שם האם",
     "טלפון בית", "נייד אב", "נייד אם", "כתובת", "תאריך לידה",
   ];
   const data = rows.map((r) => [
-    r.last_name || "", r.first_name || "", r.id_number || "",
+    r.last_name || "", r.first_name || "", r.nickname || "", r.id_number || "",
     r.class_name ? r.class_name + (r.parallel ? " " + r.parallel : "") : "",
     r.status || "", r.father_name || "", r.mother_name || "",
     r.home_phone || "", r.father_mobile || "", r.mother_mobile || "",
@@ -348,9 +349,9 @@ router.get("/class-journal/view", (req, res) => {
   if (!class_id) return res.redirect("/reports/class-journal");
   const classRow = db.prepare("SELECT * FROM classes WHERE id = ?").get(class_id);
   const students = db
-    .prepare("SELECT s.first_name, s.last_name, f.last_name AS family_last FROM students s LEFT JOIN families f ON s.family_id=f.id WHERE s.class_id = ? AND s.status = 'פעיל' ORDER BY s.last_name, s.first_name")
+    .prepare("SELECT s.first_name, s.nickname, s.last_name, f.last_name AS family_last FROM students s LEFT JOIN families f ON s.family_id=f.id WHERE s.class_id = ? AND s.status = 'פעיל' ORDER BY s.last_name, s.first_name")
     .all(class_id)
-    .map(s => ({ ...s, displayName: (s.last_name || s.family_last || "") + " " + (s.first_name || "") }));
+    .map(s => ({ ...s, displayName: (s.last_name || s.family_last || "") + " " + (s.nickname || s.first_name || "") }));
   // teacher
   const teacher = db.prepare("SELECT t.first_name, t.last_name FROM teacher_classes tc JOIN teachers t ON tc.teacher_id=t.id WHERE tc.class_id=? ORDER BY tc.id LIMIT 1").get(class_id);
   const teacherName = teacher ? `ר' ${teacher.first_name || ""} ${teacher.last_name || ""}`.trim() : "";
