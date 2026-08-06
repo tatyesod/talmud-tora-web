@@ -175,6 +175,8 @@ router.get("/:id/edit", (req, res) => {
   const family = db.prepare("SELECT * FROM families WHERE id = ?").get(req.params.id);
   if (!family) return res.status(404).render("404");
 
+  const childrenCount = db.prepare("SELECT COUNT(*) c FROM students WHERE family_id = ?").get(req.params.id).c;
+
   const orderedIds = db.prepare("SELECT id FROM families ORDER BY last_name, id").all().map((r) => r.id);
   const curIdx = orderedIds.findIndex((id) => String(id) === String(req.params.id));
   const prevFamilyId = curIdx > 0 ? orderedIds[curIdx - 1] : null;
@@ -182,7 +184,7 @@ router.get("/:id/edit", (req, res) => {
 
   res.render("families/form", {
     family, conflict: req.query.conflict === "1", saved: req.query.saved === "1",
-    prevFamilyId, nextFamilyId,
+    prevFamilyId, nextFamilyId, childrenCount,
   });
 });
 
@@ -191,7 +193,7 @@ const FAMILY_FIELDS = [
   "mother_name", "mother_id_number", "mother_email",
   "home_phone", "father_mobile", "mother_mobile", "father_workplace", "father_work_phone",
   "mother_workplace", "mother_work_phone", "street", "house_number", "apartment", "city", "zip_code",
-  "notes", "billing_company",
+  "notes", "billing_company", "status",
   "paternal_grandparents", "paternal_grandparents_address",
   "maternal_grandparents", "maternal_grandparents_address",
 ];
@@ -212,6 +214,13 @@ router.put("/:id", (req, res) => {
   const values = [...cols.map((c) => (body[c] === "" ? null : body[c])), new Date().toISOString()];
   values.push(req.params.id);
   db.prepare(`UPDATE families SET ${setClause} WHERE id = ?`).run(...values);
+
+  // אם סטטוס המשפחה שונה - מעבירים את כל הילדים לאותו סטטוס בדיוק, כדי
+  // שהמשפחה והילדים תמיד יהיו מסונכרנים (למשל: כל המשפחה עברה לארכיון)
+  if (body.status) {
+    db.prepare("UPDATE students SET status = ? WHERE family_id = ?").run(body.status, req.params.id);
+  }
+
   res.redirect(`/families/${req.params.id}/edit?saved=1`);
 });
 

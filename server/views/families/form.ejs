@@ -18,14 +18,18 @@
       ⚠️ מישהו אחר עדכן את כרטיס המשפחה הזה בינתיים. הנתונים המוצגים כאן הם המעודכנים ביותר — יש לבדוק ולבצע שוב את השינוי לפני שמירה חוזרת.
     </div>
   <% } %>
-  <form method="POST" action="/families/<%= family.id %>?_method=PUT">
+  <div class="actions" style="margin-bottom:16px;">
+    <button type="submit" form="family-edit-form" class="btn">שמירה</button>
+    <a href="/families/<%= family.id %>" class="btn secondary">👁️ חזרה לפרטי משפחה</a>
+    <% const deleteMsg = 'למחוק את משפחת ' + family.last_name + ' לצמיתות?' + (childrenCount > 0 ? (' פעולה זו תמחק גם את ' + childrenCount + ' הילדים במשפחה, וכל הנתונים שלהם (הזמנות ספרים, תשלומים, רישומים לאירועים ועוד) - לא ניתן לשחזר!') : ''); %>
+    <form method="POST" action="/families/<%= family.id %>?_method=DELETE" style="display:inline" onsubmit="return confirm('<%= deleteMsg.replace(/'/g, '') %>');">
+      <button type="submit" class="btn danger">🗑️ מחיקת משפחה</button>
+    </form>
+  </div>
+  <form method="POST" action="/families/<%= family.id %>?_method=PUT" id="family-edit-form">
     <input type="hidden" name="updated_at" value="<%= family.updated_at || '' %>" />
-    <div class="actions" style="margin-bottom:16px;">
-      <button type="submit" class="btn">שמירה</button>
-      <a href="/families/<%= family.id %>" class="btn secondary">👁️ חזרה לפרטי משפחה</a>
-    </div>
     <fieldset>
-      <legend>מגזר</legend>
+      <legend>מגזר וסטטוס</legend>
       <div class="form-grid">
         <div class="form-group">
           <label>מגזר</label>
@@ -35,6 +39,17 @@
             <option value="ספרדי" <%= family.sector === 'ספרדי' ? 'selected' : '' %>>ספרדי</option>
             <option value="תמני" <%= family.sector === 'תמני' ? 'selected' : '' %>>תמני</option>
           </select>
+        </div>
+        <div class="form-group">
+          <label>סטטוס משפחה</label>
+          <select name="status">
+            <option value="פעיל" <%= family.status === 'פעיל' || !family.status ? 'selected' : '' %>>פעיל</option>
+            <option value="נרשם" <%= family.status === 'נרשם' ? 'selected' : '' %>>נרשם</option>
+            <option value="לא פעיל" <%= family.status === 'לא פעיל' ? 'selected' : '' %>>לא פעיל</option>
+            <option value="ארכיון" <%= family.status === 'ארכיון' ? 'selected' : '' %>>ארכיון</option>
+            <option value="לא התקבל" <%= family.status === 'לא התקבל' ? 'selected' : '' %>>לא התקבל</option>
+          </select>
+          <p style="color:var(--muted); font-size:0.82em; margin:4px 0 0;">שינוי סטטוס כאן יעביר אוטומטית את <strong>כל</strong> ילדי המשפחה (<%= childrenCount %>) לאותו סטטוס.</p>
         </div>
       </div>
     </fieldset>
