@@ -144,7 +144,7 @@ router.get("/export-by-billing-company", async (req, res) => {
   wb.creator = "מערכת ניהול תלמוד תורה החדש";
   const ws = wb.addWorksheet("פילוג לפי חברת גביה", { views: [{ rightToLeft: true }] });
 
-  const headerRow = ["משפחה", "אב", "מס' ילדים", "סכום לתשלום"];
+  const headerRow = ["משפחה", "אב", "ת\"ז אב", "נייד אב", "כתובת", "מס' ילדים", "שכ\"ל", "תרומה"];
   const lastCol = headerRow.length;
 
   ws.mergeCells(1, 1, 1, lastCol - 1);
@@ -156,7 +156,7 @@ router.get("/export-by-billing-company", async (req, res) => {
 
   ws.mergeCells(2, 1, 2, lastCol - 1);
   const subtitleCell = ws.getCell(2, 1);
-  subtitleCell.value = "פילוג שכר לימוד לפי חברת גביה (ללא תרומות)";
+  subtitleCell.value = "פילוג שכר לימוד ותרומות לפי חברת גביה (שכ\"ל)";
   subtitleCell.font = { size: 12, bold: true, color: { argb: "FF555555" } };
   subtitleCell.alignment = { horizontal: "right", vertical: "middle" };
 
@@ -183,31 +183,38 @@ router.get("/export-by-billing-company", async (req, res) => {
   headerExcelRow.height = 20;
 
   let grandTotal = 0;
+  let grandDonationTotal = 0;
   companyNames.forEach((companyName) => {
     const families = groups[companyName];
     const companyTotal = families.reduce((sum, f) => sum + f.netTotal, 0);
+    const companyDonationTotal = families.reduce((sum, f) => sum + (f.monthly_donation_amount || 0), 0);
     grandTotal += companyTotal;
+    grandDonationTotal += companyDonationTotal;
 
     // שורת כותרת חברת הגביה
-    const companyRow = ws.addRow([companyName, "", "", ""]);
+    const companyRow = ws.addRow([companyName, "", "", "", "", "", "", ""]);
     ws.mergeCells(companyRow.number, 1, companyRow.number, lastCol - 1);
     companyRow.font = { bold: true, color: { argb: "FFFFFFFF" } };
     companyRow.getCell(1).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF5B7C99" } };
     companyRow.getCell(1).alignment = { horizontal: "right" };
 
     families.forEach((f) => {
-      const r = ws.addRow([f.last_name || "", f.father_name || "", f.activeCount, f.netTotal]);
+      const address = [f.street, f.house_number, f.city].filter(Boolean).join(" ");
+      const r = ws.addRow([
+        f.last_name || "", f.father_name || "", f.father_id_number || "", f.father_mobile || "",
+        address, f.activeCount, f.netTotal, f.monthly_donation_amount || "",
+      ]);
       r.alignment = { horizontal: "right" };
     });
 
     // שורת סיכום לחברת הגביה
-    const subtotalRow = ws.addRow(["סה\"כ " + companyName, "", "", companyTotal]);
+    const subtotalRow = ws.addRow(["סה\"כ " + companyName, "", "", "", "", "", companyTotal, companyDonationTotal]);
     subtotalRow.font = { bold: true };
     subtotalRow.eachCell((cell) => { cell.border = { top: { style: "thin" } }; });
     ws.addRow([]);
   });
 
-  const grandTotalRow = ws.addRow(["סה\"כ כללי (כל המשפחות)", "", "", grandTotal]);
+  const grandTotalRow = ws.addRow(["סה\"כ כללי (כל המשפחות)", "", "", "", "", "", grandTotal, grandDonationTotal]);
   grandTotalRow.font = { bold: true, size: 12 };
   grandTotalRow.eachCell((cell) => {
     cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFE8ECF0" } };

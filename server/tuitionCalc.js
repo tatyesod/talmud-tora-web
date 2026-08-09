@@ -52,7 +52,7 @@ function calcAllFamiliesTuition() {
     .prepare(`
       SELECT DISTINCT f.id, f.last_name, f.father_name, f.home_phone,
              f.billing_company, f.father_mobile, f.mother_mobile,
-             f.street, f.house_number, f.city
+             f.street, f.house_number, f.city, f.father_id_number, f.monthly_donation_amount
       FROM families f
       JOIN students s ON s.family_id = f.id
       WHERE s.status = 'פעיל'
