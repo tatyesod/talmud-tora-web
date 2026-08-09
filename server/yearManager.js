@@ -1,5 +1,6 @@
 const db = require("./db");
 const hd = require("./hebrewDate");
+const { runAutoZoneAssignmentWithSiblingPriority } = require("./zoneResolver");
 
 const GRADE_ORDER = [
   "מכינה א'", "מכינה ב'", "כיתה א'", "כיתה ב'", "כיתה ג'",
@@ -136,7 +137,10 @@ function promoteYear() {
     // אם classId === null ולא ארכיון - לא נוגעים (כיתה לא מוכרת בסדר הקידום)
   }
 
-  // 3. תלמידים ללא כיתה (אחים קטנים) - לא נוגעים, נשארים ללא כיתה בסטטוס לא פעיל כפי שהם
+  // 3. תלמידים ללא כיתה (אחים קטנים, ומי שהיה ב"עדיין לא נכנסו" ופונה עכשיו) -
+  //    שיבוץ אוטומטי למקבילת "עדיין לא נכנסו" הנכונה: קודם לפי אח/אחות פעיל/ה
+  //    שכבר בכיתה אמיתית (עדיפות ראשונה), ואם אין - לפי כתובת/אזור מגורים
+  const zoneAssignment = runAutoZoneAssignmentWithSiblingPriority(db);
 
   // 4. איפוס שדה "מעבר לכיתה (בהעלאת שנה)" בכל הכיתות - החריגות שהוגדרו היו רלוונטיות
   //    להעלאת השנה הזו בלבד; לשנה הבאה חוזרים לברירת המחדל (אותה מקבילה), אלא אם יוגדר מחדש בכוונה
@@ -148,7 +152,7 @@ function promoteYear() {
   db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('current_hebrew_year', ?)").run(newLabel);
   db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('current_hebrew_year_num', ?)").run(String(newNum));
 
-  return { previousLabel: currentLabel, newLabel, promoted, archived, movedToMechina };
+  return { previousLabel: currentLabel, newLabel, promoted, archived, movedToMechina, zoneAssignment };
 }
 
 module.exports = {

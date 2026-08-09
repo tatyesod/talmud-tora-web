@@ -88,6 +88,89 @@ function runAutoZoneAssignment(db) {
   return moved;
 }
 
+// גרסה משודרגת: לפני הסתמכות על הכתובת, בודקים קודם אם יש לתלמיד אח/אחות
+// פעיל/ה **בכיתה אמיתית** (לא "עדיין לא נכנסו") - אם כן, הסניף של האח/אחות
+// גובר על מה שהכתובת "אומרת" (המשפחה כבר הוכיחה בפועל לאיזה סניף היא
+// שייכת). רק אם אין אח כזה, נופלים חזרה לפתרון לפי כתובת. מחזיר דוח מלא:
+// כמה שובצו לפי אח, כמה לפי כתובת, ורשימת מי שלא הצלחנו לשבץ בכלל (לדוח).
+function runAutoZoneAssignmentWithSiblingPriority(db) {
+  const students = db.prepare(`
+    SELECT s.id, s.first_name, s.last_name, s.class_id, s.branch, s.status, s.family_id, f.street, f.house_number
+    FROM students s
+    LEFT JOIN classes c ON s.class_id = c.id
+    LEFT JOIN families f ON s.family_id = f.id
+    WHERE s.status NOT IN ('ארכיון', 'לא התקבל')
+      AND (s.class_id IS NULL OR c.id IS NULL OR c.name LIKE 'עדיין לא נכנסו%')
+  `).all();
+
+  let bySibling = 0;
+  let byAddress = 0;
+  let skippedNoInfo = 0;
+  const unresolved = [];
+
+  for (const s of students) {
+    let targetBranch = null;
+    let targetZone = null;
+    let source = null;
+
+    // שלב 1: חיפוש אח/אחות פעיל/ה בכיתה אמיתית (לא "עדיין לא נכנסו") מאותה משפחה
+    if (s.family_id) {
+      const sibling = db.prepare(`
+        SELECT COALESCE(c.branch, sib.branch) AS branch
+        FROM students sib
+        LEFT JOIN classes c ON sib.class_id = c.id
+        WHERE sib.family_id = ? AND sib.id != ? AND sib.status = 'פעיל'
+          AND sib.class_id IS NOT NULL AND (c.name IS NULL OR c.name NOT LIKE 'עדיין לא נכנסו%')
+          AND COALESCE(c.branch, sib.branch) IS NOT NULL
+        LIMIT 1
+      `).get(s.family_id, s.id);
+      if (sibling && sibling.branch) {
+        targetBranch = sibling.branch;
+        // בוחרים איזור כלשהו שמתאים לסניף הזה, כדי למצוא כיתת "עדיין לא נכנסו" מתאימה
+        targetZone = Object.keys(ZONE_BRANCH).find((z) => ZONE_BRANCH[z] === targetBranch);
+        source = "sibling";
+      }
+    }
+
+    // שלב 2: נפילה חזרה לפי כתובת, רק אם אין אח שקבע כבר סניף
+    if (!targetBranch && s.street && s.street.trim()) {
+      const result = resolveZone(db, s.street, s.house_number);
+      if (result) {
+        targetBranch = result.branch;
+        targetZone = result.zone;
+        source = "address";
+      }
+    }
+
+    if (!targetBranch) {
+      unresolved.push({
+        id: s.id, name: `${s.last_name || ""} ${s.first_name || ""}`.trim(),
+        street: s.street || "", houseNumber: s.house_number || "",
+      });
+      continue;
+    }
+
+    let changed = false;
+    if (s.branch !== targetBranch) {
+      db.prepare("UPDATE students SET branch = ? WHERE id = ?").run(targetBranch, s.id);
+      changed = true;
+    }
+    if (!s.class_id || isWaitingClass(db, s.class_id)) {
+      const waitingClass = findWaitingClassForZone(db, targetZone);
+      if (waitingClass && waitingClass.id !== s.class_id) {
+        db.prepare("UPDATE students SET class_id = ? WHERE id = ?").run(waitingClass.id, s.id);
+        changed = true;
+      }
+    }
+    if (changed) {
+      if (source === "sibling") bySibling++;
+      else byAddress++;
+    }
+  }
+
+  return { bySibling, byAddress, unresolved, totalMoved: bySibling + byAddress };
+}
+
 // נפחא וסוקולוב שייכים לאותו אזור גיאוגרפי בפועל - נפחא פשוט לא קולט תלמידים
 // חדשים ישירות (רק סוקולוב/בן פתחיה מחולקים לפי כתובת). לכן לצורך בדיקת
 // "פיצול אחים בין סניפים", נפחא וסוקולוב נחשבים לאותו אזור ולא לסתירה.
@@ -110,4 +193,4 @@ function findSiblingBranchConflict(db, familyId, branch, excludeStudentId) {
   return siblings.find((s) => !branchesInSameRegion(s.branch, branch)) || null;
 }
 
-module.exports = { resolveZone, saveZoneOverride, findWaitingClassForZone, isWaitingClass, runAutoZoneAssignment, findSiblingBranchConflict, branchesInSameRegion, ZONE_BRANCH };
+module.exports = { resolveZone, saveZoneOverride, findWaitingClassForZone, isWaitingClass, runAutoZoneAssignment, runAutoZoneAssignmentWithSiblingPriority, findSiblingBranchConflict, branchesInSameRegion, ZONE_BRANCH };

@@ -13,7 +13,36 @@
         <%= result.movedToMechina %> תלמידים מ"עדיין לא נכנסו" נכנסו למכינה א',
         <%= result.archived %> תלמידי כיתה ח' עברו לארכיון.
       </p>
+      <% if (result.zoneAssignment) { %>
+        <p>
+          שיבוץ אוטומטי ל"עדיין לא נכנסו" (השנתון הבא): <%= result.zoneAssignment.bySibling %> שובצו לפי אח/אחות גדול/ה שכבר בכיתה,
+          <%= result.zoneAssignment.byAddress %> שובצו לפי כתובת/אזור מגורים
+          (סה"כ <%= result.zoneAssignment.totalMoved %> תלמידים).
+        </p>
+      <% } %>
     </div>
+
+    <% if (result.zoneAssignment && result.zoneAssignment.unresolved.length > 0) { %>
+      <div class="card" style="background:#fff8e1; border-color:#ffe082;">
+        <strong>⚠️ לא ניתן היה לשבץ אוטומטית <%= result.zoneAssignment.unresolved.length %> תלמידים</strong>
+        <p style="color:var(--muted); font-size:0.9em;">
+          אין להם אח/אחות פעיל/ה בכיתה אמיתית, וגם הכתובת שלהם לא מזוהה כאזור ידוע. יש לשבץ אותם ידנית
+          במסך <a href="/classes/zone-assignment">שיבוץ לפי אזור</a>.
+        </p>
+        <table>
+          <thead><tr><th>תלמיד</th><th>רחוב</th><th>מספר בית</th></tr></thead>
+          <tbody>
+            <% result.zoneAssignment.unresolved.forEach(u => { %>
+              <tr>
+                <td><a href="/students/<%= u.id %>"><%= u.name %></a></td>
+                <td><%= u.street || '—' %></td>
+                <td><%= u.houseNumber || '—' %></td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    <% } %>
   <% } %>
 
   <fieldset>
