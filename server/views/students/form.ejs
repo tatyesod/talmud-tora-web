@@ -28,6 +28,16 @@
       </div>
     <% } %>
 
+    <% if (typeof cohortMismatchWarning !== 'undefined' && cohortMismatchWarning) { %>
+      <div style="background:#fff8e1; border:1px solid #ffe082; color:#8a6d00; border-radius:8px; padding:10px 16px; margin-bottom:14px;">
+        ⚠️ <strong>שים לב</strong> - <%= cohortMismatchWarning %>
+        <label style="display:block; font-weight:normal; margin-top:8px;">
+          <input type="checkbox" name="confirm_cohort_mismatch" value="1" style="width:auto; margin-left:6px;" />
+          כן, לשבץ בכל זאת לכיתה שנבחרה (למרות שהשנתון לא תואם)
+        </label>
+      </div>
+    <% } %>
+
     <%# ======= פרטים אישיים ======= %>
     <fieldset>
       <legend>פרטים אישיים</legend>
@@ -36,7 +46,7 @@
         <div class="form-group"><label>שם פרטי</label><input type="text" name="first_name" value="<%= student.first_name || '' %>" /></div>
         <div class="form-group"><label>כינוי</label><input type="text" name="nickname" value="<%= student.nickname || '' %>" /></div>
         <div class="form-group"><label>תעודת זהות</label><input type="text" name="id_number" value="<%= student.id_number || '' %>" /></div>
-        <div class="form-group"><label>תאריך לידה</label><input type="date" name="birth_date_civil" value="<%= student.birth_date_civil || '' %>" /></div>
+        <div class="form-group"><label>תאריך לידה</label><input type="date" id="birth_date_civil_input" name="birth_date_civil" value="<%= student.birth_date_civil || '' %>" /></div>
         <div class="form-group">
           <label>סטטוס</label>
           <select name="status">
@@ -91,12 +101,13 @@
         </div>
         <div class="form-group">
           <label>מחזור</label>
-          <select name="cohort_id">
+          <select name="cohort_id" id="cohort_id_select">
             <option value="">--</option>
             <% cohorts.forEach(c => { %>
               <option value="<%= c.id %>" <%= String(student.cohort_id) === String(c.id) ? 'selected' : '' %>><%= c.name %></option>
             <% }) %>
           </select>
+          <span id="cohort_auto_hint" style="display:none; font-size:0.82em; color:#2e7d32; margin-top:4px;"></span>
         </div>
         <div class="form-group"><label>תאריך רישום</label><input type="date" name="registration_date" value="<%= student.registration_date || '' %>" /></div>
         <div class="form-group"><label>תאריך קבלה</label><input type="date" name="admission_date" value="<%= student.admission_date || '' %>" /></div>
@@ -232,6 +243,31 @@
 
   radios.forEach(r => r.addEventListener('change', toggleFamilyMode));
   toggleFamilyMode();
+
+  // זיהוי אוטומטי של המחזור לפי תאריך לידה שהוזן
+  const birthDateInput = document.getElementById('birth_date_civil_input');
+  const cohortSelect = document.getElementById('cohort_id_select');
+  const cohortHint = document.getElementById('cohort_auto_hint');
+  if (birthDateInput && cohortSelect) {
+    birthDateInput.addEventListener('change', () => {
+      const date = birthDateInput.value;
+      if (!date) return;
+      fetch('/students/api/cohort-for-date?date=' + encodeURIComponent(date))
+        .then(r => r.json())
+        .then(data => {
+          if (data.cohort) {
+            cohortSelect.value = data.cohort.id;
+            cohortHint.textContent = '✓ זוהה אוטומטית: ' + data.cohort.name;
+            cohortHint.style.display = 'block';
+          } else {
+            cohortHint.textContent = 'לא נמצא מחזור מתאים לתאריך זה - יש לבחור ידנית';
+            cohortHint.style.color = '#8a6d00';
+            cohortHint.style.display = 'block';
+          }
+        })
+        .catch(() => { /* לא קריטי - פשוט לא יזוהה אוטומטית */ });
+    });
+  }
 </script>
 
 <%- include('../partials/footer') %>

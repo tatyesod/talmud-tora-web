@@ -55,6 +55,32 @@ function getStudentFile(studentId) {
     .map((r) => ({ ...r, entry_date_str: hd.serialToGregorianString(r.entry_date) }));
 }
 
+// בודק אם שיבוץ תלמיד לכיתה מתאים לשנתון שלו - אין מיפוי מפורש בין כיתה
+// לשנתון, אז בודקים התאמה מול השנתון ה*רוב* (הנפוץ ביותר) של תלמידים
+// אחרים שכבר משובצים לאותה כיתה (הם בפועל מגדירים "מה השנתון של הכיתה
+// הזו"). משתמשים ברוב, לא בכל חוסר-התאמה בודד, כדי שחריג אחד שכבר אושר
+// במפורש לא ימשיך "לתפוס" כל שיבוץ תקין אחר לאותה כיתה. מחזיר את פרטי
+// השנתון הדומיננטי אם הוא שונה מזה שנבחר, או null אם הכל תקין.
+function checkCohortMismatch(classId, cohortId, excludeStudentId) {
+  if (!classId || !cohortId) return null;
+  let sql = `
+    SELECT s.cohort_id, co.name AS cohort_name, COUNT(*) AS cnt
+    FROM students s
+    JOIN cohorts co ON s.cohort_id = co.id
+    WHERE s.class_id = ? AND s.status = 'פעיל' AND s.cohort_id IS NOT NULL
+  `;
+  const params = [classId];
+  if (excludeStudentId) {
+    sql += " AND s.id != ?";
+    params.push(excludeStudentId);
+  }
+  sql += " GROUP BY s.cohort_id ORDER BY cnt DESC LIMIT 1";
+  const dominant = db.prepare(sql).get(...params);
+  if (!dominant) return null; // אין עדיין תלמידים בכיתה - שום דבר להשוות מולו
+  if (String(dominant.cohort_id) === String(cohortId)) return null; // תואם לרוב - הכל תקין
+  return dominant;
+}
+
 function getClassTeachers(classId) {
   if (!classId) return [];
   return db
@@ -69,6 +95,26 @@ function getClassTeachers(classId) {
 
 // --- רשימה וחיפוש ---
 router.get("/", (req, res) => res.redirect("/students"));
+
+// מזהה אוטומטית את המחזור המתאים לפי תאריך לידה - משמש בטופס התלמיד כדי
+// לבחור מחזור אוטומטית ברגע שמזינים תאריך לידה
+router.get("/students/api/cohort-for-date", (req, res) => {
+  const { date } = req.query;
+  if (!date) return res.json({ cohort: null });
+  let serial;
+  try {
+    serial = hd.gregorianStringToSerial(date);
+  } catch (e) {
+    return res.json({ cohort: null });
+  }
+  if (!serial) return res.json({ cohort: null });
+  const cohort = db.prepare(`
+    SELECT id, name FROM cohorts
+    WHERE from_date <= ? AND to_date >= ? AND (status IS NULL OR status = 'פעיל')
+    ORDER BY from_date DESC LIMIT 1
+  `).get(serial, serial);
+  res.json({ cohort: cohort || null });
+});
 
 router.get("/students/mismatched-branch", (req, res) => {
   const students = db.prepare(`
@@ -223,6 +269,25 @@ router.post("/students", (req, res) => {
       return res.render("students/form", {
         student: body, mode: "new", classes, cohorts, families, chassidut, yeshivot,
         duplicateIdError: `מספר הזהות ${body.id_number.trim()} כבר קיים במערכת - עבור התלמיד/ה ${dup.first_name || ""} ${dup.last_name || dup.family_last_name || ""}. יש לוודא שזה לא אותו תלמיד לפני שממשיכים.`,
+      });
+    }
+  }
+
+  // בדיקת התאמת שנתון לכיתה - לפני שנוגעים במשהו במסד. אם לא אושר במפורש
+  // ("כן, שבץ בכל זאת"), מציגים אזהרה במקום לשמור ישר.
+  if (body.class_id && body.cohort_id && body.confirm_cohort_mismatch !== "1") {
+    const mismatch = checkCohortMismatch(body.class_id, body.cohort_id, null);
+    if (mismatch) {
+      const classes = db.prepare("SELECT id, name, parallel FROM classes ORDER BY name, parallel").all();
+      const cohorts = db.prepare("SELECT id, name FROM cohorts ORDER BY to_date DESC, from_date DESC").all();
+      const families = db.prepare("SELECT id, last_name, father_name, sector FROM families ORDER BY last_name").all();
+      const chassidut = db.prepare("SELECT id, name FROM chassidut ORDER BY name").all();
+      const yeshivot = db.prepare("SELECT id, name FROM yeshivot ORDER BY name").all();
+      const targetClass = classes.find((c) => String(c.id) === String(body.class_id));
+      const className = targetClass ? targetClass.name + (targetClass.parallel ? " " + targetClass.parallel : "") : "";
+      return res.render("students/form", {
+        student: body, mode: "new", classes, cohorts, families, chassidut, yeshivot,
+        cohortMismatchWarning: `התלמיד שובץ ל${className}, אך השנתון שנבחר לא תואם לשנתון של שאר תלמידי הכיתה (רוב תלמידי הכיתה משויכים לשנתון "${mismatch.cohort_name}"). לשבץ בכל זאת?`,
       });
     }
   }
@@ -394,6 +459,23 @@ router.put("/students/:id", (req, res) => {
         student: { ...body, id: req.params.id }, mode: "edit", classes, cohorts, families,
         conflict: false,
         siblingBranchWarning: `האח/אחות ${conflict.first_name} ${conflict.last_name} (פעיל/ה) משובץ/ת לסניף "${conflict.branch}", אבל התלמיד/ה הזו עומדת להישבץ לסניף "${body.branch}". האם לשבץ בכל זאת?`,
+      });
+    }
+  }
+
+  // בדיקת התאמת שנתון לכיתה - אותה לוגיקה כמו ביצירת תלמיד חדש
+  if (body.class_id && body.cohort_id && body.confirm_cohort_mismatch !== "1") {
+    const mismatch = checkCohortMismatch(body.class_id, body.cohort_id, req.params.id);
+    if (mismatch) {
+      const classes = db.prepare("SELECT id, name, parallel FROM classes ORDER BY name, parallel").all();
+      const cohorts = db.prepare("SELECT id, name FROM cohorts ORDER BY to_date DESC, from_date DESC").all();
+      const families = db.prepare("SELECT id, last_name, father_name, sector FROM families ORDER BY last_name").all();
+      const targetClass = classes.find((c) => String(c.id) === String(body.class_id));
+      const className = targetClass ? targetClass.name + (targetClass.parallel ? " " + targetClass.parallel : "") : "";
+      return res.render("students/form", {
+        student: { ...body, id: req.params.id }, mode: "edit", classes, cohorts, families,
+        conflict: false,
+        cohortMismatchWarning: `התלמיד שובץ ל${className}, אך השנתון שנבחר לא תואם לשנתון של שאר תלמידי הכיתה (רוב תלמידי הכיתה משויכים לשנתון "${mismatch.cohort_name}"). לשבץ בכל זאת?`,
       });
     }
   }
