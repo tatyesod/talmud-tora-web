@@ -263,6 +263,7 @@ router.post("/cohorts", (req, res) => {
 router.get("/cohorts/:id/edit", (req, res) => {
   const cohort = db.prepare("SELECT * FROM cohorts WHERE id = ?").get(req.params.id);
   if (!cohort) return res.status(404).render("404");
+  const allCohorts = db.prepare("SELECT id, name FROM cohorts ORDER BY to_date DESC, from_date DESC").all();
   const startParts = hd.serialToHebrewParts(cohort.from_date) || { day: 1, month: 4, year: hd.currentHebrewYearNumber() };
   const endParts = hd.serialToHebrewParts(cohort.to_date) || { day: 30, month: 3, year: hd.currentHebrewYearNumber() + 1 };
   const currentYear = hd.currentHebrewYearNumber();
@@ -280,7 +281,7 @@ router.get("/cohorts/:id/edit", (req, res) => {
       start_day: startParts.day, start_month: startParts.month, start_year: startParts.year,
       end_day: endParts.day, end_month: endParts.month, end_year: endParts.year,
     },
-    mode: "edit", yearOptions, dayOptions,
+    mode: "edit", yearOptions, dayOptions, allCohorts,
     conflict: req.query.conflict === "1",
   });
 });
