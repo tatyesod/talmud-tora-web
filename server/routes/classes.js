@@ -228,12 +228,15 @@ router.delete("/:id", (req, res) => {
 // ============ מחזורים - הוספה/עריכה/מחיקה ============
 router.get("/cohorts/new", (req, res) => {
   const currentYear = hd.currentHebrewYearNumber();
+  const yearOptions = [];
+  for (let y = currentYear - 8; y <= currentYear + 3; y++) yearOptions.push({ value: y, label: hd.formatHebrewYear(y) });
+  const dayOptions = Array.from({ length: 30 }, (_, i) => ({ value: i + 1, label: hd.hebrewNumeral(i + 1) }));
   res.render("classes/cohort-form", {
     cohort: {
       start_day: 1, start_month: 4, start_year: currentYear,
       end_day: 30, end_month: 3, end_year: currentYear + 1,
     },
-    mode: "new",
+    mode: "new", yearOptions, dayOptions,
   });
 });
 
@@ -262,13 +265,22 @@ router.get("/cohorts/:id/edit", (req, res) => {
   if (!cohort) return res.status(404).render("404");
   const startParts = hd.serialToHebrewParts(cohort.from_date) || { day: 1, month: 4, year: hd.currentHebrewYearNumber() };
   const endParts = hd.serialToHebrewParts(cohort.to_date) || { day: 30, month: 3, year: hd.currentHebrewYearNumber() + 1 };
+  const currentYear = hd.currentHebrewYearNumber();
+  const yearOptions = [];
+  for (let y = currentYear - 8; y <= currentYear + 3; y++) yearOptions.push({ value: y, label: hd.formatHebrewYear(y) });
+  // מוודאים ששנות הטווח הקיימות של המחזור נכללות באפשרויות, גם אם הן ישנות/עתידיות יותר מהטווח הרגיל
+  [startParts.year, endParts.year].forEach((y) => {
+    if (y && !yearOptions.some((o) => o.value === y)) yearOptions.push({ value: y, label: hd.formatHebrewYear(y) });
+  });
+  yearOptions.sort((a, b) => a.value - b.value);
+  const dayOptions = Array.from({ length: 30 }, (_, i) => ({ value: i + 1, label: hd.hebrewNumeral(i + 1) }));
   res.render("classes/cohort-form", {
     cohort: {
       ...cohort,
       start_day: startParts.day, start_month: startParts.month, start_year: startParts.year,
       end_day: endParts.day, end_month: endParts.month, end_year: endParts.year,
     },
-    mode: "edit",
+    mode: "edit", yearOptions, dayOptions,
     conflict: req.query.conflict === "1",
   });
 });
