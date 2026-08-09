@@ -203,6 +203,12 @@ router.put("/:id", (req, res) => {
   if (!checkNoConflict("families", req.params.id, body.updated_at)) {
     return res.redirect(`/families/${req.params.id}/edit?conflict=1`);
   }
+  // שולפים את הסטטוס הקודם *לפני* העדכון, כדי לדעת אם הוא באמת השתנה -
+  // אחרת (באג שתוקן) כל שמירה של הטופס - גם עריכת שדה אחר לגמרי כמו חברת
+  // גביה - הייתה "דורסת" את הסטטוס של כל הילדים לפי מה שהיה בררת המחדל
+  // בתפריט הנפתח, גם בלי שהמשתמש התכוון לשנות סטטוס בכלל
+  const previousStatus = db.prepare("SELECT status FROM families WHERE id = ?").get(req.params.id)?.status;
+
   // חברת גביה (שכ"ל): אם נבחר "אחר" - לוקחים את הטקסט שהוקלד ידנית, אחרת את הבחירה עצמה
   if ("billing_company_choice" in body) {
     body.billing_company = body.billing_company_choice === "אחר"
@@ -221,9 +227,9 @@ router.put("/:id", (req, res) => {
   values.push(req.params.id);
   db.prepare(`UPDATE families SET ${setClause} WHERE id = ?`).run(...values);
 
-  // אם סטטוס המשפחה שונה - מעבירים את כל הילדים לאותו סטטוס בדיוק, כדי
-  // שהמשפחה והילדים תמיד יהיו מסונכרנים (למשל: כל המשפחה עברה לארכיון)
-  if (body.status) {
+  // מעבירים את כל הילדים לסטטוס החדש רק אם הסטטוס *באמת* השתנה (לא בכל
+  // שמירה סתמית של הטופס) - זה המקרה היחיד שבו רוצים סנכרון אוטומטי
+  if (body.status && body.status !== previousStatus) {
     db.prepare("UPDATE students SET status = ? WHERE family_id = ?").run(body.status, req.params.id);
   }
 
