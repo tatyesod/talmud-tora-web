@@ -1207,6 +1207,19 @@ try {
   console.error("שגיאה בהוספת תאריך יעד למשימות כלליות:", e.message);
 }
 
+// ניקוי חד-פעמי: משפחות בלי חברת גביה מוגדרת (השדה ריק) מקבלות "קשר" כברירת
+// מחדל - זו חברת הגביה הראשית של המוסד. מי שצריך "מוסדי" ישונה ידנית בהמשך.
+try {
+  const alreadySet = db.prepare("SELECT value FROM settings WHERE key = 'billing_company_default_v1'").get();
+  if (!alreadySet) {
+    const result = db.prepare("UPDATE families SET billing_company = 'קשר' WHERE billing_company IS NULL OR billing_company = ''").run();
+    console.log(`[חברת גביה] עודכנו ${result.changes} משפחות ל"קשר" כברירת מחדל`);
+    db.prepare("INSERT INTO settings (key, value) VALUES ('billing_company_default_v1', '1')").run();
+  }
+} catch (e) {
+  console.error("שגיאה בהגדרת חברת גביה ברירת מחדל:", e.message);
+}
+
 function cleanShutdown() {
   try {
     db.exec("PRAGMA wal_checkpoint(TRUNCATE);");

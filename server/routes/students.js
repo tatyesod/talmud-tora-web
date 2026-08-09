@@ -240,6 +240,12 @@ router.post("/students", (req, res) => {
     ];
     const famCols = famFields.filter(f => body["fam_"+f] !== undefined && body["fam_"+f] !== "");
     const famVals = famCols.map(f => body["fam_"+f]);
+    // ברירת מחדל: חברת גביה "קשר" (החברה הראשית) לכל משפחה חדשה, אלא אם
+    // צוין אחרת - כך שלא נשארות משפחות בלי חברת גביה מוגדרת
+    if (!famCols.includes("billing_company")) {
+      famCols.push("billing_company");
+      famVals.push("קשר");
+    }
     if (famCols.length > 0) {
       const famInfo = db.prepare(
         `INSERT INTO families (${famCols.join(",")}) VALUES (${famCols.map(()=>"?").join(",")})`
@@ -402,6 +408,12 @@ router.put("/students/:id", (req, res) => {
     ];
     const famCols = famFields.filter(f => body["fam_"+f] !== undefined && body["fam_"+f] !== "");
     const famVals = famCols.map(f => body["fam_"+f]);
+    // ברירת מחדל: חברת גביה "קשר" (החברה הראשית) לכל משפחה חדשה, אלא אם
+    // צוין אחרת - כך שלא נשארות משפחות בלי חברת גביה מוגדרת
+    if (!famCols.includes("billing_company")) {
+      famCols.push("billing_company");
+      famVals.push("קשר");
+    }
     if (famCols.length > 0) {
       const famInfo = db.prepare(
         `INSERT INTO families (${famCols.join(",")}) VALUES (${famCols.map(()=>"?").join(",")})`
