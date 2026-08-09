@@ -1220,6 +1220,24 @@ try {
   console.error("שגיאה בהגדרת חברת גביה ברירת מחדל:", e.message);
 }
 
+// שדה נפרד לחברת גביה של תרומות - נבדל מ-billing_company (ששימש/משמש
+// ספציפית לשכ"ל). "קשר" היא ברירת המחדל הראשית לשתיהן, אבל הן עשויות
+// להיות שונות בפועל, ולכן שני שדות נפרדים.
+try {
+  const cols = db.prepare("PRAGMA table_info(families)").all().map((c) => c.name);
+  if (!cols.includes("donation_billing_company")) {
+    db.exec("ALTER TABLE families ADD COLUMN donation_billing_company TEXT");
+  }
+  const alreadySetDonation = db.prepare("SELECT value FROM settings WHERE key = 'donation_billing_company_default_v1'").get();
+  if (!alreadySetDonation) {
+    const result = db.prepare("UPDATE families SET donation_billing_company = 'קשר' WHERE donation_billing_company IS NULL OR donation_billing_company = ''").run();
+    console.log(`[חברת גביה לתרומות] עודכנו ${result.changes} משפחות ל"קשר" כברירת מחדל`);
+    db.prepare("INSERT INTO settings (key, value) VALUES ('donation_billing_company_default_v1', '1')").run();
+  }
+} catch (e) {
+  console.error("שגיאה בהגדרת חברת גביה לתרומות:", e.message);
+}
+
 function cleanShutdown() {
   try {
     db.exec("PRAGMA wal_checkpoint(TRUNCATE);");

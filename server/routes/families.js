@@ -193,7 +193,7 @@ const FAMILY_FIELDS = [
   "mother_name", "mother_id_number", "mother_email",
   "home_phone", "father_mobile", "mother_mobile", "father_workplace", "father_work_phone",
   "mother_workplace", "mother_work_phone", "street", "house_number", "apartment", "city", "zip_code",
-  "notes", "billing_company", "status",
+  "notes", "billing_company", "donation_billing_company", "status",
   "paternal_grandparents", "paternal_grandparents_address",
   "maternal_grandparents", "maternal_grandparents_address",
 ];
@@ -203,11 +203,17 @@ router.put("/:id", (req, res) => {
   if (!checkNoConflict("families", req.params.id, body.updated_at)) {
     return res.redirect(`/families/${req.params.id}/edit?conflict=1`);
   }
-  // חברת גביה: אם נבחר "אחר" - לוקחים את הטקסט שהוקלד ידנית, אחרת את הבחירה עצמה
+  // חברת גביה (שכ"ל): אם נבחר "אחר" - לוקחים את הטקסט שהוקלד ידנית, אחרת את הבחירה עצמה
   if ("billing_company_choice" in body) {
     body.billing_company = body.billing_company_choice === "אחר"
       ? (body.billing_company_other || "").trim()
       : body.billing_company_choice;
+  }
+  // חברת גביה לתרומות - אותה לוגיקה, שדה נפרד
+  if ("donation_billing_company_choice" in body) {
+    body.donation_billing_company = body.donation_billing_company_choice === "אחר"
+      ? (body.donation_billing_company_other || "").trim()
+      : body.donation_billing_company_choice;
   }
   const cols = FAMILY_FIELDS.filter((c) => c in body);
   const setClause = [...cols.map((c) => `${c} = ?`), "updated_at = ?"].join(", ");

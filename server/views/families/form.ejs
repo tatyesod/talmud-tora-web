@@ -86,10 +86,10 @@
     </fieldset>
 
     <fieldset>
-      <legend>פרטי שכר לימוד</legend>
+      <legend>חברת גביה - שכר לימוד</legend>
       <% const billingIsOther = family.billing_company && family.billing_company !== 'קשר' && family.billing_company !== 'מוסדי'; %>
       <div class="form-group">
-        <label>חברת גביה</label>
+        <label>חברת גביה (שכ"ל)</label>
         <div style="display:flex; gap:16px; align-items:center; flex-wrap:wrap; margin-top:4px;">
           <label style="font-weight:normal; display:flex; align-items:center; gap:4px;">
             <input type="radio" name="billing_company_choice" value="קשר" <%= family.billing_company === 'קשר' ? 'checked' : '' %> /> קשר
@@ -102,6 +102,28 @@
             <input type="text" name="billing_company_other" id="billing-other-text" placeholder="הקלד..."
               value="<%= billingIsOther ? family.billing_company : '' %>" style="width:150px;"
               onfocus="document.getElementById('billing-other-radio').checked = true;" />
+          </label>
+        </div>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>חברת גביה - תרומות</legend>
+      <% const donationBillingIsOther = family.donation_billing_company && family.donation_billing_company !== 'קשר' && family.donation_billing_company !== 'מוסדי'; %>
+      <div class="form-group">
+        <label>חברת גביה (תרומות)</label>
+        <div style="display:flex; gap:16px; align-items:center; flex-wrap:wrap; margin-top:4px;">
+          <label style="font-weight:normal; display:flex; align-items:center; gap:4px;">
+            <input type="radio" name="donation_billing_company_choice" value="קשר" <%= family.donation_billing_company === 'קשר' ? 'checked' : '' %> /> קשר
+          </label>
+          <label style="font-weight:normal; display:flex; align-items:center; gap:4px;">
+            <input type="radio" name="donation_billing_company_choice" value="מוסדי" <%= family.donation_billing_company === 'מוסדי' ? 'checked' : '' %> /> מוסדי
+          </label>
+          <label style="font-weight:normal; display:flex; align-items:center; gap:4px;">
+            <input type="radio" name="donation_billing_company_choice" value="אחר" id="donation-billing-other-radio" <%= donationBillingIsOther ? 'checked' : '' %> /> אחר:
+            <input type="text" name="donation_billing_company_other" id="donation-billing-other-text" placeholder="הקלד..."
+              value="<%= donationBillingIsOther ? family.donation_billing_company : '' %>" style="width:150px;"
+              onfocus="document.getElementById('donation-billing-other-radio').checked = true;" />
           </label>
         </div>
       </div>
