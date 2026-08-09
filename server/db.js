@@ -1238,6 +1238,16 @@ try {
   console.error("שגיאה בהגדרת חברת גביה לתרומות:", e.message);
 }
 
+// ניקוי חד-פעמי: כיתת "עדיין לא נכנסו" היא כיתה לא פעילה (מחזיקה תלמידים
+// שעוד לא נכנסו בפועל, לא ילדים משלמי שכ"ל) - לא אמורה להיות משויכת לאף
+// קטגוריית שכר לימוד
+try {
+  const result = db.prepare("UPDATE classes SET category_id = NULL WHERE name LIKE 'עדיין לא נכנסו%' AND category_id IS NOT NULL").run();
+  if (result.changes > 0) console.log(`[שכ"ל] הוסרה שיוך קטגוריית שכ"ל מ-${result.changes} כיתות "עדיין לא נכנסו"`);
+} catch (e) {
+  console.error('שגיאה בניקוי קטגוריית שכ"ל מכיתת "עדיין לא נכנסו":', e.message);
+}
+
 function cleanShutdown() {
   try {
     db.exec("PRAGMA wal_checkpoint(TRUNCATE);");

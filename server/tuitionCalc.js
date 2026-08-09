@@ -17,6 +17,8 @@ function getDiscountPercent(activeChildrenCount) {
 }
 
 // מחשב שכר לימוד למשפחה אחת: רשימת ילדים פעילים עם מחיר קטגוריה, סה"כ, הנחה, סכום סופי
+// תלמידים בכיתת "עדיין לא נכנסו" לא נספרים בכלל - הם עוד לא באמת רשומים
+// (לא לחיוב וגם לא לספירת אחים לצורך הנחה), רק "ממתינים" לשנה הבאה
 function calcFamilyTuition(familyId) {
   const children = db
     .prepare(`
@@ -25,7 +27,7 @@ function calcFamilyTuition(familyId) {
       FROM students s
       LEFT JOIN classes c ON s.class_id = c.id
       LEFT JOIN categories cat ON c.category_id = cat.id
-      WHERE s.family_id = ? AND s.status = 'פעיל'
+      WHERE s.family_id = ? AND s.status = 'פעיל' AND (c.name IS NULL OR c.name NOT LIKE 'עדיין לא נכנסו%')
       ORDER BY s.birth_date_civil
     `)
     .all(familyId);
@@ -46,7 +48,8 @@ function calcFamilyTuition(familyId) {
   };
 }
 
-// מחשב שכר לימוד לכל המשפחות בעלות ילדים פעילים
+// מחשב שכר לימוד לכל המשפחות בעלות ילדים פעילים (לא כולל משפחות שיש להן
+// רק ילד ב"עדיין לא נכנסו" - הן עוד לא באמת ברשימת המשלמים)
 function calcAllFamiliesTuition() {
   const families = db
     .prepare(`
@@ -55,7 +58,8 @@ function calcAllFamiliesTuition() {
              f.street, f.house_number, f.city, f.father_id_number, f.monthly_donation_amount
       FROM families f
       JOIN students s ON s.family_id = f.id
-      WHERE s.status = 'פעיל'
+      LEFT JOIN classes c ON s.class_id = c.id
+      WHERE s.status = 'פעיל' AND (c.name IS NULL OR c.name NOT LIKE 'עדיין לא נכנסו%')
       ORDER BY f.last_name
     `)
     .all();

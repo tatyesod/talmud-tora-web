@@ -98,10 +98,10 @@ router.get("/", (req, res) => {
       SELECT cat.id, cat.name, cat.price,
         GROUP_CONCAT(c.name || COALESCE(' (' || c.parallel || ')',''), ', ') AS class_names,
         (SELECT COUNT(*) FROM students s WHERE s.class_id IN (
-            SELECT id FROM classes WHERE category_id = cat.id
+            SELECT id FROM classes WHERE category_id = cat.id AND name NOT LIKE 'עדיין לא נכנסו%'
           ) AND s.status='פעיל') AS active_students
       FROM categories cat
-      LEFT JOIN classes c ON c.category_id = cat.id
+      LEFT JOIN classes c ON c.category_id = cat.id AND c.name NOT LIKE 'עדיין לא נכנסו%'
       GROUP BY cat.id
     `)
     .all();
@@ -231,7 +231,7 @@ router.get("/export-by-billing-company", async (req, res) => {
 
 // ============ קטגוריות שכר לימוד - עריכה ============
 router.get("/categories/new", (req, res) => {
-  const allClasses = db.prepare("SELECT id, name, parallel, category_id FROM classes ORDER BY name, parallel").all();
+  const allClasses = db.prepare("SELECT id, name, parallel, category_id FROM classes WHERE name NOT LIKE 'עדיין לא נכנסו%' ORDER BY name, parallel").all();
   res.render("tuition/category-form", { category: {}, mode: "new", allClasses, selectedClassIds: [] });
 });
 
@@ -251,7 +251,7 @@ router.post("/categories", (req, res) => {
 router.get("/categories/:id/edit", (req, res) => {
   const category = db.prepare("SELECT * FROM categories WHERE id = ?").get(req.params.id);
   if (!category) return res.status(404).render("404");
-  const allClasses = db.prepare("SELECT id, name, parallel, category_id FROM classes ORDER BY name, parallel").all();
+  const allClasses = db.prepare("SELECT id, name, parallel, category_id FROM classes WHERE name NOT LIKE 'עדיין לא נכנסו%' ORDER BY name, parallel").all();
   const selectedClassIds = allClasses.filter((c) => String(c.category_id) === String(req.params.id)).map((c) => c.id);
   res.render("tuition/category-form", { category, mode: "edit", allClasses, selectedClassIds });
 });
