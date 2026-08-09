@@ -1248,6 +1248,57 @@ try {
   console.error('שגיאה בניקוי קטגוריית שכ"ל מכיתת "עדיין לא נכנסו":', e.message);
 }
 
+// תיקון באג: המיגרציה הקודמת ("waiting_classes_ensured_v1") חיפשה כיתה בשם
+// המדויק "עדיין לא נכנסו" (בלי סיומת סניף), לא מצאה כי הכיתות האמיתיות
+// נקראות "עדיין לא נכנסו - סוקולוב 1" וכו', ולכן יצרה 4 כיתות כפולות
+// מיותרות בשם הפשוט, עם סמל מוסד שגוי (512384 - שייך רק לביה"ס כיתות א'-ח',
+// לא לגיל שלפני מכינה א'). כאן מוחקים אותן - אבל **רק אם באמת ריקות**
+// (0 תלמידים משויכים) - כדי לא לאבד נתונים בטעות. אם יש בהן תלמידים, לא
+// נוגעים ומתריעים בלוג כדי שיבדקו ידנית.
+try {
+  const alreadyCleaned = db.prepare("SELECT value FROM settings WHERE key = 'wrong_not_yet_entered_cleanup_v1'").get();
+  if (!alreadyCleaned) {
+    const wrongClasses = db.prepare(`
+      SELECT id, name, parallel, branch FROM classes
+      WHERE name = 'עדיין לא נכנסו' AND institution_code = '512384'
+    `).all();
+    let deleted = 0;
+    wrongClasses.forEach((c) => {
+      const studentCount = db.prepare("SELECT COUNT(*) n FROM students WHERE class_id = ?").get(c.id).n;
+      if (studentCount === 0) {
+        db.prepare("DELETE FROM classes WHERE id = ?").run(c.id);
+        deleted++;
+      } else {
+        console.log(`[ניקוי כיתות שגויות] כיתה "${c.name}" (${c.branch}, מקבילה ${c.parallel}, id=${c.id}) לא נמחקה - יש בה ${studentCount} תלמידים. יש לבדוק ידנית.`);
+      }
+    });
+    if (wrongClasses.length > 0) {
+      console.log(`[ניקוי כיתות שגויות] נבדקו ${wrongClasses.length} כיתות "עדיין לא נכנסו" עם סמל מוסד שגוי (512384) - ${deleted} נמחקו (היו ריקות), ${wrongClasses.length - deleted} נשארו (יש בהן תלמידים).`);
+    }
+    db.prepare("INSERT INTO settings (key, value) VALUES ('wrong_not_yet_entered_cleanup_v1', '1')").run();
+  }
+} catch (e) {
+  console.error("שגיאה בניקוי כיתות עדיין לא נכנסו שגויות:", e.message);
+}
+
+// תיקון המיגרציה המקורית - כדי שלא ייצור שוב כפילויות דומות בעתיד (למשל אם
+// ירוץ על סביבה חדשה): מתעלם מכיתות ששמן *מתחיל* ב"עדיין לא נכנסו" (כולל
+// עם סיומת סניף), לא רק שם מדויק
+try {
+  const cols = db.prepare("PRAGMA table_info(classes)").all();
+  if (cols.length > 0) {
+    const stillMissingCheck = db.prepare(`
+      SELECT parallel FROM classes WHERE name LIKE 'עדיין לא נכנסו%' AND status = 'פעיל'
+    `).all().map((r) => String(r.parallel));
+    const missingZones = [1, 2, 3, 4].filter((z) => !stillMissingCheck.includes(String(z)));
+    if (missingZones.length > 0) {
+      console.log(`[בדיקת כיתות עדיין לא נכנסו] שימו לב - אין כיתת "עדיין לא נכנסו" פעילה למקבילה/אזור: ${missingZones.join(", ")}. יש להוסיף ידנית אם צריך.`);
+    }
+  }
+} catch (e) {
+  console.error("שגיאה בבדיקת כיתות עדיין לא נכנסו קיימות:", e.message);
+}
+
 function cleanShutdown() {
   try {
     db.exec("PRAGMA wal_checkpoint(TRUNCATE);");
