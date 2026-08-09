@@ -26,12 +26,6 @@
       </div>
     </div>
 
-    <% const hebMonths = [
-      {v:7, n:"תשרי"}, {v:8, n:"חשון"}, {v:9, n:"כסלו"}, {v:10, n:"טבת"}, {v:11, n:"שבט"},
-      {v:12, n:"אדר / אדר א'"}, {v:13, n:"אדר ב'"}, {v:1, n:"ניסן"}, {v:2, n:"אייר"},
-      {v:3, n:"סיון"}, {v:4, n:"תמוז"}, {v:5, n:"אב"}, {v:6, n:"אלול"},
-    ]; %>
-
     <h3 style="margin-top:20px;">תחילת טווח לידה (ברירת מחדל: א' תמוז)</h3>
     <div class="form-grid">
       <div class="form-group">
@@ -44,15 +38,11 @@
       </div>
       <div class="form-group">
         <label>חודש</label>
-        <select name="start_month">
-          <% hebMonths.forEach(m => { %>
-            <option value="<%= m.v %>" <%= Number(cohort.start_month) === m.v ? 'selected' : '' %>><%= m.n %></option>
-          <% }) %>
-        </select>
+        <select name="start_month" id="start_month_select" data-current="<%= cohort.start_month %>"></select>
       </div>
       <div class="form-group">
         <label>שנה עברית</label>
-        <select name="start_year">
+        <select name="start_year" id="start_year_select" onchange="updateMonthOptions('start_year_select','start_month_select')">
           <% yearOptions.forEach(y => { %>
             <option value="<%= y.value %>" <%= Number(cohort.start_year) === y.value ? 'selected' : '' %>><%= y.label %></option>
           <% }) %>
@@ -72,15 +62,11 @@
       </div>
       <div class="form-group">
         <label>חודש</label>
-        <select name="end_month">
-          <% hebMonths.forEach(m => { %>
-            <option value="<%= m.v %>" <%= Number(cohort.end_month) === m.v ? 'selected' : '' %>><%= m.n %></option>
-          <% }) %>
-        </select>
+        <select name="end_month" id="end_month_select" data-current="<%= cohort.end_month %>"></select>
       </div>
       <div class="form-group">
         <label>שנה עברית</label>
-        <select name="end_year">
+        <select name="end_year" id="end_year_select" onchange="updateMonthOptions('end_year_select','end_month_select')">
           <% yearOptions.forEach(y => { %>
             <option value="<%= y.value %>" <%= Number(cohort.end_year) === y.value ? 'selected' : '' %>><%= y.label %></option>
           <% }) %>
@@ -99,5 +85,50 @@
     </form>
   <% } %>
 </div>
+
+<script>
+  const YEAR_LEAP_MAP = <%- JSON.stringify(Object.fromEntries(yearOptions.map(y => [y.value, y.isLeap]))) %>;
+
+  const MONTHS_COMMON = [
+    {v:7, n:"תשרי"}, {v:8, n:"חשון"}, {v:9, n:"כסלו"}, {v:10, n:"טבת"}, {v:11, n:"שבט"},
+    {v:1, n:"ניסן"}, {v:2, n:"אייר"}, {v:3, n:"סיון"}, {v:4, n:"תמוז"}, {v:5, n:"אב"}, {v:6, n:"אלול"},
+  ];
+
+  function monthsForYear(isLeap) {
+    // בשנה מעוברת יש גם אדר א' וגם אדר ב' (13 חודשים); בשנה רגילה יש רק
+    // "אדר" אחד (12) - "אדר ב'" לא קיים בכלל ולא אמור להיות ניתן לבחירה
+    const adar = isLeap
+      ? [{v:12, n:"אדר א'"}, {v:13, n:"אדר ב'"}]
+      : [{v:12, n:"אדר"}];
+    // סדר כרונולוגי מתשרי: תשרי..שבט, אדר(ים), ניסן..אלול
+    return [...MONTHS_COMMON.slice(0, 5), ...adar, ...MONTHS_COMMON.slice(5)];
+  }
+
+  function updateMonthOptions(yearSelectId, monthSelectId) {
+    const yearSelect = document.getElementById(yearSelectId);
+    const monthSelect = document.getElementById(monthSelectId);
+    const isLeap = !!YEAR_LEAP_MAP[yearSelect.value];
+    // בפעם הראשונה (טעינת הדף) שומרים על הערך שכבר נשמר לכיתה; אח"כ - על
+    // מה שהמשתמש בחר לפני שינוי השנה
+    const desired = monthSelect.options.length > 0 ? monthSelect.value : monthSelect.getAttribute("data-current");
+    const months = monthsForYear(isLeap);
+    monthSelect.innerHTML = "";
+    months.forEach((m) => {
+      const opt = document.createElement("option");
+      opt.value = m.v;
+      opt.textContent = m.n;
+      if (String(m.v) === String(desired)) opt.selected = true;
+      monthSelect.appendChild(opt);
+    });
+    // אם הערך שהיה שמור (למשל אדר ב') כבר לא קיים באפשרויות (השנה כבר לא
+    // מעוברת) - לא נשארים עם שום דבר נבחר; ברירת מחדל סבירה: אדר (12)
+    if (!months.some((m) => String(m.v) === String(desired))) {
+      monthSelect.value = "12";
+    }
+  }
+
+  updateMonthOptions("start_year_select", "start_month_select");
+  updateMonthOptions("end_year_select", "end_month_select");
+</script>
 
 <%- include('../partials/footer') %>

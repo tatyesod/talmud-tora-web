@@ -229,7 +229,7 @@ router.delete("/:id", (req, res) => {
 router.get("/cohorts/new", (req, res) => {
   const currentYear = hd.currentHebrewYearNumber();
   const yearOptions = [];
-  for (let y = currentYear - 8; y <= currentYear + 3; y++) yearOptions.push({ value: y, label: hd.formatHebrewYear(y) });
+  for (let y = currentYear - 8; y <= currentYear + 3; y++) yearOptions.push({ value: y, label: hd.formatHebrewYear(y), isLeap: hd.isHebrewLeapYear(y) });
   const dayOptions = Array.from({ length: 30 }, (_, i) => ({ value: i + 1, label: hd.hebrewNumeral(i + 1) }));
   res.render("classes/cohort-form", {
     cohort: {
@@ -267,10 +267,10 @@ router.get("/cohorts/:id/edit", (req, res) => {
   const endParts = hd.serialToHebrewParts(cohort.to_date) || { day: 30, month: 3, year: hd.currentHebrewYearNumber() + 1 };
   const currentYear = hd.currentHebrewYearNumber();
   const yearOptions = [];
-  for (let y = currentYear - 8; y <= currentYear + 3; y++) yearOptions.push({ value: y, label: hd.formatHebrewYear(y) });
+  for (let y = currentYear - 8; y <= currentYear + 3; y++) yearOptions.push({ value: y, label: hd.formatHebrewYear(y), isLeap: hd.isHebrewLeapYear(y) });
   // מוודאים ששנות הטווח הקיימות של המחזור נכללות באפשרויות, גם אם הן ישנות/עתידיות יותר מהטווח הרגיל
   [startParts.year, endParts.year].forEach((y) => {
-    if (y && !yearOptions.some((o) => o.value === y)) yearOptions.push({ value: y, label: hd.formatHebrewYear(y) });
+    if (y && !yearOptions.some((o) => o.value === y)) yearOptions.push({ value: y, label: hd.formatHebrewYear(y), isLeap: hd.isHebrewLeapYear(y) });
   });
   yearOptions.sort((a, b) => a.value - b.value);
   const dayOptions = Array.from({ length: 30 }, (_, i) => ({ value: i + 1, label: hd.hebrewNumeral(i + 1) }));
