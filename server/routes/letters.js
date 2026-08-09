@@ -76,18 +76,20 @@ function setSetting(key, value) {
 
 // ============ עמוד ראשי - ניהול מכתבי שיבוץ ============
 router.get("/", (req, res) => {
-  // כל הכיתות הפעילות - כולל כיתה ח' (רק כדי לעדכן את המיקום שלה) וכולל עדיין לא נכנסו
+  // כל הכיתות הפעילות - כולל כיתה ח' (רק כדי לעדכן את המיקום שלה) וכולל עדיין
+  // לא נכנסו (תמיד, בלי קשר לערך הסטטוס המדויק שלה - היא כיתת "המתנה" קבועה
+  // שתמיד רלוונטית למכתבים, גם אם הסטטוס שלה לא בדיוק 'פעיל' מסיבה כלשהי)
   const classes = db.prepare(`
     SELECT c.*, cat.price, lt.name AS template_name
     FROM classes c
     LEFT JOIN categories cat ON c.category_id = cat.id
     LEFT JOIN letter_templates lt ON c.letter_template_id = lt.id
-    WHERE c.status = 'פעיל'
+    WHERE c.status = 'פעיל' OR c.name LIKE 'עדיין לא נכנסו%'
     ORDER BY c.name, c.parallel
   `).all().map((c) => ({ ...c, auto_template_name: getNextStageTemplateName(c.name) }));
   // כל הכיתות (כולל ח') - לבחירת "כיתת יעד לשנה הבאה" (כי גם כיתה ח' יכולה להיות יעד של כיתה ז')
   const allClasses = db.prepare(`
-    SELECT id, name, parallel FROM classes WHERE status = 'פעיל' ORDER BY name, parallel
+    SELECT id, name, parallel FROM classes WHERE status = 'פעיל' OR name LIKE 'עדיין לא נכנסו%' ORDER BY name, parallel
   `).all().map((c) => ({ ...c, full_name: `${c.name}${c.parallel ? " " + c.parallel : ""}` }));
   const templates = db.prepare("SELECT id, name FROM letter_templates ORDER BY name").all();
   const settings = {
@@ -311,7 +313,7 @@ router.get("/generate-all/docx", async (req, res) => {
   const classes = db.prepare(`
     SELECT c.*, cat.price FROM classes c
     LEFT JOIN categories cat ON c.category_id = cat.id
-    WHERE c.status = 'פעיל' AND c.name NOT LIKE 'כיתה ח%'
+    WHERE (c.status = 'פעיל' OR c.name LIKE 'עדיין לא נכנסו%') AND c.name NOT LIKE 'כיתה ח%'
       AND c.letter_template_id IS NOT NULL AND c.next_year_class_id IS NOT NULL
     ORDER BY c.name, c.parallel
   `).all();
