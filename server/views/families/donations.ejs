@@ -32,7 +32,7 @@
       <input type="hidden" name="q" value="<%= q %>" />
       <div class="table-scroll-wrap">
         <table>
-          <thead><tr><th>משפחה</th><th>שם האב</th><th>שם האם</th><th>תרומה חודשית (₪)</th></tr></thead>
+          <thead><tr><th>משפחה</th><th>שם האב</th><th>שם האם</th><th>חברת גביה</th><th>תרומה חודשית (₪)</th></tr></thead>
           <tbody>
             <% families.forEach(f => { %>
               <tr>
@@ -42,6 +42,7 @@
                 </td>
                 <td><%= f.father_name || '' %></td>
                 <td><%= f.mother_name || '' %></td>
+                <td><%= f.donation_billing_company || '' %></td>
                 <td><input type="number" name="monthly_donation_amount" value="<%= f.monthly_donation_amount || '' %>" min="0" step="1" placeholder="0" style="width:110px;" /></td>
               </tr>
             <% }) %>

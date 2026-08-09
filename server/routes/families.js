@@ -28,7 +28,7 @@ router.post("/import-external/emails", (req, res) => {
 router.get("/donations", (req, res) => {
   const { q } = req.query;
   let sql = `
-    SELECT f.id, f.last_name, f.father_name, f.mother_name, f.monthly_donation_amount
+    SELECT f.id, f.last_name, f.father_name, f.mother_name, f.monthly_donation_amount, f.donation_billing_company
     FROM families f
     WHERE EXISTS (SELECT 1 FROM students s WHERE s.family_id = f.id AND s.status NOT IN ('ארכיון', 'לא התקבל'))
   `;
