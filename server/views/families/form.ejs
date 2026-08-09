@@ -59,10 +59,10 @@
       <div class="form-grid">
         <div class="form-group"><label>שם משפחה</label><input type="text" name="last_name" value="<%= family.last_name || '' %>" /></div>
         <div class="form-group"><label>שם האב</label><input type="text" name="father_name" value="<%= family.father_name || '' %>" /></div>
-        <div class="form-group"><label>ת.ז אב</label><input type="text" name="father_id_number" value="<%= family.father_id_number || '' %>" /></div>
+        <div class="form-group"><label>ת.ז אב</label><input type="text" class="israeli-id-input" name="father_id_number" value="<%= family.father_id_number || '' %>" /></div>
         <div class="form-group"><label>מייל אב</label><input type="email" name="father_email" value="<%= family.father_email || '' %>" /></div>
         <div class="form-group"><label>שם האם</label><input type="text" name="mother_name" value="<%= family.mother_name || '' %>" /></div>
-        <div class="form-group"><label>ת.ז אם</label><input type="text" name="mother_id_number" value="<%= family.mother_id_number || '' %>" /></div>
+        <div class="form-group"><label>ת.ז אם</label><input type="text" class="israeli-id-input" name="mother_id_number" value="<%= family.mother_id_number || '' %>" /></div>
         <div class="form-group"><label>מייל אם</label><input type="email" name="mother_email" value="<%= family.mother_email || '' %>" /></div>
         <div class="form-group"><label>טלפון בית</label><input type="text" name="home_phone" value="<%= family.home_phone || '' %>" /></div>
         <div class="form-group"><label>נייד אב</label><input type="text" name="father_mobile" value="<%= family.father_mobile || '' %>" /></div>
@@ -147,5 +147,7 @@
     </div>
   </form>
 </div>
+
+<script src="/js/id-validator.js"></script>
 
 <%- include('../partials/footer') %>
