@@ -49,7 +49,7 @@ router.get("/", (req, res) => {
 
   const cohortsRaw = db
     .prepare(`
-      SELECT co.*, (SELECT COUNT(*) FROM students s WHERE s.cohort_id = co.id) AS count
+      SELECT co.*, (SELECT COUNT(*) FROM students s WHERE s.cohort_id = co.id AND s.status != 'ארכיון') AS count
       FROM cohorts co ORDER BY co.to_date DESC, co.from_date DESC
     `)
     .all();
