@@ -231,10 +231,13 @@ router.get("/cohorts/new", (req, res) => {
   const yearOptions = [];
   for (let y = currentYear - 8; y <= currentYear + 3; y++) yearOptions.push({ value: y, label: hd.formatHebrewYear(y), isLeap: hd.isHebrewLeapYear(y) });
   const dayOptions = Array.from({ length: 30 }, (_, i) => ({ value: i + 1, label: hd.hebrewNumeral(i + 1) }));
+  // ברירת מחדל: א' ניסן עד כ"ט אדר של השנה שלאחר מכן (אדר ב' אם השנה
+  // ההיא מעוברת, אחרת אדר רגיל)
+  const endYearIsLeap = hd.isHebrewLeapYear(currentYear + 1);
   res.render("classes/cohort-form", {
     cohort: {
-      start_day: 1, start_month: 4, start_year: currentYear,
-      end_day: 30, end_month: 3, end_year: currentYear + 1,
+      start_day: 1, start_month: 1, start_year: currentYear,
+      end_day: 29, end_month: endYearIsLeap ? 13 : 12, end_year: currentYear + 1,
     },
     mode: "new", yearOptions, dayOptions,
   });
@@ -264,8 +267,8 @@ router.get("/cohorts/:id/edit", (req, res) => {
   const cohort = db.prepare("SELECT * FROM cohorts WHERE id = ?").get(req.params.id);
   if (!cohort) return res.status(404).render("404");
   const allCohorts = db.prepare("SELECT id, name FROM cohorts ORDER BY to_date DESC, from_date DESC").all();
-  const startParts = hd.serialToHebrewParts(cohort.from_date) || { day: 1, month: 4, year: hd.currentHebrewYearNumber() };
-  const endParts = hd.serialToHebrewParts(cohort.to_date) || { day: 30, month: 3, year: hd.currentHebrewYearNumber() + 1 };
+  const startParts = hd.serialToHebrewParts(cohort.from_date) || { day: 1, month: 1, year: hd.currentHebrewYearNumber() };
+  const endParts = hd.serialToHebrewParts(cohort.to_date) || { day: 29, month: hd.isHebrewLeapYear(hd.currentHebrewYearNumber() + 1) ? 13 : 12, year: hd.currentHebrewYearNumber() + 1 };
   const currentYear = hd.currentHebrewYearNumber();
   const yearOptions = [];
   for (let y = currentYear - 8; y <= currentYear + 3; y++) yearOptions.push({ value: y, label: hd.formatHebrewYear(y), isLeap: hd.isHebrewLeapYear(y) });

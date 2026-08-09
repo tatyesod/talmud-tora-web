@@ -9,7 +9,7 @@
   <% } %>
   <p style="color:var(--muted); font-size:0.9em;">
     "מחזור" קובע טווח תאריכי לידה (לפי לוח עברי) שמשייך תלמיד למחזור מסוים בעת הרישום.
-    כברירת מחדל המחזורים נקבעו מא' תמוז עד ל' סיון של השנה שלאחר מכן — ניתן לשנות כל
+    כברירת מחדל המחזורים נקבעו מא' ניסן עד כ"ט אדר של השנה שלאחר מכן — ניתן לשנות כל
     מחזור בנפרד לטווח אחר לפי הצורך.
   </p>
   <form method="POST" action="<%= mode === 'new' ? '/classes/cohorts' : '/classes/cohorts/' + cohort.id + '?_method=PUT' %>">
@@ -39,7 +39,7 @@
       </div>
     </div>
 
-    <h3 style="margin-top:20px;">תחילת טווח לידה (ברירת מחדל: א' תמוז)</h3>
+    <h3 style="margin-top:20px;">תחילת טווח לידה (ברירת מחדל: א' ניסן)</h3>
     <div class="form-grid">
       <div class="form-group">
         <label>יום</label>
@@ -63,7 +63,7 @@
       </div>
     </div>
 
-    <h3 style="margin-top:20px;">סוף טווח לידה (ברירת מחדל: ל' סיון, שנה אחרי)</h3>
+    <h3 style="margin-top:20px;">סוף טווח לידה (ברירת מחדל: כ"ט אדר, שנה אחרי)</h3>
     <div class="form-grid">
       <div class="form-group">
         <label>יום</label>
