@@ -66,7 +66,7 @@
   const maxNameLen = students.reduce((m, s) => Math.max(m, (s.displayName || '').length), 4);
   const nameColWidthMM = Math.min(45, Math.max(18, Math.round(maxNameLen * 2.3) + 8));
 
-  const PAGE_LABELS = { '7col': '7 טורים', '2col': '2 טורים', '1col': 'טור הערות', grid: 'משבצות - חודש', grid2: 'משבצות - חודשיים' };
+  const PAGE_LABELS = { '7col': '7 טורים', '2col': '2 טורים', '1col': 'דו"ח דו חודשי', general_notes: 'הערות כלליות', grid: 'נוכחות חודשית', blank: 'דף ריק' };
   const classFullName = classRow ? classRow.name + (classRow.parallel ? ' ' + classRow.parallel : '') : '';
 %>
 
@@ -90,6 +90,9 @@
 </div>
 
 <% pages.forEach((fmt) => { %>
+<% if (fmt === 'blank') { %>
+<div class="page"></div>
+<% } else { %>
 <div class="page">
   <div class="bsd">בס"ד</div>
   <div class="header">
@@ -107,7 +110,7 @@
     <div style="min-width:70px;"></div>
   </div>
 
-  <% const PAGE_TITLES = { grid: 'נוכחות חודשית', '1col': 'דו"ח דו חודשי' }; %>
+  <% const PAGE_TITLES = { grid: 'נוכחות חודשית', '1col': 'דו"ח דו חודשי', general_notes: 'הערות כלליות' }; %>
   <% if (PAGE_TITLES[fmt]) { %>
     <div style="text-align:center; font-weight:700; font-size:11pt; margin-bottom:8px;"><%= PAGE_TITLES[fmt] %></div>
   <% } %>
@@ -163,7 +166,7 @@
     </table>
 
   <%# === טור הערות אחד === %>
-  <% } else if (fmt === '1col') { %>
+  <% } else if (fmt === '1col' || fmt === 'general_notes') { %>
     <table class="journal" style="table-layout:fixed; font-size:<%= journalFontSize %>;">
       <colgroup>
         <col style="width:7mm">
@@ -216,6 +219,7 @@
 
   <div class="footer-date"><%= new Date().toLocaleString('he-IL') %></div>
 </div>
+<% } %>
 <% }) %>
 
 </body>
