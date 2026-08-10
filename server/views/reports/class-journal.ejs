@@ -32,19 +32,19 @@
       </div>
     </div>
 
-    <% if (savedTemplates.length > 0) { %>
-      <div class="form-group" style="margin-top:10px;">
-        <label>טעינת תבנית שמורה</label>
-        <div style="display:flex; gap:8px; align-items:center;">
-          <select id="template-select" style="flex:1;" onchange="loadTemplate()">
-            <option value="">-- בחרו תבנית לטעינה --</option>
-            <% savedTemplates.forEach(t => { %>
-              <option value='<%- JSON.stringify(t.pages) %>'><%= t.name %></option>
-            <% }) %>
-          </select>
-        </div>
+    <div class="form-group" id="templates-block" style="margin-top:10px; <%= savedTemplates.length === 0 ? 'display:none;' : '' %>">
+      <label>טעינת תבנית שמורה</label>
+      <select id="template-select" onchange="loadTemplate()" style="width:100%;">
+        <option value="">-- בחרו תבנית לטעינה --</option>
+        <% savedTemplates.forEach(t => { %>
+          <option value='<%- JSON.stringify(t.pages) %>' data-id="<%= t.id %>" data-name="<%= t.name %>"><%= t.name %></option>
+        <% }) %>
+      </select>
+      <div style="display:flex; gap:8px; margin-top:8px;">
+        <button type="button" class="btn small secondary" onclick="updateSelectedTemplate()" title="עדכן את התבנית הנבחרת לפי הדפים הנוכחיים">✏️ עדכון תבנית נבחרת</button>
+        <button type="button" class="btn small danger" onclick="deleteSelectedTemplate()" title="מחק את התבנית הנבחרת">🗑️ מחיקת תבנית נבחרת</button>
       </div>
-    <% } %>
+    </div>
 
     <h3 style="margin-top:20px;">דפי החוברת (לפי סדר)</h3>
     <div id="pages-list"></div>
@@ -61,6 +61,13 @@
     <input type="hidden" name="name" id="template-name-input" />
     <span id="template-pages-inputs"></span>
   </form>
+
+  <form method="POST" id="update-template-form" style="display:none;">
+    <span id="update-template-pages-inputs"></span>
+  </form>
+
+  <form method="POST" id="delete-template-form" style="display:none;">
+  </form>
 </div>
 
 <script>
@@ -68,6 +75,7 @@
     { value: '7col', label: '7 טורים (שבועי)' },
     { value: '2col', label: '2 טורים רחבים' },
     { value: '1col', label: 'דו"ח דו חודשי (טור הערות)' },
+    { value: 'general_notes', label: 'הערות כלליות (טור הערות)' },
     { value: 'grid', label: 'נוכחות חודשית (משבצות)' },
   ];
 
@@ -143,6 +151,35 @@
     const pages = JSON.parse(select.value);
     document.getElementById('pages-list').innerHTML = '';
     pages.forEach(p => addPageRow(p));
+  }
+
+  function updateSelectedTemplate() {
+    const select = document.getElementById('template-select');
+    const opt = select.options[select.selectedIndex];
+    if (!opt || !opt.value) { alert('בחרו קודם תבנית מהרשימה'); return; }
+    const pages = [...document.querySelectorAll('select[name="pages"]')].map(s => s.value);
+    if (pages.length === 0) { alert('אין דפים לעדכן'); return; }
+    if (!confirm(`לעדכן את התבנית "${opt.getAttribute('data-name')}" לפי הדפים הנוכחיים?`)) return;
+    const form = document.getElementById('update-template-form');
+    form.action = '/reports/class-journal/templates/' + opt.getAttribute('data-id') + '?_method=PUT';
+    const container = document.getElementById('update-template-pages-inputs');
+    container.innerHTML = '';
+    pages.forEach(p => {
+      const input = document.createElement('input');
+      input.type = 'hidden'; input.name = 'pages'; input.value = p;
+      container.appendChild(input);
+    });
+    form.submit();
+  }
+
+  function deleteSelectedTemplate() {
+    const select = document.getElementById('template-select');
+    const opt = select.options[select.selectedIndex];
+    if (!opt || !opt.value) { alert('בחרו קודם תבנית מהרשימה'); return; }
+    if (!confirm(`למחוק לצמיתות את התבנית "${opt.getAttribute('data-name')}"?`)) return;
+    const form = document.getElementById('delete-template-form');
+    form.action = '/reports/class-journal/templates/' + opt.getAttribute('data-id') + '?_method=DELETE';
+    form.submit();
   }
 
   function saveAsTemplate() {
