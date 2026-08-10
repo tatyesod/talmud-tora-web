@@ -313,6 +313,18 @@ function isHebrewLeapYear(year) {
   return hebrewLeapYear(year);
 }
 
+function anyDateToHebrewString(dateInput) {
+  // מקבל תאריך גרגוריאני בכל צורה נפוצה (אובייקט Date, מחרוזת ISO עם שעה,
+  // או "YYYY-MM-DD" בלבד) ומחזיר תאריך עברי בלבד (בלי שעה) - שימושי להצגת
+  // "נוצר בתאריך" בדוחות בלי לפרק ידנית כל פורמט בנפרד
+  if (!dateInput) return "";
+  const d = dateInput instanceof Date ? dateInput : new Date(dateInput);
+  if (isNaN(d.getTime())) return "";
+  const abs = gregorianToAbsolute(d.getFullYear(), d.getMonth() + 1, d.getDate());
+  const serial = absoluteToAccessSerial(abs);
+  return serialToHebrewString(serial);
+}
+
 module.exports = {
   serialToGregorianString,
   serialToHebrewString,
@@ -331,4 +343,5 @@ module.exports = {
   absoluteToAccessSerial,
   hebrewNumeral,
   serialToDateObject,
+  anyDateToHebrewString,
 };

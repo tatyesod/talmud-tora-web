@@ -89,6 +89,7 @@ app.use((req, res, next) => {
   // תאריך היום בעברית - זמין בכל תבנית EJS, כדי שכל מכתב/דוח/מסמך שמציג
   // "היום" יציג תאריך עברי במקום לועזי (המגזר משתמש בתאריכים עבריים בלבד)
   res.locals.todayHebrewStr = hd.serialToHebrewString(hd.todayAccessSerial());
+  res.locals.toHebDate = hd.anyDateToHebrewString;
   res.locals.linkify = (text) => {
     if (!text) return "";
     const collapsed = String(text).replace(/\n{3,}/g, "\n\n");

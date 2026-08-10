@@ -39,7 +39,7 @@
               <button type="submit" class="btn small">עדכן</button>
             </form>
           </td>
-          <td style="font-size:0.82em; color:var(--muted);"><%= item.updated_at ? new Date(item.updated_at).toLocaleDateString('he-IL') : '' %></td>
+          <td style="font-size:0.82em; color:var(--muted);"><%= item.updated_at ? toHebDate(item.updated_at) : '' %></td>
           <td>
             <form method="POST" action="/books/pricelist/<%= item.id %>?_method=DELETE" onsubmit="return confirm('למחוק?');" style="display:inline">
               <button type="submit" class="btn small danger">✕</button>

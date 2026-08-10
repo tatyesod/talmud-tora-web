@@ -2,7 +2,7 @@
 
 <div class="card">
   <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
-    <h1>📦 הזמנה מ-<%= new Date(checkpoint.created_at).toLocaleDateString('he-IL') %> - <%= supplier.name %> (<%= checkpoint.branch %>)</h1>
+    <h1>📦 הזמנה מ-<%= toHebDate(checkpoint.created_at) %> - <%= supplier.name %> (<%= checkpoint.branch %>)</h1>
     <div class="actions no-print">
       <a href="/suppliers/<%= supplier.id %>/checkpoints" class="btn secondary">← חזרה להיסטוריה</a>
       <button type="button" class="btn secondary" onclick="window.print()">🖨️ הדפס לבדיקה במחסן</button>

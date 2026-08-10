@@ -19,7 +19,7 @@
               <span class="badge">פעיל</span>
             <% } %>
           </td>
-          <td><%= u.created_at ? new Date(u.created_at).toLocaleDateString('he-IL') : '' %></td>
+          <td><%= u.created_at ? toHebDate(u.created_at) : '' %></td>
           <td>
             <a href="/users/<%= u.id %>/edit" class="btn small secondary">עריכה</a>
             <% if (u.id !== currentUserId) { %>

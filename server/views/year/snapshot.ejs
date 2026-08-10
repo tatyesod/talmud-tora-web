@@ -2,7 +2,7 @@
 
 <div class="card">
   <h1>תמונת מצב: שנת <%= snapshot.year_label %></h1>
-  <p style="color:var(--muted);">נשמר בתאריך: <%= new Date(snapshot.created_at).toLocaleDateString('he-IL') %></p>
+  <p style="color:var(--muted);">נשמר בתאריך: <%= toHebDate(snapshot.created_at) %></p>
   <a href="/year" class="btn secondary">חזרה לניהול שנה</a>
 </div>
 

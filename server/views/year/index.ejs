@@ -74,7 +74,7 @@
         <% snapshots.forEach(s => { %>
           <tr>
             <td><%= s.year_label %></td>
-            <td><%= new Date(s.created_at).toLocaleDateString('he-IL') %></td>
+            <td><%= toHebDate(s.created_at) %></td>
             <td><a href="/year/snapshots/<%= s.id %>" class="btn small secondary">צפייה</a></td>
           </tr>
         <% }) %>

@@ -20,7 +20,7 @@
         <% checkpoints.forEach(c => { %>
           <tr>
             <td><%= c.branch %></td>
-            <td><%= new Date(c.created_at).toLocaleDateString('he-IL') %></td>
+            <td><%= toHebDate(c.created_at) %></td>
             <td><%= c.note || '' %></td>
             <td>
               <a href="/suppliers/<%= supplier.id %>/checkpoints/<%= c.id %>" class="btn small secondary">צפייה / בדיקת אספקה</a>
