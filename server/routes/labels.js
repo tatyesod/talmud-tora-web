@@ -62,6 +62,24 @@ router.get("/print", (req, res) => {
       line3: "",
     }));
 
+  } else if (content_type === "students_nickname") {
+    let sql = `
+      SELECT s.first_name, s.nickname, s.last_name, c.name AS class_name, c.parallel, f.last_name AS family_last
+      FROM students s
+      LEFT JOIN classes c ON s.class_id = c.id
+      LEFT JOIN families f ON s.family_id = f.id
+      WHERE s.status = 'פעיל'
+    `;
+    const params = [];
+    if (class_id) { sql += " AND s.class_id = ?"; params.push(class_id); }
+    sql += " ORDER BY c.name, c.parallel, s.last_name, s.first_name";
+    const rows = db.prepare(sql).all(...params);
+    items = rows.map(r => ({
+      line1: `${r.nickname || r.first_name || ""} ${r.last_name || r.family_last || ""}`,
+      line2: "",
+      line3: "",
+    }));
+
   } else if (content_type === "teachers") {
     let sql = "SELECT first_name, last_name, street, house_number, city FROM teachers WHERE status='פעיל'";
     const params = [];
