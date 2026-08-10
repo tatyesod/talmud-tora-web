@@ -86,7 +86,7 @@
     <div class="cover-class"><%= classFullName %></div>
     <% if (teacherName) { %><div class="cover-teacher"><%= teacherName %></div><% } %>
   </div>
-  <div class="cover-year"><%= new Date().toLocaleDateString('he-IL') %></div>
+  <div class="cover-year"><%= todayHebrewStr %></div>
 </div>
 
 <%# דף ריק אוטומטי מיד אחרי השער - כדי שבהדפסה דו-צדדית הצד האחורי של
@@ -222,7 +222,7 @@
     </table>
   <% } %>
 
-  <div class="footer-date"><%= new Date().toLocaleString('he-IL') %></div>
+  <div class="footer-date"><%= todayHebrewStr %></div>
 </div>
 <% } %>
 <% }) %>
