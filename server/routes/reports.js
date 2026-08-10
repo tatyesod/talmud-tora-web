@@ -368,6 +368,18 @@ router.delete("/class-journal/templates/:id", (req, res) => {
   res.redirect("/reports/class-journal");
 });
 
+router.put("/class-journal/templates/:id", (req, res) => {
+  const { pages, name } = req.body;
+  if (!pages) return res.redirect("/reports/class-journal");
+  let pagesArr = Array.isArray(pages) ? pages : [pages];
+  if (name && name.trim()) {
+    db.prepare("UPDATE journal_templates SET pages = ?, name = ? WHERE id = ?").run(JSON.stringify(pagesArr), name.trim(), req.params.id);
+  } else {
+    db.prepare("UPDATE journal_templates SET pages = ? WHERE id = ?").run(JSON.stringify(pagesArr), req.params.id);
+  }
+  res.redirect("/reports/class-journal?saved=1");
+});
+
 router.get("/class-journal/view", (req, res) => {
   const { class_id, teacher_id } = req.query;
   if (!class_id) return res.redirect("/reports/class-journal");

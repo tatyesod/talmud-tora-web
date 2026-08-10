@@ -159,11 +159,18 @@
     if (!opt || !opt.value) { alert('בחרו קודם תבנית מהרשימה'); return; }
     const pages = [...document.querySelectorAll('select[name="pages"]')].map(s => s.value);
     if (pages.length === 0) { alert('אין דפים לעדכן'); return; }
-    if (!confirm(`לעדכן את התבנית "${opt.getAttribute('data-name')}" לפי הדפים הנוכחיים?`)) return;
+    const currentName = opt.getAttribute('data-name');
+    const newName = prompt('שם התבנית (אפשר לשנות, או להשאיר כמו שהוא):', currentName);
+    if (newName === null) return; // המשתמש ביטל
     const form = document.getElementById('update-template-form');
     form.action = '/reports/class-journal/templates/' + opt.getAttribute('data-id') + '?_method=PUT';
     const container = document.getElementById('update-template-pages-inputs');
     container.innerHTML = '';
+    if (newName.trim()) {
+      const nameInput = document.createElement('input');
+      nameInput.type = 'hidden'; nameInput.name = 'name'; nameInput.value = newName.trim();
+      container.appendChild(nameInput);
+    }
     pages.forEach(p => {
       const input = document.createElement('input');
       input.type = 'hidden'; input.name = 'pages'; input.value = p;
