@@ -89,6 +89,11 @@
   <div class="cover-year"><%= new Date().toLocaleDateString('he-IL') %></div>
 </div>
 
+<%# דף ריק אוטומטי מיד אחרי השער - כדי שבהדפסה דו-צדדית הצד האחורי של
+    השער יצא ריק. זה קבוע, לא ניתן לשינוי, ולא מופיע ברשימת "דפי החוברת" -
+    בדיוק כמו דף השער עצמו. %>
+<div class="page"></div>
+
 <% pages.forEach((fmt) => { %>
 <% if (fmt === 'blank') { %>
 <div class="page"></div>
