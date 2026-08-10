@@ -67,9 +67,8 @@
   const PAGE_TYPES = [
     { value: '7col', label: '7 טורים (שבועי)' },
     { value: '2col', label: '2 טורים רחבים' },
-    { value: '1col', label: 'טור הערות אחד' },
-    { value: 'grid', label: 'משבצות ריקות - חודש אחד' },
-    { value: 'grid2', label: 'משבצות ריקות - חודשיים' },
+    { value: '1col', label: 'דו"ח דו חודשי (טור הערות)' },
+    { value: 'grid', label: 'נוכחות חודשית (משבצות)' },
   ];
 
   const TEACHER_ASSIGNMENTS = <%- JSON.stringify(teacherAssignments) %>;
@@ -163,7 +162,7 @@
   }
 
   // התחלה סבירה: דף משבצות חודשיים + דף הערות
-  addPageRow('grid2');
+  addPageRow('grid');
   addPageRow('1col');
 </script>
 

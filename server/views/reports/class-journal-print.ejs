@@ -107,6 +107,11 @@
     <div style="min-width:70px;"></div>
   </div>
 
+  <% const PAGE_TITLES = { grid: 'נוכחות חודשית', '1col': 'דו"ח דו חודשי' }; %>
+  <% if (PAGE_TITLES[fmt]) { %>
+    <div style="text-align:center; font-weight:700; font-size:11pt; margin-bottom:8px;"><%= PAGE_TITLES[fmt] %></div>
+  <% } %>
+
   <%# === 7 טורים === %>
   <% if (fmt === '7col') { %>
     <table class="journal" style="table-layout:fixed; font-size:<%= journalFontSize %>;">
@@ -181,58 +186,28 @@
       </tbody>
     </table>
 
-  <%# === משבצות ריקות - חודש אחד (26 עמודות) === %>
+  <%# === נוכחות חודשית - 4 שבועות × 6 ימים (א'-ו', בלי שבת) === %>
   <% } else if (fmt === 'grid') { %>
+    <% const DAY_LETTERS = ["א'", "ב'", "ג'", "ד'", "ה'", "ו'"]; %>
     <table class="journal" style="font-size:<%= journalFontSize %>;">
-      <thead><tr>
-        <th style="width:7mm;">#</th>
-        <th style="min-width:40mm; text-align:right; padding-right:5px;">שם התלמיד</th>
-        <% for (let d=1; d<=26; d++) { %><th class="col-narrow"></th><% } %>
-      </tr></thead>
+      <thead>
+        <tr>
+          <th style="width:7mm;" rowspan="2">#</th>
+          <th style="min-width:40mm; text-align:right; padding-right:5px;" rowspan="2">שם התלמיד</th>
+          <% for (let w=1; w<=4; w++) { %><th colspan="6">שבוע <%= w %></th><% } %>
+        </tr>
+        <tr>
+          <% for (let w=1; w<=4; w++) { %>
+            <% DAY_LETTERS.forEach(d => { %><th class="col-narrow"><%= d %></th><% }) %>
+          <% } %>
+        </tr>
+      </thead>
       <tbody>
         <% students.forEach((s, i) => { %>
           <tr style="height:<%= rowHeightMM %>mm;">
             <td class="num"><%= i+1 %></td>
             <td class="name"><%= s.displayName %></td>
-            <% for (let d=1; d<=26; d++) { %><td class="col-narrow"></td><% } %>
-          </tr>
-        <% }) %>
-      </tbody>
-    </table>
-
-  <%# === משבצות ריקות - חודשיים (שתי טבלאות מוערמות, חודש מעל חודש) === %>
-  <% } else if (fmt === 'grid2') { %>
-    <% const halfRowMM = Math.max(4, Math.min(rowHeightMM * 0.48, 8)); %>
-    <div style="font-weight:700; font-size:8.5pt; margin-bottom:2px;">חודש 1</div>
-    <table class="journal" style="font-size:<%= journalFontSize %>; margin-bottom:10px;">
-      <thead><tr>
-        <th style="width:7mm;">#</th>
-        <th style="min-width:40mm; text-align:right; padding-right:5px;">שם התלמיד</th>
-        <% for (let d=1; d<=26; d++) { %><th class="col-narrow"></th><% } %>
-      </tr></thead>
-      <tbody>
-        <% students.forEach((s, i) => { %>
-          <tr style="height:<%= halfRowMM %>mm;">
-            <td class="num"><%= i+1 %></td>
-            <td class="name"><%= s.displayName %></td>
-            <% for (let d=1; d<=26; d++) { %><td class="col-narrow"></td><% } %>
-          </tr>
-        <% }) %>
-      </tbody>
-    </table>
-    <div style="font-weight:700; font-size:8.5pt; margin-bottom:2px;">חודש 2</div>
-    <table class="journal" style="font-size:<%= journalFontSize %>;">
-      <thead><tr>
-        <th style="width:7mm;">#</th>
-        <th style="min-width:40mm; text-align:right; padding-right:5px;">שם התלמיד</th>
-        <% for (let d=1; d<=26; d++) { %><th class="col-narrow"></th><% } %>
-      </tr></thead>
-      <tbody>
-        <% students.forEach((s, i) => { %>
-          <tr style="height:<%= halfRowMM %>mm;">
-            <td class="num"><%= i+1 %></td>
-            <td class="name"><%= s.displayName %></td>
-            <% for (let d=1; d<=26; d++) { %><td class="col-narrow"></td><% } %>
+            <% for (let d=1; d<=24; d++) { %><td class="col-narrow"></td><% } %>
           </tr>
         <% }) %>
       </tbody>
