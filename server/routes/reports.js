@@ -345,8 +345,10 @@ router.get("/class-journal", (req, res) => {
 });
 
 router.get("/class-journal/view", (req, res) => {
-  const { class_id, fmt } = req.query;
+  const { class_id } = req.query;
   if (!class_id) return res.redirect("/reports/class-journal");
+  let pages = req.query.pages || ["7col"];
+  if (!Array.isArray(pages)) pages = [pages];
   const classRow = db.prepare("SELECT * FROM classes WHERE id = ?").get(class_id);
   const students = db
     .prepare("SELECT s.first_name, s.nickname, s.last_name, f.last_name AS family_last FROM students s LEFT JOIN families f ON s.family_id=f.id WHERE s.class_id = ? AND s.status = 'פעיל' ORDER BY s.last_name, s.first_name")
@@ -355,7 +357,7 @@ router.get("/class-journal/view", (req, res) => {
   // teacher
   const teacher = db.prepare("SELECT t.first_name, t.last_name FROM teacher_classes tc JOIN teachers t ON tc.teacher_id=t.id WHERE tc.class_id=? ORDER BY tc.id LIMIT 1").get(class_id);
   const teacherName = teacher ? `ר' ${teacher.first_name || ""} ${teacher.last_name || ""}`.trim() : "";
-  res.render("reports/class-journal-print", { classRow, students, teacherName, fmt: fmt || "7col" });
+  res.render("reports/class-journal-print", { classRow, students, teacherName, pages });
 });
 
 // ============ הצהרת בריאות ============

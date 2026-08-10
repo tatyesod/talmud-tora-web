@@ -17,17 +17,14 @@
     .no-print button { background:#fff; color:#2c5f7c; border:none; border-radius:6px; padding:6px 14px; cursor:pointer; font-weight:700; }
     .no-print a { color:#fff; }
 
-    .page { }
+    .page { page-break-after: always; min-height: 260mm; }
+    .page:last-child { page-break-after: auto; }
 
-    /* כותרת */
+    /* כותרת (לדפי תוכן, לא לדף השער) */
     .bsd { text-align: right; font-size: 8pt; margin-bottom: 2px; }
     .header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      border-bottom: 2pt solid #333;
-      padding-bottom: 5px;
-      margin-bottom: 8px;
+      display: flex; justify-content: space-between; align-items: center;
+      border-bottom: 2pt solid #333; padding-bottom: 5px; margin-bottom: 8px;
     }
     .header-right { text-align: right; font-size: 9pt; min-width: 70px; }
     .date-line { border-bottom: 1pt solid #555; display: inline-block; min-width: 45px; }
@@ -44,41 +41,54 @@
     td.num { width: 7mm; font-weight: 700; background: #f5f5f5; text-align: center; }
     td.name { text-align: right; padding-right: 5px; white-space: nowrap; }
     .col-narrow { width: 10mm; }
-    .col-wide { }
 
     .footer-date { font-size: 7pt; color: #888; margin-top: 6px; text-align: left; }
+
+    /* דף שער */
+    .cover-page { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 260mm; text-align: center; }
+    .cover-bsd { position: absolute; top: 10mm; right: 10mm; font-size: 9pt; }
+    .cover-logo { height: 90px; margin-bottom: 24px; }
+    .cover-inst { font-size: 22pt; font-weight: 800; color: #2c5f7c; margin-bottom: 6px; }
+    .cover-sub { font-size: 14pt; color: #555; margin-bottom: 50px; }
+    .cover-class { font-size: 30pt; font-weight: 800; margin-bottom: 14px; }
+    .cover-teacher { font-size: 16pt; color: #333; }
+    .cover-year { position: absolute; bottom: 16mm; font-size: 11pt; color: #888; }
   </style>
 </head>
 <body>
 <%
-  /* ===== התאמה אוטומטית לעמוד אחד =====
-     מחשבים גובה שורה כך שכל הרשומות ייכנסו בדיוק לעמוד A4 אחד:
-     יותר תלמידים -> שורות נמוכות יותר, פחות תלמידים -> שורות גבוהות יותר (התפרסות יחסית). */
   const rowsCount = Math.max(students.length, 1);
-  const AVAILABLE_BODY_HEIGHT_MM = 232; // גובה זמין לגוף הטבלה בעמוד A4 עם השוליים/כותרת/פוטר הקיימים
+  const AVAILABLE_BODY_HEIGHT_MM = 232;
   let rowHeightMM = AVAILABLE_BODY_HEIGHT_MM / rowsCount;
   rowHeightMM = Math.max(5, Math.min(rowHeightMM, 16));
-  // כשיש הרבה תלמידים והשורות נהיות נמוכות - מקטינים מעט את הפונט כדי שהטקסט לא ייחתך
   const journalFontSize = rowHeightMM < 6.5 ? '7pt' : (rowHeightMM < 8.5 ? '7.8pt' : '8.5pt');
-
-  /* רוחב עמודת השם בדוח 7 הטורים - מינימלי ביחס לאורך השמות, כך שהיתרה מתחלקת בין 7 הטורים */
   const maxNameLen = students.reduce((m, s) => Math.max(m, (s.displayName || '').length), 4);
   const nameColWidthMM = Math.min(45, Math.max(18, Math.round(maxNameLen * 2.3) + 8));
+
+  const PAGE_LABELS = { '7col': '7 טורים', '2col': '2 טורים', '1col': 'טור הערות', grid: 'משבצות - חודש', grid2: 'משבצות - חודשיים' };
+  const classFullName = classRow ? classRow.name + (classRow.parallel ? ' ' + classRow.parallel : '') : '';
 %>
 
 <div class="no-print">
-  <button onclick="window.print()">🖨️ הדפסה</button>
-  <span>
-    <%= classRow ? classRow.name + ' ' + (classRow.parallel||'') : '' %> —
-    <% if (fmt==='7col') { %>7 טורים<% } else if (fmt==='2col') { %>2 טורים<% } else if (fmt==='1col') { %>טור הערות<% } else { %>משבצות ריקות<% } %>
-    — <%= students.length %> תלמידים
-  </span>
+  <button onclick="window.print()">🖨️ שמירה כ-PDF / הדפסה</button>
+  <span><%= classFullName %> — <%= pages.length %> דפים: <%= pages.map(p => PAGE_LABELS[p] || p).join(', ') %> — <%= students.length %> תלמידים</span>
   <a href="javascript:history.back()">← חזרה</a>
 </div>
 
+<!-- ===== דף שער - אחיד לכולם, רק שם כיתה ומלמד משתנים ===== -->
+<div class="page cover-page">
+  <div class="cover-bsd">בס"ד</div>
+  <img src="/images/logo-reports.jpg" class="cover-logo" alt="לוגו" />
+  <div class="cover-inst">תלמוד תורה החדש</div>
+  <div class="cover-sub">יומן כיתה</div>
+  <div class="cover-class"><%= classFullName %></div>
+  <% if (teacherName) { %><div class="cover-teacher"><%= teacherName %></div><% } %>
+  <div class="cover-year"><%= new Date().toLocaleDateString('he-IL') %></div>
+</div>
+
+<% pages.forEach((fmt) => { %>
 <div class="page">
   <div class="bsd">בס"ד</div>
-
   <div class="header">
     <div class="header-right">
       <div>יום:&nbsp;<span class="date-line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span></div>
@@ -87,7 +97,7 @@
     <div class="header-center">
       <img src="/images/logo-reports.jpg" class="logo" alt="לוגו" />
       <div class="class-name">
-        <%= classRow ? classRow.name + (classRow.parallel ? " " + classRow.parallel : "") : "" %>
+        <%= classFullName %>
         <% if (teacherName) { %> - <%= teacherName %><% } %>
       </div>
     </div>
@@ -98,9 +108,9 @@
   <% if (fmt === '7col') { %>
     <table class="journal" style="table-layout:fixed; font-size:<%= journalFontSize %>;">
       <colgroup>
-        <col style="width:7mm">                     <%# מספר %>
-        <col style="width:<%= nameColWidthMM %>mm">  <%# שם — מינימלי לפי אורך השמות %>
-        <col><col><col><col><col><col><col>          <%# 7 טורים שווים - מקבלים את כל היתרה %>
+        <col style="width:7mm">
+        <col style="width:<%= nameColWidthMM %>mm">
+        <col><col><col><col><col><col><col>
       </colgroup>
       <thead><tr>
         <th>#</th>
@@ -120,28 +130,25 @@
       </tbody>
     </table>
 
-  <%# === 2 טורים: שם (צר) + עמודה 1 + עמודה 2 (שוות) === %>
+  <%# === 2 טורים === %>
   <% } else if (fmt === '2col') { %>
     <table class="journal" style="table-layout:fixed; font-size:<%= journalFontSize %>;">
       <colgroup>
-        <col style="width:7mm">   <%# מספר %>
-        <col style="width:<%= nameColWidthMM %>mm">  <%# שם — מינימלי לפי אורך השמות %>
-        <col>                     <%# עמודה 1 — רחב שווה %>
-        <col>                     <%# עמודה 2 — רחב שווה %>
+        <col style="width:7mm">
+        <col style="width:<%= nameColWidthMM %>mm">
+        <col><col>
       </colgroup>
       <thead><tr>
         <th>#</th>
         <th style="text-align:right; padding-right:5px;">שם התלמיד</th>
-        <th> </th>
-        <th> </th>
+        <th> </th><th> </th>
       </tr></thead>
       <tbody>
         <% students.forEach((s, i) => { %>
           <tr style="height:<%= rowHeightMM %>mm;">
             <td class="num"><%= i+1 %></td>
             <td class="name"><%= s.displayName %></td>
-            <td></td>
-            <td></td>
+            <td></td><td></td>
           </tr>
         <% }) %>
       </tbody>
@@ -171,8 +178,8 @@
       </tbody>
     </table>
 
-  <%# === משבצות ריקות (26 עמודות) === %>
-  <% } else { %>
+  <%# === משבצות ריקות - חודש אחד (26 עמודות) === %>
+  <% } else if (fmt === 'grid') { %>
     <table class="journal" style="font-size:<%= journalFontSize %>;">
       <thead><tr>
         <th style="width:7mm;">#</th>
@@ -189,10 +196,49 @@
         <% }) %>
       </tbody>
     </table>
+
+  <%# === משבצות ריקות - חודשיים (שתי טבלאות מוערמות, חודש מעל חודש) === %>
+  <% } else if (fmt === 'grid2') { %>
+    <% const halfRowMM = Math.max(4, Math.min(rowHeightMM * 0.48, 8)); %>
+    <div style="font-weight:700; font-size:8.5pt; margin-bottom:2px;">חודש 1</div>
+    <table class="journal" style="font-size:<%= journalFontSize %>; margin-bottom:10px;">
+      <thead><tr>
+        <th style="width:7mm;">#</th>
+        <th style="min-width:40mm; text-align:right; padding-right:5px;">שם התלמיד</th>
+        <% for (let d=1; d<=26; d++) { %><th class="col-narrow"></th><% } %>
+      </tr></thead>
+      <tbody>
+        <% students.forEach((s, i) => { %>
+          <tr style="height:<%= halfRowMM %>mm;">
+            <td class="num"><%= i+1 %></td>
+            <td class="name"><%= s.displayName %></td>
+            <% for (let d=1; d<=26; d++) { %><td class="col-narrow"></td><% } %>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+    <div style="font-weight:700; font-size:8.5pt; margin-bottom:2px;">חודש 2</div>
+    <table class="journal" style="font-size:<%= journalFontSize %>;">
+      <thead><tr>
+        <th style="width:7mm;">#</th>
+        <th style="min-width:40mm; text-align:right; padding-right:5px;">שם התלמיד</th>
+        <% for (let d=1; d<=26; d++) { %><th class="col-narrow"></th><% } %>
+      </tr></thead>
+      <tbody>
+        <% students.forEach((s, i) => { %>
+          <tr style="height:<%= halfRowMM %>mm;">
+            <td class="num"><%= i+1 %></td>
+            <td class="name"><%= s.displayName %></td>
+            <% for (let d=1; d<=26; d++) { %><td class="col-narrow"></td><% } %>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
   <% } %>
 
   <div class="footer-date"><%= new Date().toLocaleString('he-IL') %></div>
 </div>
+<% }) %>
 
 </body>
 </html>
