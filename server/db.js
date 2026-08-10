@@ -1299,6 +1299,20 @@ try {
   console.error("שגיאה בבדיקת כיתות עדיין לא נכנסו קיימות:", e.message);
 }
 
+// תבניות שמורות ליומן כיתה (הרכב דפים שמור לשימוש חוזר)
+try {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS journal_templates (
+      id INTEGER PRIMARY KEY,
+      name TEXT NOT NULL,
+      pages TEXT NOT NULL,
+      created_at TEXT
+    )
+  `);
+} catch (e) {
+  console.error("שגיאה ביצירת טבלת תבניות יומן כיתה:", e.message);
+}
+
 function cleanShutdown() {
   try {
     db.exec("PRAGMA wal_checkpoint(TRUNCATE);");

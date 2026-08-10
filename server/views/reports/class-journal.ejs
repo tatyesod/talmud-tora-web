@@ -2,9 +2,13 @@
 <div class="card">
   <h1>📔 יומן כיתה - הרכבת חוברת</h1>
   <p style="color:var(--muted); font-size:0.9em; line-height:1.6;">
-    בוחרים כיתה, ואז מרכיבים את החוברת מהדפים שרוצים - לפי הסדר שרוצים, כמה שרוצים מכל סוג. דף שער אחיד
-    (עם שם הכיתה והמלמד) נוסף אוטומטית בתחילת החוברת. בסוף מופק קובץ אחד לשמירה/הדפסה.
+    בוחרים כיתה ומלמד, ואז מרכיבים את החוברת מהדפים שרוצים - לפי הסדר שרוצים, כמה שרוצים מכל סוג. דף שער אחיד
+    (עם שם הכיתה והמלמד) נוסף אוטומטית בתחילת החוברת. אפשר לשמור הרכב דפים כתבנית לשימוש חוזר.
   </p>
+
+  <% if (typeof saved !== 'undefined' && saved) { %>
+    <div style="background:#e8f5e9; border:1px solid #a5d6a7; color:#2e7d32; border-radius:8px; padding:8px 14px; margin-bottom:12px;">✅ התבנית נשמרה.</div>
+  <% } %>
 
   <form method="GET" action="/reports/class-journal/view" id="journal-form">
     <div class="form-grid">
@@ -13,23 +17,49 @@
       </div>
       <div class="form-group">
         <label>כיתה</label>
-        <select name="class_id" required data-branch-filter>
+        <select name="class_id" id="class-select" required data-branch-filter onchange="updateTeacherOptions()">
           <option value="">בחר כיתה...</option>
           <% classes.forEach(c => { %>
             <option value="<%= c.id %>" data-branch="<%= c.branch || '' %>"><%= c.name %><%= c.parallel ? ' ' + c.parallel : '' %></option>
           <% }) %>
         </select>
       </div>
+      <div class="form-group">
+        <label>מלמד</label>
+        <select name="teacher_id" id="teacher-select">
+          <option value="">בחרו כיתה תחילה...</option>
+        </select>
+      </div>
     </div>
+
+    <% if (savedTemplates.length > 0) { %>
+      <div class="form-group" style="margin-top:10px;">
+        <label>טעינת תבנית שמורה</label>
+        <div style="display:flex; gap:8px; align-items:center;">
+          <select id="template-select" style="flex:1;" onchange="loadTemplate()">
+            <option value="">-- בחרו תבנית לטעינה --</option>
+            <% savedTemplates.forEach(t => { %>
+              <option value='<%- JSON.stringify(t.pages) %>'><%= t.name %></option>
+            <% }) %>
+          </select>
+        </div>
+      </div>
+    <% } %>
 
     <h3 style="margin-top:20px;">דפי החוברת (לפי סדר)</h3>
     <div id="pages-list"></div>
     <button type="button" class="btn small secondary" onclick="addPageRow()">+ הוסף דף</button>
 
-    <div class="actions" style="margin-top:20px;">
+    <div class="actions" style="margin-top:20px; display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
       <button type="submit" class="btn">📄 הפק חוברת PDF</button>
+      <button type="button" class="btn small secondary" onclick="saveAsTemplate()">💾 שמור הרכב זה כתבנית</button>
       <a href="/reports" class="btn secondary">חזרה</a>
     </div>
+  </form>
+
+  <form method="POST" action="/reports/class-journal/templates" id="save-template-form" style="display:none;">
+    <input type="hidden" name="name" id="template-name-input" />
+    <span id="template-pages-inputs"></span>
   </form>
 </div>
 
@@ -41,6 +71,27 @@
     { value: 'grid', label: 'משבצות ריקות - חודש אחד' },
     { value: 'grid2', label: 'משבצות ריקות - חודשיים' },
   ];
+
+  const TEACHER_ASSIGNMENTS = <%- JSON.stringify(teacherAssignments) %>;
+  const ROLE_LABELS = { 'בוקר': 'בוקר', 'אחה"צ': 'אחה"צ', 'עוזר': 'עוזר' };
+
+  function updateTeacherOptions() {
+    const classId = document.getElementById('class-select').value;
+    const teacherSelect = document.getElementById('teacher-select');
+    teacherSelect.innerHTML = '';
+    if (!classId) {
+      teacherSelect.innerHTML = '<option value="">בחרו כיתה תחילה...</option>';
+      return;
+    }
+    const matches = TEACHER_ASSIGNMENTS.filter(t => String(t.class_id) === String(classId));
+    if (matches.length === 0) {
+      teacherSelect.innerHTML = '<option value="">-- אין מלמד משויך --</option>';
+      return;
+    }
+    teacherSelect.innerHTML = matches.map(t =>
+      `<option value="${t.teacher_id}">${t.last_name || ''} ${t.first_name || ''} (${ROLE_LABELS[t.role] || t.role || ''})</option>`
+    ).join('');
+  }
 
   let pageRowCount = 0;
 
@@ -65,7 +116,7 @@
 
   function removeRow(btn) {
     const row = btn.closest('.page-row');
-    if (document.querySelectorAll('.page-row').length <= 1) return; // תמיד לפחות דף אחד
+    if (document.querySelectorAll('.page-row').length <= 1) return;
     row.remove();
     renumberRows();
   }
@@ -85,6 +136,30 @@
     document.querySelectorAll('.page-row').forEach((row, i) => {
       row.querySelector('span').textContent = (i + 1) + '.';
     });
+  }
+
+  function loadTemplate() {
+    const select = document.getElementById('template-select');
+    if (!select.value) return;
+    const pages = JSON.parse(select.value);
+    document.getElementById('pages-list').innerHTML = '';
+    pages.forEach(p => addPageRow(p));
+  }
+
+  function saveAsTemplate() {
+    const pages = [...document.querySelectorAll('select[name="pages"]')].map(s => s.value);
+    if (pages.length === 0) { alert('אין דפים להרכב הנוכחי'); return; }
+    const name = prompt('שם לתבנית:');
+    if (!name || !name.trim()) return;
+    document.getElementById('template-name-input').value = name.trim();
+    const container = document.getElementById('template-pages-inputs');
+    container.innerHTML = '';
+    pages.forEach(p => {
+      const input = document.createElement('input');
+      input.type = 'hidden'; input.name = 'pages'; input.value = p;
+      container.appendChild(input);
+    });
+    document.getElementById('save-template-form').submit();
   }
 
   // התחלה סבירה: דף משבצות חודשיים + דף הערות

@@ -45,14 +45,15 @@
     .footer-date { font-size: 7pt; color: #888; margin-top: 6px; text-align: left; }
 
     /* דף שער */
-    .cover-page { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 260mm; text-align: center; }
+    .cover-page { display: flex; flex-direction: column; align-items: center; min-height: 260mm; text-align: center; padding-top: 14mm; }
     .cover-bsd { position: absolute; top: 10mm; right: 10mm; font-size: 9pt; }
-    .cover-logo { height: 90px; margin-bottom: 24px; }
+    .cover-logo { height: 170px; margin-bottom: 18px; }
     .cover-inst { font-size: 22pt; font-weight: 800; color: #2c5f7c; margin-bottom: 6px; }
-    .cover-sub { font-size: 14pt; color: #555; margin-bottom: 50px; }
+    .cover-sub { font-size: 14pt; color: #555; margin-bottom: 0; }
+    .cover-middle { margin-top: auto; margin-bottom: auto; }
     .cover-class { font-size: 30pt; font-weight: 800; margin-bottom: 14px; }
     .cover-teacher { font-size: 16pt; color: #333; }
-    .cover-year { position: absolute; bottom: 16mm; font-size: 11pt; color: #888; }
+    .cover-year { font-size: 11pt; color: #888; margin-top: 20px; }
   </style>
 </head>
 <body>
@@ -81,8 +82,10 @@
   <img src="/images/logo-reports.jpg" class="cover-logo" alt="לוגו" />
   <div class="cover-inst">תלמוד תורה החדש</div>
   <div class="cover-sub">יומן כיתה</div>
-  <div class="cover-class"><%= classFullName %></div>
-  <% if (teacherName) { %><div class="cover-teacher"><%= teacherName %></div><% } %>
+  <div class="cover-middle">
+    <div class="cover-class"><%= classFullName %></div>
+    <% if (teacherName) { %><div class="cover-teacher"><%= teacherName %></div><% } %>
+  </div>
   <div class="cover-year"><%= new Date().toLocaleDateString('he-IL') %></div>
 </div>
 

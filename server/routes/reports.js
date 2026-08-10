@@ -341,11 +341,35 @@ router.get("/grandparents-report/export", async (req, res) => {
 router.get("/class-journal", (req, res) => {
   const classes = db.prepare("SELECT id, name, parallel, branch FROM classes ORDER BY name, parallel").all();
   const branches = db.prepare("SELECT DISTINCT branch FROM classes WHERE branch IS NOT NULL ORDER BY branch").all().map(r=>r.branch);
-  res.render("reports/class-journal", { classes, branches });
+  // כל שיוכי מלמד-כיתה, כדי לבנות ברשימה הנפתחת "מלמד" את האפשרויות
+  // המתאימות לכיתה שנבחרה (בוקר/אחה"צ/עוזר) - בלי צורך בקריאת שרת נוספת
+  const teacherAssignments = db.prepare(`
+    SELECT tc.class_id, t.id AS teacher_id, t.first_name, t.last_name, tc.role
+    FROM teacher_classes tc JOIN teachers t ON tc.teacher_id = t.id
+    WHERE t.status = 'פעיל'
+  `).all();
+  const savedTemplates = db.prepare("SELECT id, name, pages FROM journal_templates ORDER BY name").all()
+    .map((t) => ({ ...t, pages: JSON.parse(t.pages) }));
+  res.render("reports/class-journal", { classes, branches, teacherAssignments, savedTemplates });
+});
+
+router.post("/class-journal/templates", (req, res) => {
+  const { name, pages } = req.body;
+  if (!name || !name.trim() || !pages) return res.redirect("/reports/class-journal");
+  let pagesArr = Array.isArray(pages) ? pages : [pages];
+  db.prepare("INSERT INTO journal_templates (name, pages, created_at) VALUES (?,?,?)").run(
+    name.trim(), JSON.stringify(pagesArr), new Date().toISOString()
+  );
+  res.redirect("/reports/class-journal?saved=1");
+});
+
+router.delete("/class-journal/templates/:id", (req, res) => {
+  db.prepare("DELETE FROM journal_templates WHERE id = ?").run(req.params.id);
+  res.redirect("/reports/class-journal");
 });
 
 router.get("/class-journal/view", (req, res) => {
-  const { class_id } = req.query;
+  const { class_id, teacher_id } = req.query;
   if (!class_id) return res.redirect("/reports/class-journal");
   let pages = req.query.pages || ["7col"];
   if (!Array.isArray(pages)) pages = [pages];
@@ -354,8 +378,11 @@ router.get("/class-journal/view", (req, res) => {
     .prepare("SELECT s.first_name, s.nickname, s.last_name, f.last_name AS family_last FROM students s LEFT JOIN families f ON s.family_id=f.id WHERE s.class_id = ? AND s.status = 'פעיל' ORDER BY s.last_name, s.first_name")
     .all(class_id)
     .map(s => ({ ...s, displayName: (s.last_name || s.family_last || "") + " " + (s.nickname || s.first_name || "") }));
-  // teacher
-  const teacher = db.prepare("SELECT t.first_name, t.last_name FROM teacher_classes tc JOIN teachers t ON tc.teacher_id=t.id WHERE tc.class_id=? ORDER BY tc.id LIMIT 1").get(class_id);
+  // מלמד - אם נבחר מלמד מפורש (יש בוקר ואחה"צ, ולפעמים גם עוזר) משתמשים בו;
+  // אחרת (למשל קישור ישן בלי הבחירה) נופלים חזרה לברירת המחדל הישנה
+  const teacher = teacher_id
+    ? db.prepare("SELECT first_name, last_name FROM teachers WHERE id = ?").get(teacher_id)
+    : db.prepare("SELECT t.first_name, t.last_name FROM teacher_classes tc JOIN teachers t ON tc.teacher_id=t.id WHERE tc.class_id=? ORDER BY tc.id LIMIT 1").get(class_id);
   const teacherName = teacher ? `ר' ${teacher.first_name || ""} ${teacher.last_name || ""}`.trim() : "";
   res.render("reports/class-journal-print", { classRow, students, teacherName, pages });
 });
