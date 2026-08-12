@@ -504,10 +504,11 @@ router.get("/class-journal/view", (req, res) => {
   // מלמד - אם נבחר מלמד מפורש (יש בוקר ואחה"צ, ולפעמים גם עוזר) משתמשים בו;
   // אחרת (למשל קישור ישן בלי הבחירה) נופלים חזרה לברירת המחדל הישנה
   const teacher = teacher_id
-    ? db.prepare("SELECT first_name, last_name FROM teachers WHERE id = ?").get(teacher_id)
-    : db.prepare("SELECT t.first_name, t.last_name FROM teacher_classes tc JOIN teachers t ON tc.teacher_id=t.id WHERE tc.class_id=? ORDER BY tc.id LIMIT 1").get(class_id);
+    ? db.prepare("SELECT t.first_name, t.last_name, tc.role FROM teachers t LEFT JOIN teacher_classes tc ON tc.teacher_id = t.id AND tc.class_id = ? WHERE t.id = ?").get(class_id, teacher_id)
+    : db.prepare("SELECT t.first_name, t.last_name, tc.role FROM teacher_classes tc JOIN teachers t ON tc.teacher_id=t.id WHERE tc.class_id=? ORDER BY tc.id LIMIT 1").get(class_id);
   const teacherName = teacher ? `הרב ${teacher.first_name || ""} ${teacher.last_name || ""}`.trim() : "";
-  res.render("reports/class-journal-print", { classRow, students, teacherName, pages });
+  const teacherRole = teacher ? teacher.role || "" : "";
+  res.render("reports/class-journal-print", { classRow, students, teacherName, teacherRole, pages });
 });
 
 // ============ דף בודד (כמו דפי יומן כיתה, אבל לא חלק מחוברת) ============
@@ -532,10 +533,11 @@ router.get("/single-page/view", (req, res) => {
     .all(class_id)
     .map(s => ({ ...s, displayName: (s.last_name || s.family_last || "") + " " + (s.nickname || s.first_name || "") }));
   const teacher = teacher_id
-    ? db.prepare("SELECT first_name, last_name FROM teachers WHERE id = ?").get(teacher_id)
-    : db.prepare("SELECT t.first_name, t.last_name FROM teacher_classes tc JOIN teachers t ON tc.teacher_id=t.id WHERE tc.class_id=? ORDER BY tc.id LIMIT 1").get(class_id);
+    ? db.prepare("SELECT t.first_name, t.last_name, tc.role FROM teachers t LEFT JOIN teacher_classes tc ON tc.teacher_id = t.id AND tc.class_id = ? WHERE t.id = ?").get(class_id, teacher_id)
+    : db.prepare("SELECT t.first_name, t.last_name, tc.role FROM teacher_classes tc JOIN teachers t ON tc.teacher_id=t.id WHERE tc.class_id=? ORDER BY tc.id LIMIT 1").get(class_id);
   const teacherName = teacher ? `הרב ${teacher.first_name || ""} ${teacher.last_name || ""}`.trim() : "";
-  res.render("reports/class-journal-print", { classRow, students, teacherName, pages, skipCover: true });
+  const teacherRole = teacher ? teacher.role || "" : "";
+  res.render("reports/class-journal-print", { classRow, students, teacherName, teacherRole, pages, skipCover: true });
 });
 
 // ============ הצהרת בריאות ============

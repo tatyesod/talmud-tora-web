@@ -106,7 +106,7 @@
   <div class="cover-inst" style="position:relative; z-index:1;">תלמוד תורה החדש</div>
   <div class="cover-sub" style="position:relative; z-index:1;">יומן כיתה</div>
   <div class="cover-middle" style="position:relative; z-index:1;">
-    <div class="cover-class"><%= classFullName %></div>
+    <div class="cover-class"><%= classFullName %><% if (typeof teacherRole !== 'undefined' && teacherRole) { %> (<%= teacherRole %>)<% } %></div>
     <% if (teacherName) { %><div class="cover-teacher"><%= teacherName %></div><% } %>
   </div>
   <div class="cover-year" style="position:relative; z-index:1;"><%= todayHebrewStr %></div>
