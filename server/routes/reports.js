@@ -110,7 +110,7 @@ router.get("/completed-families", (req, res) => {
 
   const families = db.prepare(`
     SELECT f.id, f.last_name, f.father_name, f.father_id_number, f.mother_name, f.mother_id_number,
-           f.street, f.house_number, f.city
+           f.street, f.house_number, f.city, f.billing_company
     FROM families f
     WHERE f.id IN (SELECT DISTINCT family_id FROM students WHERE family_id IS NOT NULL)
     ORDER BY f.last_name
@@ -166,7 +166,7 @@ router.get("/completed-families/export", async (req, res) => {
 
   const families = db.prepare(`
     SELECT f.id, f.last_name, f.father_name, f.father_id_number, f.mother_name, f.mother_id_number,
-           f.street, f.house_number, f.city
+           f.street, f.house_number, f.city, f.billing_company
     FROM families f
     WHERE f.id IN (SELECT DISTINCT family_id FROM students WHERE family_id IS NOT NULL)
     ORDER BY f.last_name
@@ -204,11 +204,11 @@ router.get("/completed-families/export", async (req, res) => {
   });
   results.sort((a, b) => b.completionDate - a.completionDate);
 
-  const header = ["משפחה", "שם האב", "ת\"ז אב", "שם האם", "ת\"ז אם", "כתובת", "תאריך מעבר לארכיון"];
+  const header = ["משפחה", "שם האב", "ת\"ז אב", "שם האם", "ת\"ז אם", "כתובת", "חברת גביה", "תאריך מעבר לארכיון"];
   const data = results.map((r) => [
     r.family.last_name || "", r.family.father_name || "", r.family.father_id_number || "",
     r.family.mother_name || "", r.family.mother_id_number || "",
-    buildAddress(r.family), r.completionDateHeb,
+    buildAddress(r.family), r.family.billing_company || "", r.completionDateHeb,
   ]);
   await sendWorkbook(res, "משפחות שסיימו.xlsx", "משפחות שסיימו", "משפחות שסיימו - כל הבנים בארכיון", header, data);
 });

@@ -26,7 +26,7 @@
       <thead>
         <tr>
           <th>משפחה</th><th>שם האב</th><th>ת"ז אב</th><th>שם האם</th><th>ת"ז אם</th>
-          <th>כתובת</th><th>תאריך מעבר לארכיון</th>
+          <th>כתובת</th><th>חברת גביה</th><th>תאריך מעבר לארכיון</th>
         </tr>
       </thead>
       <tbody>
@@ -38,6 +38,7 @@
             <td><%= r.family.mother_name || '' %></td>
             <td><%= r.family.mother_id_number || '' %></td>
             <td><%= [r.family.street, r.family.house_number, r.family.city].filter(Boolean).join(' ') %></td>
+            <td><%= r.family.billing_company || '' %></td>
             <td><%= r.completionDateHeb %></td>
           </tr>
         <% }) %>
