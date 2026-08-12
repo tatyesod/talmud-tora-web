@@ -18,6 +18,13 @@
   // אחת בלי גלישה או חיתוך, בכל גודל כיתה
   const nameColWidthMM = Math.min(65, Math.max(20, Math.round(maxNameLen * nameFontSizePt * 0.21) + 8));
 
+  // חישוב נפרד לדף "נוכחות חודשית" (grid) - לו יש כותרת של *שתי* שורות
+  // (שבוע + יום), לא שורה אחת כמו שאר הפורמטים - אם משתמשים באותו rowHeightMM
+  // המשותף, הטבלה הזו תמיד תהיה שורה אחת גבוהה מדי ותגלוש לעמוד הבא
+  const gridRowsForHeightCalc = rowsCount + 2;
+  let gridRowHeightMM = Math.min(AVAILABLE_BODY_HEIGHT_MM / gridRowsForHeightCalc, 16);
+  const gridFontSizePt = Math.max(5, Math.min(9, Math.round(gridRowHeightMM * 1.1)));
+
   const PAGE_LABELS = { '7col': '7 טורים', '2col': '2 טורים', '1col': 'דו"ח דו חודשי', general_notes: 'הערות כלליות', grid: 'נוכחות חודשית', blank: 'דף ריק' };
   const classFullName = classRow ? classRow.name + (classRow.parallel ? ' ' + classRow.parallel : '') : '';
 %>
@@ -68,10 +75,10 @@
     .footer-date { font-size: 7pt; color: #888; margin-top: 6px; text-align: left; }
 
     /* דף שער */
-    .cover-page { display: flex; flex-direction: column; align-items: center; min-height: 260mm; text-align: center;
+    .cover-page { display: flex; flex-direction: column; align-items: center; height: 100%; text-align: center;
       padding: 26mm 20mm 20mm 20mm;
       box-sizing: border-box; position: relative; }
-    .cover-frame-img { position: absolute; top: 0; right: 0; width: 100%; height: 100%; z-index: 0; }
+    .cover-frame-img { position: absolute; top: 0; right: 0; left: 0; bottom: 0; width: 100%; height: 100%; object-fit: fill; z-index: 0; }
     .cover-bsd { position: absolute; top: 10mm; right: 10mm; font-size: 9pt; z-index: 1; }
     .cover-logo { height: 170px; margin-bottom: 18px; }
     .cover-inst { font-size: 30pt; font-weight: 800; color: #2c5f7c; margin-bottom: 8px; }
@@ -214,7 +221,7 @@
   <%# === נוכחות חודשית - 4 שבועות × 6 ימים (א'-ו', בלי שבת) === %>
   <% } else if (fmt === 'grid') { %>
     <% const DAY_LETTERS = ["א'", "ב'", "ג'", "ד'", "ה'", "ו'"]; %>
-    <table class="journal" style="font-size:<%= journalFontSize %>;">
+    <table class="journal" style="font-size:<%= gridFontSizePt %>pt;">
       <thead>
         <tr>
           <th style="width:7mm;" rowspan="2">#</th>
@@ -229,9 +236,9 @@
       </thead>
       <tbody>
         <% students.forEach((s, i) => { %>
-          <tr style="height:<%= rowHeightMM %>mm;">
+          <tr style="height:<%= gridRowHeightMM %>mm;">
             <td class="num"><%= i+1 %></td>
-            <td class="name"><%= s.displayName %></td>
+            <td class="name" style="font-size:<%= gridFontSizePt %>pt;"><%= s.displayName %></td>
             <% for (let d=1; d<=24; d++) { %><td class="col-narrow"></td><% } %>
           </tr>
         <% }) %>
