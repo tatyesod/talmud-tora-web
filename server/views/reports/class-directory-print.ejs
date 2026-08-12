@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <title>אלפון - <%= classFullName %></title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Arial, 'Arial Hebrew', sans-serif; direction: rtl; }
+    @page { size: A4 portrait; margin: 10mm; }
+    @media print { .no-print { display: none !important; } }
+
+    .no-print {
+      background: #2c5f7c; color: #fff; padding: 10px 16px;
+      display: flex; gap: 14px; align-items: center; font-size: 13px;
+    }
+    .no-print button { background:#fff; color:#2c5f7c; border:none; border-radius:6px; padding:6px 14px; cursor:pointer; font-weight:700; }
+    .no-print a { color:#fff; }
+
+    .letter-header-img { width: 100%; height: auto; display: block; margin-bottom: 6px; }
+    .dir-bsd { text-align: right; font-size: 0.8em; color: #888; margin-bottom: 10px; }
+
+    .dir-title {
+      text-align: center; font-weight: 800; font-size: 13pt; color: #2c5f7c;
+      border-bottom: 1.5pt solid #2c5f7c; padding-bottom: 8px; margin-bottom: 14px;
+    }
+
+    table.dir { width: 100%; border-collapse: collapse; font-size: 9.5pt; }
+    table.dir th, table.dir td { border: 0.6pt solid #999; padding: 4px 6px; text-align: right; }
+    table.dir th { background: #dde8f0; font-weight: 700; text-align: center; }
+    td.num { width: 7mm; text-align: center; font-weight: 700; background: #f5f5f5; }
+    td.phone, th.phone-col { text-align: center; direction: ltr; }
+
+    .footer-note { text-align: center; font-size: 8pt; color: #888; margin-top: 14px; padding-top: 8px; border-top: 0.6pt solid #ccc; }
+  </style>
+</head>
+<body>
+
+<div class="no-print">
+  <button onclick="window.print()">🖨️ שמירה כ-PDF / הדפסה</button>
+  <span><%= classFullName %> — <%= students.length %> תלמידים</span>
+  <a href="javascript:history.back()">← חזרה</a>
+</div>
+
+<img src="/images/letterhead.jpg" alt="בלנק תלמוד תורה החדש" class="letter-header-img" />
+<div class="dir-bsd">בס"ד</div>
+
+<div class="dir-title">
+  <%= classFullName %><% if (teacherLine) { %> - <%= teacherLine %><% } %>
+</div>
+
+<table class="dir">
+  <thead>
+    <tr>
+      <th>משפחה</th>
+      <th>פרטי</th>
+      <th>כתובת</th>
+      <th class="phone-col">טלפון בבית</th>
+      <th style="width:7mm;">#</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% students.forEach((s, i) => { %>
+      <tr>
+        <td><%= s.family_last || '' %></td>
+        <td><%= s.first_name || '' %></td>
+        <td><%= [s.street, s.house_number].filter(Boolean).join(' ') %></td>
+        <td class="phone"><%= s.phone || '' %></td>
+        <td class="num"><%= i + 1 %></td>
+      </tr>
+    <% }) %>
+  </tbody>
+</table>
+
+<div class="footer-note">כתובת למשלוח דואר: שטרסר 12 בני ברק</div>
+
+</body>
+</html>

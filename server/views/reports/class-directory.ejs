@@ -1,0 +1,31 @@
+<%- include('../partials/header', {title: 'אלפון כיתתי'}) %>
+<div class="card">
+  <h1>📞 אלפון כיתתי</h1>
+  <p style="color:var(--muted); font-size:0.9em; line-height:1.6;">
+    רשימת תלמידי הכיתה עם משפחה, כתובת וטלפון - להדפסה/PDF.
+  </p>
+
+  <form method="GET" action="/reports/class-directory/view" target="_blank">
+    <div class="form-grid">
+      <div class="form-group full">
+        <%- include('../partials/branch-filter', { branches }) %>
+      </div>
+      <div class="form-group">
+        <label>כיתה</label>
+        <select name="class_id" required data-branch-filter>
+          <option value="">בחר כיתה...</option>
+          <% classes.forEach(c => { %>
+            <option value="<%= c.id %>" data-branch="<%= c.branch || '' %>"><%= c.name %><%= c.parallel ? ' ' + c.parallel : '' %></option>
+          <% }) %>
+        </select>
+      </div>
+    </div>
+
+    <div class="actions" style="margin-top:16px;">
+      <button type="submit" class="btn">📞 הפק אלפון</button>
+      <a href="/reports" class="btn secondary">חזרה לדוחות</a>
+    </div>
+  </form>
+</div>
+
+<%- include('../partials/footer') %>

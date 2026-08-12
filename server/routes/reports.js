@@ -512,6 +512,42 @@ router.get("/class-journal/view", (req, res) => {
 });
 
 // ============ דף בודד (כמו דפי יומן כיתה, אבל לא חלק מחוברת) ============
+// ============ אלפון כיתתי ============
+router.get("/class-directory", (req, res) => {
+  const classes = db.prepare("SELECT id, name, parallel, branch FROM classes ORDER BY name, parallel").all();
+  const branches = db.prepare("SELECT DISTINCT branch FROM classes WHERE branch IS NOT NULL ORDER BY branch").all().map(r=>r.branch);
+  res.render("reports/class-directory", { classes, branches });
+});
+
+router.get("/class-directory/view", (req, res) => {
+  const { class_id } = req.query;
+  if (!class_id) return res.redirect("/reports/class-directory");
+  const classRow = db.prepare("SELECT * FROM classes WHERE id = ?").get(class_id);
+  const classFullName = classRow ? classRow.name + (classRow.parallel ? " " + classRow.parallel : "") : "";
+
+  // מלמד בוקר - לכותרת (שם + נייד)
+  const morningTeacher = db.prepare(`
+    SELECT t.first_name, t.last_name, t.mobile FROM teacher_classes tc
+    JOIN teachers t ON tc.teacher_id = t.id
+    WHERE tc.class_id = ? AND tc.role = 'בוקר' LIMIT 1
+  `).get(class_id);
+  const teacherLine = morningTeacher
+    ? `הרב ${morningTeacher.first_name || ""} ${morningTeacher.last_name || ""}${morningTeacher.mobile ? " " + morningTeacher.mobile : ""}`.trim()
+    : "";
+
+  // טלפון בבית - אם ריק, נופלים לנייד האם (לא האב)
+  const students = db.prepare(`
+    SELECT s.first_name, f.last_name AS family_last, f.street, f.house_number,
+           COALESCE(NULLIF(f.home_phone, ''), f.mother_mobile) AS phone
+    FROM students s
+    LEFT JOIN families f ON s.family_id = f.id
+    WHERE s.class_id = ? AND s.status = 'פעיל'
+    ORDER BY f.last_name, s.first_name
+  `).all(class_id);
+
+  res.render("reports/class-directory-print", { classFullName, teacherLine, students });
+});
+
 router.get("/single-page", (req, res) => {
   const classes = db.prepare("SELECT id, name, parallel, branch FROM classes ORDER BY name, parallel").all();
   const branches = db.prepare("SELECT DISTINCT branch FROM classes WHERE branch IS NOT NULL ORDER BY branch").all().map(r=>r.branch);
