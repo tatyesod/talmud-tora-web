@@ -13,6 +13,7 @@
       if (!matches && opt.selected) {
         opt.selected = false;
         opt.parentElement.value = "";
+        opt.parentElement.dispatchEvent(new Event("change"));
       }
     });
 

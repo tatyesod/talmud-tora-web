@@ -14,9 +14,14 @@ const FORMATS = {
 
 // דף בחירת הגדרות
 router.get("/", (req, res) => {
-  const classes = db.prepare("SELECT id, name, parallel, branch FROM classes ORDER BY name, parallel").all();
+  const classes = db.prepare(`
+    SELECT c.id, c.name, c.parallel, c.branch,
+      (SELECT COUNT(*) FROM students s WHERE s.class_id = c.id AND s.status = 'פעיל') AS student_count
+    FROM classes c ORDER BY c.name, c.parallel
+  `).all();
   const branches = db.prepare("SELECT DISTINCT branch FROM classes WHERE branch IS NOT NULL ORDER BY branch").all().map(r=>r.branch);
-  res.render("labels/setup", { formats: FORMATS, classes, branches });
+  const totalActiveStudents = db.prepare("SELECT COUNT(*) c FROM students WHERE status = 'פעיל'").get().c;
+  res.render("labels/setup", { formats: FORMATS, classes, branches, totalActiveStudents });
 });
 
 // הפקת מדבקות

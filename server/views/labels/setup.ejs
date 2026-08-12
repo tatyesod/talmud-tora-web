@@ -31,12 +31,17 @@
 
       <div class="form-group">
         <label>כיתה (ריק = כולם)</label>
-        <select name="class_id" data-branch-filter>
-          <option value="">כל הכיתות</option>
-          <% classes.forEach(c => { %>
-            <option value="<%= c.id %>" data-branch="<%= c.branch || '' %>"><%= c.name %><%= c.parallel ? ' ' + c.parallel : '' %></option>
-          <% }) %>
-        </select>
+        <div style="display:flex; gap:8px; align-items:center;">
+          <select name="class_id" id="class-select-labels" data-branch-filter onchange="updateStudentCount()" style="flex:1;">
+            <option value="" data-count="<%= totalActiveStudents %>">כל הכיתות</option>
+            <% classes.forEach(c => { %>
+              <option value="<%= c.id %>" data-branch="<%= c.branch || '' %>" data-count="<%= c.student_count %>"><%= c.name %><%= c.parallel ? ' ' + c.parallel : '' %></option>
+            <% }) %>
+          </select>
+          <span id="student-count-box" style="background:#2c5f7c; color:#fff; border-radius:8px; padding:6px 12px; font-weight:700; white-space:nowrap; font-size:0.9em;">
+            <%= totalActiveStudents %> תלמידים
+          </span>
+        </div>
       </div>
 
       <div class="form-group">
@@ -70,5 +75,15 @@
     </div>
   </form>
 </div>
+
+<script>
+  function updateStudentCount() {
+    const select = document.getElementById('class-select-labels');
+    const opt = select.options[select.selectedIndex];
+    const count = opt ? (opt.getAttribute('data-count') || '0') : '0';
+    const suffix = select.value === '' ? 'תלמידים (כל הכיתות)' : 'תלמידים בכיתה זו';
+    document.getElementById('student-count-box').textContent = count + ' ' + suffix;
+  }
+</script>
 
 <%- include('../partials/footer') %>
