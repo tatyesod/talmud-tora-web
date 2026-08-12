@@ -5,11 +5,11 @@ const db = require("../db");
 // הגדרות פורמטים של מדבקות TANEX
 const FORMATS = {
   "2133": { name: "TANEX 2133 — 33 בדף (3×11)", cols: 3, rows: 11, perPage: 33,
-    labelW: "70mm", labelH: "25.4mm", pageMarginTop: "10.65mm", pageMarginSide: "4.5mm", gap: "0mm", fontSize: "18pt" },
+    labelW: "70mm", labelH: "25.4mm", pageMarginTop: "10.65mm", pageMarginSide: "4.5mm", gap: "0mm", fontSize: "18pt", nameSplitFontSize: "22pt" },
   "2072": { name: "TANEX 2072 — 72 בדף (6×12)", cols: 6, rows: 12, perPage: 72,
-    labelW: "46.3mm", labelH: "21.2mm", pageMarginTop: "13.5mm", pageMarginSide: "3.85mm", gap: "0mm", fontSize: "16pt" },
+    labelW: "46.3mm", labelH: "21.2mm", pageMarginTop: "13.5mm", pageMarginSide: "3.85mm", gap: "0mm", fontSize: "16pt", nameSplitFontSize: "19pt" },
   "2120": { name: "TANEX 2120 — 120 בדף (6×20)", cols: 6, rows: 20, perPage: 120,
-    labelW: "38.1mm", labelH: "13mm", pageMarginTop: "15mm", pageMarginSide: "4mm", gap: "0mm", fontSize: "13pt" },
+    labelW: "38.1mm", labelH: "13mm", pageMarginTop: "15mm", pageMarginSide: "4mm", gap: "0mm", fontSize: "13pt", nameSplitFontSize: "14pt", nameSplitPadV: "0.5mm" },
 };
 
 // דף בחירת הגדרות
@@ -75,9 +75,10 @@ router.get("/print", (req, res) => {
     sql += " ORDER BY c.name, c.parallel, s.last_name, s.first_name";
     const rows = db.prepare(sql).all(...params);
     items = rows.map(r => ({
-      line1: "",
-      line2: `${r.nickname || r.first_name || ""} ${r.last_name || r.family_last || ""}`,
+      line1: r.nickname || r.first_name || "",
+      line2: r.last_name || r.family_last || "",
       line3: "",
+      isNameSplit: true,
     }));
 
   } else if (content_type === "teachers") {

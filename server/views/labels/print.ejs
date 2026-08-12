@@ -59,6 +59,14 @@
        בלי הגדלה נוספת מעבר לגודל הפונט שנבחר, כדי לא לגלוש מהמדבקה */
     .label.single-line .label-line2 { font-size: 1em; white-space: normal; overflow-wrap: break-word; text-overflow: clip; line-height: 1.08; }
 
+    /* מדבקת שם מפוצל לשתי שורות קבועות (שם פרטי/חיבה בשורה 1, שם משפחה
+       בשורה 2) - שתי השורות באותו גודל ומשקל, כדי שלא תיראה אחת "פחות
+       חשובה" מהשנייה. גודל פונט ייעודי, בדרך כלל גדול יותר מהבסיס, כי כל
+       שורה צריכה להכיל רק מילה אחת */
+    .label.name-split { font-size: <%= fmt.nameSplitFontSize || fmt.fontSize %>; <% if (fmt.nameSplitPadV) { %>padding-top: <%= fmt.nameSplitPadV %>; padding-bottom: <%= fmt.nameSplitPadV %>;<% } %> }
+    .label.name-split .label-line1 { font-size: 1em; color: inherit; font-weight: bold; line-height: 1.08; white-space: nowrap; overflow: hidden; }
+    .label.name-split .label-line2 { font-size: 1em; font-weight: bold; line-height: 1.08; white-space: nowrap; overflow: hidden; text-overflow: clip; }
+
 
     .show-borders .label { border: 0.3pt dashed #bbb; }
   </style>
@@ -103,7 +111,7 @@ items.forEach((item, i) => {
   <% allRows.forEach(row => { %>
     <div class="label-row">
       <% row.forEach(item => { %>
-        <div class="label<%= !item ? '' : (item.isTeacher ? ' teacher' : '') + (!item.line1 && !item.line3 ? ' single-line' : '') %>">
+        <div class="label<%= !item ? '' : (item.isTeacher ? ' teacher' : '') + (item.isNameSplit ? ' name-split' : (!item.line1 && !item.line3 ? ' single-line' : '')) %>">
           <% if (item) { %>
             <% if (item.line1) { %><div class="label-line1"><%= item.line1 %></div><% } %>
             <div class="label-line2"><%= item.line2 %></div>
