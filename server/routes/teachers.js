@@ -243,7 +243,7 @@ router.get("/new", (req, res) => {
 
 const TEACHER_FIELDS = [
   "last_name", "first_name", "id_number", "birth_date_civil", "street", "house_number",
-  "apartment", "city", "zip_code", "home_phone", "mobile", "chassidut_id", "notes",
+  "apartment", "city", "zip_code", "home_phone", "mobile", "email", "chassidut_id", "notes",
   "status", "entry_date", "update_date", "exit_date", "children_count",
 ];
 const DATE_FIELDS = ["birth_date_civil", "entry_date", "update_date", "exit_date"];

@@ -36,6 +36,7 @@
         </div>
         <div class="form-group"><label>מספר ילדים בבית (לחלוקת מתנות)</label><input type="number" min="0" name="children_count" value="<%= teacher.children_count != null ? teacher.children_count : '' %>" /></div>
         <div class="form-group"><label>נייד</label><input type="text" name="mobile" value="<%= teacher.mobile || '' %>" /></div>
+        <div class="form-group"><label>אימייל</label><input type="email" name="email" value="<%= teacher.email || '' %>" /></div>
         <div class="form-group"><label>טלפון בית</label><input type="text" name="home_phone" value="<%= teacher.home_phone || '' %>" /></div>
         <div class="form-group"><label>רחוב</label><input type="text" name="street" value="<%= teacher.street || '' %>" /></div>
         <div class="form-group"><label>מספר בית</label><input type="text" name="house_number" value="<%= teacher.house_number || '' %>" /></div>
