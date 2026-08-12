@@ -395,7 +395,7 @@ router.get("/class-journal/view", (req, res) => {
   const teacher = teacher_id
     ? db.prepare("SELECT first_name, last_name FROM teachers WHERE id = ?").get(teacher_id)
     : db.prepare("SELECT t.first_name, t.last_name FROM teacher_classes tc JOIN teachers t ON tc.teacher_id=t.id WHERE tc.class_id=? ORDER BY tc.id LIMIT 1").get(class_id);
-  const teacherName = teacher ? `ר' ${teacher.first_name || ""} ${teacher.last_name || ""}`.trim() : "";
+  const teacherName = teacher ? `הרב ${teacher.first_name || ""} ${teacher.last_name || ""}`.trim() : "";
   res.render("reports/class-journal-print", { classRow, students, teacherName, pages });
 });
 
