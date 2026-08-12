@@ -1,3 +1,26 @@
+<%
+  const rowsCount = Math.max(students.length, 1);
+  const AVAILABLE_BODY_HEIGHT_MM = 232;
+  // +1 עבור שורת הכותרת (בפורמט 7 טורים היא באותו גובה כמו שאר השורות, כדי
+  // שיהיה נוח לכתוב בה - צריך לחשב אותה כחלק מהשטח הכולל, אחרת הטבלה תגלוש)
+  const rowsForHeightCalc = rowsCount + 1;
+  let rowHeightMM = AVAILABLE_BODY_HEIGHT_MM / rowsForHeightCalc;
+  // אין רצפה מינימלית קשיחה - הכלל העליון הוא שהטבלה **לעולם** לא תגלוש לעמוד
+  // הבא, גם אם זה אומר גופן קטן מאוד לכיתה גדולה מאוד. יש רק תקרה עליונה,
+  // כדי שכיתה קטנה תקבל שורות גדולות ונוחות, אבל לא ענקיות מיותר על הצורך.
+  rowHeightMM = Math.min(rowHeightMM, 16);
+  const journalFontSize = rowHeightMM < 6.5 ? '7pt' : (rowHeightMM < 8.5 ? '7.8pt' : '8.5pt');
+  // גופן שם התלמיד גדל/קטן יחד עם גובה השורה בפועל (לא קבוע יותר) - עד תקרה
+  // של 16pt לכיתות קטנות, אבל מתכווץ כמה שצריך לכיתות גדולות כדי שלא לגלוש
+  const nameFontSizePt = Math.max(6, Math.min(16, Math.round(rowHeightMM * 1.9)));
+  const maxNameLen = students.reduce((m, s) => Math.max(m, (s.displayName || '').length), 4);
+  // רוחב עמודת השם מחושב לפי הגופן הדינמי בפועל, כדי שהשם תמיד ייכנס בשורה
+  // אחת בלי גלישה או חיתוך, בכל גודל כיתה
+  const nameColWidthMM = Math.min(65, Math.max(20, Math.round(maxNameLen * nameFontSizePt * 0.21) + 8));
+
+  const PAGE_LABELS = { '7col': '7 טורים', '2col': '2 טורים', '1col': 'דו"ח דו חודשי', general_notes: 'הערות כלליות', grid: 'נוכחות חודשית', blank: 'דף ריק' };
+  const classFullName = classRow ? classRow.name + (classRow.parallel ? ' ' + classRow.parallel : '') : '';
+%>
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>
@@ -39,7 +62,7 @@
     }
     table.journal th { background: #dde8f0; font-weight: 700; font-size: 8pt; }
     td.num { width: 7mm; font-weight: 700; background: #f5f5f5; text-align: center; }
-    td.name { text-align: right; padding-right: 5px; white-space: nowrap; overflow: hidden; font-size: 16pt; font-weight: 700; }
+    td.name { text-align: right; padding-right: 5px; white-space: nowrap; overflow: hidden; font-size: <%= nameFontSizePt %>pt; font-weight: 700; }
     .col-narrow { width: 10mm; }
 
     .footer-date { font-size: 7pt; color: #888; margin-top: 6px; text-align: left; }
@@ -47,9 +70,9 @@
     /* דף שער */
     .cover-page { display: flex; flex-direction: column; align-items: center; min-height: 260mm; text-align: center;
       padding: 26mm 20mm 20mm 20mm;
-      background-image: url('/images/cover-frame.png'); background-size: 100% 100%; background-repeat: no-repeat;
       box-sizing: border-box; position: relative; }
-    .cover-bsd { position: absolute; top: 10mm; right: 10mm; font-size: 9pt; }
+    .cover-frame-img { position: absolute; top: 0; right: 0; width: 100%; height: 100%; z-index: 0; }
+    .cover-bsd { position: absolute; top: 10mm; right: 10mm; font-size: 9pt; z-index: 1; }
     .cover-logo { height: 170px; margin-bottom: 18px; }
     .cover-inst { font-size: 30pt; font-weight: 800; color: #2c5f7c; margin-bottom: 8px; }
     .cover-sub { font-size: 19pt; color: #555; margin-bottom: 0; }
@@ -60,22 +83,6 @@
   </style>
 </head>
 <body>
-<%
-  const rowsCount = Math.max(students.length, 1);
-  const AVAILABLE_BODY_HEIGHT_MM = 232;
-  let rowHeightMM = AVAILABLE_BODY_HEIGHT_MM / rowsCount;
-  // גובה מינימלי גדל, כי שם התלמיד תמיד ב-16pt קבוע (ראו td.name למטה) - צריך
-  // מספיק גובה שורה כדי שזה יהיה קריא ולא ייחתך
-  rowHeightMM = Math.max(8.5, Math.min(rowHeightMM, 16));
-  const journalFontSize = rowHeightMM < 6.5 ? '7pt' : (rowHeightMM < 8.5 ? '7.8pt' : '8.5pt');
-  const maxNameLen = students.reduce((m, s) => Math.max(m, (s.displayName || '').length), 4);
-  // רוחב עמודת השם מחושב לפי גופן 16pt קבוע (לא לפי journalFontSize המשתנה),
-  // כדי שהשם תמיד ייכנס בשורה אחת בלי גלישה או חיתוך
-  const nameColWidthMM = Math.min(65, Math.max(26, Math.round(maxNameLen * 3.4) + 10));
-
-  const PAGE_LABELS = { '7col': '7 טורים', '2col': '2 טורים', '1col': 'דו"ח דו חודשי', general_notes: 'הערות כלליות', grid: 'נוכחות חודשית', blank: 'דף ריק' };
-  const classFullName = classRow ? classRow.name + (classRow.parallel ? ' ' + classRow.parallel : '') : '';
-%>
 
 <div class="no-print">
   <button onclick="window.print()">🖨️ שמירה כ-PDF / הדפסה</button>
@@ -85,15 +92,16 @@
 
 <!-- ===== דף שער - אחיד לכולם, רק שם כיתה ומלמד משתנים ===== -->
 <div class="page cover-page">
+  <img src="/images/cover-frame.png" class="cover-frame-img" alt="מסגרת" />
   <div class="cover-bsd">בס"ד</div>
-  <img src="/images/logo-reports.jpg" class="cover-logo" alt="לוגו" />
-  <div class="cover-inst">תלמוד תורה החדש</div>
-  <div class="cover-sub">יומן כיתה</div>
-  <div class="cover-middle">
+  <img src="/images/logo-reports.jpg" class="cover-logo" alt="לוגו" style="position:relative; z-index:1;" />
+  <div class="cover-inst" style="position:relative; z-index:1;">תלמוד תורה החדש</div>
+  <div class="cover-sub" style="position:relative; z-index:1;">יומן כיתה</div>
+  <div class="cover-middle" style="position:relative; z-index:1;">
     <div class="cover-class"><%= classFullName %></div>
     <% if (teacherName) { %><div class="cover-teacher"><%= teacherName %></div><% } %>
   </div>
-  <div class="cover-year"><%= todayHebrewStr %></div>
+  <div class="cover-year" style="position:relative; z-index:1;"><%= todayHebrewStr %></div>
 </div>
 
 <%# דף ריק אוטומטי מיד אחרי השער - כדי שבהדפסה דו-צדדית הצד האחורי של
