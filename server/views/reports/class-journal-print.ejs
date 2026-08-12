@@ -5,9 +5,9 @@
   <title>יומן — <%= classRow ? classRow.name + ' ' + (classRow.parallel||'') : '' %></title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: Arial, 'Arial Hebrew', sans-serif; direction: rtl; }
+    body { font-family: "FrankRuehl", "FrankRuehlCLM", "Guttman Mantova", Arial, 'Arial Hebrew', sans-serif; direction: rtl; }
 
-    @page { size: A4 portrait; margin: 10mm; }
+    @page { size: A4 portrait; margin: 13mm; }
     @media print { .no-print { display: none !important; } }
 
     .no-print {
@@ -33,21 +33,22 @@
     .class-name { font-size: 12pt; font-weight: 700; margin-top: 2px; }
 
     /* טבלה */
-    table.journal { width: 100%; border-collapse: collapse; font-size: 8.5pt; }
+    table.journal { width: 97%; margin: 0 auto; border-collapse: collapse; font-size: 8.5pt; }
     table.journal th, table.journal td {
       border: 0.7pt solid #666; padding: 2px 4px; text-align: center;
     }
     table.journal th { background: #dde8f0; font-weight: 700; font-size: 8pt; }
     td.num { width: 7mm; font-weight: 700; background: #f5f5f5; text-align: center; }
-    td.name { text-align: right; padding-right: 5px; white-space: nowrap; }
+    td.name { text-align: right; padding-right: 5px; white-space: nowrap; overflow: hidden; font-size: 16pt; font-weight: 700; }
     .col-narrow { width: 10mm; }
 
     .footer-date { font-size: 7pt; color: #888; margin-top: 6px; text-align: left; }
 
     /* דף שער */
     .cover-page { display: flex; flex-direction: column; align-items: center; min-height: 260mm; text-align: center;
-      padding: 14mm 8mm 8mm 8mm;
-      border: 2.2pt solid #2c5f7c; box-sizing: border-box; position: relative; }
+      padding: 26mm 20mm 20mm 20mm;
+      background-image: url('/images/cover-frame.png'); background-size: 100% 100%; background-repeat: no-repeat;
+      box-sizing: border-box; position: relative; }
     .cover-bsd { position: absolute; top: 10mm; right: 10mm; font-size: 9pt; }
     .cover-logo { height: 170px; margin-bottom: 18px; }
     .cover-inst { font-size: 30pt; font-weight: 800; color: #2c5f7c; margin-bottom: 8px; }
@@ -63,10 +64,14 @@
   const rowsCount = Math.max(students.length, 1);
   const AVAILABLE_BODY_HEIGHT_MM = 232;
   let rowHeightMM = AVAILABLE_BODY_HEIGHT_MM / rowsCount;
-  rowHeightMM = Math.max(5, Math.min(rowHeightMM, 16));
+  // גובה מינימלי גדל, כי שם התלמיד תמיד ב-16pt קבוע (ראו td.name למטה) - צריך
+  // מספיק גובה שורה כדי שזה יהיה קריא ולא ייחתך
+  rowHeightMM = Math.max(8.5, Math.min(rowHeightMM, 16));
   const journalFontSize = rowHeightMM < 6.5 ? '7pt' : (rowHeightMM < 8.5 ? '7.8pt' : '8.5pt');
   const maxNameLen = students.reduce((m, s) => Math.max(m, (s.displayName || '').length), 4);
-  const nameColWidthMM = Math.min(45, Math.max(18, Math.round(maxNameLen * 2.3) + 8));
+  // רוחב עמודת השם מחושב לפי גופן 16pt קבוע (לא לפי journalFontSize המשתנה),
+  // כדי שהשם תמיד ייכנס בשורה אחת בלי גלישה או חיתוך
+  const nameColWidthMM = Math.min(65, Math.max(26, Math.round(maxNameLen * 3.4) + 10));
 
   const PAGE_LABELS = { '7col': '7 טורים', '2col': '2 טורים', '1col': 'דו"ח דו חודשי', general_notes: 'הערות כלליות', grid: 'נוכחות חודשית', blank: 'דף ריק' };
   const classFullName = classRow ? classRow.name + (classRow.parallel ? ' ' + classRow.parallel : '') : '';
@@ -130,7 +135,7 @@
         <col style="width:<%= nameColWidthMM %>mm">
         <col><col><col><col><col><col><col>
       </colgroup>
-      <thead><tr>
+      <thead><tr style="height:<%= rowHeightMM %>mm;">
         <th>#</th>
         <th style="text-align:right; padding-right:5px;">שם התלמיד</th>
         <th></th><th></th><th></th><th></th><th></th><th></th><th></th>
@@ -156,7 +161,7 @@
         <col style="width:<%= nameColWidthMM %>mm">
         <col><col>
       </colgroup>
-      <thead><tr>
+      <thead><tr style="height:<%= rowHeightMM %>mm;">
         <th>#</th>
         <th style="text-align:right; padding-right:5px;">שם התלמיד</th>
         <th> </th><th> </th>
@@ -180,7 +185,7 @@
         <col style="width:<%= nameColWidthMM %>mm">
         <col>
       </colgroup>
-      <thead><tr>
+      <thead><tr style="height:<%= rowHeightMM %>mm;">
         <th>#</th>
         <th style="text-align:right; padding-right:5px;">שם התלמיד</th>
         <th>הערות</th>
