@@ -531,9 +531,8 @@ router.get("/class-directory/view", (req, res) => {
     JOIN teachers t ON tc.teacher_id = t.id
     WHERE tc.class_id = ? AND tc.role = 'בוקר' LIMIT 1
   `).get(class_id);
-  const teacherLine = morningTeacher
-    ? `הרב ${morningTeacher.first_name || ""} ${morningTeacher.last_name || ""}${morningTeacher.mobile ? " " + morningTeacher.mobile : ""}`.trim()
-    : "";
+  const teacherNamePart = morningTeacher ? `הרב ${morningTeacher.first_name || ""} ${morningTeacher.last_name || ""}`.trim() : "";
+  const teacherMobile = morningTeacher ? morningTeacher.mobile || "" : "";
 
   // טלפון בבית - אם ריק, נופלים לנייד האם (לא האב)
   const students = db.prepare(`
@@ -545,7 +544,7 @@ router.get("/class-directory/view", (req, res) => {
     ORDER BY f.last_name, s.first_name
   `).all(class_id);
 
-  res.render("reports/class-directory-print", { classFullName, teacherLine, students });
+  res.render("reports/class-directory-print", { classFullName, teacherNamePart, teacherMobile, students });
 });
 
 router.get("/single-page", (req, res) => {

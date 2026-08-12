@@ -27,10 +27,9 @@
     table.dir { width: 100%; border-collapse: collapse; font-size: 9.5pt; }
     table.dir th, table.dir td { border: 0.6pt solid #999; padding: 4px 6px; text-align: right; }
     table.dir th { background: #dde8f0; font-weight: 700; text-align: center; }
-    td.num { width: 7mm; text-align: center; font-weight: 700; background: #f5f5f5; }
-    td.phone, th.phone-col { text-align: center; direction: ltr; }
-
-    .footer-note { text-align: center; font-size: 8pt; color: #888; margin-top: 14px; padding-top: 8px; border-top: 0.6pt solid #ccc; }
+    table.dir td.num { width: 7mm; text-align: center; font-weight: 700; background: #f5f5f5; }
+    table.dir td.phone, table.dir th.phone-col { text-align: center; direction: ltr; }
+    .dir-title .teacher-phone { font-weight: normal; }
   </style>
 </head>
 <body>
@@ -45,33 +44,31 @@
 <div class="dir-bsd">בס"ד</div>
 
 <div class="dir-title">
-  <%= classFullName %><% if (teacherLine) { %> - <%= teacherLine %><% } %>
+  <%= classFullName %><% if (teacherNamePart) { %> - <%= teacherNamePart %><% } %><% if (teacherMobile) { %> <span class="teacher-phone"><%= teacherMobile %></span><% } %>
 </div>
 
 <table class="dir">
   <thead>
     <tr>
+      <th style="width:7mm;">#</th>
       <th>משפחה</th>
       <th>פרטי</th>
       <th>כתובת</th>
       <th class="phone-col">טלפון בבית</th>
-      <th style="width:7mm;">#</th>
     </tr>
   </thead>
   <tbody>
     <% students.forEach((s, i) => { %>
       <tr>
+        <td class="num"><%= i + 1 %></td>
         <td><%= s.family_last || '' %></td>
         <td><%= s.first_name || '' %></td>
         <td><%= [s.street, s.house_number].filter(Boolean).join(' ') %></td>
         <td class="phone"><%= s.phone || '' %></td>
-        <td class="num"><%= i + 1 %></td>
       </tr>
     <% }) %>
   </tbody>
 </table>
-
-<div class="footer-note">כתובת למשלוח דואר: שטרסר 12 בני ברק</div>
 
 </body>
 </html>
