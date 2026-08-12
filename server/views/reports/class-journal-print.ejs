@@ -90,6 +90,7 @@
   <a href="javascript:history.back()">← חזרה</a>
 </div>
 
+<% if (typeof skipCover === 'undefined' || !skipCover) { %>
 <!-- ===== דף שער - אחיד לכולם, רק שם כיתה ומלמד משתנים ===== -->
 <div class="page cover-page">
   <img src="/images/cover-frame.png" class="cover-frame-img" alt="מסגרת" />
@@ -108,6 +109,7 @@
     השער יצא ריק. זה קבוע, לא ניתן לשינוי, ולא מופיע ברשימת "דפי החוברת" -
     בדיוק כמו דף השער עצמו. %>
 <div class="page"></div>
+<% } %>
 
 <% pages.forEach((fmt) => { %>
 <% if (fmt === 'blank') { %>

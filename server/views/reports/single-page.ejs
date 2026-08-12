@@ -1,0 +1,71 @@
+<%- include('../partials/header', {title: 'הפקת דף בודד'}) %>
+<div class="card">
+  <h1>📄 הפקת דף בודד</h1>
+  <p style="color:var(--muted); font-size:0.9em; line-height:1.6;">
+    אותם סוגי דפים כמו ביומן כיתה (נוכחות, דו"ח, הערות וכו') - אבל דף אחד עצמאי, בלי דף שער ובלי הרכבת חוברת.
+    שימושי כשרוצים רק דף ספציפי אחד, מהר.
+  </p>
+
+  <form method="GET" action="/reports/single-page/view" target="_blank">
+    <div class="form-grid">
+      <div class="form-group full">
+        <%- include('../partials/branch-filter', { branches }) %>
+      </div>
+      <div class="form-group">
+        <label>כיתה</label>
+        <select name="class_id" id="class-select" required data-branch-filter onchange="updateTeacherOptions()">
+          <option value="">בחר כיתה...</option>
+          <% classes.forEach(c => { %>
+            <option value="<%= c.id %>" data-branch="<%= c.branch || '' %>"><%= c.name %><%= c.parallel ? ' ' + c.parallel : '' %></option>
+          <% }) %>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>מלמד</label>
+        <select name="teacher_id" id="teacher-select">
+          <option value="">בחרו כיתה תחילה...</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>סוג הדף</label>
+        <select name="page" required>
+          <option value="7col">7 טורים (שבועי)</option>
+          <option value="2col">2 טורים רחבים</option>
+          <option value="1col">דו"ח דו חודשי (טור הערות)</option>
+          <option value="general_notes">הערות כלליות (טור הערות)</option>
+          <option value="grid">נוכחות חודשית (משבצות)</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="actions" style="margin-top:16px;">
+      <button type="submit" class="btn">📄 הפק דף</button>
+      <a href="/reports" class="btn secondary">חזרה לדוחות</a>
+    </div>
+  </form>
+</div>
+
+<script>
+  const TEACHER_ASSIGNMENTS = <%- JSON.stringify(teacherAssignments) %>;
+  const ROLE_LABELS = { 'בוקר': 'בוקר', 'אחה"צ': 'אחה"צ', 'עוזר': 'עוזר' };
+
+  function updateTeacherOptions() {
+    const classId = document.getElementById('class-select').value;
+    const teacherSelect = document.getElementById('teacher-select');
+    teacherSelect.innerHTML = '';
+    if (!classId) {
+      teacherSelect.innerHTML = '<option value="">בחרו כיתה תחילה...</option>';
+      return;
+    }
+    const matches = TEACHER_ASSIGNMENTS.filter(t => String(t.class_id) === String(classId));
+    if (matches.length === 0) {
+      teacherSelect.innerHTML = '<option value="">-- אין מלמד משויך --</option>';
+      return;
+    }
+    teacherSelect.innerHTML = matches.map(t =>
+      `<option value="${t.teacher_id}">${t.last_name || ''} ${t.first_name || ''} (${ROLE_LABELS[t.role] || t.role || ''})</option>`
+    ).join('');
+  }
+</script>
+
+<%- include('../partials/footer') %>

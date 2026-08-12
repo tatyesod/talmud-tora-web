@@ -510,6 +510,34 @@ router.get("/class-journal/view", (req, res) => {
   res.render("reports/class-journal-print", { classRow, students, teacherName, pages });
 });
 
+// ============ דף בודד (כמו דפי יומן כיתה, אבל לא חלק מחוברת) ============
+router.get("/single-page", (req, res) => {
+  const classes = db.prepare("SELECT id, name, parallel, branch FROM classes ORDER BY name, parallel").all();
+  const branches = db.prepare("SELECT DISTINCT branch FROM classes WHERE branch IS NOT NULL ORDER BY branch").all().map(r=>r.branch);
+  const teacherAssignments = db.prepare(`
+    SELECT tc.class_id, t.id AS teacher_id, t.first_name, t.last_name, tc.role
+    FROM teacher_classes tc JOIN teachers t ON tc.teacher_id = t.id
+    WHERE t.status = 'פעיל'
+  `).all();
+  res.render("reports/single-page", { classes, branches, teacherAssignments });
+});
+
+router.get("/single-page/view", (req, res) => {
+  const { class_id, teacher_id, page } = req.query;
+  if (!class_id) return res.redirect("/reports/single-page");
+  const pages = [page || "7col"];
+  const classRow = db.prepare("SELECT * FROM classes WHERE id = ?").get(class_id);
+  const students = db
+    .prepare("SELECT s.first_name, s.nickname, s.last_name, f.last_name AS family_last FROM students s LEFT JOIN families f ON s.family_id=f.id WHERE s.class_id = ? AND s.status = 'פעיל' ORDER BY s.last_name, s.first_name")
+    .all(class_id)
+    .map(s => ({ ...s, displayName: (s.last_name || s.family_last || "") + " " + (s.nickname || s.first_name || "") }));
+  const teacher = teacher_id
+    ? db.prepare("SELECT first_name, last_name FROM teachers WHERE id = ?").get(teacher_id)
+    : db.prepare("SELECT t.first_name, t.last_name FROM teacher_classes tc JOIN teachers t ON tc.teacher_id=t.id WHERE tc.class_id=? ORDER BY tc.id LIMIT 1").get(class_id);
+  const teacherName = teacher ? `הרב ${teacher.first_name || ""} ${teacher.last_name || ""}`.trim() : "";
+  res.render("reports/class-journal-print", { classRow, students, teacherName, pages, skipCover: true });
+});
+
 // ============ הצהרת בריאות ============
 router.get("/health-declaration", (req, res) => {
   const classes = db.prepare("SELECT id, name, parallel FROM classes ORDER BY name, parallel").all();
