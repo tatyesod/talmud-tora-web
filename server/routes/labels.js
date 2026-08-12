@@ -5,11 +5,11 @@ const db = require("../db");
 // הגדרות פורמטים של מדבקות TANEX
 const FORMATS = {
   "2133": { name: "TANEX 2133 — 33 בדף (3×11)", cols: 3, rows: 11, perPage: 33,
-    labelW: "70mm", labelH: "25.4mm", pageMarginTop: "10.65mm", pageMarginSide: "4.5mm", gap: "0mm", fontSize: "16pt" },
+    labelW: "70mm", labelH: "25.4mm", pageMarginTop: "10.65mm", pageMarginSide: "4.5mm", gap: "0mm", fontSize: "18pt" },
   "2072": { name: "TANEX 2072 — 72 בדף (6×12)", cols: 6, rows: 12, perPage: 72,
-    labelW: "46.3mm", labelH: "21.2mm", pageMarginTop: "13.5mm", pageMarginSide: "3.85mm", gap: "0mm", fontSize: "13pt" },
+    labelW: "46.3mm", labelH: "21.2mm", pageMarginTop: "13.5mm", pageMarginSide: "3.85mm", gap: "0mm", fontSize: "16pt" },
   "2120": { name: "TANEX 2120 — 120 בדף (6×20)", cols: 6, rows: 20, perPage: 120,
-    labelW: "38.1mm", labelH: "13mm", pageMarginTop: "15mm", pageMarginSide: "4mm", gap: "0mm", fontSize: "11pt" },
+    labelW: "38.1mm", labelH: "13mm", pageMarginTop: "15mm", pageMarginSide: "4mm", gap: "0mm", fontSize: "13pt" },
 };
 
 // דף בחירת הגדרות

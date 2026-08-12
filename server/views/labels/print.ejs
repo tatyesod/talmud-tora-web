@@ -45,19 +45,20 @@
       align-items: center;
       padding: 1.5mm 3mm;
       font-size: <%= fmt.fontSize %>;
+      font-family: "FrankRuehl", "FrankRuehlCLM", "Guttman Mantova", Arial, sans-serif;
+      font-weight: bold;
       direction: rtl;
       text-align: center;
     }
 
     .label-line1 { font-size: 0.85em; color: #555; line-height: 1.2; width:100%; text-align: center; }
-    .label-line2 { font-weight: 700; font-size: 1.05em; line-height: 1.3; width:100%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-align: center; }
+    .label-line2 { font-weight: bold; font-size: 1.05em; line-height: 1.3; width:100%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-align: center; }
     .label-line3 { font-size: 0.88em; line-height: 1.2; width:100%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-align: center; }
 
-    /* מדבקה עם שורה אחת בלבד (בלי line1/line3) - מגדילים אותה משמעותית,
-       כי יש הרבה יותר מקום פנוי למלא */
-    .label.single-line .label-line2 { font-size: 1.7em; white-space: normal; overflow-wrap: break-word; text-overflow: clip; line-height: 1.15; }
+    /* מדבקה עם שורה אחת בלבד (בלי line1/line3) - עדיין ממורכזת יפה, אבל
+       בלי הגדלה נוספת מעבר לגודל הפונט שנבחר, כדי לא לגלוש מהמדבקה */
+    .label.single-line .label-line2 { font-size: 1.15em; white-space: normal; overflow-wrap: break-word; text-overflow: clip; line-height: 1.15; }
 
-    .label.teacher .label-line2 { font-family: "Guttman Mantova", "FrankRuehlCLM", Arial, sans-serif; }
 
     .show-borders .label { border: 0.3pt dashed #bbb; }
   </style>
