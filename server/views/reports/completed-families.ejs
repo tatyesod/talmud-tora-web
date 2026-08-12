@@ -1,0 +1,50 @@
+<%- include('../partials/header', {title: 'משפחות שסיימו', wide: true}) %>
+
+<div class="card">
+  <h1>🎓 משפחות שסיימו (כל הבנים בארכיון)</h1>
+  <p style="color:var(--muted); font-size:0.9em; line-height:1.6;">
+    משפחות שכל התלמידים שלהן (שהיו אי-פעם רשומים) נמצאים כעת בסטטוס "ארכיון" - מיועד לזיהוי משפחות שיש
+    להפסיק להן חיוב הוראת קבע לשכר לימוד. התאריך מחושב לפי תאריך היציאה של הילד האחרון שסיים (או תאריך
+    העדכון האחרון שלו, אם לא הוזן תאריך יציאה מפורש).
+  </p>
+
+  <form method="GET" style="margin-bottom:16px; display:flex; gap:10px; align-items:center;">
+    <label>הצג משפחות שסיימו ב-</label>
+    <select name="months" onchange="this.form.submit()">
+      <option value="3" <%= monthsBack === 3 ? 'selected' : '' %>>3 החודשים האחרונים</option>
+      <option value="6" <%= monthsBack === 6 ? 'selected' : '' %>>6 החודשים האחרונים</option>
+      <option value="12" <%= monthsBack === 12 ? 'selected' : '' %>>12 החודשים האחרונים</option>
+      <option value="24" <%= monthsBack === 24 ? 'selected' : '' %>>24 החודשים האחרונים</option>
+    </select>
+    <a href="/reports/completed-families/export?months=<%= monthsBack %>" class="btn secondary">📥 ייצוא לאקסל</a>
+  </form>
+
+  <% if (results.length === 0) { %>
+    <p style="color:var(--muted);">לא נמצאו משפחות שסיימו בטווח שנבחר.</p>
+  <% } else { %>
+    <table>
+      <thead>
+        <tr>
+          <th>משפחה</th><th>שם האב</th><th>ת"ז אב</th><th>שם האם</th><th>ת"ז אם</th>
+          <th>כתובת</th><th>תאריך מעבר לארכיון</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% results.forEach(r => { %>
+          <tr>
+            <td><a href="/families/<%= r.family.id %>"><%= r.family.last_name || '' %></a></td>
+            <td><%= r.family.father_name || '' %></td>
+            <td><%= r.family.father_id_number || '' %></td>
+            <td><%= r.family.mother_name || '' %></td>
+            <td><%= r.family.mother_id_number || '' %></td>
+            <td><%= [r.family.street, r.family.house_number, r.family.city].filter(Boolean).join(' ') %></td>
+            <td><%= r.completionDateHeb %></td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+    <p style="color:var(--muted); font-size:0.85em; margin-top:10px;">סה"כ <%= results.length %> משפחות.</p>
+  <% } %>
+</div>
+
+<%- include('../partials/footer') %>

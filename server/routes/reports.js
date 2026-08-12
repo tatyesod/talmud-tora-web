@@ -102,6 +102,117 @@ router.get("/", (req, res) => {
   res.render("reports/menu");
 });
 
+// ============ משפחות שסיימו (כל הבנים בארכיון) - להפסקת הו"ק ============
+router.get("/completed-families", (req, res) => {
+  const monthsBack = parseInt(req.query.months) || 12;
+  const cutoffDate = new Date();
+  cutoffDate.setMonth(cutoffDate.getMonth() - monthsBack);
+
+  const families = db.prepare(`
+    SELECT f.id, f.last_name, f.father_name, f.father_id_number, f.mother_name, f.mother_id_number,
+           f.street, f.house_number, f.city
+    FROM families f
+    WHERE f.id IN (SELECT DISTINCT family_id FROM students WHERE family_id IS NOT NULL)
+    ORDER BY f.last_name
+  `).all();
+
+  const studentsByFamily = db.prepare(`
+    SELECT family_id, status, exit_date, updated_at FROM students WHERE family_id IS NOT NULL
+  `).all();
+  const grouped = {};
+  studentsByFamily.forEach((s) => {
+    if (!grouped[s.family_id]) grouped[s.family_id] = [];
+    grouped[s.family_id].push(s);
+  });
+
+  const results = [];
+  families.forEach((f) => {
+    const kids = grouped[f.id] || [];
+    if (kids.length === 0) return;
+    const allArchived = kids.every((k) => k.status === "ארכיון");
+    if (!allArchived) return;
+
+    // תאריך "סיום" המשפחה = התאריך המאוחר מבין כל הילדים - מעדיפים תאריך
+    // יציאה אם הוזן, ואם לא, נופלים חזרה לתאריך העדכון האחרון של התלמיד
+    // (קירוב סביר למתי שהוא הועבר בפועל לארכיון)
+    let latestDate = null;
+    kids.forEach((k) => {
+      let d = null;
+      if (k.exit_date) {
+        const g = hd.serialToDateObject(k.exit_date);
+        if (g) d = g;
+      }
+      if (!d && k.updated_at) d = new Date(k.updated_at);
+      if (d && (!latestDate || d > latestDate)) latestDate = d;
+    });
+    if (!latestDate || latestDate < cutoffDate) return;
+
+    results.push({
+      family: f,
+      completionDate: latestDate,
+      completionDateHeb: hd.anyDateToHebrewString(latestDate),
+    });
+  });
+
+  results.sort((a, b) => b.completionDate - a.completionDate);
+
+  res.render("reports/completed-families", { results, monthsBack });
+});
+
+router.get("/completed-families/export", async (req, res) => {
+  const monthsBack = parseInt(req.query.months) || 12;
+  const cutoffDate = new Date();
+  cutoffDate.setMonth(cutoffDate.getMonth() - monthsBack);
+
+  const families = db.prepare(`
+    SELECT f.id, f.last_name, f.father_name, f.father_id_number, f.mother_name, f.mother_id_number,
+           f.street, f.house_number, f.city
+    FROM families f
+    WHERE f.id IN (SELECT DISTINCT family_id FROM students WHERE family_id IS NOT NULL)
+    ORDER BY f.last_name
+  `).all();
+
+  const studentsByFamily = db.prepare(`
+    SELECT family_id, status, exit_date, updated_at FROM students WHERE family_id IS NOT NULL
+  `).all();
+  const grouped = {};
+  studentsByFamily.forEach((s) => {
+    if (!grouped[s.family_id]) grouped[s.family_id] = [];
+    grouped[s.family_id].push(s);
+  });
+
+  const results = [];
+  families.forEach((f) => {
+    const kids = grouped[f.id] || [];
+    if (kids.length === 0) return;
+    const allArchived = kids.every((k) => k.status === "ארכיון");
+    if (!allArchived) return;
+
+    let latestDate = null;
+    kids.forEach((k) => {
+      let d = null;
+      if (k.exit_date) {
+        const g = hd.serialToDateObject(k.exit_date);
+        if (g) d = g;
+      }
+      if (!d && k.updated_at) d = new Date(k.updated_at);
+      if (d && (!latestDate || d > latestDate)) latestDate = d;
+    });
+    if (!latestDate || latestDate < cutoffDate) return;
+
+    results.push({ family: f, completionDate: latestDate, completionDateHeb: hd.anyDateToHebrewString(latestDate) });
+  });
+  results.sort((a, b) => b.completionDate - a.completionDate);
+
+  const header = ["משפחה", "שם האב", "ת\"ז אב", "שם האם", "ת\"ז אם", "כתובת", "תאריך מעבר לארכיון"];
+  const data = results.map((r) => [
+    r.family.last_name || "", r.family.father_name || "", r.family.father_id_number || "",
+    r.family.mother_name || "", r.family.mother_id_number || "",
+    buildAddress(r.family), r.completionDateHeb,
+  ]);
+  await sendWorkbook(res, "משפחות שסיימו.xlsx", "משפחות שסיימו", "משפחות שסיימו - כל הבנים בארכיון", header, data);
+});
+
 // ============ רשימת כיתות - ייצוא לאקסל ============
 router.get("/class-list", (req, res) => {
   const classes = db.prepare("SELECT id, name, parallel, status, branch FROM classes ORDER BY name, parallel").all();

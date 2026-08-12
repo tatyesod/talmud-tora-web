@@ -231,6 +231,14 @@ router.put("/:id", (req, res) => {
   // שמירה סתמית של הטופס) - זה המקרה היחיד שבו רוצים סנכרון אוטומטי
   if (body.status && body.status !== previousStatus) {
     db.prepare("UPDATE students SET status = ? WHERE family_id = ?").run(body.status, req.params.id);
+    // תיעוד מתי המשפחה עברה לארכיון בפועל - נדרש לדוח "משפחות שסיימו" (כדי
+    // לדעת למי להפסיק חיוב הו"ק). אם המשפחה יוצאת מארכיון (שוחזרה), מנקים
+    // את התאריך כדי שלא יישאר תאריך ארכוב לא רלוונטי.
+    if (body.status === "ארכיון") {
+      db.prepare("UPDATE families SET archived_at = ? WHERE id = ?").run(new Date().toISOString(), req.params.id);
+    } else if (previousStatus === "ארכיון") {
+      db.prepare("UPDATE families SET archived_at = NULL WHERE id = ?").run(req.params.id);
+    }
   }
 
   res.redirect(`/families/${req.params.id}/edit?saved=1`);
