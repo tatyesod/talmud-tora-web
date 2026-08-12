@@ -5,11 +5,11 @@ const db = require("../db");
 // הגדרות פורמטים של מדבקות TANEX
 const FORMATS = {
   "2133": { name: "TANEX 2133 — 33 בדף (3×11)", cols: 3, rows: 11, perPage: 33,
-    labelW: "70mm", labelH: "25.4mm", pageMarginTop: "10.65mm", pageMarginSide: "4.5mm", gap: "0mm", fontSize: "18pt", nameSplitFontSize: "22pt" },
+    labelW: "70mm", labelH: "25.4mm", pageMarginTop: "10.65mm", pageMarginSide: "4.5mm", gap: "0mm", fontSize: "17pt", nameSplitFontSize: "20pt" },
   "2072": { name: "TANEX 2072 — 72 בדף (6×12)", cols: 6, rows: 12, perPage: 72,
-    labelW: "46.3mm", labelH: "21.2mm", pageMarginTop: "13.5mm", pageMarginSide: "3.85mm", gap: "0mm", fontSize: "16pt", nameSplitFontSize: "19pt" },
+    labelW: "46.3mm", labelH: "21.2mm", pageMarginTop: "13.5mm", pageMarginSide: "3.85mm", gap: "0mm", fontSize: "15pt", nameSplitFontSize: "18pt" },
   "2120": { name: "TANEX 2120 — 120 בדף (6×20)", cols: 6, rows: 20, perPage: 120,
-    labelW: "38.1mm", labelH: "13mm", pageMarginTop: "15mm", pageMarginSide: "4mm", gap: "0mm", fontSize: "13pt", nameSplitFontSize: "14pt", nameSplitPadV: "0.5mm" },
+    labelW: "38.1mm", labelH: "13mm", pageMarginTop: "15mm", pageMarginSide: "4mm", gap: "0mm", fontSize: "12pt", nameSplitFontSize: "13pt", nameSplitPadV: "0.5mm" },
 };
 
 // דף בחירת הגדרות
@@ -26,9 +26,11 @@ router.get("/", (req, res) => {
 
 // הפקת מדבקות
 router.get("/print", (req, res) => {
-  const { format, content_type, class_id, copies } = req.query;
+  const { format, content_type, class_id, copies, offset_top, offset_side } = req.query;
   const fmt = FORMATS[format] || FORMATS["2133"];
   const numCopies = parseInt(copies) || 1;
+  const offsetTopMM = parseFloat(offset_top) || 0;
+  const offsetSideMM = parseFloat(offset_side) || 0;
 
   let items = [];
 
@@ -115,7 +117,7 @@ router.get("/print", (req, res) => {
   const cls = class_id ? db.prepare("SELECT name, parallel FROM classes WHERE id=?").get(class_id) : null;
   const clsLabel = cls ? cls.name + (cls.parallel ? " " + cls.parallel : "") : "כל הכיתות";
 
-  res.render("labels/print", { fmt, format, items: allItems, content_type, clsLabel });
+  res.render("labels/print", { fmt, format, items: allItems, content_type, clsLabel, offsetTopMM, offsetSideMM });
 });
 
 module.exports = router;

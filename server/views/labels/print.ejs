@@ -3,6 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <title>מדבקות</title>
+  <%
+    // מחשבים שוליים מותאמים לפי כיוונון עדין שהוזן (אם הוזן), כדי לתקן סטייה
+    // ספציפית למדפסת של המשתמש
+    const baseMarginTop = parseFloat(fmt.pageMarginTop) || 0;
+    const baseMarginSide = parseFloat(fmt.pageMarginSide) || 0;
+    const adjustedMarginTop = baseMarginTop + (typeof offsetTopMM !== 'undefined' ? offsetTopMM : 0);
+    const adjustedMarginSide = baseMarginSide + (typeof offsetSideMM !== 'undefined' ? offsetSideMM : 0);
+  %>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -22,9 +30,9 @@
       width: 210mm;
       height: 296mm;
       overflow: hidden;
-      padding-top: <%= fmt.pageMarginTop %>;
-      padding-right: <%= fmt.pageMarginSide %>;
-      padding-left: <%= fmt.pageMarginSide %>;
+      padding-top: <%= adjustedMarginTop %>mm;
+      padding-right: <%= adjustedMarginSide %>mm;
+      padding-left: <%= adjustedMarginSide %>mm;
       page-break-after: always;
     }
     .label-page:last-child { page-break-after: auto; }
@@ -43,7 +51,7 @@
       flex-direction: column;
       justify-content: center;
       align-items: center;
-      padding: 0.8mm 2.5mm;
+      padding: 0.8mm 3.2mm;
       font-size: <%= fmt.fontSize %>;
       font-family: "FrankRuehl", "FrankRuehlCLM", "Guttman Mantova", Arial, sans-serif;
       font-weight: bold;
