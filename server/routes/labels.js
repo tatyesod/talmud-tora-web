@@ -222,6 +222,17 @@ router.get("/export-docx", async (req, res) => {
       rows: tableRows,
       layout: TableLayoutType.FIXED,
       width: { size: mmToTwips(labelWmm * fmt.cols), type: WidthType.DXA },
+      indent: { size: 0, type: WidthType.DXA },
+      // שוליים פנימיים מפורשים לכל תא - בלי זה וורד מוסיף שוליים משלו
+      // (בערך 2 מ"מ מכל צד) שלא היינו מודעים אליהם, מה שהזיז את התוכן
+      // מהמידות המדויקות של מדבקת TANEX
+      margins: {
+        top: mmToTwips(0.8),
+        bottom: mmToTwips(0.8),
+        left: mmToTwips(1),
+        right: mmToTwips(1),
+        marginUnitType: WidthType.DXA,
+      },
     });
     docChildren.push(table);
     if (pageIdx < pages.length - 1) {
