@@ -12,26 +12,9 @@ const FORMATS = {
     labelW: "38.1mm", labelH: "13mm", pageMarginTop: "15mm", pageMarginSide: "4mm", gap: "0mm", fontSize: "12pt", nameSplitFontSize: "13pt", nameSplitPadV: "0.5mm" },
 };
 
-// דף בחירת הגדרות
-router.get("/", (req, res) => {
-  const classes = db.prepare(`
-    SELECT c.id, c.name, c.parallel, c.branch,
-      (SELECT COUNT(*) FROM students s WHERE s.class_id = c.id AND s.status = 'פעיל') AS student_count
-    FROM classes c ORDER BY c.name, c.parallel
-  `).all();
-  const branches = db.prepare("SELECT DISTINCT branch FROM classes WHERE branch IS NOT NULL ORDER BY branch").all().map(r=>r.branch);
-  const totalActiveStudents = db.prepare("SELECT COUNT(*) c FROM students WHERE status = 'פעיל'").get().c;
-  res.render("labels/setup", { formats: FORMATS, classes, branches, totalActiveStudents });
-});
-
-// הפקת מדבקות
-router.get("/print", (req, res) => {
-  const { format, content_type, class_id, copies, offset_top, offset_side } = req.query;
-  const fmt = FORMATS[format] || FORMATS["2133"];
-  const numCopies = parseInt(copies) || 1;
-  const offsetTopMM = parseFloat(offset_top) || 0;
-  const offsetSideMM = parseFloat(offset_side) || 0;
-
+// שולף את פריטי המדבקות לפי סוג התוכן - פונקציה משותפת ל-/print ול-/export-docx,
+// כדי לא לשכפל את לוגיקת השאילתות
+function fetchLabelItems(content_type, class_id) {
   let items = [];
 
   if (content_type === "families") {
@@ -105,6 +88,31 @@ router.get("/print", (req, res) => {
     }));
   }
 
+  return items;
+}
+
+// דף בחירת הגדרות
+router.get("/", (req, res) => {
+  const classes = db.prepare(`
+    SELECT c.id, c.name, c.parallel, c.branch,
+      (SELECT COUNT(*) FROM students s WHERE s.class_id = c.id AND s.status = 'פעיל') AS student_count
+    FROM classes c ORDER BY c.name, c.parallel
+  `).all();
+  const branches = db.prepare("SELECT DISTINCT branch FROM classes WHERE branch IS NOT NULL ORDER BY branch").all().map(r=>r.branch);
+  const totalActiveStudents = db.prepare("SELECT COUNT(*) c FROM students WHERE status = 'פעיל'").get().c;
+  res.render("labels/setup", { formats: FORMATS, classes, branches, totalActiveStudents });
+});
+
+// הפקת מדבקות
+router.get("/print", (req, res) => {
+  const { format, content_type, class_id, copies, offset_top, offset_side } = req.query;
+  const fmt = FORMATS[format] || FORMATS["2133"];
+  const numCopies = parseInt(copies) || 1;
+  const offsetTopMM = parseFloat(offset_top) || 0;
+  const offsetSideMM = parseFloat(offset_side) || 0;
+
+  const items = fetchLabelItems(content_type, class_id);
+
   // הכפלת כמות עותקים - עוברים על כל הרשימה פעם אחת לכל עותק (לא חוזרים על
   // אותו שם 4 פעמים ברצף ואז עוברים הלאה - זה לא נוח לעבודה. במקום זה,
   // כשיש כמה עותקים, פשוט עוברים שוב על הרשימה השלמה, לפי הסדר)
@@ -118,6 +126,129 @@ router.get("/print", (req, res) => {
   const clsLabel = cls ? cls.name + (cls.parallel ? " " + cls.parallel : "") : "כל הכיתות";
 
   res.render("labels/print", { fmt, format, items: allItems, content_type, clsLabel, offsetTopMM, offsetSideMM });
+});
+
+// ============ ייצוא לוורד - כדי שאפשר יהיה לכוונן ידנית בוורד ============
+const { Document, Packer, Paragraph, TextRun, AlignmentType, PageBreak, Table, TableRow, TableCell, WidthType, TableLayoutType, VerticalAlign, HeightRule } = require("docx");
+
+function mmToTwips(mm) {
+  return Math.round(mm * 56.6929);
+}
+
+router.get("/export-docx", async (req, res) => {
+  const { format, content_type, class_id, copies, offset_top, offset_side } = req.query;
+  const fmt = FORMATS[format] || FORMATS["2133"];
+  const numCopies = parseInt(copies) || 1;
+  const offsetTopMM = parseFloat(offset_top) || 0;
+  const offsetSideMM = parseFloat(offset_side) || 0;
+
+  const items = fetchLabelItems(content_type, class_id);
+  const allItems = [];
+  for (let i = 0; i < numCopies; i++) {
+    for (const item of items) allItems.push(item);
+  }
+
+  const labelWmm = parseFloat(fmt.labelW);
+  const labelHmm = parseFloat(fmt.labelH);
+  const marginTopMM = parseFloat(fmt.pageMarginTop) + offsetTopMM;
+  const marginSideMM = parseFloat(fmt.pageMarginSide) + offsetSideMM;
+  const baseFontHalfPt = parseFloat(fmt.fontSize) * 2;
+  const nameSplitFontHalfPt = parseFloat(fmt.nameSplitFontSize || fmt.fontSize) * 2;
+
+  // מחלקים לדפים - עמוד אחד = perPage מדבקות, בדיוק כמו בגרסת ההדפסה
+  const pages = [];
+  let current = [];
+  allItems.forEach((item, i) => {
+    current.push(item);
+    if (current.length === fmt.perPage || i === allItems.length - 1) {
+      pages.push([...current]);
+      current = [];
+    }
+  });
+  if (pages.length === 0) pages.push([]);
+
+  function buildCellParagraphs(item) {
+    if (!item) return [new Paragraph({ text: "" })];
+    const paragraphs = [];
+    if (item.isNameSplit) {
+      // שם חיבה + משפחה - שתי שורות קבועות, שתיהן מודגשות באותו גודל
+      if (item.line1) paragraphs.push(new Paragraph({
+        alignment: AlignmentType.CENTER,
+        children: [new TextRun({ text: item.line1, bold: true, size: nameSplitFontHalfPt })],
+      }));
+      if (item.line2) paragraphs.push(new Paragraph({
+        alignment: AlignmentType.CENTER,
+        children: [new TextRun({ text: item.line2, bold: true, size: nameSplitFontHalfPt })],
+      }));
+    } else {
+      // תבנית 3 שורות רגילה: שורה 1 קטנה, שורה 2 מודגשת (עיקרית), שורה 3 קטנה
+      if (item.line1) paragraphs.push(new Paragraph({
+        alignment: AlignmentType.CENTER,
+        children: [new TextRun({ text: item.line1, size: Math.round(baseFontHalfPt * 0.85) })],
+      }));
+      if (item.line2) paragraphs.push(new Paragraph({
+        alignment: AlignmentType.CENTER,
+        children: [new TextRun({ text: item.line2, bold: true, size: Math.round(baseFontHalfPt * 1.05) })],
+      }));
+      if (item.line3) paragraphs.push(new Paragraph({
+        alignment: AlignmentType.CENTER,
+        children: [new TextRun({ text: item.line3, size: Math.round(baseFontHalfPt * 0.88) })],
+      }));
+    }
+    if (paragraphs.length === 0) paragraphs.push(new Paragraph({ text: "" }));
+    return paragraphs;
+  }
+
+  const docChildren = [];
+  pages.forEach((page, pageIdx) => {
+    const tableRows = [];
+    for (let r = 0; r < fmt.rows; r++) {
+      const cells = [];
+      for (let c = 0; c < fmt.cols; c++) {
+        const idx = r * fmt.cols + c;
+        const item = idx < page.length ? page[idx] : null;
+        cells.push(new TableCell({
+          width: { size: mmToTwips(labelWmm), type: WidthType.DXA },
+          verticalAlign: VerticalAlign.CENTER,
+          children: buildCellParagraphs(item),
+        }));
+      }
+      tableRows.push(new TableRow({
+        children: cells,
+        height: { value: mmToTwips(labelHmm), rule: HeightRule.EXACT },
+      }));
+    }
+    const table = new Table({
+      rows: tableRows,
+      layout: TableLayoutType.FIXED,
+      width: { size: mmToTwips(labelWmm * fmt.cols), type: WidthType.DXA },
+    });
+    docChildren.push(table);
+    if (pageIdx < pages.length - 1) {
+      docChildren.push(new Paragraph({ children: [new PageBreak()] }));
+    }
+  });
+
+  const doc = new Document({
+    sections: [{
+      properties: {
+        page: {
+          margin: {
+            top: mmToTwips(marginTopMM),
+            right: mmToTwips(marginSideMM),
+            left: mmToTwips(marginSideMM),
+            bottom: mmToTwips(marginTopMM),
+          },
+        },
+      },
+      children: docChildren,
+    }],
+  });
+
+  const buffer = await Packer.toBuffer(doc);
+  res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
+  res.setHeader("Content-Disposition", `attachment; filename="labels.docx"; filename*=UTF-8''${encodeURIComponent("מדבקות.docx")}`);
+  res.send(buffer);
 });
 
 module.exports = router;
