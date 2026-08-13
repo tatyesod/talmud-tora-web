@@ -487,8 +487,9 @@ router.get("/:id", (req, res) => {
       // "כיתה" כתווית כללית לפני שם הכיתה - אבל בלי לכפול אם השם כבר מתחיל
       // ב"כיתה" (כמו "כיתה ג'"), רק כשזה נדרש (כמו "מכינה א'" -> "כיתה מכינה א'")
       const className = /^כיתה\s/.test(c.name) ? rawName : `כיתה ${rawName}`;
-      if (c.role === "עוזר") return `עוזר ${className}`;
-      return `מלמד ${className} ${c.role || ""}`.trim();
+      const extensionSuffix = c.extension ? ` - שלוחה ${c.extension}` : "";
+      if (c.role === "עוזר") return `עוזר ${className}${extensionSuffix}`;
+      return `מלמד ${className} ${c.role || ""}${extensionSuffix}`.trim();
     }),
     ...staffRoleAssignments.map((r) => r.name + (r.branch ? ` (${r.branch})` : "")),
   ];

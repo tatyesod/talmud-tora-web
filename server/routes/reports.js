@@ -513,6 +513,27 @@ router.get("/class-journal/view", (req, res) => {
 
 // ============ דף בודד (כמו דפי יומן כיתה, אבל לא חלק מחוברת) ============
 // ============ אלפון כיתתי ============
+// ============ רשימת שלוחות - דף לתלייה ליד הטלפון בכל כיתה ============
+router.get("/extensions", (req, res) => {
+  const rows = db.prepare(`
+    SELECT c.name, c.parallel, c.branch, c.extension, t.first_name, t.last_name, tc.role
+    FROM teacher_classes tc
+    JOIN classes c ON tc.class_id = c.id
+    JOIN teachers t ON tc.teacher_id = t.id
+    WHERE c.status = 'פעיל' AND c.name NOT LIKE 'עדיין לא נכנסו%'
+      AND tc.role IN ('בוקר', 'אחה"צ') AND t.status = 'פעיל'
+    ORDER BY c.branch, c.name, c.parallel, CASE tc.role WHEN 'בוקר' THEN 1 ELSE 2 END
+  `).all();
+  const items = rows.map((r) => ({
+    className: r.name + (r.parallel ? " " + r.parallel : ""),
+    teacherName: `הרב ${r.first_name || ""} ${r.last_name || ""}`.trim(),
+    role: r.role,
+    branch: r.branch || "",
+    extension: r.extension || "",
+  }));
+  res.render("reports/extensions", { items });
+});
+
 router.get("/class-directory", (req, res) => {
   const classes = db.prepare("SELECT id, name, parallel, branch FROM classes ORDER BY name, parallel").all();
   const branches = db.prepare("SELECT DISTINCT branch FROM classes WHERE branch IS NOT NULL ORDER BY branch").all().map(r=>r.branch);

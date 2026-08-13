@@ -78,7 +78,7 @@ router.get("/new", (req, res) => {
   res.render("classes/form", { classRow: {}, mode: "new", categories });
 });
 
-const CLASS_FIELDS = ["name", "parallel", "class_number", "transfer_number", "status", "category_id", "branch", "institution_code"];
+const CLASS_FIELDS = ["name", "parallel", "class_number", "transfer_number", "status", "category_id", "branch", "institution_code", "extension"];
 
 router.post("/", (req, res) => {
   const body = req.body;

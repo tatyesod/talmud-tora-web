@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <title>רשימת שלוחות</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Arial, 'Arial Hebrew', sans-serif; direction: rtl; }
+    @page { size: A4 portrait; margin: 13mm; }
+    @media print { .no-print { display: none !important; } }
+
+    .no-print {
+      background: #2c5f7c; color: #fff; padding: 10px 16px;
+      display: flex; gap: 14px; align-items: center; font-size: 13px;
+    }
+    .no-print button { background:#fff; color:#2c5f7c; border:none; border-radius:6px; padding:6px 14px; cursor:pointer; font-weight:700; }
+    .no-print a { color:#fff; }
+
+    .bsd { text-align: right; font-size: 9pt; margin-bottom: 4px; }
+    .title { text-align: center; font-weight: 800; font-size: 15pt; color: #2c5f7c; margin-bottom: 14px; }
+
+    table.ext { width: 97%; margin: 0 auto; border-collapse: collapse; font-size: 10pt; }
+    table.ext th, table.ext td { border: 0.6pt solid #999; padding: 5px 8px; text-align: right; }
+    table.ext th { background: #dde8f0; font-weight: 700; text-align: center; }
+    td.ext-num { text-align: center; font-weight: 700; font-size: 12pt; background: #f5f5f5; }
+  </style>
+</head>
+<body>
+
+<div class="no-print">
+  <button onclick="window.print()">🖨️ שמירה כ-PDF / הדפסה</button>
+  <span>רשימת שלוחות - <%= items.length %> שורות</span>
+  <a href="javascript:history.back()">← חזרה</a>
+</div>
+
+<div class="bsd">בס"ד</div>
+<div class="title">רשימת שלוחות - טלפון פנימי</div>
+
+<table class="ext">
+  <thead>
+    <tr>
+      <th>כיתה</th>
+      <th>שם המלמד</th>
+      <th>סניף</th>
+      <th>שלוחה</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% items.forEach(item => { %>
+      <tr>
+        <td><%= item.className %> (<%= item.role %>)</td>
+        <td><%= item.teacherName %></td>
+        <td><%= item.branch %></td>
+        <td class="ext-num"><%= item.extension %></td>
+      </tr>
+    <% }) %>
+  </tbody>
+</table>
+
+</body>
+</html>
