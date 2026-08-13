@@ -205,6 +205,7 @@ router.get("/students", (req, res) => {
       first_name: "s.first_name, s.last_name",
       nickname: "s.nickname",
       class_name: "c.name, c.parallel",
+      cohort_name: "co.name",
       id_number: "s.id_number",
       home_phone: "f.home_phone",
       status: "s.status",

@@ -58,6 +58,7 @@
           <th><a href="<%= sortUrl('first_name') %>">שם פרטי<%= sortIndicator('first_name') %></a></th>
           <th><a href="<%= sortUrl('nickname') %>">כינוי<%= sortIndicator('nickname') %></a></th>
           <th><a href="<%= sortUrl('class_name') %>">כיתה<%= sortIndicator('class_name') %></a></th>
+          <th><a href="<%= sortUrl('cohort_name') %>">מחזור<%= sortIndicator('cohort_name') %></a></th>
           <th>סניף</th>
           <th><a href="<%= sortUrl('id_number') %>">ת.ז<%= sortIndicator('id_number') %></a></th>
           <th>מגזר</th>
@@ -79,6 +80,7 @@
             <td><%= s.first_name || '' %></td>
             <td><%= s.nickname || '' %></td>
             <td><%= (s.class_name || '') + (s.class_parallel ? ' ' + s.class_parallel : '') %></td>
+            <td><%= s.cohort_name || '' %></td>
             <td><%= s.branch || '' %></td>
             <td><%= s.id_number || '' %></td>
             <td><%= s.sector || '' %></td>
