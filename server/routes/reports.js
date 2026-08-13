@@ -633,6 +633,19 @@ router.get("/extensions", (req, res) => {
     return STAFF_ORDER.length; // תפקיד לא מזוהה - אחרי הכל, לפני הכיתות
   }
 
+  // סדר כיתות: מכינה א' -> מכינה ב' -> כיתה א' -> ... -> כיתה ח' - לא
+  // אלפביתי (כי אלפביתית "מכינה" הייתה מגיעה אחרי "כיתה", לא לפני)
+  const CLASS_NAME_ORDER = [
+    "מכינה א", "מכינה ב",
+    "כיתה א", "כיתה ב", "כיתה ג", "כיתה ד", "כיתה ה", "כיתה ו", "כיתה ז", "כיתה ח",
+  ];
+  function classNameRank(name) {
+    for (let i = 0; i < CLASS_NAME_ORDER.length; i++) {
+      if (name.startsWith(CLASS_NAME_ORDER[i])) return i;
+    }
+    return CLASS_NAME_ORDER.length; // שם לא מזוהה - בסוף הרשימה
+  }
+
   const allItems = [...staffItems, ...classItems, ...miscItems];
   allItems.sort((a, b) => {
     // קבוצה 0: תפקידי צוות (מנהל/מזכירים/שילוב) - תמיד ראשונים
@@ -659,6 +672,9 @@ router.get("/extensions", (req, res) => {
     const bKindRank = kindRank(b);
     if (aKindRank !== bKindRank) return aKindRank - bKindRank;
     if (a.kind === "class" && b.kind === "class") {
+      const aRank = classNameRank(a.sortName);
+      const bRank = classNameRank(b.sortName);
+      if (aRank !== bRank) return aRank - bRank;
       if (a.sortName !== b.sortName) return a.sortName < b.sortName ? -1 : 1;
       return a.sortParallel < b.sortParallel ? -1 : a.sortParallel > b.sortParallel ? 1 : 0;
     }
