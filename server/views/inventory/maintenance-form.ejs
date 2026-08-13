@@ -117,13 +117,15 @@
     });
     const body = bodyLines.join('\n');
 
-    const mailtoUrl = 'mailto:' + encodeURIComponent(MAINTENANCE_EMAIL) +
-      '?subject=' + encodeURIComponent(subject) +
+    // פותחים ישירות את חלון החיבור של Gmail (לא mailto:, כי mailto תמיד
+    // פותח את תוכנת המייל שמוגדרת כברירת מחדל במחשב - כמו Outlook - ולא
+    // בהכרח את Gmail של השולח). פותחים בטאב חדש כדי לא לעזוב את העמוד
+    // הנוכחי, כך שהטופס עדיין ימשיך להישלח כרגיל לשמירה.
+    const gmailUrl = 'https://mail.google.com/mail/?view=cm&fs=1' +
+      '&to=' + encodeURIComponent(MAINTENANCE_EMAIL) +
+      '&su=' + encodeURIComponent(subject) +
       '&body=' + encodeURIComponent(body);
-
-    // פותחים את המייל תוך כדי אירוע הלחיצה של המשתמש (לא אחרי redirect),
-    // כדי שהדפדפן לא יחסום את זה כפופ-אפ. הטופס ממשיך להישלח כרגיל לשמירה.
-    window.location.href = mailtoUrl;
+    window.open(gmailUrl, '_blank');
   });
 
   addRow();
