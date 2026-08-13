@@ -9,7 +9,7 @@ const FORMATS = {
   "2072": { name: "TANEX 2072 — 72 בדף (6×12)", cols: 6, rows: 12, perPage: 72,
     labelW: "35mm", labelH: "22mm", pageMarginTop: "13.5mm", pageMarginSide: "0mm", gap: "0mm", fontSize: "11pt", nameSplitFontSize: "13pt" },
   "2120": { name: "TANEX 2120 — 120 בדף (6×20)", cols: 6, rows: 20, perPage: 120,
-    labelW: "33mm", labelH: "13mm", pageMarginTop: "15mm", pageMarginSide: "2mm", gap: "0mm", fontSize: "10pt", nameSplitFontSize: "11pt", nameSplitPadV: "0.5mm" },
+    labelW: "31mm", labelH: "14mm", pageMarginTop: "8mm", pageMarginSide: "12mm", gap: "0mm", fontSize: "10pt", nameSplitFontSize: "11pt", nameSplitPadV: "0.5mm" },
 };
 
 // שולף את פריטי המדבקות לפי סוג התוכן - פונקציה משותפת ל-/print ול-/export-docx,
