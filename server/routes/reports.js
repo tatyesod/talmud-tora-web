@@ -602,9 +602,17 @@ router.get("/extensions", (req, res) => {
     WHERE t.status = 'פעיל' AND sr.extension IS NOT NULL AND sr.extension != ''
     ORDER BY sr.branch IS NOT NULL, sr.branch, sr.name
   `).all();
+  // תואר מתאים - "הגב'" לתפקידים נשיים ידועים (מורות/רכזת שילוב), "הרב"
+  // לשאר (מנהל, מזכיר וכו')
+  function staffTitlePrefix(roleName) {
+    if (roleName.includes("מורת שילוב") || roleName.includes("מורות שילוב") || roleName.includes("רכזת שילוב")) {
+      return "הגב'";
+    }
+    return "הרב";
+  }
   const staffItems = staffRows.map((r) => ({
     kind: "staff", className: r.role_name,
-    morningTeacher: `הרב ${r.first_name || ""} ${r.last_name || ""}`.trim(), afternoonTeacher: "",
+    morningTeacher: `${staffTitlePrefix(r.role_name)} ${r.first_name || ""} ${r.last_name || ""}`.trim(), afternoonTeacher: "",
     branch: r.branch || "", extension: r.extension || "",
   }));
 
