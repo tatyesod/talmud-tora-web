@@ -50,9 +50,9 @@
         <div class="form-group">
           <label>סטטוס</label>
           <select name="status">
-            <option value="פעיל" <%= student.status === 'פעיל' || !student.status ? 'selected' : '' %>>פעיל</option>
+            <option value="פעיל" <%= student.status === 'פעיל' ? 'selected' : '' %>>פעיל</option>
             <option value="נרשם" <%= student.status === 'נרשם' ? 'selected' : '' %>>נרשם</option>
-            <option value="לא פעיל" <%= student.status === 'לא פעיל' ? 'selected' : '' %>>לא פעיל</option>
+            <option value="לא פעיל" <%= student.status === 'לא פעיל' || !student.status ? 'selected' : '' %>>לא פעיל</option>
             <option value="ארכיון" <%= student.status === 'ארכיון' ? 'selected' : '' %>>ארכיון</option>
             <option value="לא התקבל" <%= student.status === 'לא התקבל' ? 'selected' : '' %>>לא התקבל</option>
           </select>
