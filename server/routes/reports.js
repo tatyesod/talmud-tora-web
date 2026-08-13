@@ -706,10 +706,10 @@ router.get("/extensions", (req, res) => {
   const AVAILABLE_HEIGHT_MM = 260; // גובה A4 פחות שוליים וכותרת
   const sectionCount = allItems.filter((it) => it.sectionStart).length;
   const rowsForCalc = allItems.length + sectionCount + 1; // +שורות כותרת מדור +כותרת טבלה
-  let rowHeightMM = Math.min(AVAILABLE_HEIGHT_MM / rowsForCalc, 9);
+  let rowHeightMM = Math.min(AVAILABLE_HEIGHT_MM / rowsForCalc, 13);
   rowHeightMM = Math.max(rowHeightMM, 4);
-  const extFontPt = Math.max(7, Math.min(12, Math.round(rowHeightMM * 1.4)));
-  const bodyFontPt = Math.max(6.5, Math.min(11, Math.round(rowHeightMM * 1.2)));
+  const extFontPt = Math.max(7, Math.min(16, Math.round(rowHeightMM * 1.4)));
+  const bodyFontPt = Math.max(6.5, Math.min(14, Math.round(rowHeightMM * 1.2)));
 
   res.render("reports/extensions", { items: allItems, rowHeightMM, extFontPt, bodyFontPt });
 });
