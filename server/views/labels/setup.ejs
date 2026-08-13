@@ -29,16 +29,16 @@
         <%- include('../partials/branch-filter', { branches }) %>
       </div>
 
-      <div class="form-group">
+      <div class="form-group full">
         <label>כיתה (ריק = כולם)</label>
-        <div style="display:flex; gap:8px; align-items:center;">
-          <select name="class_id" id="class-select-labels" data-branch-filter onchange="updateStudentCount()" style="flex:1;">
+        <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+          <select name="class_id" id="class-select-labels" data-branch-filter onchange="updateStudentCount()" style="flex:1; min-width:200px;">
             <option value="" data-count="<%= totalActiveStudents %>">כל הכיתות</option>
             <% classes.forEach(c => { %>
               <option value="<%= c.id %>" data-branch="<%= c.branch || '' %>" data-count="<%= c.student_count %>"><%= c.name %><%= c.parallel ? ' ' + c.parallel : '' %></option>
             <% }) %>
           </select>
-          <span id="student-count-box" style="background:#2c5f7c; color:#fff; border-radius:8px; padding:6px 12px; font-weight:700; white-space:nowrap; font-size:0.9em;">
+          <span id="student-count-box" style="background:#2c5f7c; color:#fff; border-radius:8px; padding:6px 12px; font-weight:700; white-space:nowrap; font-size:0.9em; flex-shrink:0;">
             <%= totalActiveStudents %> תלמידים
           </span>
         </div>
