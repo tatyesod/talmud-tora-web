@@ -110,7 +110,7 @@ router.get("/students/api/cohort-for-date", (req, res) => {
   if (!serial) return res.json({ cohort: null });
   const cohort = db.prepare(`
     SELECT id, name FROM cohorts
-    WHERE from_date <= ? AND to_date >= ? AND (status IS NULL OR status = 'פעיל')
+    WHERE from_date <= ? AND to_date >= ?
     ORDER BY from_date DESC LIMIT 1
   `).get(serial, serial);
   res.json({ cohort: cohort || null });
