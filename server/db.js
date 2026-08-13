@@ -1303,6 +1303,21 @@ try {
   console.error("שגיאה בבדיקת כיתות עדיין לא נכנסו קיימות:", e.message);
 }
 
+// שלוחות למיקומים כלליים שלא קשורים למלמד/תפקיד ספציפי (כמו "חדר מלמדים"
+// בכל סניף) - רשומה עצמאית, שם + סניף + שלוחה
+try {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS misc_extensions (
+      id INTEGER PRIMARY KEY,
+      name TEXT NOT NULL,
+      branch TEXT,
+      extension TEXT
+    )
+  `);
+} catch (e) {
+  console.error("שגיאה ביצירת טבלת שלוחות למיקומים כלליים:", e.message);
+}
+
 // תבניות שמורות ליומן כיתה (הרכב דפים שמור לשימוש חוזר)
 try {
   db.exec(`

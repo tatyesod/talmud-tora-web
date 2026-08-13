@@ -1,0 +1,65 @@
+<%- include('../partials/header', {title: 'מיקומים נוספים - שלוחות', wide: true}) %>
+
+<div class="card">
+  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+    <h1>🚪 מיקומים נוספים (חדר מלמדים וכד')</h1>
+    <a href="/reports/extensions" class="btn secondary">← לרשימת שלוחות</a>
+  </div>
+
+  <p style="color:var(--muted); font-size:0.9em; line-height:1.6;">
+    מקומות עם שלוחת טלפון שאינם משויכים למלמד או לכיתה ספציפית - כמו חדר מלמדים בכל סניף, חדר ניקיון וכד'.
+    מיקומים אלו יופיעו גם ברשימת השלוחות הכללית.
+  </p>
+
+  <% if (typeof saved !== 'undefined' && saved) { %>
+    <div style="background:#e8f5e9; border:1px solid #a5d6a7; color:#2e7d32; border-radius:8px; padding:8px 14px; margin-bottom:12px;">✅ נשמר בהצלחה.</div>
+  <% } %>
+
+  <form method="POST" action="/reports/misc-extensions">
+    <% if (locations.length > 0) { %>
+      <table>
+        <thead><tr><th>מיקום</th><th>סניף</th><th>שלוחה</th><th></th></tr></thead>
+        <tbody>
+          <% locations.forEach(loc => { %>
+            <tr>
+              <td><%= loc.name %></td>
+              <td><%= loc.branch || 'כל הסניפים' %></td>
+              <td><input type="text" name="ext_<%= loc.id %>" value="<%= loc.extension || '' %>" placeholder="שלוחה" style="width:80px;" /></td>
+              <td>
+                <button type="submit" formaction="/reports/misc-extensions/<%= loc.id %>?_method=DELETE" formmethod="POST"
+                        onclick="return confirm('למחוק את המיקום \'<%= loc.name %>\'?');" class="btn small danger">מחק</button>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    <% } %>
+
+    <h3 style="margin-top:24px;">➕ הוספת מיקום חדש</h3>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>שם המיקום</label>
+        <input type="text" name="new_name" placeholder="לדוגמה: חדר מלמדים" style="min-width:200px;" />
+      </div>
+      <div class="form-group">
+        <label>סניף</label>
+        <select name="new_branch">
+          <option value="">כל הסניפים</option>
+          <% branches.forEach(b => { %>
+            <option value="<%= b %>"><%= b %></option>
+          <% }) %>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>שלוחה</label>
+        <input type="text" name="new_extension" placeholder="שלוחה" style="width:100px;" />
+      </div>
+    </div>
+
+    <div class="actions" style="margin-top:16px; position:sticky; bottom:0; background:#fff; padding:10px 0;">
+      <button type="submit" class="btn">💾 שמירה</button>
+    </div>
+  </form>
+</div>
+
+<%- include('../partials/footer') %>

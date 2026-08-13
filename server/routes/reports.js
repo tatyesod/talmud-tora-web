@@ -550,7 +550,60 @@ router.get("/extensions", (req, res) => {
     extension: r.extension || "",
   }));
 
-  res.render("reports/extensions", { items: [...items, ...staffItems] });
+  // מיקומים כלליים שלא קשורים למלמד/תפקיד ספציפי (כמו "חדר מלמדים" בכל סניף)
+  const miscRows = db.prepare(`
+    SELECT name, branch, extension FROM misc_extensions
+    WHERE extension IS NOT NULL AND extension != ''
+    ORDER BY branch IS NOT NULL, branch, name
+  `).all();
+  const miscItems = miscRows.map((r) => ({
+    className: r.name,
+    teacherName: "",
+    role: "",
+    branch: r.branch || "כל הסניפים",
+    extension: r.extension || "",
+  }));
+
+  res.render("reports/extensions", { items: [...items, ...staffItems, ...miscItems] });
+});
+
+// ============ ניהול מיקומים נוספים (חדר מלמדים וכד') - לא קשורים למלמד ============
+router.get("/misc-extensions", (req, res) => {
+  const locations = db.prepare("SELECT * FROM misc_extensions ORDER BY branch IS NOT NULL, branch, name").all();
+  const branches = db.prepare("SELECT DISTINCT branch FROM classes WHERE branch IS NOT NULL AND branch != '' ORDER BY branch").all().map((r) => r.branch);
+  res.render("reports/misc-extensions", { locations, branches });
+});
+
+router.post("/misc-extensions", (req, res) => {
+  const { new_name, new_branch, new_extension } = req.body;
+  db.exec("BEGIN TRANSACTION");
+  try {
+    // עדכון קיימים
+    Object.keys(req.body).forEach((key) => {
+      const match = key.match(/^ext_(\d+)$/);
+      if (match) {
+        const id = match[1];
+        const value = (req.body[key] || "").trim() || null;
+        db.prepare("UPDATE misc_extensions SET extension = ? WHERE id = ?").run(value, id);
+      }
+    });
+    // הוספת מיקום חדש, אם מולא שם
+    if (new_name && new_name.trim()) {
+      db.prepare("INSERT INTO misc_extensions (name, branch, extension) VALUES (?, ?, ?)").run(
+        new_name.trim(), new_branch || null, (new_extension || "").trim() || null
+      );
+    }
+    db.exec("COMMIT");
+  } catch (e) {
+    db.exec("ROLLBACK");
+    throw e;
+  }
+  res.redirect("/reports/misc-extensions?saved=1");
+});
+
+router.delete("/misc-extensions/:id", (req, res) => {
+  db.prepare("DELETE FROM misc_extensions WHERE id = ?").run(req.params.id);
+  res.redirect("/reports/misc-extensions");
 });
 
 router.get("/class-directory", (req, res) => {
