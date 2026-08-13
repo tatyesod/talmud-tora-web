@@ -110,7 +110,7 @@ router.get("/maintenance", (req, res) => {
     ...r,
     created_at_str: r.created_at ? new Date(r.created_at).toLocaleDateString("he-IL") : "",
   }));
-  res.render("inventory/maintenance-list", { requests, status: status || "", branch: branch || "" });
+  res.render("inventory/maintenance-list", { requests, status: status || "", branch: branch || "", maintenanceEmail: getMaintenanceEmail() });
 });
 
 router.get("/maintenance/print", (req, res) => {

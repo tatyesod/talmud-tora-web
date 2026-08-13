@@ -30,20 +30,38 @@
     <% if (branch) { %>
       <a href="/inventory/maintenance/print?status=<%= status %>" target="_blank" class="btn secondary">🖨️ הדפסה - כל הסניפים יחד</a>
     <% } %>
+    <% if (!maintenanceEmail) { %>
+      <span style="color:var(--muted); font-size:0.85em;">⚠️ לא נמצא מייל תחזוקן בכרטיס האישי - שליחה חוזרת לא זמינה</span>
+    <% } else { %>
+      <button type="button" class="btn" onclick="resendSelected()">📧 שליחה חוזרת לתחזוקן (נבחרים)</button>
+    <% } %>
   </div>
 
   <% if (requests.length === 0) { %>
     <div class="empty-state">אין בקשות תחזוקה</div>
   <% } else { %>
     <table>
-      <thead><tr><th>תאריך</th><th>סניף</th><th>תיאור</th><th>מיקום</th><th>דחיפות</th><th>דווח ע"י</th><th>סטטוס</th><th></th></tr></thead>
+      <thead>
+        <tr>
+          <th><input type="checkbox" id="select-all" onclick="toggleAll(this)" /></th>
+          <th>תאריך</th><th>סניף</th><th>תיאור</th><th>מיקום</th><th>דחיפות</th><th>דווח ע"י</th><th>סטטוס</th><th></th>
+        </tr>
+      </thead>
       <tbody>
         <% requests.forEach(r => { %>
+          <% const place = r.class_name ? r.class_name+(r.parallel?' ('+r.parallel+')':'') : (r.location || ''); %>
           <tr>
+            <td>
+              <input type="checkbox" class="task-check"
+                     data-description="<%= r.description %>"
+                     data-branch="<%= r.effective_branch || '' %>"
+                     data-place="<%= place %>"
+                     data-urgency="<%= r.urgency || '' %>" />
+            </td>
             <td><%= r.created_at_str %></td>
             <td><%= r.effective_branch || 'כללי' %></td>
             <td><%= r.description %></td>
-            <td><%= r.class_name ? r.class_name+(r.parallel?' ('+r.parallel+')':'') : (r.location || '') %></td>
+            <td><%= place %></td>
             <td><%= r.urgency || '' %></td>
             <td><%= r.reporter_name || '' %></td>
             <td>
@@ -63,5 +81,44 @@
     </table>
   <% } %>
 </div>
+
+<script>
+  const MAINTENANCE_EMAIL = <%- JSON.stringify(maintenanceEmail) %>;
+
+  function toggleAll(checkbox) {
+    document.querySelectorAll('.task-check').forEach(c => c.checked = checkbox.checked);
+  }
+
+  function resendSelected() {
+    const selected = [...document.querySelectorAll('.task-check:checked')];
+    if (selected.length === 0) {
+      alert('לא נבחרו משימות לשליחה');
+      return;
+    }
+
+    const now = new Date();
+    const dateStr = now.toLocaleDateString('he-IL');
+    const timeStr = now.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
+    const subject = 'בקשת תחזוקה (שליחה חוזרת) - ' + dateStr + ' ' + timeStr;
+
+    const bodyLines = ['רשימת תיקונים - שליחה חוזרת:', ''];
+    selected.forEach((c, i) => {
+      bodyLines.push((i + 1) + '. ' + c.dataset.description);
+      const details = [];
+      if (c.dataset.branch) details.push('סניף: ' + c.dataset.branch);
+      if (c.dataset.place) details.push('מיקום: ' + c.dataset.place);
+      if (c.dataset.urgency) details.push('דחיפות: ' + c.dataset.urgency);
+      if (details.length) bodyLines.push('   ' + details.join(' | '));
+      bodyLines.push('');
+    });
+    const body = bodyLines.join('\n');
+
+    const gmailUrl = 'https://mail.google.com/mail/?view=cm&fs=1' +
+      '&to=' + encodeURIComponent(MAINTENANCE_EMAIL) +
+      '&su=' + encodeURIComponent(subject) +
+      '&body=' + encodeURIComponent(body);
+    window.open(gmailUrl, '_blank');
+  }
+</script>
 
 <%- include('../partials/footer') %>
