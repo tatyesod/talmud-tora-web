@@ -529,7 +529,9 @@ router.get("/class-directory/view", (req, res) => {
   const morningTeacher = db.prepare(`
     SELECT t.first_name, t.last_name, t.mobile FROM teacher_classes tc
     JOIN teachers t ON tc.teacher_id = t.id
-    WHERE tc.class_id = ? AND tc.role = 'בוקר' LIMIT 1
+    WHERE tc.class_id = ? AND tc.role = 'בוקר'
+    ORDER BY (t.mobile IS NOT NULL AND t.mobile != '') DESC, tc.id DESC
+    LIMIT 1
   `).get(class_id);
   const teacherNamePart = morningTeacher ? `הרב ${morningTeacher.first_name || ""} ${morningTeacher.last_name || ""}`.trim() : "";
   const teacherMobile = morningTeacher ? morningTeacher.mobile || "" : "";
