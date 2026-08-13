@@ -1,0 +1,101 @@
+<%- include('../partials/header', {title: 'עדכון שלוחות', wide: true}) %>
+
+<div class="card">
+  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+    <h1>☎️ עדכון שלוחות - מסך מרוכז</h1>
+    <a href="/reports/extensions" class="btn secondary">📋 לרשימת השלוחות המלאה</a>
+  </div>
+
+  <p style="color:var(--muted); font-size:0.9em; line-height:1.6;">
+    מקום אחד לעדכון כל השלוחות במוסד - כיתות, תפקידי צוות (מזכירים, שילוב וכו') ומיקומים נוספים (כמו חדר
+    מלמדים). מעדכנים כמה שרוצים ושומרים הכל בבת אחת, בלי לדלג בין מסכים.
+  </p>
+
+  <% if (typeof saved !== 'undefined' && saved) { %>
+    <div style="background:#e8f5e9; border:1px solid #a5d6a7; color:#2e7d32; border-radius:8px; padding:8px 14px; margin-bottom:12px;">✅ נשמר בהצלחה.</div>
+  <% } %>
+
+  <form method="POST" action="/reports/extensions-admin">
+
+    <h3 style="margin-top:10px;">🏫 כיתות</h3>
+    <table>
+      <thead><tr><th>כיתה</th><th>סניף</th><th>שלוחה</th></tr></thead>
+      <tbody>
+        <% classes.forEach(c => { %>
+          <tr>
+            <td><%= c.name %><%= c.parallel ? ' ' + c.parallel : '' %></td>
+            <td><%= c.branch || '' %></td>
+            <td><input type="text" name="class_ext_<%= c.id %>" value="<%= c.extension || '' %>" placeholder="שלוחה" style="width:80px;" /></td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+
+    <h3 style="margin-top:24px;">👔 תפקידי צוות (מזכירים, שילוב וכו')</h3>
+    <% if (staffRoles.length > 0) { %>
+      <table>
+        <thead><tr><th>תפקיד</th><th>סניף</th><th>שלוחה</th></tr></thead>
+        <tbody>
+          <% staffRoles.forEach(r => { %>
+            <tr>
+              <td><%= r.name %></td>
+              <td><%= r.branch || 'כל הסניפים' %></td>
+              <td><input type="text" name="staff_ext_<%= r.id %>" value="<%= r.extension || '' %>" placeholder="שלוחה" style="width:80px;" /></td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    <% } else { %>
+      <p style="color:var(--muted);">אין עדיין תפקידי צוות מוגדרים. <a href="/teachers/staff-roles">אפשר להגדיר כאן</a>.</p>
+    <% } %>
+
+    <h3 style="margin-top:24px;">🚪 מיקומים נוספים (חדר מלמדים וכד')</h3>
+    <% if (miscLocations.length > 0) { %>
+      <table>
+        <thead><tr><th>מיקום</th><th>סניף</th><th>שלוחה</th><th></th></tr></thead>
+        <tbody>
+          <% miscLocations.forEach(loc => { %>
+            <tr>
+              <td><%= loc.name %></td>
+              <td><%= loc.branch || 'כל הסניפים' %></td>
+              <td><input type="text" name="misc_ext_<%= loc.id %>" value="<%= loc.extension || '' %>" placeholder="שלוחה" style="width:80px;" /></td>
+              <td>
+                <button type="submit" formaction="/reports/extensions-admin/misc/<%= loc.id %>?_method=DELETE"
+                        onclick="return confirm('למחוק את המיקום \'<%= loc.name %>\'?');" class="btn small danger">מחק</button>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    <% } %>
+
+    <div style="background:#f0f4f8; border-radius:10px; padding:14px; margin-top:14px;">
+      <strong>➕ הוספת מיקום נוסף חדש</strong>
+      <div class="form-grid" style="margin-top:10px;">
+        <div class="form-group">
+          <label>שם המיקום</label>
+          <input type="text" name="new_misc_name" placeholder="לדוגמה: חדר מלמדים" style="min-width:200px;" />
+        </div>
+        <div class="form-group">
+          <label>סניף</label>
+          <select name="new_misc_branch">
+            <option value="">כל הסניפים</option>
+            <% branches.forEach(b => { %>
+              <option value="<%= b %>"><%= b %></option>
+            <% }) %>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>שלוחה</label>
+          <input type="text" name="new_misc_extension" placeholder="שלוחה" style="width:100px;" />
+        </div>
+      </div>
+    </div>
+
+    <div class="actions" style="margin-top:16px; position:sticky; bottom:0; background:#fff; padding:10px 0;">
+      <button type="submit" class="btn">💾 שמירת הכל</button>
+    </div>
+  </form>
+</div>
+
+<%- include('../partials/footer') %>

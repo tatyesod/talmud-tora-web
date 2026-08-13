@@ -514,6 +514,64 @@ router.get("/class-journal/view", (req, res) => {
 // ============ דף בודד (כמו דפי יומן כיתה, אבל לא חלק מחוברת) ============
 // ============ אלפון כיתתי ============
 // ============ רשימת שלוחות - דף לתלייה ליד הטלפון בכל כיתה ============
+// ============ ניהול שלוחות מרוכז - כיתות, תפקידי צוות ומיקומים נוספים
+//              יחד בדף אחד, כדי לא לדלג בין מסכים ============
+router.get("/extensions-admin", (req, res) => {
+  const classes = db.prepare(`
+    SELECT id, name, parallel, branch, extension FROM classes
+    WHERE status = 'פעיל'
+    ORDER BY branch IS NOT NULL, branch, name, parallel
+  `).all();
+  const staffRoles = db.prepare(`
+    SELECT id, name, branch, extension FROM staff_roles
+    ORDER BY branch IS NOT NULL, branch, name
+  `).all();
+  const miscLocations = db.prepare(`
+    SELECT id, name, branch, extension FROM misc_extensions
+    ORDER BY branch IS NOT NULL, branch, name
+  `).all();
+  const branches = db.prepare("SELECT DISTINCT branch FROM classes WHERE branch IS NOT NULL AND branch != '' ORDER BY branch").all().map((r) => r.branch);
+  res.render("reports/extensions-admin", { classes, staffRoles, miscLocations, branches });
+});
+
+router.post("/extensions-admin", (req, res) => {
+  const { new_misc_name, new_misc_branch, new_misc_extension } = req.body;
+  db.exec("BEGIN TRANSACTION");
+  try {
+    Object.keys(req.body).forEach((key) => {
+      let match = key.match(/^class_ext_(\d+)$/);
+      if (match) {
+        db.prepare("UPDATE classes SET extension = ? WHERE id = ?").run((req.body[key] || "").trim() || null, match[1]);
+        return;
+      }
+      match = key.match(/^staff_ext_(\d+)$/);
+      if (match) {
+        db.prepare("UPDATE staff_roles SET extension = ? WHERE id = ?").run((req.body[key] || "").trim() || null, match[1]);
+        return;
+      }
+      match = key.match(/^misc_ext_(\d+)$/);
+      if (match) {
+        db.prepare("UPDATE misc_extensions SET extension = ? WHERE id = ?").run((req.body[key] || "").trim() || null, match[1]);
+      }
+    });
+    if (new_misc_name && new_misc_name.trim()) {
+      db.prepare("INSERT INTO misc_extensions (name, branch, extension) VALUES (?, ?, ?)").run(
+        new_misc_name.trim(), new_misc_branch || null, (new_misc_extension || "").trim() || null
+      );
+    }
+    db.exec("COMMIT");
+  } catch (e) {
+    db.exec("ROLLBACK");
+    throw e;
+  }
+  res.redirect("/reports/extensions-admin?saved=1");
+});
+
+router.delete("/extensions-admin/misc/:id", (req, res) => {
+  db.prepare("DELETE FROM misc_extensions WHERE id = ?").run(req.params.id);
+  res.redirect("/reports/extensions-admin");
+});
+
 router.get("/extensions", (req, res) => {
   const rows = db.prepare(`
     SELECT c.name, c.parallel, c.branch, c.extension, t.first_name, t.last_name, tc.role
