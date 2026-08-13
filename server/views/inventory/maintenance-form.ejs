@@ -1,65 +1,120 @@
-<%- include('../partials/header', {title: 'בקשת תחזוקה חדשה'}) %>
+<%- include('../partials/header', {title: 'רשימת בקשות תחזוקה חדשה', wide: true}) %>
 
 <div class="card">
-  <h1>בקשת תחזוקה/תיקון חדשה</h1>
+  <h1>🛠️ רשימת בקשות תחזוקה חדשה</h1>
+  <p style="color:var(--muted); font-size:0.9em; line-height:1.6;">
+    ממלאים כמה שורות תיקון שרוצים, ולוחצים פעם אחת על "שליחה" - כל הרשימה תישלח במייל אחד מסודר לתחזוקן,
+    וגם תישמר במערכת (כל תיקון בנפרד) למעקב.
+  </p>
 
   <% if (!maintenanceEmail) { %>
     <div style="background:#fff3e0; border:1px solid #ffcc80; color:#e65100; border-radius:8px; padding:10px 14px; margin-bottom:14px;">
-      ⚠️ לא נמצאה כתובת מייל בכרטיס האישי של משה זילברשלג (התחזוקן) - הבקשה תישמר במערכת, אבל מייל לא יישלח אוטומטית.
+      ⚠️ לא נמצאה כתובת מייל בכרטיס האישי של משה זילברשלג (התחזוקן) - הבקשות יישמרו במערכת, אבל מייל לא יישלח אוטומטית.
       אפשר להשלים את המייל בכרטיס האישי שלו.
     </div>
   <% } %>
 
   <form method="POST" action="/inventory/maintenance" id="maintenance-form">
-    <div class="form-grid">
-      <div class="form-group">
-        <label>סניף</label>
-        <select name="branch">
-          <option value="">כל הסניפים (כללי)</option>
-          <option value="סוקולוב">סוקולוב</option>
-          <option value="נפחא">נפחא</option>
-          <option value="בן פתחיה">בן פתחיה</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label>כיתה (אופציונלי)</label>
-        <select name="class_id">
-          <option value="">--</option>
-          <% classes.forEach(c => { %>
-            <option value="<%= c.id %>"><%= c.name %><%= c.parallel ? ' ('+c.parallel+')' : '' %></option>
-          <% }) %>
-        </select>
-      </div>
-      <div class="form-group"><label>מיקום (אם לא כיתה ספציפית)</label><input type="text" name="location" /></div>
-      <div class="form-group full"><label>תיאור התקלה/הבקשה</label><textarea name="description" required></textarea></div>
-    </div>
-    <div class="actions" style="margin-top:14px;">
-      <button type="submit" class="btn">📧 שמירה ושליחה לתחזוקן</button>
+    <table id="maintenance-table">
+      <thead>
+        <tr>
+          <th style="width:30%;">תיאור התקלה</th>
+          <th>סניף</th>
+          <th>כיתה / מיקום</th>
+          <th>דחיפות</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="maintenance-rows">
+        <!-- שורות נוספות ע"י JS -->
+      </tbody>
+    </table>
+
+    <button type="button" class="btn small secondary" onclick="addRow()" style="margin-top:10px;">+ הוספת שורה</button>
+
+    <div class="actions" style="margin-top:16px;">
+      <button type="submit" class="btn">📧 שליחת הרשימה לתחזוקן</button>
       <a href="/inventory/maintenance" class="btn secondary">ביטול</a>
     </div>
   </form>
 </div>
 
 <script>
+  const CLASSES = <%- JSON.stringify(classes.map(c => ({ id: c.id, label: c.name + (c.parallel ? ' (' + c.parallel + ')' : '') }))) %>;
+  const BRANCHES = ['סוקולוב', 'נפחא', 'בן פתחיה'];
   const MAINTENANCE_EMAIL = <%- JSON.stringify(maintenanceEmail) %>;
+
+  let rowCount = 0;
+
+  function addRow() {
+    rowCount++;
+    const tbody = document.getElementById('maintenance-rows');
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><input type="text" name="description" placeholder="מה התקלה?" required style="width:100%;" /></td>
+      <td>
+        <select name="branch" style="width:100%;">
+          <option value="">כללי</option>
+          ${BRANCHES.map(b => `<option value="${b}">${b}</option>`).join('')}
+        </select>
+      </td>
+      <td style="display:flex; gap:4px;">
+        <select name="class_id" style="flex:1;">
+          <option value="">--</option>
+          ${CLASSES.map(c => `<option value="${c.id}">${c.label}</option>`).join('')}
+        </select>
+        <input type="text" name="location" placeholder="או מיקום חופשי" style="flex:1;" />
+      </td>
+      <td>
+        <select name="urgency" style="width:100%;">
+          <option value="רגיל">רגיל</option>
+          <option value="דחוף">דחוף</option>
+          <option value="דחוף מאוד">דחוף מאוד</option>
+        </select>
+      </td>
+      <td><button type="button" class="btn small danger" onclick="removeRow(this)">✕</button></td>
+    `;
+    tbody.appendChild(tr);
+  }
+
+  function removeRow(btn) {
+    if (document.querySelectorAll('#maintenance-rows tr').length <= 1) return;
+    btn.closest('tr').remove();
+  }
 
   document.getElementById('maintenance-form').addEventListener('submit', function () {
     if (!MAINTENANCE_EMAIL) return; // אין כתובת מייל - רק שומר במערכת, בלי לפתוח מייל
 
-    const branch = this.branch.value;
-    const classSelect = this.class_id;
-    const className = classSelect.selectedIndex > 0 ? classSelect.options[classSelect.selectedIndex].text : '';
-    const location = this.location.value.trim();
-    const description = this.description.value.trim();
+    const rows = [...document.querySelectorAll('#maintenance-rows tr')].map(tr => {
+      const branchSelect = tr.querySelector('select[name="branch"]');
+      const classSelect = tr.querySelector('select[name="class_id"]');
+      const className = classSelect.selectedIndex > 0 ? classSelect.options[classSelect.selectedIndex].text : '';
+      const location = tr.querySelector('input[name="location"]').value.trim();
+      return {
+        description: tr.querySelector('input[name="description"]').value.trim(),
+        branch: branchSelect.value,
+        place: className || location,
+        urgency: tr.querySelector('select[name="urgency"]').value,
+      };
+    }).filter(r => r.description);
 
-    const subject = 'תקלת תחזוקה' + (branch ? ' - ' + branch : '');
-    const bodyLines = [
-      branch ? 'סניף: ' + branch : '',
-      className ? 'כיתה: ' + className : '',
-      location ? 'מיקום: ' + location : '',
-      '',
-      description,
-    ].filter(Boolean);
+    if (rows.length === 0) return;
+
+    const now = new Date();
+    const dateStr = now.toLocaleDateString('he-IL');
+    const timeStr = now.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
+    const subject = 'בקשת תחזוקה - ' + dateStr + ' ' + timeStr;
+
+    const bodyLines = ['רשימת תיקונים מבוקשים:', ''];
+    rows.forEach((r, i) => {
+      bodyLines.push((i + 1) + '. ' + r.description);
+      const details = [];
+      if (r.branch) details.push('סניף: ' + r.branch);
+      if (r.place) details.push('מיקום: ' + r.place);
+      details.push('דחיפות: ' + r.urgency);
+      bodyLines.push('   ' + details.join(' | '));
+      bodyLines.push('');
+    });
     const body = bodyLines.join('\n');
 
     const mailtoUrl = 'mailto:' + encodeURIComponent(MAINTENANCE_EMAIL) +
@@ -70,6 +125,8 @@
     // כדי שהדפדפן לא יחסום את זה כפופ-אפ. הטופס ממשיך להישלח כרגיל לשמירה.
     window.location.href = mailtoUrl;
   });
+
+  addRow();
 </script>
 
 <%- include('../partials/footer') %>

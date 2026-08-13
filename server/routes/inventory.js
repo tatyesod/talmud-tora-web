@@ -153,10 +153,32 @@ router.get("/maintenance/new", (req, res) => {
 });
 
 router.post("/maintenance", (req, res) => {
-  const { description, class_id, location, branch } = req.body;
-  db.prepare(
-    "INSERT INTO maintenance_requests (description, class_id, location, branch, status, reported_by_user_id, created_at) VALUES (?,?,?,?,?,?,?)"
-  ).run(description, class_id || null, location || null, branch || null, "פתוח", req.currentUser.id, new Date().toISOString());
+  // הטופס עכשיו שולח כמה שורות בבת אחת (מערכים) - כל שורה נשמרת כרשומת
+  // תחזוקה נפרדת, כדי שכל תיקון יעקוב אחרי הסטטוס שלו בנפרד
+  let { description, class_id, location, branch, urgency } = req.body;
+  if (!Array.isArray(description)) description = [description];
+  if (!Array.isArray(class_id)) class_id = [class_id];
+  if (!Array.isArray(location)) location = [location];
+  if (!Array.isArray(branch)) branch = [branch];
+  if (!Array.isArray(urgency)) urgency = [urgency];
+
+  const insert = db.prepare(
+    "INSERT INTO maintenance_requests (description, class_id, location, branch, urgency, status, reported_by_user_id, created_at) VALUES (?,?,?,?,?,?,?,?)"
+  );
+  const now = new Date().toISOString();
+  description.forEach((desc, i) => {
+    if (!desc || !desc.trim()) return;
+    insert.run(
+      desc.trim(),
+      class_id[i] || null,
+      location[i] || null,
+      branch[i] || null,
+      urgency[i] || null,
+      "פתוח",
+      req.currentUser.id,
+      now
+    );
+  });
   res.redirect("/inventory/maintenance");
 });
 

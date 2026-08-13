@@ -174,6 +174,7 @@ const migrations = [
   "ALTER TABLE maintenance_requests ADD COLUMN reported_by_user_id INTEGER",
   "ALTER TABLE maintenance_requests ADD COLUMN resolved_at TEXT",
   "ALTER TABLE maintenance_requests ADD COLUMN notes TEXT",
+  "ALTER TABLE maintenance_requests ADD COLUMN urgency TEXT",
   "UPDATE maintenance_requests SET status = 'פתוח' WHERE status IS NULL",
   "ALTER TABLE classes ADD COLUMN extension TEXT",
   "ALTER TABLE staff_roles ADD COLUMN extension TEXT",
