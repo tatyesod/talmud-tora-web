@@ -573,19 +573,21 @@ router.delete("/extensions-admin/misc/:id", (req, res) => {
 });
 
 router.get("/extensions", (req, res) => {
-  const rows = db.prepare(`
-    SELECT c.name, c.parallel, c.branch, c.extension, t.first_name, t.last_name, tc.role
-    FROM teacher_classes tc
-    JOIN classes c ON tc.class_id = c.id
-    JOIN teachers t ON tc.teacher_id = t.id
+  const classRows = db.prepare(`
+    SELECT c.id, c.name, c.parallel, c.branch, c.extension,
+      MAX(CASE WHEN tc.role = 'בוקר' THEN t.first_name || ' ' || t.last_name END) AS morning_name,
+      MAX(CASE WHEN tc.role = 'אחה"צ' THEN t.first_name || ' ' || t.last_name END) AS afternoon_name
+    FROM classes c
+    LEFT JOIN teacher_classes tc ON tc.class_id = c.id AND tc.role IN ('בוקר', 'אחה"צ')
+    LEFT JOIN teachers t ON tc.teacher_id = t.id AND t.status = 'פעיל'
     WHERE c.status = 'פעיל' AND c.name NOT LIKE 'עדיין לא נכנסו%'
-      AND tc.role IN ('בוקר', 'אחה"צ') AND t.status = 'פעיל'
-    ORDER BY c.branch, c.name, c.parallel, CASE tc.role WHEN 'בוקר' THEN 1 ELSE 2 END
+    GROUP BY c.id
+    ORDER BY c.branch, c.name, c.parallel
   `).all();
-  const items = rows.map((r) => ({
+  const items = classRows.map((r) => ({
     className: r.name + (r.parallel ? " " + r.parallel : ""),
-    teacherName: `הרב ${r.first_name || ""} ${r.last_name || ""}`.trim(),
-    role: r.role,
+    morningTeacher: r.morning_name ? `הרב ${r.morning_name}` : "",
+    afternoonTeacher: r.afternoon_name ? `הרב ${r.afternoon_name}` : "",
     branch: r.branch || "",
     extension: r.extension || "",
   }));
@@ -602,8 +604,8 @@ router.get("/extensions", (req, res) => {
   `).all();
   const staffItems = staffRows.map((r) => ({
     className: r.role_name,
-    teacherName: `הרב ${r.first_name || ""} ${r.last_name || ""}`.trim(),
-    role: "",
+    morningTeacher: `הרב ${r.first_name || ""} ${r.last_name || ""}`.trim(),
+    afternoonTeacher: "",
     branch: r.branch || "כל הסניפים",
     extension: r.extension || "",
   }));
@@ -616,13 +618,24 @@ router.get("/extensions", (req, res) => {
   `).all();
   const miscItems = miscRows.map((r) => ({
     className: r.name,
-    teacherName: "",
-    role: "",
+    morningTeacher: "",
+    afternoonTeacher: "",
     branch: r.branch || "כל הסניפים",
     extension: r.extension || "",
   }));
 
-  res.render("reports/extensions", { items: [...items, ...staffItems, ...miscItems] });
+  const allItems = [...items, ...staffItems, ...miscItems];
+
+  // גודל פונט דינמי לפי כמות השורות הכוללת - כדי שהדוח *תמיד* ייכנס בדף
+  // אחד, לא משנה כמה כיתות/תפקידים/מיקומים יש (בדיוק כמו שעשינו ביומן כיתה)
+  const AVAILABLE_HEIGHT_MM = 260; // גובה A4 פחות שוליים וכותרת
+  const rowsForCalc = allItems.length + 1; // +1 עבור שורת הכותרת
+  let rowHeightMM = Math.min(AVAILABLE_HEIGHT_MM / rowsForCalc, 8);
+  rowHeightMM = Math.max(rowHeightMM, 3.5);
+  const extFontPt = Math.max(6, Math.min(10, Math.round(rowHeightMM * 1.3)));
+  const bodyFontPt = Math.max(5.5, Math.min(8.5, Math.round(rowHeightMM * 1.1)));
+
+  res.render("reports/extensions", { items: allItems, rowHeightMM, extFontPt, bodyFontPt });
 });
 
 // ============ ניהול מיקומים נוספים (חדר מלמדים וכד') - לא קשורים למלמד ============
