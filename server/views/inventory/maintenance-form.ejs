@@ -2,7 +2,15 @@
 
 <div class="card">
   <h1>בקשת תחזוקה/תיקון חדשה</h1>
-  <form method="POST" action="/inventory/maintenance">
+
+  <% if (!maintenanceEmail) { %>
+    <div style="background:#fff3e0; border:1px solid #ffcc80; color:#e65100; border-radius:8px; padding:10px 14px; margin-bottom:14px;">
+      ⚠️ לא נמצאה כתובת מייל בכרטיס האישי של משה זילברשלג (התחזוקן) - הבקשה תישמר במערכת, אבל מייל לא יישלח אוטומטית.
+      אפשר להשלים את המייל בכרטיס האישי שלו.
+    </div>
+  <% } %>
+
+  <form method="POST" action="/inventory/maintenance" id="maintenance-form">
     <div class="form-grid">
       <div class="form-group">
         <label>סניף</label>
@@ -26,10 +34,42 @@
       <div class="form-group full"><label>תיאור התקלה/הבקשה</label><textarea name="description" required></textarea></div>
     </div>
     <div class="actions" style="margin-top:14px;">
-      <button type="submit" class="btn">שמירה</button>
+      <button type="submit" class="btn">📧 שמירה ושליחה לתחזוקן</button>
       <a href="/inventory/maintenance" class="btn secondary">ביטול</a>
     </div>
   </form>
 </div>
+
+<script>
+  const MAINTENANCE_EMAIL = <%- JSON.stringify(maintenanceEmail) %>;
+
+  document.getElementById('maintenance-form').addEventListener('submit', function () {
+    if (!MAINTENANCE_EMAIL) return; // אין כתובת מייל - רק שומר במערכת, בלי לפתוח מייל
+
+    const branch = this.branch.value;
+    const classSelect = this.class_id;
+    const className = classSelect.selectedIndex > 0 ? classSelect.options[classSelect.selectedIndex].text : '';
+    const location = this.location.value.trim();
+    const description = this.description.value.trim();
+
+    const subject = 'תקלת תחזוקה' + (branch ? ' - ' + branch : '');
+    const bodyLines = [
+      branch ? 'סניף: ' + branch : '',
+      className ? 'כיתה: ' + className : '',
+      location ? 'מיקום: ' + location : '',
+      '',
+      description,
+    ].filter(Boolean);
+    const body = bodyLines.join('\n');
+
+    const mailtoUrl = 'mailto:' + encodeURIComponent(MAINTENANCE_EMAIL) +
+      '?subject=' + encodeURIComponent(subject) +
+      '&body=' + encodeURIComponent(body);
+
+    // פותחים את המייל תוך כדי אירוע הלחיצה של המשתמש (לא אחרי redirect),
+    // כדי שהדפדפן לא יחסום את זה כפופ-אפ. הטופס ממשיך להישלח כרגיל לשמירה.
+    window.location.href = mailtoUrl;
+  });
+</script>
 
 <%- include('../partials/footer') %>

@@ -169,6 +169,12 @@ const migrations = [
   "ALTER TABLE classes ADD COLUMN letter_template_id INTEGER",
   "ALTER TABLE classes ADD COLUMN dropbox_path TEXT",
   "ALTER TABLE users ADD COLUMN drive_letter TEXT",
+  "ALTER TABLE maintenance_requests ADD COLUMN status TEXT",
+  "ALTER TABLE maintenance_requests ADD COLUMN class_id INTEGER",
+  "ALTER TABLE maintenance_requests ADD COLUMN reported_by_user_id INTEGER",
+  "ALTER TABLE maintenance_requests ADD COLUMN resolved_at TEXT",
+  "ALTER TABLE maintenance_requests ADD COLUMN notes TEXT",
+  "UPDATE maintenance_requests SET status = 'פתוח' WHERE status IS NULL",
   "ALTER TABLE classes ADD COLUMN extension TEXT",
   "ALTER TABLE staff_roles ADD COLUMN extension TEXT",
   "ALTER TABLE families ADD COLUMN archived_at TEXT",
@@ -1305,6 +1311,7 @@ try {
 
 // שלוחות למיקומים כלליים שלא קשורים למלמד/תפקיד ספציפי (כמו "חדר מלמדים"
 // בכל סניף) - רשומה עצמאית, שם + סניף + שלוחה
+
 try {
   db.exec(`
     CREATE TABLE IF NOT EXISTS misc_extensions (

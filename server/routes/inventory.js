@@ -2,6 +2,15 @@ const express = require("express");
 const router = express.Router();
 const db = require("../db");
 
+function getMaintenanceEmail() {
+  // מושכים ישירות מהכרטיס האישי של משה זילברשלג (התחזוקן) - כדי שלא
+  // נצטרך להזין את המייל פעמיים, ושזה יתעדכן אוטומטית אם המייל שלו ישתנה
+  const teacher = db.prepare(`
+    SELECT email FROM teachers WHERE first_name = 'משה' AND last_name = 'זילברשלג' AND email IS NOT NULL AND email != ''
+  `).get();
+  return teacher && teacher.email ? teacher.email : "";
+}
+
 // ============ מלאי וציוד ============
 router.get("/", (req, res) => {
   const items = db
@@ -140,7 +149,7 @@ router.get("/maintenance/print", (req, res) => {
 
 router.get("/maintenance/new", (req, res) => {
   const classes = db.prepare("SELECT id, name, parallel FROM classes ORDER BY name, parallel").all();
-  res.render("inventory/maintenance-form", { classes });
+  res.render("inventory/maintenance-form", { classes, maintenanceEmail: getMaintenanceEmail() });
 });
 
 router.post("/maintenance", (req, res) => {
