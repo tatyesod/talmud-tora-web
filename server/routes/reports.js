@@ -584,12 +584,12 @@ router.get("/extensions", (req, res) => {
     GROUP BY c.id
     ORDER BY c.branch, c.name, c.parallel
   `).all();
-  const items = classRows.map((r) => ({
-    className: r.name + (r.parallel ? " " + r.parallel : ""),
+  const classItems = classRows.map((r) => ({
+    kind: "class", className: r.name + (r.parallel ? " " + r.parallel : ""),
+    sortName: r.name, sortParallel: r.parallel || "",
     morningTeacher: r.morning_name ? `הרב ${r.morning_name}` : "",
     afternoonTeacher: r.afternoon_name ? `הרב ${r.afternoon_name}` : "",
-    branch: r.branch || "",
-    extension: r.extension || "",
+    branch: r.branch || "", extension: r.extension || "",
   }));
 
   // תפקידי צוות שאינם קשורים לכיתה (מזכירים, מורות שילוב וכו') - להם
@@ -603,11 +603,9 @@ router.get("/extensions", (req, res) => {
     ORDER BY sr.branch IS NOT NULL, sr.branch, sr.name
   `).all();
   const staffItems = staffRows.map((r) => ({
-    className: r.role_name,
-    morningTeacher: `הרב ${r.first_name || ""} ${r.last_name || ""}`.trim(),
-    afternoonTeacher: "",
-    branch: r.branch || "כל הסניפים",
-    extension: r.extension || "",
+    kind: "staff", className: r.role_name,
+    morningTeacher: `הרב ${r.first_name || ""} ${r.last_name || ""}`.trim(), afternoonTeacher: "",
+    branch: r.branch || "", extension: r.extension || "",
   }));
 
   // מיקומים כלליים שלא קשורים למלמד/תפקיד ספציפי (כמו "חדר מלמדים" בכל סניף)
@@ -617,23 +615,77 @@ router.get("/extensions", (req, res) => {
     ORDER BY branch IS NOT NULL, branch, name
   `).all();
   const miscItems = miscRows.map((r) => ({
-    className: r.name,
-    morningTeacher: "",
-    afternoonTeacher: "",
-    branch: r.branch || "כל הסניפים",
-    extension: r.extension || "",
+    kind: "misc", className: r.name,
+    morningTeacher: "", afternoonTeacher: "",
+    branch: r.branch || "", extension: r.extension || "",
   }));
 
-  const allItems = [...items, ...staffItems, ...miscItems];
+  // סדר מיון מותאם אישית - לא אלפביתי:
+  // מנהל -> מזכירים -> רכזת שילוב -> מורות שילוב -> (לכל סניף לפי הסדר
+  // סוקולוב/נפחא/בן פתחיה: כיתות לפי סדר עולה -> חדר מלמדים -> גג)
+  const STAFF_ORDER = ["מנהל", "מזכיר", "רכזת שילוב", "מורת שילוב", "מורות שילוב"];
+  const BRANCH_ORDER = ["סוקולוב", "נפחא", "בן פתחיה"];
+
+  function staffRank(name) {
+    for (let i = 0; i < STAFF_ORDER.length; i++) {
+      if (name.includes(STAFF_ORDER[i])) return i;
+    }
+    return STAFF_ORDER.length; // תפקיד לא מזוהה - אחרי הכל, לפני הכיתות
+  }
+
+  const allItems = [...staffItems, ...classItems, ...miscItems];
+  allItems.sort((a, b) => {
+    // קבוצה 0: תפקידי צוות (מנהל/מזכירים/שילוב) - תמיד ראשונים
+    if (a.kind === "staff" && b.kind !== "staff") return -1;
+    if (a.kind !== "staff" && b.kind === "staff") return 1;
+    if (a.kind === "staff" && b.kind === "staff") {
+      return staffRank(a.className) - staffRank(b.className);
+    }
+    // שאר הפריטים (כיתות + מיקומים) - מקובצים לפי סניף, בסדר שהוגדר
+    const aBranchIdx = BRANCH_ORDER.indexOf(a.branch);
+    const bBranchIdx = BRANCH_ORDER.indexOf(b.branch);
+    const aRank = aBranchIdx === -1 ? BRANCH_ORDER.length : aBranchIdx;
+    const bRank = bBranchIdx === -1 ? BRANCH_ORDER.length : bBranchIdx;
+    if (aRank !== bRank) return aRank - bRank;
+    // אותו סניף: כיתות (לפי סדר עולה) לפני מיקומים; בין המיקומים, "חדר
+    // מלמדים" לפני "גג"
+    const kindRank = (item) => {
+      if (item.kind === "class") return 0;
+      if (item.className.includes("חדר מלמדים")) return 1;
+      if (item.className.includes("גג")) return 2;
+      return 3;
+    };
+    const aKindRank = kindRank(a);
+    const bKindRank = kindRank(b);
+    if (aKindRank !== bKindRank) return aKindRank - bKindRank;
+    if (a.kind === "class" && b.kind === "class") {
+      if (a.sortName !== b.sortName) return a.sortName < b.sortName ? -1 : 1;
+      return a.sortParallel < b.sortParallel ? -1 : a.sortParallel > b.sortParallel ? 1 : 0;
+    }
+    return a.className < b.className ? -1 : a.className > b.className ? 1 : 0;
+  });
+
+  // תוויות מדור - כדי להציג כותרת קבוצה (סניף / צוות) בטבלה, במקום עמודת
+  // "סניף" נפרדת שהפכה מיותרת כשממילא ממוינים ומקובצים לפי סניף
+  let lastSection = null;
+  allItems.forEach((item) => {
+    let section;
+    if (item.kind === "staff") section = "הנהלה ומזכירות";
+    else section = item.branch || "אחר";
+    item.sectionStart = section !== lastSection;
+    item.sectionLabel = section;
+    lastSection = section;
+  });
 
   // גודל פונט דינמי לפי כמות השורות הכוללת - כדי שהדוח *תמיד* ייכנס בדף
   // אחד, לא משנה כמה כיתות/תפקידים/מיקומים יש (בדיוק כמו שעשינו ביומן כיתה)
   const AVAILABLE_HEIGHT_MM = 260; // גובה A4 פחות שוליים וכותרת
-  const rowsForCalc = allItems.length + 1; // +1 עבור שורת הכותרת
-  let rowHeightMM = Math.min(AVAILABLE_HEIGHT_MM / rowsForCalc, 8);
-  rowHeightMM = Math.max(rowHeightMM, 3.5);
-  const extFontPt = Math.max(6, Math.min(10, Math.round(rowHeightMM * 1.3)));
-  const bodyFontPt = Math.max(5.5, Math.min(8.5, Math.round(rowHeightMM * 1.1)));
+  const sectionCount = allItems.filter((it) => it.sectionStart).length;
+  const rowsForCalc = allItems.length + sectionCount + 1; // +שורות כותרת מדור +כותרת טבלה
+  let rowHeightMM = Math.min(AVAILABLE_HEIGHT_MM / rowsForCalc, 9);
+  rowHeightMM = Math.max(rowHeightMM, 4);
+  const extFontPt = Math.max(7, Math.min(12, Math.round(rowHeightMM * 1.4)));
+  const bodyFontPt = Math.max(6.5, Math.min(11, Math.round(rowHeightMM * 1.2)));
 
   res.render("reports/extensions", { items: allItems, rowHeightMM, extFontPt, bodyFontPt });
 });
