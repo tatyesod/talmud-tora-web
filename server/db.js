@@ -170,6 +170,7 @@ const migrations = [
   "ALTER TABLE classes ADD COLUMN dropbox_path TEXT",
   "ALTER TABLE users ADD COLUMN drive_letter TEXT",
   "ALTER TABLE classes ADD COLUMN extension TEXT",
+  "ALTER TABLE staff_roles ADD COLUMN extension TEXT",
   "ALTER TABLE families ADD COLUMN archived_at TEXT",
   "ALTER TABLE families ADD COLUMN status TEXT DEFAULT 'פעיל'",
   `CREATE TABLE IF NOT EXISTS letter_templates (
@@ -919,6 +920,7 @@ try {
       id INTEGER PRIMARY KEY,
       name TEXT NOT NULL,
       branch TEXT,
+      extension TEXT,
       UNIQUE(name, branch)
     )
   `);

@@ -318,10 +318,16 @@ router.get("/staff-roles", (req, res) => {
 });
 
 router.post("/staff-roles", (req, res) => {
-  const { name, branch } = req.body;
+  const { name, branch, extension } = req.body;
   if (name && name.trim()) {
-    db.prepare("INSERT OR IGNORE INTO staff_roles (name, branch) VALUES (?, ?)").run(name.trim(), branch || null);
+    db.prepare("INSERT OR IGNORE INTO staff_roles (name, branch, extension) VALUES (?, ?, ?)").run(name.trim(), branch || null, extension || null);
   }
+  res.redirect("/teachers/staff-roles");
+});
+
+router.post("/staff-roles/:id/extension", (req, res) => {
+  const { extension } = req.body;
+  db.prepare("UPDATE staff_roles SET extension = ? WHERE id = ?").run(extension || null, req.params.id);
   res.redirect("/teachers/staff-roles");
 });
 
@@ -477,7 +483,7 @@ router.get("/:id", (req, res) => {
   // תפקיד צוות נוסף (מזכיר/תחזוקן/מורת שילוב וכו') שורה - כדי שיהיה ברור
   // בכרטיס האישי מה בדיוק התפקיד של האדם, לא רק ברשימה הכללית.
   const staffRoleAssignments = db.prepare(`
-    SELECT sr.name, sr.branch FROM staff_role_assignments sra
+    SELECT sr.name, sr.branch, sr.extension FROM staff_role_assignments sra
     JOIN staff_roles sr ON sra.staff_role_id = sr.id
     WHERE sra.teacher_id = ?
   `).all(req.params.id);
@@ -491,7 +497,7 @@ router.get("/:id", (req, res) => {
       if (c.role === "עוזר") return `עוזר ${className}${extensionSuffix}`;
       return `מלמד ${className} ${c.role || ""}${extensionSuffix}`.trim();
     }),
-    ...staffRoleAssignments.map((r) => r.name + (r.branch ? ` (${r.branch})` : "")),
+    ...staffRoleAssignments.map((r) => r.name + (r.branch ? ` (${r.branch})` : "") + (r.extension ? ` - שלוחה ${r.extension}` : "")),
   ];
 
   // רק עובד הוראה בפועל (שיבוץ בוקר/אחה"צ) מגיש דוח חודשי - לא עוזר ולא

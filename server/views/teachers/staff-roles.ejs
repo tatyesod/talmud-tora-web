@@ -27,17 +27,27 @@
         <% }) %>
       </select>
     </div>
+    <div class="form-group">
+      <label>שלוחה (טלפון פנימי)</label>
+      <input type="text" name="extension" placeholder="לדוגמה: 110" style="width:100px;" />
+    </div>
     <button type="submit" class="btn">💾 הוסף תפקיד</button>
   </form>
 
   <h3 style="margin-top:24px;">רשימת תפקידים</h3>
   <table>
-    <thead><tr><th>תפקיד</th><th>סניף</th><th>מספר עובדים משויכים</th><th></th></tr></thead>
+    <thead><tr><th>תפקיד</th><th>סניף</th><th>שלוחה</th><th>מספר עובדים משויכים</th><th></th></tr></thead>
     <tbody>
       <% roles.forEach(r => { %>
         <tr>
           <td><%= r.name %></td>
           <td><%= r.branch || 'כל הסניפים' %></td>
+          <td>
+            <form method="POST" action="/teachers/staff-roles/<%= r.id %>/extension" style="display:flex; gap:4px; align-items:center;">
+              <input type="text" name="extension" value="<%= r.extension || '' %>" placeholder="שלוחה" style="width:70px;" />
+              <button type="submit" class="btn small secondary">💾</button>
+            </form>
+          </td>
           <td><%= r.assignedCount %></td>
           <td>
             <form method="POST" action="/teachers/staff-roles/<%= r.id %>?_method=DELETE"

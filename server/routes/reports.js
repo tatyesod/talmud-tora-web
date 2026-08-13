@@ -531,7 +531,26 @@ router.get("/extensions", (req, res) => {
     branch: r.branch || "",
     extension: r.extension || "",
   }));
-  res.render("reports/extensions", { items });
+
+  // תפקידי צוות שאינם קשורים לכיתה (מזכירים, מורות שילוב וכו') - להם
+  // מוגדרת שלוחה ישירות על התפקיד עצמו, לא דרך כיתה
+  const staffRows = db.prepare(`
+    SELECT sr.name AS role_name, sr.branch, sr.extension, t.first_name, t.last_name
+    FROM staff_role_assignments sra
+    JOIN staff_roles sr ON sra.staff_role_id = sr.id
+    JOIN teachers t ON sra.teacher_id = t.id
+    WHERE t.status = 'פעיל' AND sr.extension IS NOT NULL AND sr.extension != ''
+    ORDER BY sr.branch IS NOT NULL, sr.branch, sr.name
+  `).all();
+  const staffItems = staffRows.map((r) => ({
+    className: r.role_name,
+    teacherName: `הרב ${r.first_name || ""} ${r.last_name || ""}`.trim(),
+    role: "",
+    branch: r.branch || "כל הסניפים",
+    extension: r.extension || "",
+  }));
+
+  res.render("reports/extensions", { items: [...items, ...staffItems] });
 });
 
 router.get("/class-directory", (req, res) => {

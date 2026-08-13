@@ -48,7 +48,7 @@
   <tbody>
     <% items.forEach(item => { %>
       <tr>
-        <td><%= item.className %> (<%= item.role %>)</td>
+        <td><%= item.className %><% if (item.role) { %> (<%= item.role %>)<% } %></td>
         <td><%= item.teacherName %></td>
         <td><%= item.branch %></td>
         <td class="ext-num"><%= item.extension %></td>
