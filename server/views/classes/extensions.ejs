@@ -7,27 +7,34 @@
   </div>
 
   <p style="color:var(--muted); font-size:0.9em; line-height:1.6;">
-    עדכון מהיר של שלוחת הטלפון לכל כיתה - בלי לעבור דרך טופס העריכה המלא. השלוחה שמוגדרת כאן מופיעה אוטומטית
-    גם בכרטיס המלמד המשובץ לכיתה, וגם בדוח "רשימת שלוחות".
+    עדכון מהיר של שלוחת הטלפון לכל כיתה - בלי לעבור דרך טופס העריכה המלא. אפשר לערוך כמה כיתות ביחד ולשמור הכל
+    בבת אחת. השלוחה שמוגדרת כאן מופיעה אוטומטית גם בכרטיס המלמד המשובץ לכיתה, וגם בדוח "רשימת שלוחות".
   </p>
 
-  <table>
-    <thead><tr><th>כיתה</th><th>סניף</th><th>שלוחה</th></tr></thead>
-    <tbody>
-      <% classes.forEach(c => { %>
-        <tr>
-          <td><%= c.name %><%= c.parallel ? ' ' + c.parallel : '' %></td>
-          <td><%= c.branch || '' %></td>
-          <td>
-            <form method="POST" action="/classes/<%= c.id %>/extension" style="display:flex; gap:4px; align-items:center;">
-              <input type="text" name="extension" value="<%= c.extension || '' %>" placeholder="שלוחה" style="width:80px;" />
-              <button type="submit" class="btn small secondary">💾</button>
-            </form>
-          </td>
-        </tr>
-      <% }) %>
-    </tbody>
-  </table>
+  <% if (typeof saved !== 'undefined' && saved) { %>
+    <div style="background:#e8f5e9; border:1px solid #a5d6a7; color:#2e7d32; border-radius:8px; padding:8px 14px; margin-bottom:12px;">✅ נשמר בהצלחה.</div>
+  <% } %>
+
+  <form method="POST" action="/classes/extensions">
+    <table>
+      <thead><tr><th>כיתה</th><th>סניף</th><th>שלוחה</th></tr></thead>
+      <tbody>
+        <% classes.forEach(c => { %>
+          <tr>
+            <td><%= c.name %><%= c.parallel ? ' ' + c.parallel : '' %></td>
+            <td><%= c.branch || '' %></td>
+            <td>
+              <input type="text" name="ext_<%= c.id %>" value="<%= c.extension || '' %>" placeholder="שלוחה" style="width:80px;" />
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+
+    <div class="actions" style="margin-top:16px; position:sticky; bottom:0; background:#fff; padding:10px 0;">
+      <button type="submit" class="btn">💾 שמירת כל השלוחות</button>
+    </div>
+  </form>
 </div>
 
 <%- include('../partials/footer') %>

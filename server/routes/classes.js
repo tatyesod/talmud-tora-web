@@ -157,10 +157,25 @@ router.get("/extensions", (req, res) => {
   res.render("classes/extensions", { classes });
 });
 
-router.post("/:id/extension", (req, res) => {
-  const { extension } = req.body;
-  db.prepare("UPDATE classes SET extension = ? WHERE id = ?").run(extension || null, req.params.id);
-  res.redirect("/classes/extensions");
+router.post("/extensions", (req, res) => {
+  // שמירה אחת על כל השלוחות ביחד - שדות בשם ext_<מזהה כיתה>, כדי לא
+  // להצטרך לשמור כל כיתה בנפרד
+  db.exec("BEGIN TRANSACTION");
+  try {
+    Object.keys(req.body).forEach((key) => {
+      const match = key.match(/^ext_(\d+)$/);
+      if (match) {
+        const classId = match[1];
+        const value = (req.body[key] || "").trim() || null;
+        db.prepare("UPDATE classes SET extension = ? WHERE id = ?").run(value, classId);
+      }
+    });
+    db.exec("COMMIT");
+  } catch (e) {
+    db.exec("ROLLBACK");
+    throw e;
+  }
+  res.redirect("/classes/extensions?saved=1");
 });
 
 router.get("/:id/edit", (req, res) => {
