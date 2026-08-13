@@ -1,0 +1,33 @@
+<%- include('../partials/header', {title: 'עדכון שלוחות לכיתות', wide: true}) %>
+
+<div class="card">
+  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+    <h1>☎️ עדכון שלוחות לכיתות</h1>
+    <a href="/classes" class="btn secondary">← חזרה לכיתות</a>
+  </div>
+
+  <p style="color:var(--muted); font-size:0.9em; line-height:1.6;">
+    עדכון מהיר של שלוחת הטלפון לכל כיתה - בלי לעבור דרך טופס העריכה המלא. השלוחה שמוגדרת כאן מופיעה אוטומטית
+    גם בכרטיס המלמד המשובץ לכיתה, וגם בדוח "רשימת שלוחות".
+  </p>
+
+  <table>
+    <thead><tr><th>כיתה</th><th>סניף</th><th>שלוחה</th></tr></thead>
+    <tbody>
+      <% classes.forEach(c => { %>
+        <tr>
+          <td><%= c.name %><%= c.parallel ? ' ' + c.parallel : '' %></td>
+          <td><%= c.branch || '' %></td>
+          <td>
+            <form method="POST" action="/classes/<%= c.id %>/extension" style="display:flex; gap:4px; align-items:center;">
+              <input type="text" name="extension" value="<%= c.extension || '' %>" placeholder="שלוחה" style="width:80px;" />
+              <button type="submit" class="btn small secondary">💾</button>
+            </form>
+          </td>
+        </tr>
+      <% }) %>
+    </tbody>
+  </table>
+</div>
+
+<%- include('../partials/footer') %>

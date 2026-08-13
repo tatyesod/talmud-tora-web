@@ -147,6 +147,22 @@ router.post("/study-materials/:id", (req, res) => {
   res.redirect("/classes/study-materials/edit?saved=1");
 });
 
+// ============ עדכון מהיר של שלוחות לכיתות ============
+router.get("/extensions", (req, res) => {
+  const classes = db.prepare(`
+    SELECT id, name, parallel, branch, extension FROM classes
+    WHERE status = 'פעיל'
+    ORDER BY branch IS NOT NULL, branch, name, parallel
+  `).all();
+  res.render("classes/extensions", { classes });
+});
+
+router.post("/:id/extension", (req, res) => {
+  const { extension } = req.body;
+  db.prepare("UPDATE classes SET extension = ? WHERE id = ?").run(extension || null, req.params.id);
+  res.redirect("/classes/extensions");
+});
+
 router.get("/:id/edit", (req, res) => {
   const classRow = db.prepare("SELECT * FROM classes WHERE id = ?").get(req.params.id);
   if (!classRow) return res.status(404).render("404");
