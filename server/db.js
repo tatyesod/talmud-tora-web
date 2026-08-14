@@ -1364,6 +1364,25 @@ try {
 // שלוחות למיקומים כלליים שלא קשורים למלמד/תפקיד ספציפי (כמו "חדר מלמדים"
 // בכל סניף) - רשומה עצמאית, שם + סניף + שלוחה
 
+// הסדר השארה (עד פסח / קיץ) - נתוני עניין ותשלום לכל תלמיד, ממולאים
+// דרך המערכת ולא רק על נייר
+try {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS stay_arrangements (
+      id INTEGER PRIMARY KEY,
+      student_id INTEGER NOT NULL UNIQUE,
+      passover_interested TEXT,
+      passover_amount REAL,
+      summer_interested TEXT,
+      summer_amount REAL,
+      updated_at TEXT,
+      FOREIGN KEY(student_id) REFERENCES students(id)
+    )
+  `);
+} catch (e) {
+  console.error("שגיאה ביצירת טבלת הסדר השארה:", e.message);
+}
+
 try {
   db.exec(`
     CREATE TABLE IF NOT EXISTS misc_extensions (

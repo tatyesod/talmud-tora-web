@@ -800,6 +800,66 @@ router.get("/single-page", (req, res) => {
   res.render("reports/single-page", { classes, branches, teacherAssignments });
 });
 
+// ============ הסדר השארה - מילוי דרך המערכת ============
+const STAY_ARRANGEMENT_CLASS_NAMES = ["מכינה א'", "מכינה ב'", "כיתה א'"];
+
+router.get("/stay-arrangement/edit", (req, res) => {
+  const classes = db.prepare(`
+    SELECT id, name, parallel, branch FROM classes
+    WHERE status = 'פעיל' AND name IN (${STAY_ARRANGEMENT_CLASS_NAMES.map(() => "?").join(",")})
+    ORDER BY name, parallel
+  `).all(...STAY_ARRANGEMENT_CLASS_NAMES);
+  res.render("reports/stay-arrangement-edit-select", { classes });
+});
+
+router.get("/stay-arrangement/edit/:classId", (req, res) => {
+  const classRow = db.prepare("SELECT * FROM classes WHERE id = ?").get(req.params.classId);
+  const students = db.prepare(`
+    SELECT s.id, s.first_name, s.nickname, f.last_name AS family_last_name,
+      sa.passover_interested, sa.passover_amount, sa.summer_interested, sa.summer_amount
+    FROM students s
+    LEFT JOIN families f ON s.family_id = f.id
+    LEFT JOIN stay_arrangements sa ON sa.student_id = s.id
+    WHERE s.class_id = ? AND s.status = 'פעיל'
+    ORDER BY f.last_name, s.first_name
+  `).all(req.params.classId);
+  res.render("reports/stay-arrangement-edit", { classRow, students, saved: req.query.saved === "1" });
+});
+
+router.post("/stay-arrangement/edit/:classId", (req, res) => {
+  const { student_id, passover_interested, passover_amount, summer_interested, summer_amount } = req.body;
+  const ids = Array.isArray(student_id) ? student_id : [student_id];
+  const toArr = (v) => (Array.isArray(v) ? v : [v]);
+  const pInterested = toArr(passover_interested);
+  const pAmount = toArr(passover_amount);
+  const sInterested = toArr(summer_interested);
+  const sAmount = toArr(summer_amount);
+
+  const upsert = db.prepare(`
+    INSERT INTO stay_arrangements (student_id, passover_interested, passover_amount, summer_interested, summer_amount, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?)
+    ON CONFLICT(student_id) DO UPDATE SET
+      passover_interested = excluded.passover_interested,
+      passover_amount = excluded.passover_amount,
+      summer_interested = excluded.summer_interested,
+      summer_amount = excluded.summer_amount,
+      updated_at = excluded.updated_at
+  `);
+  const now = new Date().toISOString();
+  ids.forEach((id, i) => {
+    if (!id) return;
+    upsert.run(
+      id,
+      pInterested[i] || null,
+      pAmount[i] !== "" && pAmount[i] != null ? parseFloat(pAmount[i]) : null,
+      sInterested[i] || null,
+      sAmount[i] !== "" && sAmount[i] != null ? parseFloat(sAmount[i]) : null,
+      now
+    );
+  });
+  res.redirect(`/reports/stay-arrangement/edit/${req.params.classId}?saved=1`);
+});
+
 router.get("/single-page/view", (req, res) => {
   const { class_id, teacher_id, page } = req.query;
   if (!class_id) return res.redirect("/reports/single-page");
@@ -809,9 +869,11 @@ router.get("/single-page/view", (req, res) => {
     const students = db.prepare(`
       SELECT s.first_name, s.nickname,
         f.last_name AS family_last_name, f.home_phone, f.father_mobile, f.mother_mobile,
-        f.street, f.house_number, f.apartment, f.city
+        f.street, f.house_number, f.apartment, f.city,
+        sa.passover_interested, sa.passover_amount, sa.summer_interested, sa.summer_amount
       FROM students s
       LEFT JOIN families f ON s.family_id = f.id
+      LEFT JOIN stay_arrangements sa ON sa.student_id = s.id
       WHERE s.class_id = ? AND s.status = 'פעיל'
       ORDER BY f.last_name, s.first_name
     `).all(class_id).map((s) => ({

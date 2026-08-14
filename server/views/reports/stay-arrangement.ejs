@@ -66,10 +66,10 @@
         <td><%= s.home_phone || '' %></td>
         <td><%= s.father_mobile || '' %></td>
         <td><%= s.mother_mobile || '' %></td>
-        <td class="check-col"></td>
-        <td></td>
-        <td class="check-col"></td>
-        <td></td>
+        <td class="check-col"><%= s.passover_interested || '' %></td>
+        <td><%= s.passover_amount != null ? s.passover_amount + ' ₪' : '' %></td>
+        <td class="check-col"><%= s.summer_interested || '' %></td>
+        <td><%= s.summer_amount != null ? s.summer_amount + ' ₪' : '' %></td>
         <td></td>
       </tr>
     <% }) %>

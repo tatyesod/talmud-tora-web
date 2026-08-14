@@ -1,0 +1,32 @@
+<%- include('../partials/header', {title: 'מילוי הסדר השארה'}) %>
+
+<div class="card">
+  <h1>📋 מילוי הסדר השארה</h1>
+  <p style="color:var(--muted); font-size:0.9em; line-height:1.6;">
+    רלוונטי לכיתות מכינה א', מכינה ב' וכיתה א' - בוחרים כיתה, ממלאים עבור כל תלמיד האם מעוניין ובאיזה סכום,
+    ואפשר אחר כך להפיק דוח מודפס עם הנתונים שמולאו.
+  </p>
+
+  <% if (classes.length === 0) { %>
+    <p style="color:var(--muted);">אין כיתות רלוונטיות (מכינה א'/ב' או כיתה א') פעילות במערכת.</p>
+  <% } else { %>
+    <table>
+      <thead><tr><th>כיתה</th><th>סניף</th><th></th></tr></thead>
+      <tbody>
+        <% classes.forEach(c => { %>
+          <tr>
+            <td><%= c.name %><%= c.parallel ? ' ' + c.parallel : '' %></td>
+            <td><%= c.branch || '' %></td>
+            <td><a href="/reports/stay-arrangement/edit/<%= c.id %>" class="btn small">מילוי</a></td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  <% } %>
+
+  <div class="actions" style="margin-top:16px;">
+    <a href="/reports" class="btn secondary">חזרה לדוחות</a>
+  </div>
+</div>
+
+<%- include('../partials/footer') %>
