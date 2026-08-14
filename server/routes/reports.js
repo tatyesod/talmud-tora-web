@@ -818,11 +818,14 @@ router.get("/single-page/view", (req, res) => {
       ...s,
       address: [s.street, s.house_number, s.apartment ? "דירה " + s.apartment : "", s.city].filter(Boolean).join(" "),
     }));
-    const AVAILABLE_HEIGHT_MM = 260;
+    // A4 לרוחב (לא לאורך!) - הגובה הזמין הרבה יותר קטן מעמוד רגיל (210
+    // מ"מ גובה העמוד, פחות שוליים וכותרת), לכן חייבים קבוע נפרד כאן -
+    // זו הייתה הסיבה שהדוח גלש לעמוד שני
+    const AVAILABLE_HEIGHT_MM = 175;
     const rowsForCalc = students.length + 1;
-    let rowHeightMM = Math.min(AVAILABLE_HEIGHT_MM / rowsForCalc, 12);
-    rowHeightMM = Math.max(rowHeightMM, 4);
-    const bodyFontPt = Math.max(7, Math.min(13, Math.round(rowHeightMM * 1.1)));
+    let rowHeightMM = Math.min(AVAILABLE_HEIGHT_MM / rowsForCalc, 14);
+    rowHeightMM = Math.max(rowHeightMM, 3.5);
+    const bodyFontPt = Math.max(6.5, Math.min(20, Math.round(rowHeightMM * 1.6)));
     return res.render("reports/stay-arrangement", { classRow, students, rowHeightMM, bodyFontPt });
   }
 
