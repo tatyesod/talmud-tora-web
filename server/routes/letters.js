@@ -86,8 +86,7 @@ router.get("/", (req, res) => {
     LEFT JOIN letter_templates lt ON c.letter_template_id = lt.id
     WHERE c.status = 'פעיל' OR c.name LIKE 'עדיין לא נכנסו%'
     ORDER BY c.name, c.parallel
-  `).all().map((c) => ({ ...c, auto_template_name: getNextStageTemplateName(c.name) }));
-  // כל הכיתות (כולל ח') - לבחירת "כיתת יעד לשנה הבאה" (כי גם כיתה ח' יכולה להיות יעד של כיתה ז')
+  `).all().map((c) => ({ ...c, auto_template_name: getNextStageTemplateName(c.name) }));  // כל הכיתות (כולל ח') - לבחירת "כיתת יעד לשנה הבאה" (כי גם כיתה ח' יכולה להיות יעד של כיתה ז')
   const allClasses = db.prepare(`
     SELECT id, name, parallel FROM classes WHERE status = 'פעיל' OR name LIKE 'עדיין לא נכנסו%' ORDER BY name, parallel
   `).all().map((c) => ({ ...c, full_name: `${c.name}${c.parallel ? " " + c.parallel : ""}` }));
@@ -108,9 +107,16 @@ router.post("/settings", (req, res) => {
 router.post("/class/:classId/fields", (req, res) => {
   const classRow = db.prepare("SELECT name FROM classes WHERE id = ?").get(req.params.classId);
   const autoTemplateId = classRow ? getTemplateIdForClass(classRow.name) : null;
-  db.prepare("UPDATE classes SET room_description = ?, letter_template_id = ?, next_year_class_id = ? WHERE id = ?").run(
+  // אם נבחרה תבנית ידנית (למשל לכיתה ספציפית שצריכה תבנית שונה משאר
+  // הכיתות באותה שכבה, כמו מכינה א'2 שצריכה שעות שונות ממכינה א'1) -
+  // משתמשים בה במקום בתבנית האוטומטית, ושומרים את הבחירה כדי שהיא תישאר
+  // גם אם שדות אחרים של הכיתה יישמרו שוב בעתיד
+  const manualTemplateId = req.body.manual_letter_template_id || null;
+  const effectiveTemplateId = manualTemplateId || autoTemplateId;
+  db.prepare("UPDATE classes SET room_description = ?, letter_template_id = ?, manual_letter_template_id = ?, next_year_class_id = ? WHERE id = ?").run(
     req.body.room_description || null,
-    autoTemplateId,
+    effectiveTemplateId,
+    manualTemplateId,
     req.body.next_year_class_id || null,
     req.params.classId
   );

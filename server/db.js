@@ -404,6 +404,57 @@ try {
   console.error("שגיאה בבדיקת תבנית מכינה א':", e.message);
 }
 
+// תיקון חד-פעמי ממוקד: עדכון שעות היום הראשון בתבנית "מכינה א'" מ-9:30-11:30
+// ל-9:00-11:00.
+// ---
+// ביטול: התברר שהבקשה המקורית הייתה ספציפית לכיתת מכינה א'2 (הרב משה צבי
+// כהן) בלבד, לא לכל כיתות מכינה א' - אז זה הוחלף בלוגיקה למטה (שיוך תבנית
+// ידני פר-כיתה), וכאן רק מוודאים שהתבנית הכללית חוזרת לשעות המקוריות
+// 09:30-11:30 למי שהריץ את העדכון הקודם
+try {
+  const revertFlag = db.prepare("SELECT value FROM settings WHERE key = 'mechina_a_hours_revert_v1'").get();
+  if (!revertFlag) {
+    const tpl = db.prepare("SELECT id, body FROM letter_templates WHERE name = ?").get("מכינה א'");
+    if (tpl && tpl.body.includes("בשעה 09:00 ויסתיימו בשעה 11:00")) {
+      const revertedBody = tpl.body.replace("בשעה 09:00 ויסתיימו בשעה 11:00", "בשעה 09:30 ויסתיימו בשעה 11:30");
+      db.prepare("UPDATE letter_templates SET body = ?, updated_at = ? WHERE id = ?").run(revertedBody, new Date().toISOString(), tpl.id);
+      console.log('[מכתבי שיבוץ] בוטל העדכון הכללי לתבנית "מכינה א\'" - חזרה ל-09:30-11:30');
+    }
+    db.prepare("INSERT INTO settings (key, value) VALUES ('mechina_a_hours_revert_v1', '1')").run();
+  }
+} catch (e) {
+  console.error("שגיאה בביטול עדכון שעות תבנית מכינה א':", e.message);
+}
+
+// יצירת תבנית ייעודית למכינה א'2 (הרב משה צבי כהן) עם שעות 09:00-11:00,
+// בנפרד מהתבנית הכללית "מכינה א'" (שנשארת 09:30-11:30 לכל שאר הכיתות,
+// כולל מכינה א'1 אצל אותו מלמד)
+try {
+  const dedicatedExists = db.prepare("SELECT id FROM letter_templates WHERE name = ?").get("מכינה א' - הרב משה צבי כהן (מכינה א'2)");
+  if (!dedicatedExists) {
+    const baseTpl = db.prepare("SELECT body FROM letter_templates WHERE name = ?").get("מכינה א'");
+    if (baseTpl) {
+      const dedicatedBody = baseTpl.body.replace("בשעה 09:30 ויסתיימו בשעה 11:30", "בשעה 09:00 ויסתיימו בשעה 11:00");
+      const now = new Date().toISOString();
+      db.prepare("INSERT INTO letter_templates (name, body, created_at, updated_at) VALUES (?,?,?,?)").run(
+        "מכינה א' - הרב משה צבי כהן (מכינה א'2)", dedicatedBody, now, now
+      );
+      console.log('[מכתבי שיבוץ] נוצרה תבנית ייעודית "מכינה א\' - הרב משה צבי כהן (מכינה א\'2)" עם שעות 09:00-11:00');
+    }
+  }
+} catch (e) {
+  console.error("שגיאה ביצירת תבנית ייעודית למכינה א'2:", e.message);
+}
+
+// תמיכה בשיוך תבנית ידני פר-כיתה (לא רק גזירה אוטומטית לפי שכבה) - נדרש
+// כדי שאפשר יהיה לתת לכיתה ספציפית (כמו מכינה א'2) תבנית שונה מהתבנית
+// הכללית של אותה שכבה
+try {
+  db.exec("ALTER TABLE classes ADD COLUMN manual_letter_template_id INTEGER REFERENCES letter_templates(id)");
+} catch (e) {
+  // כבר קיימת - זה בסדר
+}
+
 // תיקון חד-פעמי ממוקד: מוודאים שקיימות 4 כיתות "עדיין לא נכנסו" (מקבילות 1-4,
 // לפי חלוקת האזורים - 1,2 בסוקולוב, 3,4 בבן פתחיה) - נדרש גם לשיבוץ האוטומטי
 // לפי אזור וגם למכתבי השיבוץ (כדי שלכל תלמיד "עדיין לא נכנסו" תהיה כיתה אמיתית
