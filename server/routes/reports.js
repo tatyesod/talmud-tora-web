@@ -803,6 +803,43 @@ router.get("/single-page", (req, res) => {
 // ============ הסדר השארה - מילוי דרך המערכת ============
 const STAY_ARRANGEMENT_CLASS_NAMES = ["מכינה א'", "מכינה ב'", "כיתה א'"];
 
+// ============ הסדר השארה - דוח לשומר (רשימה מרוכזת לפי סניף, בלי סכומים) ============
+router.get("/stay-arrangement/guard", (req, res) => {
+  res.render("reports/stay-arrangement-guard-select");
+});
+
+router.get("/stay-arrangement/guard/view", (req, res) => {
+  const { branch } = req.query;
+  if (!branch) return res.redirect("/reports/stay-arrangement/guard");
+  const students = db.prepare(`
+    SELECT s.first_name, s.nickname, c.name AS class_name, c.parallel,
+      f.last_name AS family_last_name, f.home_phone, f.father_mobile, f.mother_mobile,
+      f.street, f.house_number, f.apartment, f.city,
+      sa.passover_interested, sa.summer_interested
+    FROM students s
+    JOIN classes c ON s.class_id = c.id
+    LEFT JOIN families f ON s.family_id = f.id
+    JOIN stay_arrangements sa ON sa.student_id = s.id
+    WHERE s.status = 'פעיל' AND c.branch = ?
+      AND c.name IN (${STAY_ARRANGEMENT_CLASS_NAMES.map(() => "?").join(",")})
+      AND (sa.passover_interested = 'כן' OR sa.summer_interested = 'כן')
+    ORDER BY c.name, c.parallel, f.last_name, s.first_name
+  `).all(branch, ...STAY_ARRANGEMENT_CLASS_NAMES).map((s) => ({
+    ...s,
+    className: s.class_name + (s.parallel ? " " + s.parallel : ""),
+    address: [s.street, s.house_number, s.apartment ? "דירה " + s.apartment : "", s.city].filter(Boolean).join(" "),
+    arrangements: [s.passover_interested === "כן" ? "פסח" : "", s.summer_interested === "כן" ? "קיץ" : ""].filter(Boolean).join(" + "),
+  }));
+
+  const AVAILABLE_HEIGHT_MM = 260;
+  const rowsForCalc = students.length + 1;
+  let rowHeightMM = Math.min(AVAILABLE_HEIGHT_MM / rowsForCalc, 12);
+  rowHeightMM = Math.max(rowHeightMM, 3.5);
+  const bodyFontPt = Math.max(7, Math.min(16, Math.round(rowHeightMM * 1.3)));
+
+  res.render("reports/stay-arrangement-guard", { branch, students, rowHeightMM, bodyFontPt });
+});
+
 router.get("/stay-arrangement/edit", (req, res) => {
   const classes = db.prepare(`
     SELECT id, name, parallel, branch FROM classes

@@ -1,0 +1,20 @@
+<%- include('../partials/header', {title: 'דוח שומר - הסדר השארה'}) %>
+
+<div class="card">
+  <h1>👮 דוח שומר - הסדר השארה</h1>
+  <p style="color:var(--muted); font-size:0.9em; line-height:1.6;">
+    רשימה שמית מרוכזת לפי סניף (כל כיתות מכינה א', מכינה ב' וכיתה א' יחד) - שם, כתובת וטלפונים, לתלמידים
+    שמעוניינים בהסדר השארה. בלי סכומים.
+  </p>
+
+  <div class="actions" style="gap:12px;">
+    <a href="/reports/stay-arrangement/guard/view?branch=<%= encodeURIComponent('סוקולוב') %>" target="_blank" class="btn">סוקולוב</a>
+    <a href="/reports/stay-arrangement/guard/view?branch=<%= encodeURIComponent('בן פתחיה') %>" target="_blank" class="btn">בן פתחיה</a>
+  </div>
+
+  <div class="actions" style="margin-top:16px;">
+    <a href="/reports" class="btn secondary">חזרה לדוחות</a>
+  </div>
+</div>
+
+<%- include('../partials/footer') %>
