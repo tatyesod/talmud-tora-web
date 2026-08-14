@@ -13,10 +13,10 @@
       </div>
       <div class="form-group">
         <label>כיתה</label>
-        <select name="class_id" id="class-select" required data-branch-filter onchange="updateTeacherOptions()">
+        <select name="class_id" id="class-select" required data-branch-filter onchange="updateTeacherOptions(); updatePageOptions();">
           <option value="">בחר כיתה...</option>
           <% classes.forEach(c => { %>
-            <option value="<%= c.id %>" data-branch="<%= c.branch || '' %>"><%= c.name %><%= c.parallel ? ' ' + c.parallel : '' %></option>
+            <option value="<%= c.id %>" data-branch="<%= c.branch || '' %>" data-name="<%= c.name %>"><%= c.name %><%= c.parallel ? ' ' + c.parallel : '' %></option>
           <% }) %>
         </select>
       </div>
@@ -28,12 +28,13 @@
       </div>
       <div class="form-group">
         <label>סוג הדף</label>
-        <select name="page" required>
+        <select name="page" id="page-select" required>
           <option value="7col">7 טורים (שבועי)</option>
           <option value="2col">2 טורים רחבים</option>
           <option value="1col">דו"ח דו חודשי (טור הערות)</option>
           <option value="general_notes">הערות כלליות (טור הערות)</option>
           <option value="grid">נוכחות חודשית (משבצות)</option>
+          <option value="stay_arrangement" id="stay-arrangement-option" style="display:none;">הסדר השארה</option>
         </select>
       </div>
     </div>
@@ -48,6 +49,21 @@
 <script>
   const TEACHER_ASSIGNMENTS = <%- JSON.stringify(teacherAssignments) %>;
   const ROLE_LABELS = { 'בוקר': 'בוקר', 'אחה"צ': 'אחה"צ', 'עוזר': 'עוזר' };
+  const STAY_ARRANGEMENT_CLASSES = ["מכינה א'", "מכינה ב'", "כיתה א'"];
+
+  function updatePageOptions() {
+    const classSelect = document.getElementById('class-select');
+    const selectedOption = classSelect.options[classSelect.selectedIndex];
+    const className = selectedOption ? selectedOption.getAttribute('data-name') : '';
+    const stayOption = document.getElementById('stay-arrangement-option');
+    const relevant = STAY_ARRANGEMENT_CLASSES.includes(className);
+    stayOption.style.display = relevant ? '' : 'none';
+    // אם הדף שנבחר כרגע הוא "הסדר השארה" אבל הכיתה שנבחרה כבר לא רלוונטית -
+    // חוזרים לברירת המחדל, כדי לא להשאיר בחירה שלא ניתן להפיק
+    if (!relevant && document.getElementById('page-select').value === 'stay_arrangement') {
+      document.getElementById('page-select').value = '7col';
+    }
+  }
 
   function updateTeacherOptions() {
     const classId = document.getElementById('class-select').value;

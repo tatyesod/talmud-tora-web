@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <title>הסדר השארה</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    body { font-family: "FrankRuehl", "FrankRuehlCLM", "Guttman Mantova", Arial, sans-serif; direction: rtl; }
+    @page { size: A4 landscape; margin: 8mm; }
+    @media print { .no-print { display: none !important; } }
+
+    .no-print {
+      background: #2c5f7c; color: #fff; padding: 10px 16px;
+      display: flex; gap: 14px; align-items: center; font-size: 13px;
+    }
+    .no-print button { background:#fff; color:#2c5f7c; border:none; border-radius:6px; padding:6px 14px; cursor:pointer; font-weight:700; }
+    .no-print a { color:#fff; }
+
+    .title { text-align: center; font-weight: 800; font-size: 14pt; color: #2c5f7c; margin-bottom: 4px; }
+    .subtitle { text-align: center; font-size: 11pt; color: #555; margin-bottom: 10px; }
+
+    table.sa { width: 100%; border-collapse: collapse; font-size: <%= bodyFontPt %>pt; }
+    table.sa th, table.sa td { border: 0.6pt solid #999; padding: 2px 5px; text-align: center; height: <%= rowHeightMM %>mm; }
+    table.sa th { background: #dde8f0; font-weight: 700; }
+    table.sa td.name-col { text-align: right; }
+    td.check-col { width: 20px; }
+  </style>
+</head>
+<body>
+
+<div class="no-print">
+  <button onclick="window.print()">🖨️ שמירה כ-PDF / הדפסה</button>
+  <span><%= students.length %> תלמידים</span>
+  <a href="javascript:history.back()">← חזרה</a>
+</div>
+
+<div class="title">הסדר השארה</div>
+<div class="subtitle">כיתה: <%= classRow.name %><%= classRow.parallel ? ' ' + classRow.parallel : '' %></div>
+
+<table class="sa">
+  <thead>
+    <tr>
+      <th>משפחה</th>
+      <th>פרטי</th>
+      <th>חיבה</th>
+      <th>כתה</th>
+      <th>כתובת</th>
+      <th>טלפון בבית</th>
+      <th>נייד אב</th>
+      <th>נייד אם</th>
+      <th>מעונין</th>
+      <th>הסדר השארה עד פסח 200 ₪</th>
+      <th>מעונין</th>
+      <th>הסדר השארה קיץ 100 ₪</th>
+      <th>הערות</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% students.forEach(s => { %>
+      <tr>
+        <td class="name-col"><%= s.family_last_name || '' %></td>
+        <td class="name-col"><%= s.first_name || '' %></td>
+        <td class="name-col"><%= s.nickname || '' %></td>
+        <td><%= classRow.name %><%= classRow.parallel ? ' ' + classRow.parallel : '' %></td>
+        <td><%= s.address %></td>
+        <td><%= s.home_phone || '' %></td>
+        <td><%= s.father_mobile || '' %></td>
+        <td><%= s.mother_mobile || '' %></td>
+        <td class="check-col"></td>
+        <td></td>
+        <td class="check-col"></td>
+        <td></td>
+        <td></td>
+      </tr>
+    <% }) %>
+  </tbody>
+</table>
+
+</body>
+</html>

@@ -803,6 +803,29 @@ router.get("/single-page", (req, res) => {
 router.get("/single-page/view", (req, res) => {
   const { class_id, teacher_id, page } = req.query;
   if (!class_id) return res.redirect("/reports/single-page");
+
+  if (page === "stay_arrangement") {
+    const classRow = db.prepare("SELECT * FROM classes WHERE id = ?").get(class_id);
+    const students = db.prepare(`
+      SELECT s.first_name, s.nickname,
+        f.last_name AS family_last_name, f.home_phone, f.father_mobile, f.mother_mobile,
+        f.street, f.house_number, f.apartment, f.city
+      FROM students s
+      LEFT JOIN families f ON s.family_id = f.id
+      WHERE s.class_id = ? AND s.status = 'פעיל'
+      ORDER BY f.last_name, s.first_name
+    `).all(class_id).map((s) => ({
+      ...s,
+      address: [s.street, s.house_number, s.apartment ? "דירה " + s.apartment : "", s.city].filter(Boolean).join(" "),
+    }));
+    const AVAILABLE_HEIGHT_MM = 260;
+    const rowsForCalc = students.length + 1;
+    let rowHeightMM = Math.min(AVAILABLE_HEIGHT_MM / rowsForCalc, 12);
+    rowHeightMM = Math.max(rowHeightMM, 4);
+    const bodyFontPt = Math.max(7, Math.min(13, Math.round(rowHeightMM * 1.1)));
+    return res.render("reports/stay-arrangement", { classRow, students, rowHeightMM, bodyFontPt });
+  }
+
   const pages = [page || "7col"];
   const classRow = db.prepare("SELECT * FROM classes WHERE id = ?").get(class_id);
   const students = db
