@@ -1366,6 +1366,24 @@ try {
 
 // הסדר השארה (עד פסח / קיץ) - נתוני עניין ותשלום לכל תלמיד, ממולאים
 // דרך המערכת ולא רק על נייר
+// כמויות צילומים - תוספת ידנית לכיתה, לפי שנת לימודים (יש כיתות שצריכות
+// יותר עותקים מספר הילדים, למשל בשביל המלמד/עוזר/עותק גיבוי)
+try {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS photocopy_extras (
+      id INTEGER PRIMARY KEY,
+      class_id INTEGER NOT NULL,
+      school_year TEXT NOT NULL,
+      extra INTEGER,
+      updated_at TEXT,
+      UNIQUE(class_id, school_year),
+      FOREIGN KEY(class_id) REFERENCES classes(id)
+    )
+  `);
+} catch (e) {
+  console.error("שגיאה ביצירת טבלת כמויות צילומים:", e.message);
+}
+
 try {
   db.exec(`
     CREATE TABLE IF NOT EXISTS stay_arrangements (

@@ -1024,7 +1024,167 @@ router.get("/furniture-count", (req, res) => {
   });
 });
 
-// ============ רישום גני ילדים (מכינה א'-ב') לפי תבנית משרד החינוך ============
+// ============ כמויות צילומים - לפי סניפים ושנת לימודים, עם תוספת ידנית ============
+router.get("/photocopies", (req, res) => {
+  const { GRADE_ORDER } = require("../yearManager");
+  const { getCurrentYear } = require("../yearManager");
+  const schoolYear = getCurrentYear();
+
+  const rows = db.prepare(`
+    SELECT c.id, c.name, c.parallel, c.branch, COUNT(s.id) AS student_count,
+      pe.extra AS manual_extra
+    FROM classes c
+    LEFT JOIN students s ON s.class_id = c.id AND s.status = 'פעיל'
+    LEFT JOIN photocopy_extras pe ON pe.class_id = c.id AND pe.school_year = ?
+    WHERE c.status = 'פעיל' AND c.name NOT LIKE 'עדיין לא נכנסו%'
+    GROUP BY c.id
+    ORDER BY c.branch
+  `).all(schoolYear).map((c) => {
+    const extra = c.manual_extra || 0;
+    const copies = c.student_count + extra;
+    let page2 = Math.ceil(copies / 2);
+    if (page2 % 2 !== 0) page2 += 1;
+    return { ...c, extra, copies, page2 };
+  });
+
+  rows.sort((a, b) => {
+    const gradeA = GRADE_ORDER.indexOf(a.name), gradeB = GRADE_ORDER.indexOf(b.name);
+    if (gradeA !== gradeB) return (gradeA === -1 ? 999 : gradeA) - (gradeB === -1 ? 999 : gradeB);
+    return (parseInt(a.parallel, 10) || 0) - (parseInt(b.parallel, 10) || 0);
+  });
+
+  const grouped = {};
+  rows.forEach((r) => {
+    const key = r.branch || "ללא סניף";
+    if (!grouped[key]) grouped[key] = [];
+    grouped[key].push(r);
+  });
+
+  res.render("reports/photocopies", { grouped, schoolYear, saved: req.query.saved === "1" });
+});
+
+router.post("/photocopies/save", (req, res) => {
+  const { getCurrentYear } = require("../yearManager");
+  const schoolYear = getCurrentYear();
+  const upsert = db.prepare(`
+    INSERT INTO photocopy_extras (class_id, school_year, extra, updated_at) VALUES (?, ?, ?, ?)
+    ON CONFLICT(class_id, school_year) DO UPDATE SET extra = excluded.extra, updated_at = excluded.updated_at
+  `);
+  const now = new Date().toISOString();
+  Object.keys(req.body).forEach((key) => {
+    const match = key.match(/^extra_(\d+)$/);
+    if (match) {
+      const val = parseInt(req.body[key], 10);
+      upsert.run(match[1], schoolYear, isNaN(val) ? 0 : val, now);
+    }
+  });
+  res.redirect("/reports/photocopies?saved=1");
+});
+
+router.get("/photocopies/export", async (req, res) => {
+  const { GRADE_ORDER, getCurrentYear } = require("../yearManager");
+  const schoolYear = getCurrentYear();
+
+  const rows = db.prepare(`
+    SELECT c.id, c.name, c.parallel, c.branch, COUNT(s.id) AS student_count,
+      pe.extra AS manual_extra
+    FROM classes c
+    LEFT JOIN students s ON s.class_id = c.id AND s.status = 'פעיל'
+    LEFT JOIN photocopy_extras pe ON pe.class_id = c.id AND pe.school_year = ?
+    WHERE c.status = 'פעיל' AND c.name NOT LIKE 'עדיין לא נכנסו%'
+    GROUP BY c.id
+    ORDER BY c.branch
+  `).all(schoolYear).map((c) => {
+    const extra = c.manual_extra || 0;
+    const copies = c.student_count + extra;
+    let page2 = Math.ceil(copies / 2);
+    if (page2 % 2 !== 0) page2 += 1;
+    return { ...c, extra, copies, page2 };
+  });
+
+  rows.sort((a, b) => {
+    const gradeA = GRADE_ORDER.indexOf(a.name), gradeB = GRADE_ORDER.indexOf(b.name);
+    if (gradeA !== gradeB) return (gradeA === -1 ? 999 : gradeA) - (gradeB === -1 ? 999 : gradeB);
+    return (parseInt(a.parallel, 10) || 0) - (parseInt(b.parallel, 10) || 0);
+  });
+
+  const grouped = {};
+  rows.forEach((r) => {
+    const key = r.branch || "ללא סניף";
+    if (!grouped[key]) grouped[key] = [];
+    grouped[key].push(r);
+  });
+
+  const wb = new ExcelJS.Workbook();
+  wb.creator = "מערכת ניהול תלמוד תורה החדש";
+
+  Object.keys(grouped).forEach((branch) => {
+    const ws = wb.addWorksheet(branch, { views: [{ rightToLeft: true }] });
+    const classRows = grouped[branch];
+
+    // כותרת עליונה צהובה
+    ws.mergeCells(1, 1, 1, 4);
+    const titleCell = ws.getCell(1, 1);
+    titleCell.value = `שנת לימודים ${schoolYear} (${branch})`;
+    titleCell.font = { size: 13, bold: true };
+    titleCell.alignment = { horizontal: "center", vertical: "middle" };
+    titleCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFFFF200" } };
+    ws.getRow(1).height = 24;
+
+    // כותרות עמודות
+    const headerRow = ws.getRow(2);
+    ["הכיתה", "מס' הילדים", "מס' הצילומים", "מס' בעמוד 2"].forEach((h, i) => {
+      const cell = headerRow.getCell(4 - i); // RTL: העמודה הראשונה מימין
+      cell.value = h;
+      cell.font = { bold: true };
+      cell.alignment = { horizontal: "center" };
+      cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFD9D9D9" } };
+    });
+    headerRow.height = 20;
+
+    let rowIdx = 3;
+    let totalCopies = 0;
+    classRows.forEach((c, i) => {
+      const row = ws.getRow(rowIdx);
+      row.getCell(4).value = c.name + (c.parallel ? " " + c.parallel : "");
+      row.getCell(3).value = c.student_count;
+      row.getCell(2).value = c.copies;
+      row.getCell(1).value = c.page2;
+      [1, 2, 3, 4].forEach((col) => {
+        row.getCell(col).alignment = { horizontal: "center" };
+        if (i % 2 === 0) row.getCell(col).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFD9D9D9" } };
+      });
+      totalCopies += c.copies;
+      rowIdx++;
+    });
+
+    // שורת סיכום
+    ws.mergeCells(rowIdx, 3, rowIdx, 4);
+    const sumLabelCell = ws.getCell(rowIdx, 3);
+    sumLabelCell.value = "צילומים";
+    sumLabelCell.font = { bold: true };
+    sumLabelCell.alignment = { horizontal: "center" };
+    sumLabelCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFFFF200" } };
+    const sumValCell = ws.getCell(rowIdx, 2);
+    sumValCell.value = totalCopies;
+    sumValCell.font = { bold: true };
+    sumValCell.alignment = { horizontal: "center" };
+    sumValCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFFFF200" } };
+    ws.getCell(rowIdx, 1).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFFFF200" } };
+
+    ws.getColumn(1).width = 16;
+    ws.getColumn(2).width = 16;
+    ws.getColumn(3).width = 16;
+    ws.getColumn(4).width = 16;
+  });
+
+  res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+  res.setHeader("Content-Disposition", `attachment; filename="photocopies.xlsx"; filename*=UTF-8''${encodeURIComponent("כמויות-צילומים.xlsx")}`);
+  await wb.xlsx.write(res);
+  res.end();
+});
+
+
 router.get("/gan-export", async (req, res) => {
   const classes = db.prepare(`
     SELECT id, name, parallel, institution_code FROM classes
