@@ -689,14 +689,18 @@
   transition: background 0.2s ease;
 }
 .zmanim-toggle:hover { background: rgba(201,151,76,0.3); }
-.zmanim-toggle.open { transform: scaleY(-1); }
+/* היפוך החץ בלבד. קודם ה-transform היה על הכפתור כולו, ולכן גם הכיתוב
+   "זמני היום" הופיע הפוך כשהפאנל נפתח. */
+.zmanim-arrow { display: inline-block; transition: transform 0.2s ease; }
+.zmanim-toggle.open .zmanim-arrow { transform: scaleY(-1); }
 
 .zmanim-row {
   position: fixed;
   bottom: 56px;
   left: 0;
   right: 0;
-  z-index: 4;
+  /* גבוה מ-.side-dock (6), אחרת פאנל "שהשמחה במעונם" מכסה את זמני היום */
+  z-index: 7;
   display: none;
   flex-wrap: wrap;
   justify-content: center;
