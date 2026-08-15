@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const db = require("../db");
+const hd = require("../hebrewDate");
 
 function getMaintenanceEmail() {
   // מושכים ישירות מהכרטיס האישי של משה זילברשלג (התחזוקן) - כדי שלא
@@ -108,7 +109,7 @@ router.get("/maintenance", (req, res) => {
   sql += " ORDER BY m.created_at DESC";
   const requests = db.prepare(sql).all(...params).map((r) => ({
     ...r,
-    created_at_str: r.created_at ? new Date(r.created_at).toLocaleDateString("he-IL") : "",
+    created_at_str: r.created_at ? hd.formatGregorian(r.created_at) : "",
   }));
   res.render("inventory/maintenance-list", { requests, status: status || "", branch: branch || "", maintenanceEmail: getMaintenanceEmail() });
 });
@@ -136,7 +137,7 @@ router.get("/maintenance/print", (req, res) => {
   const requests = db.prepare(sql).all(...params);
   const headers = ["תאריך", "סניף", "תיאור", "מיקום", "דווח ע\"י", "סטטוס"];
   const rows = requests.map((r) => [
-    r.created_at ? new Date(r.created_at).toLocaleDateString("he-IL") : "",
+    r.created_at ? hd.formatGregorian(r.created_at) : "",
     r.effective_branch || "כללי",
     r.description || "",
     r.class_name ? r.class_name + (r.parallel ? " (" + r.parallel + ")" : "") : (r.location || ""),

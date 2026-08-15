@@ -292,7 +292,7 @@ router.get("/monthly-reports", (req, res) => {
       teacher_id: t.id,
       teacher_name: `הרב ${t.last_name || ""} ${t.first_name || ""}`.trim(),
       submitted: !!r,
-      submitted_date_str: r && r.submitted_date ? new Date(r.submitted_date).toLocaleDateString("he-IL") : "",
+      submitted_date_str: r && r.submitted_date ? hd.formatGregorian(r.submitted_date) : "",
       file_path: r ? r.file_path : null,
       file_name: r ? r.file_name : null,
     };
@@ -468,7 +468,7 @@ router.get("/:id", (req, res) => {
     .map((r) => ({
       ...r,
       month_display: formatMonthLabel(r.month_label),
-      submitted_date_str: r.submitted_date ? new Date(r.submitted_date).toLocaleDateString("he-IL") : "",
+      submitted_date_str: r.submitted_date ? hd.formatGregorian(r.submitted_date) : "",
       is_image: r.file_name && /\.(jpg|jpeg|png)$/i.test(r.file_name),
       is_pdf: r.file_name && /\.pdf$/i.test(r.file_name),
     }));

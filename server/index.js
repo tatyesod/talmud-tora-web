@@ -1,3 +1,12 @@
+// אזור הזמן של כל התהליך - חייב להיות לפני כל require, כדי שכל מודול שנטען
+// אחריו כבר יראה את השעון הנכון.
+// ב-Render השרת רץ ב-UTC כברירת מחדל, ולכן כל new Date().getHours()/getDate(),
+// כל toLocaleDateString וכל תזמון לפי שעה היו מוסטים בשעתיים-שלוש - מה שגרם,
+// בין השאר, לשם יום ולתאריך עברי שגויים בין חצות ל-03:00 שעון ישראל.
+// אפשר להגדיר TZ=Asia/Jerusalem גם כמשתנה סביבה בלוח הבקרה של Render;
+// השורה כאן מבטיחה את אותה התנהגות גם בלעדיו ובהרצה מקומית.
+process.env.TZ = "Asia/Jerusalem";
+
 const express = require("express");
 const path = require("path");
 const methodOverride = require("method-override");
@@ -458,19 +467,17 @@ app.get("/api/jewish-calendar", async (req, res) => {
     // שלם מול ישראל בתקופה שאחרי פסח ואחרי שבועות, עד שהלוחות מתאזנים.
     //
     // year/month/day + timezone מפורשים: בלעדיהם Sefaria מנחש מהו "היום" לפי
-    // אזור הזמן של מי ששולח את הבקשה - וב-Render השרת רץ ב-UTC. הפרמטרים
-    // האלה חייבים להישלח שלושתם יחד, אחרת Sefaria מתעלם מהם וחוזר להיום שלו.
+    // אזור הזמן של מי ששולח את הבקשה. שלושת פרמטרי התאריך חייבים להישלח יחד,
+    // אחרת Sefaria מתעלם מהם וחוזר לתאריך שהוא ניחש בעצמו.
     const q = String(req.query.date || "");
     let y, m, d;
     const parts = q.match(/^(\d{4})-(\d{2})-(\d{2})$/);
     if (parts && +parts[2] >= 1 && +parts[2] <= 12 && +parts[3] >= 1 && +parts[3] <= 31) {
       y = +parts[1]; m = +parts[2]; d = +parts[3];
     } else {
-      // ברירת מחדל - התאריך של עכשיו בירושלים, לא של השרת
-      const p = new Intl.DateTimeFormat("en-CA", {
-        timeZone: "Asia/Jerusalem", year: "numeric", month: "2-digit", day: "2-digit"
-      }).formatToParts(new Date()).reduce((a, x) => (a[x.type] = x.value, a), {});
-      y = +p.year; m = +p.month; d = +p.day;
+      // ברירת מחדל - התאריך של עכשיו בירושלים
+      const t = hd.israelTodayYMD();
+      y = t.year; m = t.month; d = t.day;
     }
     const url = `https://www.sefaria.org/api/calendars?diaspora=0&lang=he` +
                 `&year=${y}&month=${m}&day=${d}&timezone=${encodeURIComponent("Asia/Jerusalem")}`;

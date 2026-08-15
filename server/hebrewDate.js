@@ -325,8 +325,23 @@ function anyDateToHebrewString(dateInput) {
   return serialToHebrewString(serial);
 }
 
+// תאריך לועזי לתצוגה בפורמט DD/MM/YYYY לפי שעון ישראל.
+// מחליף את toLocaleDateString("he-IL"), שמפיק "4.3.2026" - נקודות במקום
+// לוכסנים ובלי אפס מוביל. מקבל Date, מחרוזת ISO (כמו created_at במסד), או null.
+// timeZone מפורש כדי שהתוצאה תהיה זהה גם אם אזור הזמן של התהליך ישתנה.
+function formatGregorian(dateInput) {
+  if (!dateInput) return "";
+  const d = dateInput instanceof Date ? dateInput : new Date(dateInput);
+  if (isNaN(d.getTime())) return "";
+  const p = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Asia/Jerusalem", day: "2-digit", month: "2-digit", year: "numeric",
+  }).formatToParts(d).reduce((a, x) => (a[x.type] = x.value, a), {});
+  return `${p.day}/${p.month}/${p.year}`;
+}
+
 module.exports = {
   serialToGregorianString,
+  formatGregorian,
   serialToHebrewString,
   serialToInputDate,
   gregorianStringToSerial,

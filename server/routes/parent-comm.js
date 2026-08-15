@@ -56,7 +56,7 @@ router.get("/requests", (req, res) => {
   sql += " ORDER BY pr.created_at DESC";
   const requests = db.prepare(sql).all(...params).map((r) => ({
     ...r,
-    created_at_str: r.created_at ? new Date(r.created_at).toLocaleDateString("he-IL") : "",
+    created_at_str: r.created_at ? hd.formatGregorian(r.created_at) : "",
   }));
   res.render("parent-comm/requests", { requests, status: status || "" });
 });

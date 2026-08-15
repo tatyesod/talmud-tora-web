@@ -76,7 +76,7 @@ router.get("/orders", (req, res) => {
   sql += " ORDER BY o.created_at DESC";
   const orders = db.prepare(sql).all(...params).map((o) => ({
     ...o,
-    created_at_str: o.created_at ? new Date(o.created_at).toLocaleDateString("he-IL") : "",
+    created_at_str: o.created_at ? hd.formatGregorian(o.created_at) : "",
   }));
   res.render("suppliers/orders-list", { orders, status: status || "", mine: mine || "" });
 });

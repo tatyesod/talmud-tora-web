@@ -96,9 +96,17 @@
       return;
     }
 
+    // תאריך ושעה לפי שעון ישראל ובפורמט DD/MM/YYYY.
+    // toLocaleDateString('he-IL') מפיק "4.3.2026" - נקודות ובלי אפס מוביל,
+    // ומשתמש באזור הזמן של המכשיר במקום בשעון ישראל.
     const now = new Date();
-    const dateStr = now.toLocaleDateString('he-IL');
-    const timeStr = now.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
+    const ilParts = (opts) => new Intl.DateTimeFormat('en-GB',
+      Object.assign({ timeZone: 'Asia/Jerusalem' }, opts))
+      .formatToParts(now).reduce((a, x) => (a[x.type] = x.value, a), {});
+    const dp = ilParts({ day: '2-digit', month: '2-digit', year: 'numeric' });
+    const tp = ilParts({ hour: '2-digit', minute: '2-digit', hour12: false });
+    const dateStr = dp.day + '/' + dp.month + '/' + dp.year;
+    const timeStr = tp.hour + ':' + tp.minute;
     const subject = 'בקשת תחזוקה (שליחה חוזרת) - ' + dateStr + ' ' + timeStr;
 
     const bodyLines = ['רשימת תיקונים - שליחה חוזרת:', ''];
