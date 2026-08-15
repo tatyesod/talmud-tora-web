@@ -841,12 +841,38 @@ router.get("/stay-arrangement/guard/view", (req, res) => {
 });
 
 router.get("/stay-arrangement/edit", (req, res) => {
-  const classes = db.prepare(`
+  const { GRADE_ORDER } = require("../yearManager");
+
+  const all = db.prepare(`
     SELECT id, name, parallel, branch FROM classes
     WHERE status = 'פעיל' AND name IN (${STAY_ARRANGEMENT_CLASS_NAMES.map(() => "?").join(",")})
-    ORDER BY name, parallel
   `).all(...STAY_ARRANGEMENT_CLASS_NAMES);
-  res.render("reports/stay-arrangement-edit-select", { classes });
+
+  // מיון לפי סדר הגילאים (מכינה א' -> מכינה ב' -> כיתה א') ולא אלפביתי,
+  // ובתוך אותה שכבה לפי מספר המקביל. ORDER BY name במסד היה ממיין
+  // "כיתה א'" לפני "מכינה א'", כלומר הפוך מסדר הגילאים.
+  const classes = all.slice().sort((a, b) => {
+    const ga = GRADE_ORDER.indexOf(a.name), gb = GRADE_ORDER.indexOf(b.name);
+    if (ga !== gb) return ga - gb;
+    const pa = parseInt(a.parallel, 10), pb = parseInt(b.parallel, 10);
+    if (!isNaN(pa) && !isNaN(pb) && pa !== pb) return pa - pb;
+    return String(a.parallel || "").localeCompare(String(b.parallel || ""), "he");
+  });
+
+  // רשימת הסניפים נגזרת מהכיתות עצמן ולא מרשימה קשיחה, כדי שסניף חדש
+  // (או סניף שאין בו כיתות רלוונטיות) יופיע או ייעלם מהסינון מאליו.
+  const branches = [...new Set(classes.map(c => c.branch).filter(Boolean))]
+    .sort((a, b) => a.localeCompare(b, "he"));
+
+  // סניף שאינו ברשימה (כתובת ידנית, סניף שנמחק) מתעלמים ממנו ומציגים הכל
+  const branch = branches.includes(req.query.branch) ? req.query.branch : "";
+
+  res.render("reports/stay-arrangement-edit-select", {
+    classes: branch ? classes.filter(c => c.branch === branch) : classes,
+    branches,
+    branch,
+    totalCount: classes.length,
+  });
 });
 
 router.get("/stay-arrangement/edit/:classId", (req, res) => {

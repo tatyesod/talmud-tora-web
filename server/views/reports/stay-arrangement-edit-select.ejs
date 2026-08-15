@@ -7,9 +7,31 @@
     ואפשר אחר כך להפיק דוח מודפס עם הנתונים שמולאו.
   </p>
 
-  <% if (classes.length === 0) { %>
+  <% if (totalCount === 0) { %>
     <p style="color:var(--muted);">אין כיתות רלוונטיות (מכינה א'/ב' או כיתה א') פעילות במערכת.</p>
   <% } else { %>
+
+    <%# בחירת סניף. מוצג רק כשיש יותר מסניף אחד - אחרת התפריט מיותר.
+        משתמש ב-form.auto-filter, כמו שאר הסינונים במערכת: בחירה ב-select
+        מגישה את הטופס מיד, בלי כפתור נפרד. %>
+    <% if (branches.length > 1) { %>
+      <form class="searchbar auto-filter" method="GET" action="/reports/stay-arrangement/edit">
+        <select name="branch" aria-label="סינון לפי סניף">
+          <option value="">כל הסניפים</option>
+          <% branches.forEach(b => { %>
+            <option value="<%= b %>" <%= branch === b ? 'selected' : '' %>><%= b %></option>
+          <% }) %>
+        </select>
+        <noscript><button type="submit" class="btn small">סנן</button></noscript>
+      </form>
+    <% } %>
+
+    <% if (classes.length === 0) { %>
+      <p style="color:var(--muted);">
+        אין כיתות רלוונטיות בסניף <%= branch %>.
+        <a href="/reports/stay-arrangement/edit">הצג את כל הסניפים</a>
+      </p>
+    <% } else { %>
     <table>
       <thead><tr><th>כיתה</th><th>סניף</th><th></th></tr></thead>
       <tbody>
@@ -22,6 +44,7 @@
         <% }) %>
       </tbody>
     </table>
+    <% } %>
   <% } %>
 
   <div class="actions" style="margin-top:16px;">
