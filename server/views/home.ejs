@@ -40,7 +40,8 @@
   <main class="home-main">
     <div class="logo-wrap">
       <div class="logo-glow"></div>
-      <img src="/images/logo.png" alt="תלמוד תורה החדש" class="home-logo" />
+      <img src="/images/logo.png" alt="תלמוד תורה החדש" class="home-logo"
+           id="home-logo-img" data-retry="0" />
     </div>
 
     <h1 class="home-title">תלמוד תורה החדש</h1>
@@ -589,6 +590,21 @@
         activateTab(name);
         localStorage.setItem('dock-active-tab', name);
       });
+    });
+  })();
+
+  // ניסיון חוזר לטעינת הלוגו.
+  // אם בקשת התמונה נופלת על רגע לא טוב (למשל 502 בזמן שRender מפעיל את השרת
+  // מחדש אחרי פריסה), התמונה נשארת ריקה עד רענון ידני. שני ניסיונות חוזרים
+  // עם השהיה קצרה ופרמטר שובר-מטמון פותרים את זה בלי שהמשתמש ירגיש.
+  (function retryLogo() {
+    const img = document.getElementById('home-logo-img');
+    if (!img) return;
+    img.addEventListener('error', function () {
+      const n = parseInt(img.dataset.retry || '0', 10);
+      if (n >= 2) return;
+      img.dataset.retry = String(n + 1);
+      setTimeout(() => { img.src = '/images/logo.png?r=' + Date.now(); }, 600 * (n + 1));
     });
   })();
 
