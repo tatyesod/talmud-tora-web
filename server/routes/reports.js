@@ -1127,7 +1127,7 @@ router.get("/photocopies/export", async (req, res) => {
     const titleCell = ws.getCell(1, 1);
     titleCell.value = `שנת לימודים ${schoolYear} (${branch})`;
     titleCell.font = { size: 13, bold: true };
-    titleCell.alignment = { horizontal: "center", vertical: "middle" };
+    titleCell.alignment = { horizontal: "center", vertical: "middle", readingOrder: "rtl" };
     titleCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFFFF200" } };
     ws.getRow(1).height = 24;
 
@@ -1142,7 +1142,7 @@ router.get("/photocopies/export", async (req, res) => {
       const cell = headerRow.getCell(i + 1);
       cell.value = h;
       cell.font = { bold: true };
-      cell.alignment = { horizontal: "center" };
+      cell.alignment = { horizontal: "center", readingOrder: "rtl" };
       cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFD9D9D9" } };
       cell.border = ALL_BORDERS;
     });
@@ -1157,7 +1157,7 @@ router.get("/photocopies/export", async (req, res) => {
       row.getCell(3).value = c.copies;
       row.getCell(4).value = c.page2;
       [1, 2, 3, 4].forEach((col) => {
-        row.getCell(col).alignment = { horizontal: "center" };
+        row.getCell(col).alignment = { horizontal: "center", readingOrder: "rtl" };
         row.getCell(col).border = ALL_BORDERS;
         if (i % 2 === 0) row.getCell(col).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFD9D9D9" } };
       });
@@ -1170,13 +1170,13 @@ router.get("/photocopies/export", async (req, res) => {
     const sumLabelCell = ws.getCell(rowIdx, 1);
     sumLabelCell.value = "צילומים";
     sumLabelCell.font = { bold: true };
-    sumLabelCell.alignment = { horizontal: "center" };
+    sumLabelCell.alignment = { horizontal: "center", readingOrder: "rtl" };
     sumLabelCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFFFF200" } };
     sumLabelCell.border = ALL_BORDERS;
     const sumValCell = ws.getCell(rowIdx, 3);
     sumValCell.value = totalCopies;
     sumValCell.font = { bold: true };
-    sumValCell.alignment = { horizontal: "center" };
+    sumValCell.alignment = { horizontal: "center", readingOrder: "rtl" };
     sumValCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFFFF200" } };
     sumValCell.border = ALL_BORDERS;
     const sumLeftoverCell = ws.getCell(rowIdx, 4);
