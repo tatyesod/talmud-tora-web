@@ -65,7 +65,9 @@
     });
 
   // --- זמני שבת ---
-  fetch(`https://www.hebcal.com/shabbat?cfg=json&latitude=${LAT}&longitude=${LON}&tzid=Asia/Jerusalem&M=on&b=18`)
+  // i=on - לוח שנה וקריאת התורה של ארץ ישראל. בלי זה Hebcal מחזיר את לוח חו"ל,
+  // שנבדל מישראל בשבוע שלם בתקופה שאחרי פסח ואחרי שבועות.
+  fetch(`https://www.hebcal.com/shabbat?cfg=json&latitude=${LAT}&longitude=${LON}&tzid=Asia/Jerusalem&i=on&M=on&b=18`)
     .then(r => r.json())
     .then(data => {
       const items = data.items || [];
@@ -81,27 +83,80 @@
       const outEl = document.getElementById("shabbat-out");
       if (inEl)  inEl.textContent  = candles  ? fmt(candles.date)  : "—";
       if (outEl) outEl.textContent = havdalah ? fmt(havdalah.date) : "—";
+      // צאת השבת היא נקודת ההחלפה של הפרשה - לכן טוענים אותה רק עכשיו
+      loadParasha(havdalah && havdalah.date ? new Date(havdalah.date) : null);
     })
     .catch(() => {
       const inEl  = document.getElementById("shabbat-in");
       const outEl = document.getElementById("shabbat-out");
       if (inEl)  inEl.textContent  = "לא זמין";
       if (outEl) outEl.textContent = "לא זמין";
+      loadParasha(null);
     });
 
-  // --- פרשת השבוע (ממשיך להשתמש ב-Sefaria, שעובד טוב לזה) ---
+  // --- פרשת השבוע (Sefaria, עם Hebcal כגיבוי) ---
   const parashaEl = document.getElementById("parasha-value");
   const fastEl    = document.getElementById("info-fast");
   const fastVal   = document.getElementById("fast-value");
 
-  fetch("/api/jewish-calendar")
-    .then(r => r.json())
-    .then(data => {
-      const items = data.calendar_items || [];
-      const parasha = items.find(i => i.category === "Parasha" || i.title?.en === "Parashat Hashavua");
-      if (parashaEl) parashaEl.textContent = parasha?.displayValue?.he || parashaEl.textContent;
-    })
-    .catch(() => {});
+  const pad2 = n => String(n).padStart(2, "0");
+  const isoOf = o => `${o.y}-${pad2(o.m)}-${pad2(o.d)}`;
+
+  // התאריך בירושלים, ללא תלות באזור הזמן שמוגדר במחשב שממנו גולשים
+  function jerusalemParts(dt) {
+    const p = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Asia/Jerusalem", year: "numeric", month: "2-digit", day: "2-digit"
+    }).formatToParts(dt).reduce((a, x) => (a[x.type] = x.value, a), {});
+    return { y: +p.year, m: +p.month, d: +p.day };
+  }
+
+  function addDays(o, n) {
+    const d = new Date(Date.UTC(o.y, o.m - 1, o.d));
+    d.setUTCDate(d.getUTCDate() + n);
+    return { y: d.getUTCFullYear(), m: d.getUTCMonth() + 1, d: d.getUTCDate() };
+  }
+
+  // התאריך שלפיו נקבעת הפרשה: היום - אלא אם כבר עברה צאת השבת, ואז מיד
+  // עוברים לפרשה הבאה. קודם לכן ההחלפה קרתה רק בחצות.
+  // ההשוואה היא בין שתי נקודות זמן מוחלטות, ולכן חסינה לאזור הזמן של הדפדפן.
+  function effectiveDate(havdalahAt) {
+    const now = new Date();
+    const today = jerusalemParts(now);
+    return (havdalahAt && now >= havdalahAt) ? addDays(today, 1) : today;
+  }
+
+  function loadParasha(havdalahAt) {
+    if (!parashaEl) return;
+    const eff = effectiveDate(havdalahAt);
+    fetch(`/api/jewish-calendar?date=${isoOf(eff)}`)
+      .then(r => r.json())
+      .then(data => {
+        const items = data.calendar_items || [];
+        const parasha = items.find(i => i.category === "Parasha" || i.title?.en === "Parashat Hashavua");
+        const he = parasha && parasha.displayValue && parasha.displayValue.he;
+        if (he) { parashaEl.textContent = he; return; }
+        return parashaFallback(eff);
+      })
+      .catch(() => parashaFallback(eff));
+  }
+
+  // גיבוי: Hebcal לשבת הקרובה. מחליף את רשימת 47 הפרשיות הקשיחה שהייתה כאן,
+  // שהסתיימה ב"האזינו", לא התחשבה בחגים, והייתה פגה בסוף המחזור.
+  function parashaFallback(eff) {
+    const sat = addDays(eff, (6 - new Date(Date.UTC(eff.y, eff.m - 1, eff.d)).getUTCDay() + 7) % 7);
+    const s = isoOf(sat);
+    return fetch(`https://www.hebcal.com/hebcal?cfg=json&v=1&i=on&s=on&leyning=off&start=${s}&end=${s}`)
+      .then(r => r.json())
+      .then(data => {
+        const p = (data.items || []).find(i => i.category === "parashat");
+        // Sefaria מחזיר "שופטים" ו-Hebcal מחזיר "פרשת שופטים" - מאחדים לתצוגה זהה
+        if (p) parashaEl.textContent = (p.hebrew || p.title || "").replace(/^פרשת\s+/, "");
+        else if (parashaEl.textContent === "טוען...") parashaEl.textContent = "—";
+      })
+      .catch(() => {
+        if (parashaEl.textContent === "טוען...") parashaEl.textContent = "—";
+      });
+  }
 
   // --- צום היום (Hebcal - זה ה-API הנכון לזיהוי ימי צום, עם שדות category/subcat מדויקים) ---
   // מיפוי מפורש לשם התצוגה המלא - תמיד "צום ..." (חוץ מיום כיפור, שנהוג לומר בלי המילה "צום")
@@ -139,28 +194,5 @@
       })
       .catch(() => {});
   })();
-
-  // --- Fallback פרשה מחושב ---
-  const PARSHIOT = [
-    "בראשית","נח","לך לך","וירא","חיי שרה","תולדות","ויצא","וישלח","וישב","מקץ",
-    "ויגש","ויחי","שמות","וארא","בא","בשלח","יתרו","משפטים","תרומה","תצוה",
-    "כי תשא","ויקהל-פקודי","ויקרא","צו","שמיני","תזריע-מצרע","אחרי מות-קדושים",
-    "אמור","בהר-בחוקותי","במדבר","נשא","בהעלותך","שלח","קרח","חקת","בלק",
-    "פינחס","מטות-מסעי","דברים","ואתחנן","עקב","ראה","שופטים","כי תצא",
-    "כי תבוא","נצבים-וילך","האזינו"
-  ];
-  const ANCHOR_MS = new Date("2025-10-18").getTime();
-  const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
-  setTimeout(() => {
-    if (!parashaEl || (parashaEl.textContent !== "טוען..." && parashaEl.textContent !== "—")) return;
-    const now = new Date();
-    const dow = now.getDay();
-    const daysToSat = dow === 6 ? 0 : 6 - dow;
-    const sat = new Date(now.getTime() + daysToSat * 86400000);
-    sat.setHours(0,0,0,0);
-    const weeks = Math.round((sat.getTime() - ANCHOR_MS) / WEEK_MS);
-    if (weeks >= 0 && weeks < PARSHIOT.length)
-      parashaEl.textContent = "פ' " + PARSHIOT[weeks];
-  }, 3000);
 
 })();

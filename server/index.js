@@ -454,7 +454,26 @@ app.use("/labels", require("./routes/labels"));
 app.get("/api/jewish-calendar", async (req, res) => {
   try {
     const https = require("https");
-    const url = "https://www.sefaria.org/api/calendars?diaspora=1&lang=he";
+    // diaspora=0 - לוח ארץ ישראל. עם diaspora=1 (מה שהיה כאן) הפרשה סוטה בשבוע
+    // שלם מול ישראל בתקופה שאחרי פסח ואחרי שבועות, עד שהלוחות מתאזנים.
+    //
+    // year/month/day + timezone מפורשים: בלעדיהם Sefaria מנחש מהו "היום" לפי
+    // אזור הזמן של מי ששולח את הבקשה - וב-Render השרת רץ ב-UTC. הפרמטרים
+    // האלה חייבים להישלח שלושתם יחד, אחרת Sefaria מתעלם מהם וחוזר להיום שלו.
+    const q = String(req.query.date || "");
+    let y, m, d;
+    const parts = q.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (parts && +parts[2] >= 1 && +parts[2] <= 12 && +parts[3] >= 1 && +parts[3] <= 31) {
+      y = +parts[1]; m = +parts[2]; d = +parts[3];
+    } else {
+      // ברירת מחדל - התאריך של עכשיו בירושלים, לא של השרת
+      const p = new Intl.DateTimeFormat("en-CA", {
+        timeZone: "Asia/Jerusalem", year: "numeric", month: "2-digit", day: "2-digit"
+      }).formatToParts(new Date()).reduce((a, x) => (a[x.type] = x.value, a), {});
+      y = +p.year; m = +p.month; d = +p.day;
+    }
+    const url = `https://www.sefaria.org/api/calendars?diaspora=0&lang=he` +
+                `&year=${y}&month=${m}&day=${d}&timezone=${encodeURIComponent("Asia/Jerusalem")}`;
     const data = await new Promise((resolve, reject) => {
       https.get(url, { headers: { "User-Agent": "TalmudToraApp/1.0" } }, (r) => {
         let body = "";
