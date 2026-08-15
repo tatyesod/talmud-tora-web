@@ -1131,14 +1131,20 @@ router.get("/photocopies/export", async (req, res) => {
     titleCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFFFF200" } };
     ws.getRow(1).height = 24;
 
-    // כותרות עמודות
+    const THIN_BORDER = { style: "thin", color: { argb: "FF000000" } };
+    const ALL_BORDERS = { top: THIN_BORDER, bottom: THIN_BORDER, left: THIN_BORDER, right: THIN_BORDER };
+
+    // כותרות עמודות - סדר לוגי A->D: כיתה, מס' הילדים, מס' הצילומים, 2
+    // בעמוד (בגיליון RTL עמודה A עדיין מוצגת מימין, כך שהסדר הוויזואלי
+    // נשאר נכון מימין לשמאל)
     const headerRow = ws.getRow(2);
-    ["הכיתה", "מס' הילדים", "מס' הצילומים", "מס' בעמוד 2"].forEach((h, i) => {
-      const cell = headerRow.getCell(4 - i); // RTL: העמודה הראשונה מימין
+    ["הכיתה", "מס' הילדים", "מס' הצילומים", "2 בעמוד"].forEach((h, i) => {
+      const cell = headerRow.getCell(i + 1);
       cell.value = h;
       cell.font = { bold: true };
       cell.alignment = { horizontal: "center" };
       cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFD9D9D9" } };
+      cell.border = ALL_BORDERS;
     });
     headerRow.height = 20;
 
@@ -1146,12 +1152,13 @@ router.get("/photocopies/export", async (req, res) => {
     let totalCopies = 0;
     classRows.forEach((c, i) => {
       const row = ws.getRow(rowIdx);
-      row.getCell(4).value = c.name + (c.parallel ? " " + c.parallel : "");
-      row.getCell(3).value = c.student_count;
-      row.getCell(2).value = c.copies;
-      row.getCell(1).value = c.page2;
+      row.getCell(1).value = c.name + (c.parallel ? " " + c.parallel : "");
+      row.getCell(2).value = c.student_count;
+      row.getCell(3).value = c.copies;
+      row.getCell(4).value = c.page2;
       [1, 2, 3, 4].forEach((col) => {
         row.getCell(col).alignment = { horizontal: "center" };
+        row.getCell(col).border = ALL_BORDERS;
         if (i % 2 === 0) row.getCell(col).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFD9D9D9" } };
       });
       totalCopies += c.copies;
@@ -1159,18 +1166,22 @@ router.get("/photocopies/export", async (req, res) => {
     });
 
     // שורת סיכום
-    ws.mergeCells(rowIdx, 3, rowIdx, 4);
-    const sumLabelCell = ws.getCell(rowIdx, 3);
+    ws.mergeCells(rowIdx, 1, rowIdx, 2);
+    const sumLabelCell = ws.getCell(rowIdx, 1);
     sumLabelCell.value = "צילומים";
     sumLabelCell.font = { bold: true };
     sumLabelCell.alignment = { horizontal: "center" };
     sumLabelCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFFFF200" } };
-    const sumValCell = ws.getCell(rowIdx, 2);
+    sumLabelCell.border = ALL_BORDERS;
+    const sumValCell = ws.getCell(rowIdx, 3);
     sumValCell.value = totalCopies;
     sumValCell.font = { bold: true };
     sumValCell.alignment = { horizontal: "center" };
     sumValCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFFFF200" } };
-    ws.getCell(rowIdx, 1).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFFFF200" } };
+    sumValCell.border = ALL_BORDERS;
+    const sumLeftoverCell = ws.getCell(rowIdx, 4);
+    sumLeftoverCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFFFF200" } };
+    sumLeftoverCell.border = ALL_BORDERS;
 
     ws.getColumn(1).width = 16;
     ws.getColumn(2).width = 16;
