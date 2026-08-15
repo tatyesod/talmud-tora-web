@@ -245,8 +245,11 @@ const TEACHER_FIELDS = [
   "last_name", "first_name", "id_number", "birth_date_civil", "street", "house_number",
   "apartment", "city", "zip_code", "home_phone", "mobile", "email", "chassidut_id", "notes",
   "status", "entry_date", "update_date", "exit_date", "children_count",
+  // פרטי בן/בת זוג - קיימים במסד ומוצגים בכרטיס, אך עד כה לא נכללו כאן
+  // ולכן לא היה אפשר לערוך אותם: השמירה מסננת לפי הרשימה הזו בלבד.
+  "spouse_first_name", "spouse_last_name", "id_number_spouse", "spouse_birth_date",
 ];
-const DATE_FIELDS = ["birth_date_civil", "entry_date", "update_date", "exit_date"];
+const DATE_FIELDS = ["birth_date_civil", "entry_date", "update_date", "exit_date", "spouse_birth_date"];
 
 function normalizeField(col, value) {
   if (value === undefined || value === "") return null;
@@ -618,6 +621,8 @@ router.get("/:id/edit", (req, res) => {
       birth_date_hebrew_str: hd.serialToHebrewString(teacher.birth_date_civil),
       entry_date: hd.serialToInputDate(teacher.entry_date),
       exit_date: hd.serialToInputDate(teacher.exit_date),
+      spouse_birth_date: hd.serialToInputDate(teacher.spouse_birth_date),
+      spouse_birth_date_hebrew_str: hd.serialToHebrewString(teacher.spouse_birth_date),
     },
     mode: "edit", chassidut, allClasses, assignments, staffRoles, selectedStaffRoleIds,
     assignError: req.query.assignError || null,

@@ -49,6 +49,22 @@
     </fieldset>
 
     <fieldset>
+      <legend>פרטי בן/בת זוג</legend>
+      <div class="form-grid">
+        <div class="form-group"><label>שם פרטי</label><input type="text" name="spouse_first_name" value="<%= teacher.spouse_first_name || '' %>" /></div>
+        <div class="form-group"><label>שם משפחה</label><input type="text" name="spouse_last_name" value="<%= teacher.spouse_last_name || '' %>" /></div>
+        <div class="form-group"><label>תעודת זהות</label><input type="text" class="israeli-id-input" name="id_number_spouse" value="<%= teacher.id_number_spouse || '' %>" /></div>
+        <div class="form-group">
+          <label>תאריך לידה</label>
+          <input type="date" name="spouse_birth_date" value="<%= teacher.spouse_birth_date || '' %>" />
+          <% if (typeof teacher.spouse_birth_date_hebrew_str !== 'undefined' && teacher.spouse_birth_date_hebrew_str) { %>
+            <small style="color:var(--muted);">תאריך עברי (לפי הערך השמור): <%= teacher.spouse_birth_date_hebrew_str %></small>
+          <% } %>
+        </div>
+      </div>
+    </fieldset>
+
+    <fieldset>
       <legend>תפקידים נוספים (לא הוראה)</legend>
       <% if (staffRoles.length === 0) { %>
         <p style="color:var(--muted); font-size:0.9em;">
