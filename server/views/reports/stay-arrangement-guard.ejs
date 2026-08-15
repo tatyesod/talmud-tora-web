@@ -6,7 +6,9 @@
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     body { font-family: "FrankRuehl", "FrankRuehlCLM", "Guttman Mantova", Arial, sans-serif; direction: rtl; }
-    @page { size: A4 portrait; margin: 13mm; }
+    /* לנדסקייפ - כדי שכל שורה תיכנס בשורה אחת בלי גלישה.
+       הקבוע AVAILABLE_HEIGHT_MM ב-reports.js הותאם ל-175 בהתאם. */
+    @page { size: A4 landscape; margin: 13mm; }
     @media print { .no-print { display: none !important; } }
 
     .no-print {
@@ -20,7 +22,12 @@
     .subtitle { text-align: center; font-size: 11pt; color: #555; margin-bottom: 10px; }
 
     table.gd { width: 100%; border-collapse: collapse; font-size: <%= bodyFontPt %>pt; }
-    table.gd th, table.gd td { border: 0.6pt solid #999; padding: 2px 6px; text-align: center; height: <%= rowHeightMM %>mm; }
+    /* white-space: nowrap - כל תא בשורה אחת. הגופן כבר מחושב בשרת כך
+       שהשורה הרחבה ביותר בנתונים תיכנס ברוחב העמוד. */
+    table.gd th, table.gd td {
+      border: 0.6pt solid #999; padding: 2px 5px; text-align: center;
+      height: <%= rowHeightMM %>mm; white-space: nowrap;
+    }
     table.gd th { background: #dde8f0; font-weight: 700; }
     table.gd td.name-col { text-align: right; }
     tbody tr:nth-child(even) td { background: #f0f0f0; }

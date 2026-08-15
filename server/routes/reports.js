@@ -828,14 +828,36 @@ router.get("/stay-arrangement/guard/view", (req, res) => {
     ...s,
     className: s.class_name + (s.parallel ? " " + s.parallel : ""),
     address: [s.street, s.house_number, s.apartment ? "דירה " + s.apartment : "", s.city].filter(Boolean).join(" "),
-    arrangements: [s.passover_interested === "כן" ? "פסח" : "", s.summer_interested === "כן" ? "קיץ" : ""].filter(Boolean).join(" + "),
+    // "עד פסח" / "אחרי פסח" ולא "פסח" / "קיץ": ההורים רושמים פעם אחת מתחילת
+    // השנה ועד פסח, ורישום שני מפסח ועד סוף השנה. שמות העמודות במסד
+    // (passover_interested / summer_interested) לא השתנו - רק התצוגה.
+    arrangements: [
+      s.passover_interested === "כן" ? "עד פסח" : "",
+      s.summer_interested === "כן" ? "אחרי פסח" : "",
+    ].filter(Boolean).join(" + "),
   }));
 
-  const AVAILABLE_HEIGHT_MM = 260;
+  // הדוח בפריסת לנדסקייפ, כדי שכל שורה תיכנס בשורה אחת בלי גלישה.
+  // שים לב: בלנדסקייפ הגובה הזמין קטן משמעותית מפורטרט (~175 מ"מ מול ~260),
+  // כי הגובה הפיזי של העמוד עצמו קטן יותר.
+  const AVAILABLE_HEIGHT_MM = 175;
+  const AVAILABLE_WIDTH_MM = 271; // 297 פחות שוליים של 13 מ"מ מכל צד
   const rowsForCalc = students.length + 1;
   let rowHeightMM = Math.min(AVAILABLE_HEIGHT_MM / rowsForCalc, 12);
   rowHeightMM = Math.max(rowHeightMM, 3.5);
-  const bodyFontPt = Math.max(7, Math.min(16, Math.round(rowHeightMM * 1.3)));
+
+  // גודל הגופן נגזר גם מהגובה וגם מהרוחב. בלי המגבלה השנייה, דוח עם מעט
+  // תלמידים היה מקבל גופן גדול שגורם לשורה הארוכה ביותר לגלוש מרוחב העמוד -
+  // בדיוק מה שרצינו למנוע. מודדים את השורה הרחבה ביותר בנתונים בפועל.
+  const widest = students.reduce((max, s) => Math.max(max,
+    (s.family_last_name || "").length + (s.nickname || s.first_name || "").length + 1 +
+    s.className.length + s.arrangements.length + s.address.length +
+    (s.home_phone || "").length + (s.father_mobile || "").length + (s.mother_mobile || "").length
+  ), 60);
+  const COL_PADDING_MM = 7 * 4;      // ריפוד וגבולות של 7 עמודות
+  const MM_PER_CHAR_PER_PT = 0.3528 * 0.52; // רוחב תו עברי ממוצע
+  const widthCapPt = (AVAILABLE_WIDTH_MM - COL_PADDING_MM) / (widest * MM_PER_CHAR_PER_PT);
+  const bodyFontPt = Math.max(7, Math.min(16, Math.round(rowHeightMM * 1.3), Math.floor(widthCapPt)));
 
   res.render("reports/stay-arrangement-guard", { branch, students, rowHeightMM, bodyFontPt });
 });
