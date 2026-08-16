@@ -1,0 +1,55 @@
+<%- include('../partials/header', {title: 'ימי הולדת - תאריך עברי'}) %>
+
+<div class="card">
+  <h1>🎂 ימי הולדת לפי תאריך עברי</h1>
+  <p style="color:var(--muted); font-size:0.9em; line-height:1.6;">
+    רשימה למלמד לפי תאריך הלידה <strong>העברי</strong>, מסודרת בסדר שנת הלימודים —
+    מתשרי ועד אלול — כך שאפשר לעקוב אחריה לאורך השנה.
+    אפשר לבחור כיתה אחת או כמה; בלי בחירה יוצגו כל הכיתות.
+  </p>
+
+  <form method="GET" action="/reports/birthdays/view" target="_blank">
+    <div class="form-grid">
+      <div class="form-group">
+        <label>סטטוס תלמיד</label>
+        <select name="status">
+          <% statuses.forEach(s => { %>
+            <option value="<%= s.status %>" <%= s.status === 'פעיל' ? 'selected' : '' %>><%= s.status %></option>
+          <% }) %>
+        </select>
+      </div>
+    </div>
+
+    <fieldset style="margin-top:14px;">
+      <legend>כיתות</legend>
+      <div style="display:flex; gap:10px; margin-bottom:10px;">
+        <button type="button" class="btn small secondary" onclick="toggleAll(true)">סמן הכל</button>
+        <button type="button" class="btn small secondary" onclick="toggleAll(false)">נקה</button>
+      </div>
+      <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(190px,1fr)); gap:6px;">
+        <% classes.forEach(c => { %>
+          <label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+            <input type="checkbox" name="class_id" value="<%= c.id %>" style="width:auto;" />
+            <span><%= c.name %><%= c.parallel ? ' ' + c.parallel : '' %>
+              <span style="color:var(--muted); font-size:0.85em;">(<%= c.branch || '—' %>)</span>
+            </span>
+          </label>
+        <% }) %>
+      </div>
+    </fieldset>
+
+    <div class="actions" style="margin-top:18px;">
+      <button type="submit" class="btn">👁️ תצוגה מקדימה / הדפסה</button>
+      <button type="submit" class="btn secondary" formaction="/reports/birthdays/export" formtarget="_self">📥 ייצוא לאקסל</button>
+      <a href="/reports" class="btn secondary">חזרה לדוחות</a>
+    </div>
+  </form>
+</div>
+
+<script>
+  function toggleAll(v) {
+    document.querySelectorAll('input[name="class_id"]').forEach(function (el) { el.checked = v; });
+  }
+</script>
+
+<%- include('../partials/footer') %>

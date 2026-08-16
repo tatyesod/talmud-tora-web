@@ -311,6 +311,93 @@ router.get("/full-student-list/export", async (req, res) => {
   await sendWorkbook(res, "רשימת תלמידים מלא.xlsx", "תלמידים", "רשימת תלמידים מלא", header, data);
 });
 
+// ============ ימי הולדת לפי תאריך עברי ============
+// דוח למלמד: רשימת תלמידי הכיתה לפי תאריך הלידה העברי, מסודרת בסדר שנת
+// הלימודים (תשרי -> אלול), כדי שאפשר יהיה לעקוב אחריה לאורך השנה.
+// שאר הדוחות מציגים תאריך לועזי בלבד.
+
+// מספור החודשים ב-hebrewDate.js הוא 1=ניסן ... 6=אלול, 7=תשרי ... 13=אדר ב'.
+// לצורך מיון לפי סדר השנה מתשרי ואילך מסובבים את המספור.
+function hebrewMonthOrder(month) {
+  return month >= 7 ? month - 7 : month + 6;
+}
+const HEB_MONTH_NAMES = {
+  1: "ניסן", 2: "אייר", 3: "סיון", 4: "תמוז", 5: "אב", 6: "אלול",
+  7: "תשרי", 8: "חשון", 9: "כסלו", 10: "טבת", 11: "שבט", 12: "אדר", 13: "אדר ב'",
+};
+
+function loadBirthdays(req) {
+  let classIds = req.query.class_id || [];
+  if (!Array.isArray(classIds)) classIds = [classIds];
+  classIds = classIds.filter(Boolean);
+  const status = req.query.status || "פעיל";
+
+  let sql = `
+    SELECT s.id, s.first_name, s.nickname, s.last_name, s.birth_date_civil,
+           c.name AS class_name, c.parallel, c.branch, f.last_name AS family_last_name
+    FROM students s
+    LEFT JOIN classes c ON s.class_id = c.id
+    LEFT JOIN families f ON s.family_id = f.id
+    WHERE 1=1
+  `;
+  const params = [];
+  if (status) { sql += " AND s.status = ?"; params.push(status); }
+  if (classIds.length > 0) {
+    sql += ` AND s.class_id IN (${classIds.map(() => "?").join(",")})`;
+    params.push(...classIds);
+  }
+  const rows = db.prepare(sql).all(...params);
+
+  const withDate = [];
+  const missing = [];
+  for (const r of rows) {
+    const name = (r.last_name || r.family_last_name || "") + " " + (r.nickname || r.first_name || "");
+    const base = {
+      name: name.trim(),
+      className: r.class_name ? r.class_name + (r.parallel ? " " + r.parallel : "") : "",
+      branch: r.branch || "",
+    };
+    const parts = hd.serialToHebrewParts(r.birth_date_civil);
+    if (!parts) { missing.push(base); continue; }
+    withDate.push({
+      ...base,
+      hebrew: hd.serialToHebrewString(r.birth_date_civil),
+      hebrewDay: hd.hebrewNumeral(parts.day),
+      hebrewMonth: HEB_MONTH_NAMES[parts.month] || "",
+      gregorian: hd.serialToGregorianString(r.birth_date_civil),
+      _order: hebrewMonthOrder(parts.month) * 100 + parts.day,
+    });
+  }
+  // מיון לפי סדר שנת הלימודים, ובאותו יום לפי שם
+  withDate.sort((a, b) => a._order - b._order || a.name.localeCompare(b.name, "he"));
+  missing.sort((a, b) => a.name.localeCompare(b.name, "he"));
+  return { withDate, missing, status, classIds };
+}
+
+router.get("/birthdays", (req, res) => {
+  const classes = db.prepare("SELECT id, name, parallel, branch FROM classes WHERE status = 'פעיל' ORDER BY branch, name, parallel").all();
+  const statuses = db.prepare("SELECT DISTINCT status FROM students WHERE status IS NOT NULL ORDER BY status").all();
+  res.render("reports/birthdays", { classes, statuses });
+});
+
+router.get("/birthdays/view", (req, res) => {
+  const { withDate, missing } = loadBirthdays(req);
+  const title = [...new Set(withDate.map(r => r.className).filter(Boolean))].join(", ");
+  res.render("reports/birthdays-view", { rows: withDate, missing, title });
+});
+
+router.get("/birthdays/export", async (req, res) => {
+  const { withDate, missing } = loadBirthdays(req);
+  const header = ["#", "שם התלמיד", "כיתה", "יום", "חודש", "תאריך עברי מלא", "תאריך לועזי"];
+  const data = withDate.map((r, i) => [
+    i + 1, r.name, r.className, r.hebrewDay, r.hebrewMonth, r.hebrew, r.gregorian,
+  ]);
+  missing.forEach((r, i) => {
+    data.push([withDate.length + i + 1, r.name, r.className, "", "", "חסר תאריך לידה", ""]);
+  });
+  await sendWorkbook(res, "ימי הולדת - תאריך עברי.xlsx", "ימי הולדת", "ימי הולדת לפי תאריך עברי", header, data);
+});
+
 // ============ דוח משפחות - ייצוא לאקסל ============
 router.get("/families-report", (req, res) => {
   const classes = db.prepare("SELECT id, name, parallel, branch FROM classes ORDER BY name, parallel").all();

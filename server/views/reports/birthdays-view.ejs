@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <title>ימי הולדת - תאריך עברי</title>
+  <style>
+    /* צבעי רקע לא מודפסים כברירת מחדל בדפדפנים - שתי השורות האלה מכריחות */
+    * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    @page { size: A4 portrait; margin: 15mm; }
+    body { font-family: "David", "Times New Roman", serif; direction: rtl; margin: 0; }
+    h1 { text-align: center; font-size: 20pt; margin: 0 0 4px; }
+    .sub { text-align: center; color: #555; font-size: 11pt; margin-bottom: 14px; }
+    table.bd { width: 100%; border-collapse: collapse; font-size: 12pt; }
+    table.bd th, table.bd td {
+      border: 0.7pt solid #999; padding: 4px 8px; text-align: center;
+    }
+    table.bd th { background: #e8eef4; font-weight: 700; }
+    table.bd td.name { text-align: right; }
+    /* פס הפרדה בין חודשים - עוזר למלמד לראות את גבולות החודש במבט */
+    table.bd tr.month-start td { border-top: 1.6pt solid #444; }
+    tr { page-break-inside: avoid; }
+    thead { display: table-header-group; }
+    .missing { margin-top: 18px; font-size: 11pt; }
+    .missing h2 { font-size: 12pt; margin-bottom: 6px; }
+    .noprint { text-align: center; margin: 14px 0; }
+    @media print { .noprint { display: none; } }
+  </style>
+</head>
+<body>
+  <div class="noprint">
+    <button onclick="window.print()">🖨️ הדפסה</button>
+  </div>
+
+  <h1>ימי הולדת — תאריך עברי</h1>
+  <div class="sub">
+    <%= title || 'כל הכיתות' %> &nbsp;|&nbsp; לפי סדר שנת הלימודים (תשרי → אלול)
+  </div>
+
+  <% if (rows.length === 0) { %>
+    <p style="text-align:center; color:#777;">אין תלמידים עם תאריך לידה בבחירה הנוכחית.</p>
+  <% } else { %>
+    <table class="bd">
+      <thead>
+        <tr>
+          <th style="width:34px;">#</th>
+          <th>שם התלמיד</th>
+          <% if (!title || title.indexOf(',') > -1) { %><th style="width:90px;">כיתה</th><% } %>
+          <th style="width:60px;">יום</th>
+          <th style="width:80px;">חודש</th>
+          <th style="width:130px;">תאריך עברי</th>
+          <th style="width:100px;">לועזי</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% let prevMonth = null; %>
+        <% rows.forEach((r, i) => { %>
+          <tr class="<%= prevMonth !== null && r.hebrewMonth !== prevMonth ? 'month-start' : '' %>">
+            <td><%= i + 1 %></td>
+            <td class="name"><%= r.name %></td>
+            <% if (!title || title.indexOf(',') > -1) { %><td><%= r.className %></td><% } %>
+            <td><%= r.hebrewDay %></td>
+            <td><%= r.hebrewMonth %></td>
+            <td><%= r.hebrew %></td>
+            <td><%= r.gregorian %></td>
+          </tr>
+          <% prevMonth = r.hebrewMonth; %>
+        <% }) %>
+      </tbody>
+    </table>
+  <% } %>
+
+  <% if (missing.length > 0) { %>
+    <div class="missing">
+      <h2>ללא תאריך לידה במערכת (<%= missing.length %>)</h2>
+      <div><%= missing.map(m => m.name + (m.className ? ' — ' + m.className : '')).join(' · ') %></div>
+    </div>
+  <% } %>
+</body>
+</html>
