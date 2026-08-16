@@ -1,0 +1,79 @@
+<%- include('../partials/header', {title: 'בני דודים באותה כיתה'}) %>
+
+<div class="card">
+  <h1>👨‍👩‍👦 בני דודים באותה כיתה</h1>
+  <p style="color:var(--muted); font-size:0.9em; line-height:1.6;">
+    זיהוי לפי <strong>סב משותף</strong>: כששתי משפחות רשמו את אותו סב, האבות (או האמהות) אחים
+    והילדים בני דודים. מוצגים רק תלמידים פעילים שנמצאים באותה כיתה.
+  </p>
+
+  <div style="background:#fff8e6; border:1px solid #e0c880; border-radius:8px; padding:10px 14px; margin-bottom:14px; font-size:0.88em; line-height:1.6;">
+    <strong>לבדיקה, לא קביעה.</strong> ההשוואה היא על שמות בטקסט חופשי: שני סבים שונים בעלי
+    שם זהה ייראו כקשר, וסב שנרשם בשתי צורות רחוקות זו מזו לא יזוהה כלל.
+    <% if (noData > 0) { %>
+      בנוסף, ל־<strong><%= noData %></strong> משפחות עם תלמידים פעילים אין נתוני סבים במערכת —
+      קשרים שלהן לא יופיעו כאן כלל.
+    <% } %>
+  </div>
+
+  <form class="searchbar auto-filter" method="GET" action="/reports/cousins">
+    <select name="branch" aria-label="סינון לפי סניף">
+      <option value="">כל הסניפים</option>
+      <% branches.forEach(b => { %>
+        <option value="<%= b %>" <%= branch === b ? 'selected' : '' %>><%= b %></option>
+      <% }) %>
+    </select>
+  </form>
+
+  <% if (pairs.length === 0) { %>
+    <p class="empty-state">
+      לא נמצאו בני דודים באותה כיתה<%= branch ? ' בסניף ' + branch : '' %>.
+      <% if (branch) { %><a href="/reports/cousins">הצג את כל הסניפים</a><% } %>
+    </p>
+  <% } else { %>
+    <p style="margin:10px 0; font-weight:600;">
+      נמצאו <%= pairs.length %> זוגות<%= branch ? ' בסניף ' + branch : '' %>
+    </p>
+    <div class="table-scroll-wrap">
+      <table class="cousins-table">
+        <thead>
+          <tr>
+            <th>כיתה</th>
+            <th>סניף</th>
+            <th>תלמיד א'</th>
+            <th>תלמיד ב'</th>
+            <th>הסב המשותף</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% let prev = null; %>
+          <% pairs.forEach(p => { %>
+            <tr class="<%= prev !== null && p.className !== prev ? 'class-start' : '' %>">
+              <td><strong><%= p.className %></strong></td>
+              <td><%= p.branch %></td>
+              <td><a href="/students/<%= p.aId %>" target="_blank"><%= p.aName %></a></td>
+              <td><a href="/students/<%= p.bId %>" target="_blank"><%= p.bName %></a></td>
+              <td style="color:var(--muted);"><%= p.via %></td>
+            </tr>
+            <% prev = p.className; %>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  <% } %>
+
+  <div class="actions" style="margin-top:16px;">
+    <a href="/reports" class="btn secondary">חזרה לדוחות</a>
+  </div>
+</div>
+
+<style>
+  table.cousins-table { width:100%; border-collapse:collapse; }
+  table.cousins-table th, table.cousins-table td {
+    border-bottom:1px solid rgba(0,0,0,0.08); padding:6px 10px; text-align:right;
+  }
+  table.cousins-table tbody tr:hover { background:rgba(201,151,76,0.08); }
+  table.cousins-table tr.class-start td { border-top:2px solid rgba(0,0,0,0.25); }
+</style>
+
+<%- include('../partials/footer') %>

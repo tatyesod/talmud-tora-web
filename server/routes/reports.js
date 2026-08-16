@@ -311,6 +311,115 @@ router.get("/full-student-list/export", async (req, res) => {
   await sendWorkbook(res, "רשימת תלמידים מלא.xlsx", "תלמידים", "רשימת תלמידים מלא", header, data);
 });
 
+// ============ בני דודים באותה כיתה ============
+// שתי משפחות שרשומות אצלן אותו סב - האבות (או האמהות) אחים, והילדים בני
+// דודים. המוסד משתדל לא לשבץ בני דודים באותה כיתה, ולכן זו התראה לבדיקה.
+//
+// ההתאמה היא על טקסט חופשי ולכן אינה ודאית: שני סבים שונים בשם זהה ייראו
+// כקשר, וסב שנרשם בשתי צורות רחוקות לא יזוהה. לכן זו רשימה לבדיקה ולא קביעה.
+
+// נרמול להשוואה בלבד - הערך במסד לא משתנה. התחיליות כבר נוקו במיגרציה,
+// וכאן מנוטרלות גם סופיות הכבוד, שנשמרות בכוונה במסד.
+function normalizeGrandparent(v) {
+  if (!v) return "";
+  let s = String(v).replace(/[\u200e\u200f]/g, "").replace(/["'`\u05f3\u05f4]/g, "");
+  s = s.replace(/\s+/g, " ").trim();
+  s = s.replace(/\s*(זל|זצל|זצוקל|שליטא|תליטא|היד|נרו|עה)\s*$/, "").trim();
+  s = s.replace(/^(הרב|רבי|ר|משפחת|מרת|הגר|הרהג|הגרא|הגרמ)\s+/, "").trim();
+  return s;
+}
+
+function findCousinPairs(branch) {
+  const fams = db.prepare(`
+    SELECT id, last_name, paternal_grandparents, maternal_grandparents FROM families
+  `).all();
+
+  // סב מנורמל -> קבוצת משפחות שרשמו אותו
+  const byGrandparent = new Map();
+  for (const f of fams) {
+    for (const col of ["paternal_grandparents", "maternal_grandparents"]) {
+      const key = normalizeGrandparent(f[col]);
+      if (key.length < 4) continue;   // שם קצר מדי - רועש מדי לשמש כמפתח
+      if (!byGrandparent.has(key)) byGrandparent.set(key, new Set());
+      byGrandparent.get(key).add(f.id);
+    }
+  }
+
+  // קשר בין משפחות + הסב שיצר אותו
+  const related = new Map();
+  for (const [key, ids] of byGrandparent) {
+    if (ids.size < 2) continue;
+    const arr = [...ids];
+    for (const a of arr) for (const b of arr) {
+      if (a === b) continue;
+      const k = a + ":" + b;
+      if (!related.has(k)) related.set(k, new Set());
+      related.get(k).add(key);
+    }
+  }
+
+  let sql = `
+    SELECT s.id, s.first_name, s.nickname, s.last_name, s.family_id,
+           c.id AS class_id, c.name AS class_name, c.parallel, c.branch,
+           f.last_name AS family_last_name
+    FROM students s
+    JOIN classes c ON s.class_id = c.id
+    LEFT JOIN families f ON s.family_id = f.id
+    WHERE s.status = 'פעיל' AND s.family_id IS NOT NULL
+  `;
+  const params = [];
+  if (branch) { sql += " AND c.branch = ?"; params.push(branch); }
+  const students = db.prepare(sql).all(...params);
+
+  const byClass = new Map();
+  for (const s of students) {
+    if (!byClass.has(s.class_id)) byClass.set(s.class_id, []);
+    byClass.get(s.class_id).push(s);
+  }
+
+  const pairs = [];
+  for (const [, list] of byClass) {
+    for (let i = 0; i < list.length; i++) {
+      for (let j = i + 1; j < list.length; j++) {
+        const a = list[i], b = list[j];
+        if (a.family_id === b.family_id) continue;   // אחים, לא בני דודים
+        const via = related.get(a.family_id + ":" + b.family_id);
+        if (!via) continue;
+        const label = (s) => ((s.family_last_name || s.last_name || "") + " " + (s.nickname || s.first_name || "")).trim();
+        pairs.push({
+          className: a.class_name + (a.parallel ? " " + a.parallel : ""),
+          branch: a.branch || "",
+          aId: a.id, aName: label(a),
+          bId: b.id, bName: label(b),
+          via: [...via].join(", "),
+        });
+      }
+    }
+  }
+  pairs.sort((x, y) =>
+    (GRADE_ORDER_SAFE().indexOf(x.className.replace(/\s+\d+$/, "")) -
+     GRADE_ORDER_SAFE().indexOf(y.className.replace(/\s+\d+$/, ""))) ||
+    x.className.localeCompare(y.className, "he") || x.aName.localeCompare(y.aName, "he"));
+  return pairs;
+}
+
+function GRADE_ORDER_SAFE() {
+  try { return require("../yearManager").GRADE_ORDER || []; } catch (e) { return []; }
+}
+
+router.get("/cousins", (req, res) => {
+  const branch = req.query.branch || "";
+  const pairs = findCousinPairs(branch);
+  const branches = db.prepare("SELECT DISTINCT branch FROM classes WHERE branch IS NOT NULL AND branch <> '' ORDER BY branch").all().map(r => r.branch);
+  const noData = db.prepare(`
+    SELECT COUNT(DISTINCT f.id) c FROM families f
+    JOIN students s ON s.family_id = f.id AND s.status = 'פעיל'
+    WHERE (f.paternal_grandparents IS NULL OR f.paternal_grandparents = '')
+      AND (f.maternal_grandparents IS NULL OR f.maternal_grandparents = '')
+  `).get().c;
+  res.render("reports/cousins", { pairs, branches, branch, noData });
+});
+
 // ============ ימי הולדת לפי תאריך עברי ============
 // דוח למלמד: רשימת תלמידי הכיתה לפי תאריך הלידה העברי, מסודרת בסדר שנת
 // הלימודים (תשרי -> אלול), כדי שאפשר יהיה לעקוב אחריה לאורך השנה.
