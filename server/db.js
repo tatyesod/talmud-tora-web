@@ -275,6 +275,10 @@ const migrations = [
   // סניף ישיר על התלמיד - בלי תלות בכיתה בכלל (יש תלמידים בלי כיתה,
   // או עם כיתה שאין לה עדיין "עדיין לא נכנסו" מתאימה, שעדיין צריכים סניף)
   "ALTER TABLE students ADD COLUMN branch TEXT",
+  // סוג הארכיון: "בוגר" (סיים כיתה ח') מול "עזב" (יצא באמצע - מעבר דירה וכו').
+  // רלוונטי רק לתלמידים בסטטוס "ארכיון". המחזור (cohort_id) נשאר כפי שהוא
+  // ואינו מושפע - זה שדה נוסף לצדו, לא תחליף לו.
+  "ALTER TABLE students ADD COLUMN archive_type TEXT",
   // סכום תרומה חודשי שמשפחה אמורה לתרום לתלמוד תורה (רישום סכום בלבד,
   // בלי מעקב תשלומים פרטני - בדיוק כמו שכר לימוד אבל פשוט יותר)
   "ALTER TABLE families ADD COLUMN monthly_donation_amount REAL",
@@ -1280,6 +1284,24 @@ try {
   }
 } catch (e) {
   console.error("שגיאה בהגדרת חברת גביה ברירת מחדל:", e.message);
+}
+
+// מילוי חד-פעמי של סוג הארכיון: כל מי שנמצא כבר בסטטוס "ארכיון" מסומן כ"בוגר".
+// הנתונים האלה הגיעו מייבוא ולא ממעבר שנה שהמערכת ביצעה, ולכן אין דרך לדעת
+// מי סיים כיתה ח' ומי עזב באמצע. ברירת המחדל היא "בוגר", והמשתמש משנה ידנית
+// ל"עזב" את מי שצריך. הדגל ב-settings מבטיח שזה ירוץ פעם אחת בלבד ולא ידרוס
+// שינויים ידניים מאוחרים יותר.
+try {
+  const alreadySet = db.prepare("SELECT value FROM settings WHERE key = 'archive_type_backfill_v1'").get();
+  if (!alreadySet) {
+    const result = db.prepare(
+      "UPDATE students SET archive_type = 'בוגר' WHERE status = 'ארכיון' AND (archive_type IS NULL OR archive_type = '')"
+    ).run();
+    console.log(`[סוג ארכיון] ${result.changes} תלמידי ארכיון סומנו כ"בוגר" (ניתן לשנות ידנית ל"עזב")`);
+    db.prepare("INSERT INTO settings (key, value) VALUES ('archive_type_backfill_v1', '1')").run();
+  }
+} catch (e) {
+  console.error("שגיאה במילוי סוג ארכיון:", e.message);
 }
 
 // שדה נפרד לחברת גביה של תרומות - נבדל מ-billing_company (ששימש/משמש

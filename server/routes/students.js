@@ -156,7 +156,7 @@ router.get("/students/duplicates", (req, res) => {
 });
 
 router.get("/students", (req, res) => {
-  const { q, class_id, cohort_id, sector, branch } = req.query;
+  const { q, class_id, cohort_id, sector, branch, archive_type } = req.query;
   const status = req.query.status !== undefined ? req.query.status : "פעיל";
   let sql = STUDENT_SELECT + " WHERE 1=1";
   const params = [];
@@ -190,6 +190,12 @@ router.get("/students", (req, res) => {
     sql += " AND f.sector = ?";
     params.push(sector);
   }
+  // סינון בוגרים/עזבו. רלוונטי רק בתוך סטטוס ארכיון, ולכן מצומצם אליו במפורש
+  // כדי שסינון "בוגר" לא ישלוף בטעות תלמיד פעיל שיש לו ערך שיורי בשדה.
+  if (archive_type) {
+    sql += " AND s.status = 'ארכיון' AND s.archive_type = ?";
+    params.push(archive_type);
+  }
   if (branch) {
     if (branch === "__none__") {
       sql += " AND COALESCE(c.branch, s.branch) IS NULL";
@@ -221,6 +227,7 @@ router.get("/students", (req, res) => {
   res.render("students/list", {
     students, classes, cohorts, statuses,
     q: q || "", class_id: class_id || "", status: status || "", cohort_id: cohort_id || "",
+    archive_type: archive_type || "",
     sector: sector || "", branch: branch || "",
     sort: req.query.sort || "", dir: req.query.dir || "",
   });
@@ -241,6 +248,9 @@ const STUDENT_FIELDS = [
   "allergies", "medications", "walks_alone", "health_fund", "birth_country", "immigration_year", "family_id", "status",
   "cohort_id", "birth_date_civil", "entry_date", "update_date", "exit_date",
   "registration_date", "admission_date", "branch",
+  // "בוגר" / "עזב" - רלוונטי רק לסטטוס ארכיון. נכתב אוטומטית בהעלאת שנה
+  // למי שסיים כיתה ח', וניתן לשינוי ידני מהטופס.
+  "archive_type",
 ];
 const DATE_FIELDS = ["birth_date_civil", "entry_date", "update_date", "exit_date", "registration_date", "admission_date"];
 

@@ -34,7 +34,34 @@
             <option value="ארכיון" <%= teacher.status === 'ארכיון' ? 'selected' : '' %>>ארכיון</option>
           </select>
         </div>
+        <div class="form-group">
+          <label>מין</label>
+          <select name="gender">
+            <option value="">--</option>
+            <option value="זכר" <%= teacher.gender === 'זכר' ? 'selected' : '' %>>זכר</option>
+            <option value="נקבה" <%= teacher.gender === 'נקבה' ? 'selected' : '' %>>נקבה</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>סניף</label>
+          <select name="branch">
+            <option value="">--</option>
+            <% (typeof branches !== 'undefined' ? branches : []).forEach(b => { %>
+              <option value="<%= b %>" <%= teacher.branch === b ? 'selected' : '' %>><%= b %></option>
+            <% }) %>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>קופת חולים</label>
+          <select name="health_fund">
+            <option value="">--</option>
+            <% (typeof healthFunds !== 'undefined' ? healthFunds : []).forEach(h => { %>
+              <option value="<%= h %>" <%= teacher.health_fund === h ? 'selected' : '' %>><%= h %></option>
+            <% }) %>
+          </select>
+        </div>
         <div class="form-group"><label>מספר ילדים בבית (לחלוקת מתנות)</label><input type="number" min="0" name="children_count" value="<%= teacher.children_count != null ? teacher.children_count : '' %>" /></div>
+        <div class="form-group"><label>סה"כ ילדים</label><input type="number" min="0" name="children_count_total" value="<%= teacher.children_count_total != null ? teacher.children_count_total : '' %>" /></div>
         <div class="form-group"><label>נייד</label><input type="text" name="mobile" value="<%= teacher.mobile || '' %>" /></div>
         <div class="form-group"><label>אימייל</label><input type="email" name="email" value="<%= teacher.email || '' %>" /></div>
         <div class="form-group"><label>טלפון בית</label><input type="text" name="home_phone" value="<%= teacher.home_phone || '' %>" /></div>

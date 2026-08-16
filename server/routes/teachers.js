@@ -238,7 +238,7 @@ router.get("/report/export", async (req, res) => {
 router.get("/new", (req, res) => {
   const chassidut = db.prepare("SELECT id, name FROM chassidut ORDER BY name").all();
   const staffRoles = db.prepare("SELECT * FROM staff_roles ORDER BY branch IS NOT NULL, branch, name").all();
-  res.render("teachers/form", { teacher: {}, mode: "new", chassidut, staffRoles, selectedStaffRoleIds: [] });
+  res.render("teachers/form", { teacher: {}, mode: "new", chassidut, staffRoles, selectedStaffRoleIds: [], ...pickLists() });
 });
 
 const TEACHER_FIELDS = [
@@ -248,8 +248,25 @@ const TEACHER_FIELDS = [
   // פרטי בן/בת זוג - קיימים במסד ומוצגים בכרטיס, אך עד כה לא נכללו כאן
   // ולכן לא היה אפשר לערוך אותם: השמירה מסננת לפי הרשימה הזו בלבד.
   "spouse_first_name", "spouse_last_name", "id_number_spouse", "spouse_birth_date",
+  // שדות שהגיעו מייבוא הנתונים הראשוני, מוצגים בכרטיס אך מעולם לא היו ניתנים
+  // לעריכה מאותה סיבה - הם לא הופיעו ברשימה הזו ולכן השמירה סיננה אותם.
+  "gender", "health_fund", "children_count_total", "branch",
 ];
 const DATE_FIELDS = ["birth_date_civil", "entry_date", "update_date", "exit_date", "spouse_birth_date"];
+
+// רשימות לתפריטים הנפתחים בטופס. הסניפים נגזרים מהכיתות (מקור האמת) ומאוחדים
+// עם ערכים שכבר קיימים בכרטיסי המלמדים, כדי שערך ישן לא ייעלם מהתפריט.
+// קופות החולים נגזרות מהנתונים עצמם, כדי שלא ניצור כתיב שונה לאותה קופה.
+function pickLists() {
+  const col = (table, name) => db
+    .prepare(`SELECT DISTINCT ${name} v FROM ${table} WHERE ${name} IS NOT NULL AND ${name} <> ''`)
+    .all().map((r) => r.v);
+  const branches = [...new Set([...col("classes", "branch"), ...col("teachers", "branch")])]
+    .sort((a, b) => a.localeCompare(b, "he"));
+  const healthFunds = [...new Set([...col("teachers", "health_fund"), ...col("students", "health_fund")])]
+    .sort((a, b) => a.localeCompare(b, "he"));
+  return { branches, healthFunds };
+}
 
 function normalizeField(col, value) {
   if (value === undefined || value === "") return null;
@@ -615,6 +632,7 @@ router.get("/:id/edit", (req, res) => {
   const staffRoles = db.prepare("SELECT * FROM staff_roles ORDER BY branch IS NOT NULL, branch, name").all();
   const selectedStaffRoleIds = db.prepare("SELECT staff_role_id FROM staff_role_assignments WHERE teacher_id = ?").all(req.params.id).map((r) => r.staff_role_id);
   res.render("teachers/form", {
+    ...pickLists(),
     teacher: {
       ...teacher,
       birth_date_civil: hd.serialToInputDate(teacher.birth_date_civil),

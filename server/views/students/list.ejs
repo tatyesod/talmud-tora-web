@@ -22,6 +22,13 @@
         <option value="<%= s.status %>" <%= status === s.status ? 'selected' : '' %>><%= s.status %></option>
       <% }) %>
     </select>
+    <%# בוגרים מול עוזבים - בתוך הארכיון בלבד. המחזור עצמו מסונן בתפריט הנפרד
+        שלו, כך שאפשר לשלב: "בוגרים" + "מחזור תשע\"ה". %>
+    <select name="archive_type">
+      <option value="">ארכיון: הכל</option>
+      <option value="בוגר" <%= archive_type === 'בוגר' ? 'selected' : '' %>>בוגרים בלבד</option>
+      <option value="עזב" <%= archive_type === 'עזב' ? 'selected' : '' %>>עזבו בלבד</option>
+    </select>
     <select name="sector">
       <option value="">כל המגזרים</option>
       <option value="ליטאי" <%= sector === 'ליטאי' ? 'selected' : '' %>>ליטאי</option>

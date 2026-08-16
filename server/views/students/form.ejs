@@ -57,6 +57,17 @@
             <option value="לא התקבל" <%= student.status === 'לא התקבל' ? 'selected' : '' %>>לא התקבל</option>
           </select>
         </div>
+        <%# רלוונטי רק לארכיון. מוצג תמיד כדי שהערך יישלח גם אם הסטטוס משתנה
+            באותה שמירה, אך מתעמעם כשהסטטוס אינו "ארכיון" כדי לא לבלבל. %>
+        <div class="form-group" id="archive-type-group">
+          <label>סוג ארכיון</label>
+          <select name="archive_type">
+            <option value="">--</option>
+            <option value="בוגר" <%= student.archive_type === 'בוגר' ? 'selected' : '' %>>בוגר (סיים כיתה ח')</option>
+            <option value="עזב" <%= student.archive_type === 'עזב' ? 'selected' : '' %>>עזב (לא סיים)</option>
+          </select>
+          <small style="color:var(--muted);">רלוונטי לסטטוס "ארכיון" בלבד. מסומן אוטומטית כ"בוגר" בהעלאת שנה למסיימי כיתה ח'.</small>
+        </div>
         <div class="form-group">
           <label>הולך לבדו</label>
           <select name="walks_alone">

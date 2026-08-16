@@ -123,7 +123,10 @@ function promoteYear() {
     const result = findTargetClass(currentClass);
 
     if (result.archive) {
-      db.prepare("UPDATE students SET class_id = NULL, status = 'ארכיון' WHERE id = ?").run(s.id);
+      // סיום כיתה ח' במסלול האוטומטי = בוגר. רק כאן נכתב archive_type='בוגר',
+      // ולכן מי שהועבר לארכיון ידנית (עזב באמצע) לא ייחשב בוגר בטעות.
+      // המחזור (cohort_id) לא נוגעים בו - הוא נשאר לצמיתות.
+      db.prepare("UPDATE students SET class_id = NULL, status = 'ארכיון', archive_type = 'בוגר' WHERE id = ?").run(s.id);
       archived++;
     } else if (result.classId) {
       const wasNotYetIn = currentClass.name && currentClass.name.startsWith("עדיין לא נכנסו");
