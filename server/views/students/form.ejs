@@ -16,6 +16,7 @@
   <% } %>
 
   <form method="POST" action="<%= mode === 'new' ? '/students' : '/students/' + student.id + '?_method=PUT' %>">
+    <input type="hidden" name="back" value="<%= typeof back !== 'undefined' ? back : '' %>" />
     <% if (mode === 'edit') { %><input type="hidden" name="updated_at" value="<%= student.updated_at || '' %>" /><% } %>
 
     <% if (typeof siblingBranchWarning !== 'undefined' && siblingBranchWarning) { %>

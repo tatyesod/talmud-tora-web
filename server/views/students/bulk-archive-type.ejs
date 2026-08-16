@@ -1,0 +1,110 @@
+<%- include('../partials/header', {title: 'עדכון מרוכז - בוגרים'}) %>
+
+<div class="card">
+  <h1>🎓 עדכון מרוכז - בוגרים / עזבו</h1>
+  <p style="color:var(--muted); font-size:0.9em; line-height:1.6;">
+    מסך זמני לסימון ראשוני של תלמידי הארכיון הקיימים. כולם סומנו כברירת מחדל כ"בוגר" -
+    כאן משנים ל"עזב" את מי שיצא לפני שסיים כיתה ח'. אפשר לסנן לפי מחזור, לשנות כמה שורות,
+    ולשמור הכל בלחיצה אחת. מכאן והלאה הסימון נעשה אוטומטית בהעלאת שנה.
+  </p>
+
+  <% if (saved !== null) { %>
+    <div class="success-msg" style="background:#e7f6ec; border:1px solid #6fbf8b; color:#1d6b3a; padding:10px 14px; border-radius:8px; margin-bottom:12px;">
+      נשמרו <%= saved %> רשומות.
+    </div>
+  <% } %>
+
+  <div style="display:flex; gap:18px; flex-wrap:wrap; margin-bottom:14px; font-size:0.9em;">
+    <span>סה"כ בארכיון: <strong><%= totals.total %></strong></span>
+    <span style="color:#1d6b3a;">בוגרים: <strong><%= totals.grads || 0 %></strong></span>
+    <span style="color:#a33;">עזבו: <strong><%= totals.left_ || 0 %></strong></span>
+    <span style="color:var(--muted);">ללא סימון: <strong><%= totals.unset || 0 %></strong></span>
+  </div>
+
+  <form class="searchbar auto-filter" method="GET" action="/students/bulk-archive-type">
+    <select name="cohort_id" aria-label="סינון לפי מחזור">
+      <option value="">כל המחזורים</option>
+      <% cohorts.forEach(c => { %>
+        <option value="<%= c.id %>" <%= String(cohort_id) === String(c.id) ? 'selected' : '' %>>
+          <%= c.name %> (<%= c.n %>)
+        </option>
+      <% }) %>
+      <% if (noCohort > 0) { %>
+        <option value="__none__" <%= cohort_id === '__none__' ? 'selected' : '' %>>ללא מחזור (<%= noCohort %>)</option>
+      <% } %>
+    </select>
+  </form>
+
+  <% if (students.length === 0) { %>
+    <p style="color:var(--muted);">אין תלמידי ארכיון להצגה.
+      <a href="/students/bulk-archive-type">הצג את כל המחזורים</a>
+    </p>
+  <% } else { %>
+
+    <form method="POST" action="/students/bulk-archive-type">
+      <input type="hidden" name="cohort_id" value="<%= cohort_id %>" />
+
+      <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:10px;">
+        <span style="font-size:0.9em; color:var(--muted);">סימון מהיר לכל <%= students.length %> השורות שמוצגות:</span>
+        <button type="button" class="btn small secondary" onclick="setAll('בוגר')">הכל בוגר</button>
+        <button type="button" class="btn small secondary" onclick="setAll('עזב')">הכל עזב</button>
+      </div>
+
+      <table class="bulk-archive">
+        <thead>
+          <tr>
+            <th>שם</th>
+            <th>מחזור</th>
+            <th style="width:120px;">בוגר</th>
+            <th style="width:120px;">עזב</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% students.forEach(s => { %>
+            <tr>
+              <td style="text-align:right;">
+                <a href="/students/<%= s.id %>" target="_blank">
+                  <%= s.last_name || s.family_last_name || '' %> <%= s.nickname || s.first_name || '' %>
+                </a>
+              </td>
+              <td><%= s.cohort_name || '—' %></td>
+              <td>
+                <label style="display:block; cursor:pointer;">
+                  <input type="radio" name="archive_type_<%= s.id %>" value="בוגר"
+                         <%= s.archive_type === 'בוגר' ? 'checked' : '' %> style="width:auto;" />
+                </label>
+              </td>
+              <td>
+                <label style="display:block; cursor:pointer;">
+                  <input type="radio" name="archive_type_<%= s.id %>" value="עזב"
+                         <%= s.archive_type === 'עזב' ? 'checked' : '' %> style="width:auto;" />
+                </label>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+
+      <div class="actions" style="margin-top:16px; position:sticky; bottom:0; background:var(--card-bg, #fff); padding:10px 0;">
+        <button type="submit" class="btn">💾 שמירת כל השינויים</button>
+        <a href="/students" class="btn secondary">חזרה לתלמידים</a>
+      </div>
+    </form>
+
+  <% } %>
+</div>
+
+<style>
+  table.bulk-archive { width: 100%; border-collapse: collapse; }
+  table.bulk-archive th, table.bulk-archive td { border-bottom: 1px solid rgba(0,0,0,0.08); padding: 6px 8px; text-align: center; }
+  table.bulk-archive tbody tr:hover { background: rgba(201,151,76,0.08); }
+</style>
+
+<script>
+  function setAll(value) {
+    document.querySelectorAll('table.bulk-archive input[type="radio"][value="' + value + '"]')
+      .forEach(function (el) { el.checked = true; });
+  }
+</script>
+
+<%- include('../partials/footer') %>

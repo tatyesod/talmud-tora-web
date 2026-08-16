@@ -4,13 +4,18 @@
   <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:10px;">
     <h1><%= student.first_name %> <%= student.last_name || student.family_last_name %> <span class="badge <%= student.status !== 'פעיל' ? 'archive' : '' %>"><%= student.status || '' %></span></h1>
     <div class="actions">
-      <a href="/students/<%= student.id %>/edit" class="btn">עריכה</a>
+      <a href="/students/<%= student.id %>/edit<%= back ? '?back=' + encodeURIComponent(back) : '' %>" class="btn">עריכה</a>
       <a href="/students/<%= student.id %>/print/health" target="_blank" class="btn secondary">🖨️ טופס בריאות</a>
       <a href="/students/<%= student.id %>/print/emergency" target="_blank" class="btn secondary">🖨️ אנשי קשר לחירום</a>
       <form method="POST" action="/students/<%= student.id %>?_method=DELETE" onsubmit="return confirm('האם למחוק את התלמיד?');" style="display:inline">
         <button type="submit" class="btn danger">מחיקה</button>
       </form>
-      <a href="javascript:history.back()" class="btn secondary">חזרה לרשימה</a>
+      <%# אם הגענו מרשימה מסוננת - חוזרים אליה בדיוק. אחרת נופלים ל-history.back %>
+      <% if (back) { %>
+        <a href="/students?<%= back %>" class="btn secondary">חזרה לרשימה</a>
+      <% } else { %>
+        <a href="javascript:history.back()" class="btn secondary">חזרה לרשימה</a>
+      <% } %>
     </div>
   </div>
 </div>

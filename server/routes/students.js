@@ -228,12 +228,82 @@ router.get("/students", (req, res) => {
     students, classes, cohorts, statuses,
     q: q || "", class_id: class_id || "", status: status || "", cohort_id: cohort_id || "",
     archive_type: archive_type || "",
+    // מחרוזת הסינון הנוכחית, נגררת דרך כרטיס התלמיד וטופס העריכה כדי שחזרה
+    // אחרי שמירה תחזיר לרשימה המסוננת ולא לרשימה מאופסת.
+    listQuery: new URLSearchParams(req.query).toString(),
     sector: sector || "", branch: branch || "",
     sort: req.query.sort || "", dir: req.query.dir || "",
   });
 });
 
 // --- הוספה ---
+// ============ עדכון מרוכז של סוג ארכיון (בוגר / עזב) ============
+// מסך זמני לסימון ראשוני של תלמידי הארכיון הקיימים, שהגיעו מייבוא הנתונים
+// ואי אפשר לדעת לגביהם אוטומטית מי סיים כיתה ח' ומי עזב באמצע.
+// מרגע שהסימון הראשוני הושלם אפשר להסיר את שני ה-routes האלה ואת התבנית
+// students/bulk-archive-type.ejs - הסימון השוטף נעשה לבד בהעלאת שנה.
+router.get("/students/bulk-archive-type", (req, res) => {
+  const { cohort_id } = req.query;
+  let sql = `
+    SELECT s.id, s.first_name, s.nickname, s.last_name, s.archive_type,
+           f.last_name AS family_last_name, co.name AS cohort_name, co.id AS cohort_id
+    FROM students s
+    LEFT JOIN families f ON s.family_id = f.id
+    LEFT JOIN cohorts co ON s.cohort_id = co.id
+    WHERE s.status = 'ארכיון'
+  `;
+  const params = [];
+  if (cohort_id) {
+    if (cohort_id === "__none__") sql += " AND s.cohort_id IS NULL";
+    else { sql += " AND s.cohort_id = ?"; params.push(cohort_id); }
+  }
+  // מיון לפי מחזור ואז שם - כך שמחזור שלם (שכולו בוגרים) מסומן ברצף אחד
+  sql += " ORDER BY co.from_date, co.name, f.last_name, s.last_name, s.first_name";
+  const students = db.prepare(sql).all(...params);
+
+  // רק מחזורים שיש בהם תלמידי ארכיון - אין טעם להציג מחזור ריק בתפריט
+  const cohorts = db.prepare(`
+    SELECT co.id, co.name, COUNT(*) n FROM students s
+    JOIN cohorts co ON s.cohort_id = co.id
+    WHERE s.status = 'ארכיון'
+    GROUP BY co.id ORDER BY co.from_date, co.name
+  `).all();
+  const noCohort = db.prepare("SELECT COUNT(*) c FROM students WHERE status = 'ארכיון' AND cohort_id IS NULL").get().c;
+
+  const totals = db.prepare(`
+    SELECT
+      SUM(CASE WHEN archive_type = 'בוגר' THEN 1 ELSE 0 END) grads,
+      SUM(CASE WHEN archive_type = 'עזב' THEN 1 ELSE 0 END) left_,
+      SUM(CASE WHEN archive_type IS NULL OR archive_type = '' THEN 1 ELSE 0 END) unset,
+      COUNT(*) total
+    FROM students WHERE status = 'ארכיון'
+  `).get();
+
+  res.render("students/bulk-archive-type", {
+    students, cohorts, noCohort, totals,
+    cohort_id: cohort_id || "",
+    saved: req.query.saved ? parseInt(req.query.saved, 10) : null,
+  });
+});
+
+router.post("/students/bulk-archive-type", (req, res) => {
+  const body = req.body;
+  // הטופס שולח archive_type_<id> לכל שורה. עוברים רק על מי שנשלח בפועל,
+  // כך ששורות שסוננו החוצה מהמסך לא נדרסות.
+  const update = db.prepare("UPDATE students SET archive_type = ?, updated_at = ? WHERE id = ? AND status = 'ארכיון'");
+  const now = new Date().toISOString();
+  let changed = 0;
+  for (const key of Object.keys(body)) {
+    const m = key.match(/^archive_type_(\d+)$/);
+    if (!m) continue;
+    const value = body[key] === "בוגר" || body[key] === "עזב" ? body[key] : null;
+    const info = update.run(value, now, parseInt(m[1], 10));
+    changed += info.changes;
+  }
+  const back = body.cohort_id ? `&cohort_id=${encodeURIComponent(body.cohort_id)}` : "";
+  res.redirect(`/students/bulk-archive-type?saved=${changed}${back}`);
+});
+
 router.get("/students/new", (req, res) => {
   const classes = db.prepare("SELECT id, name, parallel FROM classes ORDER BY name, parallel").all();
   const cohorts = db.prepare("SELECT id, name FROM cohorts ORDER BY to_date DESC, from_date DESC").all();
@@ -409,7 +479,7 @@ router.get("/students/:id", (req, res) => {
     : [];
   const studentFile = getStudentFile(student.id);
   const teachers = getClassTeachers(student.class_id);
-  res.render("students/view", { student, contacts, siblings, studentFile, teachers });
+  res.render("students/view", { student, contacts, siblings, studentFile, teachers, back: req.query.back || "" });
 });
 
 // --- עריכה ---
@@ -433,6 +503,7 @@ router.get("/students/:id/edit", (req, res) => {
       admission_date: hd.serialToInputDate(student.admission_date),
     },
     mode: "edit", classes, cohorts, families, conflict: req.query.conflict === "1",
+    back: req.query.back || "",
   });
 });
 
@@ -531,7 +602,9 @@ router.put("/students/:id", (req, res) => {
   if (body.family_id && body.sector) {
     db.prepare("UPDATE families SET sector = ? WHERE id = ?").run(body.sector, body.family_id);
   }
-  res.redirect(`/students/${req.params.id}`);
+  // גוררים את הסינון קדימה, כך ש"חזרה לרשימה" תחזיר לרשימה המסוננת
+  const back = body.back ? `?back=${encodeURIComponent(body.back)}` : "";
+  res.redirect(`/students/${req.params.id}${back}`);
 });
 
 // --- מחיקה ---
