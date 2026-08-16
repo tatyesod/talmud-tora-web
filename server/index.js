@@ -40,16 +40,33 @@ app.use(
     secret: process.env.SESSION_SECRET || "talmud-tora-secret-change-me",
     resave: false,
     saveUninitialized: false,
-    rolling: true,  // מחדש את הטיימר בכל בקשה
-    cookie: { maxAge: 1000 * 60 * 20 }, // 20 דקות
+    rolling: true,
+    // בלי maxAge/expires העוגייה היא "עוגיית סשן" - הדפדפן מוחק אותה בסגירה,
+    // ולכן סגירה ב-X מנתקת באמת. קודם הייתה כאן עוגייה מתמשכת של 20 דקות,
+    // ששרדה סגירה ופתיחה מחדש. מגבלת חוסר הפעילות נאכפת עכשיו בשרת (למטה),
+    // כך שלא איבדנו אותה.
+    cookie: { httpOnly: true, sameSite: "lax" },
   })
 );
+
+// ניתוק אחרי חוסר פעילות. קודם זה נשען על תפוגת העוגייה; מרגע שהעוגייה היא
+// עוגיית סשן אין לה תפוגה משלה, ולכן הבדיקה נעשית כאן מול חותמת זמן בסשן.
+const IDLE_LIMIT_MS = 1000 * 60 * 20; // 20 דקות
+app.use((req, res, next) => {
+  if (!req.session.userId) return next();
+  const now = Date.now();
+  if (req.session.lastSeen && now - req.session.lastSeen > IDLE_LIMIT_MS) {
+    return req.session.destroy(() => res.redirect("/login"));
+  }
+  req.session.lastSeen = now;
+  next();
+});
 
 // --- אימות מבוסס מסד נתונים, ריבוי משתמשים ---
 app.use((req, res, next) => {
   if (req.session.userId) {
     const db = require("./db");
-    const u = db.prepare("SELECT id, username, display_name, full_name, role_title, is_admin, force_password_change, drive_letter FROM users WHERE id = ?").get(req.session.userId);
+    const u = db.prepare("SELECT id, username, display_name, full_name, role_title, is_admin, force_password_change, drive_letter, nav_order FROM users WHERE id = ?").get(req.session.userId);
     if (u) {
       req.currentUser = u;
       res.locals.user = u.display_name || u.username;

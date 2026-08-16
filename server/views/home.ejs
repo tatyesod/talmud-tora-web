@@ -544,8 +544,20 @@
         if (presence) grid.appendChild(presence);
       } catch(e) {}
     }
-    // הרשת מוצגת רק אחרי שהסדר הוחל, כדי שלא ייראה קפיצה מהסדר המקורי לשמור
-    grid.classList.add('ordered');
+    // עכשיו, כשהסדר הסופי ידוע, קובעים לכל כרטיס השהיה לפי מיקומו בפועל.
+    // שתי מסגרות המתנה נחוצות: בלעדיהן הדפדפן מצרף את מצב הפתיחה ואת הוספת
+    // המחלקה לאותה מסגרת, ההנפשה לא מתחילה כלל, והכרטיסים פשוט "קופצים".
+    const navCards = [...grid.querySelectorAll('.nav-card')];
+    navCards.forEach((c, i) => { c.style.animationDelay = (0.12 + i * 0.055) + 's'; });
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      grid.classList.add('ordered');
+      // בתום החשיפה מסירים את ההנפשה, כדי שאפקט הריחוף יחזור לעבוד כרגיל
+      const totalMs = (0.12 + navCards.length * 0.055 + 0.5) * 1000;
+      setTimeout(() => {
+        navCards.forEach(c => { c.style.animationDelay = ''; });
+        grid.classList.add('done');
+      }, totalMs);
+    }));
 
     let dragSrc = null;
 

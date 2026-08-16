@@ -325,25 +325,28 @@
   align-items: center;
   gap: 3px;
   transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease, background 0.25s ease;
+  opacity: 0;
 }
 
-/* הרשת נחשפת כיחידה אחת, לא כרטיס-כרטיס.
-   קודם לכן לכל כרטיס הייתה השהיה משלו (--d), והיא נקבעה לפי הסדר המקורי
-   ב-HTML. ברגע שהמשתמש סידר מחדש את הכרטיסים בגרירה, ההשהיות כבר לא תאמו
-   את הסדר על המסך - ולכן הכרטיסים "קפצו" פנימה בסדר אקראי למראה.
-   חשיפה אחידה גם מקצועית יותר וגם חסינה לכל סידור. */
-.nav-grid {
-  opacity: 0;
-  transform: translateY(10px);
+/* חשיפה הדרגתית של הכרטיסים, אחד אחרי השני.
+   ההשהיה נקבעת ב-JS לפי המיקום הסופי של הכרטיס אחרי שהוחל הסדר השמור -
+   ולא לפי הסדר הכתוב ב-HTML כמו קודם (--d), שגרם לכך שאחרי סידור מחדש
+   הכרטיסים נחשפו בסדר אקראי למראה. */
+.nav-grid.ordered .nav-card {
+  animation: card-in 0.5s ease-out both;
 }
-.nav-grid.ordered {
+@keyframes card-in {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+/* בתום החשיפה מסירים את ההנפשה, אחרת fill-mode היה נועל את ה-transform
+   ומשתק את אפקט ההגבהה בריחוף. */
+.nav-grid.done .nav-card {
+  animation: none;
   opacity: 1;
-  transform: translateY(0);
-  transition: opacity 0.45s ease-out, transform 0.45s ease-out;
 }
-/* אם JS לא רץ מסיבה כלשהי - הרשת עדיין מוצגת ולא נשארת שקופה */
 @media (prefers-reduced-motion: reduce) {
-  .nav-grid, .nav-grid.ordered { opacity: 1; transform: none; transition: none; }
+  .nav-card, .nav-grid.ordered .nav-card { animation: none !important; opacity: 1; }
 }
 .nav-badge-dot {
   position: absolute;
