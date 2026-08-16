@@ -3,7 +3,7 @@
 
 // שם המטמון מקבל גרסה חדשה בכל שינוי מבני כאן, כדי שמטמונים ישנים יימחקו
 // אוטומטית ב-activate ולא יישארו תקועים אצל משתמשים ותיקים.
-const CACHE_NAME = "tt-hachadash-v3";
+const CACHE_NAME = "tt-hachadash-v4";
 
 // נכסים סטטיים בלבד. "/" הוסר מכאן בכוונה: זה דף HTML שמחייב התחברות,
 // ובמצב לא-מחובר הוא מחזיר הפניה ל-/login. Cache.put דוחה תגובות שעברו
@@ -48,25 +48,37 @@ self.addEventListener("activate", (event) => {
 // ו-respondWith(undefined) מייצר שגיאת רשת קשה בדפדפן. לכן מוחזרת תגובה
 // מפורשת במקום.
 self.addEventListener("fetch", (event) => {
-  if (event.request.method !== "GET") return;
+  const req = event.request;
+  if (req.method !== "GET") return;
+
+  const url = new URL(req.url);
+  if (url.origin !== self.location.origin) return; // בקשות לשירותים חיצוניים
+
+  // מטפלים אך ורק בנכסים סטטיים - עיצוב, סקריפטים, תמונות וגופנים.
+  //
+  // חשוב במיוחד: בקשות ניווט (טעינת דף) ובקשות נתונים חייבות לעבור ישירות
+  // לדפדפן בלי מגע. בבקשת ניווט הדפדפן מבקש redirect: "manual", ולכן הפניה
+  // ל-/login חוזרת כתגובת opaqueredirect שבה response.ok הוא false. גרסה
+  // קודמת של הקובץ הזה ראתה "לא ok" ושירתה במקום זה את דף הבית מהמטמון -
+  // כך שאחרי סגירה ופתיחה האפליקציה נראתה מחוברת, בעוד שכל בקשות הנתונים
+  // נכשלו והפאנלים בצדדים נתקעו על "טוען...".
+  const STATIC = ["style", "script", "image", "font"];
+  if (!STATIC.includes(req.destination)) return;
 
   event.respondWith(
-    fetch(event.request)
+    fetch(req)
       .then((response) => {
-        if (!response || !response.ok) {
-          // תשובה שגויה - מנסים קודם את המטמון. אם אין שם עותק, מחזירים את
-          // התשובה המקורית כדי שהשגיאה האמיתית של השרת עדיין תגיע למשתמש.
-          return caches.match(event.request).then((cached) => cached || response);
+        if (!response || !response.ok || response.redirected) {
+          // תגובה שגויה (502 בזמן פריסה, דף חסימה של מסנן) - מנסים את המטמון.
+          // אם אין שם עותק, מחזירים את התגובה המקורית כדי לא להסתיר שגיאה אמיתית.
+          return caches.match(req).then((cached) => cached || response);
         }
-        // שומרים רק תגובות תקינות, ולא כאלה שעברו הפניה (Cache.put דוחה אותן).
-        if (!response.redirected) {
-          const copy = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy)).catch(() => {});
-        }
+        const copy = response.clone();
+        caches.open(CACHE_NAME).then((cache) => cache.put(req, copy)).catch(() => {});
         return response;
       })
       .catch(() =>
-        caches.match(event.request).then((cached) =>
+        caches.match(req).then((cached) =>
           cached || new Response("", { status: 504, statusText: "Offline and not cached" })
         )
       )
