@@ -1308,6 +1308,57 @@ try {
   console.error("שגיאה במילוי סוג ארכיון:", e.message);
 }
 
+// ייבוא חד-פעמי של נתוני סבים מדוח Access.
+// הקובץ server/data/grandparents-import.json נבנה מהתאמה לפי תעודת זהות של
+// האב (או האם), ולכן מזהה המשפחה שבו ודאי ואינו מבוסס על ניחוש לפי שם.
+//
+// שתי הגנות חשובות:
+// 1. כל שדה נכתב רק אם הוא ריק היום - השאילתה עצמה מסננת. ערך קיים לעולם
+//    לא נדרס, גם אם בקובץ יש ערך שונה. 18 המקרים שבהם הקובץ סותר ערך קיים
+//    הופקו לקובץ אקסל נפרד להכרעה ידנית ואינם כאן.
+// 2. המילה "ריק", שכך Access מייצא שדה ריק, סוננה בשלב הבנייה ואינה בקובץ.
+// הדגל ב-settings מבטיח ריצה אחת בלבד, כך שעריכות ידניות מאוחרות לא יידרסו.
+try {
+  const alreadySet = db.prepare("SELECT value FROM settings WHERE key = 'grandparents_import_v1'").get();
+  if (!alreadySet) {
+    const fs = require("fs");
+    const path = require("path");
+    const file = path.join(__dirname, "data", "grandparents-import.json");
+    if (fs.existsSync(file)) {
+      const records = JSON.parse(fs.readFileSync(file, "utf8"));
+      const COLS = [
+        "paternal_grandparents", "paternal_grandparents_address",
+        "maternal_grandparents", "maternal_grandparents_address",
+      ];
+      let filled = 0;
+      // עטיפה בטרנזקציה ידנית: המודול כאן הוא node:sqlite המובנה, שאין לו
+      // db.transaction() כמו ב-better-sqlite3.
+      db.exec("BEGIN");
+      try {
+        for (const r of records) {
+          for (const col of COLS) {
+            if (!r[col]) continue;
+            const info = db.prepare(
+              `UPDATE families SET ${col} = ? WHERE id = ? AND (${col} IS NULL OR ${col} = '')`
+            ).run(r[col], r.id);
+            filled += Number(info.changes || 0);
+          }
+        }
+        db.exec("COMMIT");
+      } catch (err) {
+        db.exec("ROLLBACK");
+        throw err;
+      }
+      console.log(`[ייבוא סבים] ${records.length} משפחות נבדקו, ${filled} שדות ריקים מולאו (ערכים קיימים לא נגעו)`);
+    } else {
+      console.log("[ייבוא סבים] קובץ הייבוא לא נמצא - דילוג");
+    }
+    db.prepare("INSERT INTO settings (key, value) VALUES ('grandparents_import_v1', '1')").run();
+  }
+} catch (e) {
+  console.error("שגיאה בייבוא נתוני סבים:", e.message);
+}
+
 // שדה נפרד לחברת גביה של תרומות - נבדל מ-billing_company (ששימש/משמש
 // ספציפית לשכ"ל). "קשר" היא ברירת המחדל הראשית לשתיהן, אבל הן עשויות
 // להיות שונות בפועל, ולכן שני שדות נפרדים.
