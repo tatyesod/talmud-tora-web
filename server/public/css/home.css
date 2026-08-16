@@ -325,9 +325,25 @@
   align-items: center;
   gap: 3px;
   transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease, background 0.25s ease;
+}
+
+/* הרשת נחשפת כיחידה אחת, לא כרטיס-כרטיס.
+   קודם לכן לכל כרטיס הייתה השהיה משלו (--d), והיא נקבעה לפי הסדר המקורי
+   ב-HTML. ברגע שהמשתמש סידר מחדש את הכרטיסים בגרירה, ההשהיות כבר לא תאמו
+   את הסדר על המסך - ולכן הכרטיסים "קפצו" פנימה בסדר אקראי למראה.
+   חשיפה אחידה גם מקצועית יותר וגם חסינה לכל סידור. */
+.nav-grid {
   opacity: 0;
-  animation: card-in 0.6s ease-out forwards;
-  animation-delay: calc(0.55s + var(--d) * 0.08s);
+  transform: translateY(10px);
+}
+.nav-grid.ordered {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 0.45s ease-out, transform 0.45s ease-out;
+}
+/* אם JS לא רץ מסיבה כלשהי - הרשת עדיין מוצגת ולא נשארת שקופה */
+@media (prefers-reduced-motion: reduce) {
+  .nav-grid, .nav-grid.ordered { opacity: 1; transform: none; transition: none; }
 }
 .nav-badge-dot {
   position: absolute;
@@ -343,10 +359,6 @@
 @keyframes nav-badge-pulse {
   0%, 100% { transform: scale(1); opacity: 1; }
   50% { transform: scale(1.25); opacity: 0.75; }
-}
-@keyframes card-in {
-  from { opacity: 0; transform: translateY(24px); }
-  to { opacity: 1; transform: translateY(0); }
 }
 .nav-card:hover {
   text-decoration: none;

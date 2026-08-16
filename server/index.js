@@ -361,6 +361,8 @@ app.get("/", (req, res) => {
 
   res.render("home", {
     stats, branchStats, unassignedClassCount, mismatchedBranchCount, monthlyTotal, currentYear, hebrewDateToday, dayName,
+    // סדר כרטיסי הניווט של המשתמש, נשמר בשרת ולכן זהה בכל המחשבים שלו
+    navOrder: (req.currentUser && req.currentUser.nav_order) || "",
     myTasks, unreadCount, greeting, fullName, allUsers,
     studentBirthdays, teacherBirthdays, pendingOrders, myOrderUpdates, upcomingEventsCount,
   });
@@ -458,6 +460,20 @@ app.use("/labels", require("./routes/labels"));
     proxyFetch("https://www.hebcal.com/shabbat?" + q, res);
   });
 })();
+
+// ===== שמירת סדר כרטיסי הניווט בדף הבית (לכל משתמש) =====
+app.post("/api/nav-order", express.json(), (req, res) => {
+  if (!req.currentUser) return res.status(401).json({ ok: false });
+  const order = Array.isArray(req.body && req.body.order) ? req.body.order : null;
+  // מקבלים רק נתיבים פנימיים קצרים, כדי שלא יישמר לשדה תוכן שרירותי
+  if (!order || order.some((h) => typeof h !== "string" || !h.startsWith("/") || h.length > 120)) {
+    return res.status(400).json({ ok: false });
+  }
+  const db = require("./db");
+  db.prepare("UPDATE users SET nav_order = ? WHERE id = ?")
+    .run(JSON.stringify(order.slice(0, 60)), req.currentUser.id);
+  res.json({ ok: true });
+});
 
 // ===== Proxy לנתוני לוח שנה יהודי (Sefaria) =====
 app.get("/api/jewish-calendar", async (req, res) => {

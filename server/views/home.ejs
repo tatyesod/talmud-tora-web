@@ -505,8 +505,26 @@
     const grid = document.getElementById('nav-grid');
     if (!grid) return;
 
-    // טעינת סדר שמור
-    const saved = localStorage.getItem('nav-order');
+    function saveOrderToServer(order) {
+      fetch('/api/nav-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ order: order })
+      }).catch(function () { /* כישלון רשת - הסדר על המסך נשאר, יישמר בגרירה הבאה */ });
+    }
+
+    // הסדר מגיע מהשרת (עמודת users.nav_order) ולכן זהה בכל מחשב שהמשתמש
+    // עובד בו. localStorage נשאר רק כגיבוי חד-פעמי: אם יש שם סדר ישן ואין
+    // עדיין סדר בשרת, מעלים אותו לשרת פעם אחת ומוחקים מקומית.
+    const serverOrder = <%- JSON.stringify(navOrder || '') %>;
+    let saved = serverOrder || null;
+    const legacy = localStorage.getItem('nav-order');
+    if (!saved && legacy) {
+      saved = legacy;
+      saveOrderToServer(JSON.parse(legacy));
+    }
+    if (legacy && serverOrder) localStorage.removeItem('nav-order');
+
     if (saved) {
       try {
         const order = JSON.parse(saved);
@@ -526,6 +544,8 @@
         if (presence) grid.appendChild(presence);
       } catch(e) {}
     }
+    // הרשת מוצגת רק אחרי שהסדר הוחל, כדי שלא ייראה קפיצה מהסדר המקורי לשמור
+    grid.classList.add('ordered');
 
     let dragSrc = null;
 
@@ -541,9 +561,8 @@
       card.addEventListener('dragend', () => {
         card.classList.remove('dragging');
         grid.querySelectorAll('.nav-card').forEach(c => c.classList.remove('drag-over'));
-        // שמירת הסדר
         const order = [...grid.querySelectorAll('.nav-card[href]')].map(c => c.getAttribute('href'));
-        localStorage.setItem('nav-order', JSON.stringify(order));
+        saveOrderToServer(order);
       });
       card.addEventListener('dragover', e => {
         e.preventDefault();
