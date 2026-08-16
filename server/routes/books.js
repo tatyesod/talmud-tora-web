@@ -398,10 +398,10 @@ router.get("/report/families", async (req, res) => {
 });
 
 // ============ תשלומים בפועל להזמנת ספרים ============
-router.get("/payments", (req, res) => {
-  const { year, branch } = req.query;
-  if (!year) return res.redirect("/books");
-
+// חישוב מצב התשלומים לכל משפחה שהזמינה ספרים בשנה נתונה.
+// מוצא מהמסלול עצמו כדי שגם מסך התשלומים וגם ייצוא החייבים ישתמשו באותו
+// חישוב בדיוק - אחרת נוצר סיכון שהמסך והאקסל יראו מספרים שונים.
+function buildPaymentsData(year, branch) {
   const families = db.prepare(`
     SELECT DISTINCT f.id, f.last_name, f.father_name, f.home_phone, f.father_mobile,
            f.street, f.house_number, f.city
@@ -415,7 +415,7 @@ router.get("/payments", (req, res) => {
     ORDER BY f.last_name
   `).all(...(branch ? [year, year, branch] : [year, year]));
 
-  const familiesData = families.map((fam) => {
+  return families.map((fam) => {
     const items = db.prepare(`
       SELECT bc.item_name, bc.price, s.first_name, c.name||' '||COALESCE(c.parallel,'') AS class_label
       FROM book_orders bo JOIN book_catalog bc ON bo.catalog_id=bc.id
@@ -436,15 +436,103 @@ router.get("/payments", (req, res) => {
     `).all(year, fam.id);
     const paid = payments.reduce((s, p) => s + p.amount, 0);
 
-    return { ...fam, childClass, total, payments, paid, balance: Math.round((total - paid) * 100) / 100 };
+    return { ...fam, allItems, childClass, total, payments, paid, balance: Math.round((total - paid) * 100) / 100 };
   });
+}
 
-  const grandTotal = familiesData.reduce((s, f) => s + f.total, 0);
-  const grandPaid = familiesData.reduce((s, f) => s + f.paid, 0);
+// סינון לפי מצב התשלום. הסכומים הם מספרים עשרוניים, ולכן משווים מול סף קטן
+// ולא מול אפס מדויק - כדי שהפרש של אגורות מעיגול לא יסווג משפחה כחייבת.
+const EPS = 0.005;
+function filterByBalance(rows, mode) {
+  if (mode === "debt") return rows.filter(f => f.balance > EPS);
+  if (mode === "credit") return rows.filter(f => f.balance < -EPS);
+  if (mode === "paid") return rows.filter(f => Math.abs(f.balance) <= EPS);
+  return rows;
+}
+
+router.get("/payments", (req, res) => {
+  const { year, branch, balance } = req.query;
+  if (!year) return res.redirect("/books");
+
+  const allFamilies = buildPaymentsData(year, branch);
+  const familiesData = filterByBalance(allFamilies, balance);
+
+  // הסיכומים למעלה מתייחסים תמיד לכלל המשפחות, לא לתצוגה המסוננת - אחרת
+  // "יתרה לגבייה" הייתה משתנה לפי הסינון ומאבדת את משמעותה.
+  const grandTotal = allFamilies.reduce((s, f) => s + f.total, 0);
+  const grandPaid = allFamilies.reduce((s, f) => s + f.paid, 0);
+  const counts = {
+    all: allFamilies.length,
+    debt: filterByBalance(allFamilies, "debt").length,
+    credit: filterByBalance(allFamilies, "credit").length,
+    paid: filterByBalance(allFamilies, "paid").length,
+  };
 
   const branches = db.prepare("SELECT DISTINCT branch FROM classes WHERE branch IS NOT NULL AND branch<>'' ORDER BY branch").all().map(r => r.branch);
 
-  res.render("books/payments", { year, branch: branch || "", branches, familiesData, grandTotal, grandPaid });
+  res.render("books/payments", {
+    year, branch: branch || "", balance: balance || "", branches,
+    familiesData, grandTotal, grandPaid, counts,
+  });
+});
+
+// ייצוא לאקסל של מצב התשלומים, לפי אותו סינון שמוצג במסך
+router.get("/payments/export", async (req, res) => {
+  const { year, branch, balance } = req.query;
+  if (!year) return res.redirect("/books");
+
+  const rows = filterByBalance(buildPaymentsData(year, branch), balance);
+  const titleByMode = {
+    debt: "משפחות עם יתרה לתשלום",
+    credit: "משפחות ביתרת זכות",
+    paid: "משפחות ששילמו במלואן",
+  };
+  const subject = titleByMode[balance] || "מצב תשלומים - הזמנת ספרים";
+
+  const wb = new ExcelJS.Workbook();
+  const ws = wb.addWorksheet("תשלומים", { views: [{ rightToLeft: true }] });
+  addExcelHeader(wb, ws, "", `${subject} ${year}${branch ? " - " + branch : ""}`, 8);
+  addLogo(wb, ws, 6, 0);
+
+  const hr = ws.addRow(["שם משפחה", "שם האב", "טלפון", "כתובת", "ילד/כיתה", "סה\"כ ₪", "שולם ₪", "יתרה ₪"]);
+  hr.eachCell((cell) => {
+    cell.font = { bold: true, color: { argb: "FFFFFFFF" } };
+    cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF2C5F7C" } };
+    cell.alignment = { horizontal: "right" };
+  });
+
+  let sumTotal = 0, sumPaid = 0;
+  for (const f of rows) {
+    sumTotal += f.total; sumPaid += f.paid;
+    const addr = [f.street, f.house_number, f.city].filter(Boolean).join(" ");
+    const row = ws.addRow([
+      f.last_name || "", f.father_name || "", f.father_mobile || f.home_phone || "",
+      addr, f.childClass, f.total, f.paid, f.balance,
+    ]);
+    row.alignment = { horizontal: "right" };
+    // יתרה חיובית באדום, יתרת זכות בירוק - כמו במסך
+    if (f.balance > EPS) row.getCell(8).font = { bold: true, color: { argb: "FFC0392B" } };
+    else if (f.balance < -EPS) row.getCell(8).font = { bold: true, color: { argb: "FF2D7A4F" } };
+  }
+
+  const sr = ws.addRow(["", "", "", "", "סה\"כ", sumTotal, sumPaid, Math.round((sumTotal - sumPaid) * 100) / 100]);
+  sr.font = { bold: true };
+  sr.alignment = { horizontal: "right" };
+
+  ws.eachRow((row) => row.eachCell((cell) => {
+    cell.border = {
+      top: { style: "thin" }, bottom: { style: "thin" },
+      left: { style: "thin" }, right: { style: "thin" },
+    };
+  }));
+  [16, 16, 14, 28, 30, 12, 12, 12].forEach((w, i) => { ws.getColumn(i + 1).width = w; });
+
+  // שם קובץ בעברית - חובה filename* מקודד, אחרת HTTP נופל על ERR_INVALID_CHAR
+  const fileName = `${subject}-${year}.xlsx`;
+  res.setHeader("Content-Disposition",
+    `attachment; filename="books-payments.xlsx"; filename*=UTF-8''${encodeURIComponent(fileName)}`);
+  res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+  await wb.xlsx.write(res); res.end();
 });
 
 router.post("/payments/add", (req, res) => {

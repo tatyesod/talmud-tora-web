@@ -5,7 +5,8 @@
     <h1>💳 תשלומים — הזמנת ספרים <%= year %></h1>
     <div class="actions">
       <a href="/books?year=<%= encodeURIComponent(year) %>" class="btn secondary">חזרה</a>
-      <a href="/books/report/families?year=<%= encodeURIComponent(year) %>" class="btn secondary">📥 ייצוא אקסל</a>
+      <a href="/books/payments/export?year=<%= encodeURIComponent(year) %><%= branch ? '&branch=' + encodeURIComponent(branch) : '' %><%= balance ? '&balance=' + encodeURIComponent(balance) : '' %>" class="btn secondary">📥 ייצוא אקסל (לפי הסינון)</a>
+      <a href="/books/report/families?year=<%= encodeURIComponent(year) %>" class="btn secondary">📥 ייצוא מלא</a>
     </div>
   </div>
 
@@ -17,6 +18,13 @@
         <% branches.forEach(b => { %>
           <option value="<%= b %>" <%= b === branch ? 'selected' : '' %>><%= b %></option>
         <% }) %>
+      </select>
+      <label><strong>מצב תשלום:</strong></label>
+      <select name="balance" onchange="this.form.submit()">
+        <option value="" <%= balance === '' ? 'selected' : '' %>>הכל (<%= counts.all %>)</option>
+        <option value="debt" <%= balance === 'debt' ? 'selected' : '' %>>חייבים (<%= counts.debt %>)</option>
+        <option value="credit" <%= balance === 'credit' ? 'selected' : '' %>>יתרת זכות (<%= counts.credit %>)</option>
+        <option value="paid" <%= balance === 'paid' ? 'selected' : '' %>>שילמו במלואן (<%= counts.paid %>)</option>
       </select>
       <input type="hidden" name="year" value="<%= year %>" />
     </form>
@@ -38,7 +46,15 @@
     </div>
   </div>
 
-  <% if (familiesData.length === 0) { %>
+  <% if (familiesData.length === 0 && counts.all > 0) { %>
+    <p class="empty-state">
+      <% if (balance === 'debt') { %>כל המשפחות שילמו במלואן - אין חייבים.
+      <% } else if (balance === 'credit') { %>אין משפחות ביתרת זכות.
+      <% } else if (balance === 'paid') { %>אין משפחות ששילמו במלואן.
+      <% } else { %>אין תוצאות לסינון הנוכחי.<% } %>
+      <a href="/books/payments?year=<%= encodeURIComponent(year) %>">הצג את כל המשפחות</a>
+    </p>
+  <% } else if (familiesData.length === 0) { %>
     <p class="empty-state">אין הזמנות ספרים לשנה זו</p>
   <% } else { %>
   <div class="table-scroll-wrap">
