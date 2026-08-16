@@ -1395,6 +1395,41 @@ try {
   console.error("שגיאה בהכרעת סתירות סבים:", e.message);
 }
 
+// ניקוי חד-פעמי של תחיליות בשמות הסבים: "הרב", "ר\'", "רבי", "הג\"ר",
+// "הרה\"ג", "משפחת", "מרת". התחיליות אינן חלק מהשם ומנעו התאמה בין שתי
+// משפחות שרשמו את אותו סב בכתיב שונה ("הרב יעקב כהן" מול "יעקב כהן").
+// סופיות כבוד - ז"ל, זצ"ל, שליט"א - נשמרות בכוונה: הן נושאות מידע אמיתי
+// והמשתמש אף הוסיף חלק מהן ידנית. הן מנורמלות בזמן השוואה, לא נמחקות.
+// כל שורה מוחלפת רק אם הערך במסד עדיין זהה למה שנמדד, כדי לא לדרוס עריכה
+// ידנית שנעשתה בינתיים. ערך לעולם לא מתרוקן - נבדק על כל 191 השורות.
+try {
+  const alreadySet = db.prepare("SELECT value FROM settings WHERE key = 'grandparents_prefixes_v1'").get();
+  if (!alreadySet) {
+    const fs = require("fs");
+    const path = require("path");
+    const file = path.join(__dirname, "data", "grandparents-prefixes.json");
+    if (fs.existsSync(file)) {
+      const records = JSON.parse(fs.readFileSync(file, "utf8"));
+      let applied = 0, skipped = 0;
+      db.exec("BEGIN");
+      try {
+        for (const r of records) {
+          if (!r.to) { skipped++; continue; }
+          const info = db.prepare(
+            `UPDATE families SET ${r.col} = ? WHERE id = ? AND ${r.col} = ?`
+          ).run(r.to, r.id, r.from);
+          if (info.changes) applied++; else skipped++;
+        }
+        db.exec("COMMIT");
+      } catch (err) { db.exec("ROLLBACK"); throw err; }
+      console.log(`[ניקוי תחיליות סבים] ${applied} שמות נוקו, ${skipped} דולגו`);
+    }
+    db.prepare("INSERT INTO settings (key, value) VALUES ('grandparents_prefixes_v1', '1')").run();
+  }
+} catch (e) {
+  console.error("שגיאה בניקוי תחיליות סבים:", e.message);
+}
+
 // שדה נפרד לחברת גביה של תרומות - נבדל מ-billing_company (ששימש/משמש
 // ספציפית לשכ"ל). "קשר" היא ברירת המחדל הראשית לשתיהן, אבל הן עשויות
 // להיות שונות בפועל, ולכן שני שדות נפרדים.

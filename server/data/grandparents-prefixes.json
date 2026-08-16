@@ -1,0 +1,1148 @@
+[
+{
+"id": 133,
+"col": "paternal_grandparents",
+"from": "משפחת אלנר",
+"to": "אלנר"
+},
+{
+"id": 161,
+"col": "paternal_grandparents",
+"from": "משפחת יעקבזון",
+"to": "יעקבזון"
+},
+{
+"id": 165,
+"col": "paternal_grandparents",
+"from": "משפחת מילצקי",
+"to": "מילצקי"
+},
+{
+"id": 175,
+"col": "paternal_grandparents",
+"from": "משפחת פרלמוטר",
+"to": "פרלמוטר"
+},
+{
+"id": 178,
+"col": "paternal_grandparents",
+"from": "משפחת קפלן",
+"to": "קפלן"
+},
+{
+"id": 200,
+"col": "paternal_grandparents",
+"from": "מרת נעמי",
+"to": "נעמי"
+},
+{
+"id": 288,
+"col": "paternal_grandparents",
+"from": "הרב זיצמן",
+"to": "זיצמן"
+},
+{
+"id": 294,
+"col": "paternal_grandparents",
+"from": "הגר\"א מחפוד",
+"to": "מחפוד"
+},
+{
+"id": 315,
+"col": "paternal_grandparents",
+"from": "הרב חפץ",
+"to": "חפץ"
+},
+{
+"id": 333,
+"col": "paternal_grandparents",
+"from": "משפחת זונאבנד",
+"to": "זונאבנד"
+},
+{
+"id": 360,
+"col": "paternal_grandparents",
+"from": "משפחת כהן",
+"to": "כהן"
+},
+{
+"id": 384,
+"col": "paternal_grandparents",
+"from": "הרב דניאל רוזן",
+"to": "דניאל רוזן"
+},
+{
+"id": 392,
+"col": "paternal_grandparents",
+"from": "משפחת פניק",
+"to": "פניק"
+},
+{
+"id": 394,
+"col": "paternal_grandparents",
+"from": "משפחת כהן",
+"to": "כהן"
+},
+{
+"id": 399,
+"col": "paternal_grandparents",
+"from": "משפחת מלאכי",
+"to": "מלאכי"
+},
+{
+"id": 447,
+"col": "paternal_grandparents",
+"from": "משפחת ראקוב",
+"to": "ראקוב"
+},
+{
+"id": 555,
+"col": "paternal_grandparents",
+"from": "הגר\"מ אתרוג",
+"to": "אתרוג"
+},
+{
+"id": 571,
+"col": "paternal_grandparents",
+"from": "משפחת דוד",
+"to": "דוד"
+},
+{
+"id": 583,
+"col": "paternal_grandparents",
+"from": "הרב בן דב",
+"to": "בן דב"
+},
+{
+"id": 611,
+"col": "paternal_grandparents",
+"from": "הגר\"מ הירשפלד",
+"to": "הירשפלד"
+},
+{
+"id": 614,
+"col": "paternal_grandparents",
+"from": "משפחת שטרן",
+"to": "שטרן"
+},
+{
+"id": 694,
+"col": "paternal_grandparents",
+"from": "הרב חביב בארי",
+"to": "חביב בארי"
+},
+{
+"id": 697,
+"col": "paternal_grandparents",
+"from": "הרב צמח נדל",
+"to": "צמח נדל"
+},
+{
+"id": 702,
+"col": "paternal_grandparents",
+"from": "הרב נחום דיאמנט",
+"to": "נחום דיאמנט"
+},
+{
+"id": 703,
+"col": "paternal_grandparents",
+"from": "ר' משה וחיה לוי",
+"to": "משה וחיה לוי"
+},
+{
+"id": 706,
+"col": "paternal_grandparents",
+"from": "הרב נפתלי שקובצקי וחנה",
+"to": "נפתלי שקובצקי וחנה"
+},
+{
+"id": 708,
+"col": "paternal_grandparents",
+"from": "הרב מנחם מנדל לובין",
+"to": "מנחם מנדל לובין"
+},
+{
+"id": 709,
+"col": "paternal_grandparents",
+"from": "הרב חיים דוד פריימן",
+"to": "חיים דוד פריימן"
+},
+{
+"id": 710,
+"col": "paternal_grandparents",
+"from": "ר' בצלאל כהן",
+"to": "בצלאל כהן"
+},
+{
+"id": 711,
+"col": "paternal_grandparents",
+"from": "ר' דוד גבריאל חבובא",
+"to": "דוד גבריאל חבובא"
+},
+{
+"id": 715,
+"col": "paternal_grandparents",
+"from": "הרב שמואל ודינה זכאי",
+"to": "שמואל ודינה זכאי"
+},
+{
+"id": 716,
+"col": "paternal_grandparents",
+"from": "הרב לוי, זצ\"ל דינה",
+"to": "לוי, זצ\"ל דינה"
+},
+{
+"id": 722,
+"col": "paternal_grandparents",
+"from": "הרב יעקב ויצמן",
+"to": "יעקב ויצמן"
+},
+{
+"id": 726,
+"col": "paternal_grandparents",
+"from": "ר' יוסף ומרים קובר",
+"to": "יוסף ומרים קובר"
+},
+{
+"id": 729,
+"col": "paternal_grandparents",
+"from": "הרב ע. נחום טאובר",
+"to": "ע. נחום טאובר"
+},
+{
+"id": 730,
+"col": "paternal_grandparents",
+"from": "הרב משה לורינץ",
+"to": "משה לורינץ"
+},
+{
+"id": 732,
+"col": "paternal_grandparents",
+"from": "הרב אברהם יצחק ומרת חוה ויינגולד",
+"to": "אברהם יצחק ומרת חוה ויינגולד"
+},
+{
+"id": 734,
+"col": "paternal_grandparents",
+"from": "ר' שלמה וורד פרנקרייך",
+"to": "שלמה וורד פרנקרייך"
+},
+{
+"id": 738,
+"col": "paternal_grandparents",
+"from": "הרב מיכאל לסמן",
+"to": "מיכאל לסמן"
+},
+{
+"id": 739,
+"col": "paternal_grandparents",
+"from": "הרב נתנאל לאער",
+"to": "נתנאל לאער"
+},
+{
+"id": 740,
+"col": "paternal_grandparents",
+"from": "הרב משה י. רודרמן",
+"to": "משה י. רודרמן"
+},
+{
+"id": 744,
+"col": "paternal_grandparents",
+"from": "ר' ברוך ופרידה אייזן",
+"to": "ברוך ופרידה אייזן"
+},
+{
+"id": 746,
+"col": "paternal_grandparents",
+"from": "ר' שמעון ורחל זיאת",
+"to": "שמעון ורחל זיאת"
+},
+{
+"id": 748,
+"col": "paternal_grandparents",
+"from": "ר' שמעון כהן",
+"to": "שמעון כהן"
+},
+{
+"id": 751,
+"col": "paternal_grandparents",
+"from": "הרב איסר זלמן ורחל",
+"to": "איסר זלמן ורחל"
+},
+{
+"id": 766,
+"col": "paternal_grandparents",
+"from": "הרב יוסף צבי בן פורת",
+"to": "יוסף צבי בן פורת"
+},
+{
+"id": 767,
+"col": "paternal_grandparents",
+"from": "ר' אברהם יצחק ליפקוביץ",
+"to": "אברהם יצחק ליפקוביץ"
+},
+{
+"id": 769,
+"col": "paternal_grandparents",
+"from": "הג\"ר יהודה אריה דינר שליט\"א",
+"to": "יהודה אריה דינר שליט\"א"
+},
+{
+"id": 772,
+"col": "paternal_grandparents",
+"from": "הרב אהוד ומרים שפירא",
+"to": "אהוד ומרים שפירא"
+},
+{
+"id": 775,
+"col": "paternal_grandparents",
+"from": "הרב שלמה ודינה פרלמן",
+"to": "שלמה ודינה פרלמן"
+},
+{
+"id": 780,
+"col": "paternal_grandparents",
+"from": "ר' שלמה שוורץ",
+"to": "שלמה שוורץ"
+},
+{
+"id": 781,
+"col": "paternal_grandparents",
+"from": "ר' אברהם ואילה קלברמן",
+"to": "אברהם ואילה קלברמן"
+},
+{
+"id": 783,
+"col": "paternal_grandparents",
+"from": "ר' יצחק ותמר לוונשטיין",
+"to": "יצחק ותמר לוונשטיין"
+},
+{
+"id": 785,
+"col": "paternal_grandparents",
+"from": "הרב אליקים קורלנסקי שליט\"א",
+"to": "אליקים קורלנסקי שליט\"א"
+},
+{
+"id": 786,
+"col": "paternal_grandparents",
+"from": "ר' חיים רינהולד",
+"to": "חיים רינהולד"
+},
+{
+"id": 787,
+"col": "paternal_grandparents",
+"from": "ר' יוסף שלמה ומרת שרה פוברסקי",
+"to": "יוסף שלמה ומרת שרה פוברסקי"
+},
+{
+"id": 788,
+"col": "paternal_grandparents",
+"from": "הרב ברוך שמעון שוורץ",
+"to": "ברוך שמעון שוורץ"
+},
+{
+"id": 790,
+"col": "paternal_grandparents",
+"from": "הרב שלמה קניבסקי",
+"to": "שלמה קניבסקי"
+},
+{
+"id": 791,
+"col": "paternal_grandparents",
+"from": "ר' פנחס ובינה שכטר",
+"to": "פנחס ובינה שכטר"
+},
+{
+"id": 792,
+"col": "paternal_grandparents",
+"from": "הרב דוד פליישמן שליט\"א",
+"to": "דוד פליישמן שליט\"א"
+},
+{
+"id": 796,
+"col": "paternal_grandparents",
+"from": "הרב מיכאל בן שלמה",
+"to": "מיכאל בן שלמה"
+},
+{
+"id": 797,
+"col": "paternal_grandparents",
+"from": "הרב שמואל ברון",
+"to": "שמואל ברון"
+},
+{
+"id": 799,
+"col": "paternal_grandparents",
+"from": "הרב רמי מידני",
+"to": "רמי מידני"
+},
+{
+"id": 801,
+"col": "paternal_grandparents",
+"from": "ר' עמנואל וג' מרים אלחדד",
+"to": "עמנואל וג' מרים אלחדד"
+},
+{
+"id": 803,
+"col": "paternal_grandparents",
+"from": "ר' דוד זומר",
+"to": "דוד זומר"
+},
+{
+"id": 804,
+"col": "paternal_grandparents",
+"from": "הרב משה ורבקה בלוי",
+"to": "משה ורבקה בלוי"
+},
+{
+"id": 805,
+"col": "paternal_grandparents",
+"from": "ר' מאיר יחיאל ושושנה רויזא וינשטוק",
+"to": "מאיר יחיאל ושושנה רויזא וינשטוק"
+},
+{
+"id": 806,
+"col": "paternal_grandparents",
+"from": "הרב נחמן ונחמה קרויזר",
+"to": "נחמן ונחמה קרויזר"
+},
+{
+"id": 809,
+"col": "paternal_grandparents",
+"from": "הרה\"ג ר' גדליה אורנשטיין זצ\"ל",
+"to": "גדליה אורנשטיין זצ\"ל"
+},
+{
+"id": 817,
+"col": "paternal_grandparents",
+"from": "משפחת לזנובסקי",
+"to": "לזנובסקי"
+},
+{
+"id": 827,
+"col": "paternal_grandparents",
+"from": "משפחת גרינבלט",
+"to": "גרינבלט"
+},
+{
+"id": 828,
+"col": "paternal_grandparents",
+"from": "רבי יהודה שלמה רביוב",
+"to": "יהודה שלמה רביוב"
+},
+{
+"id": 830,
+"col": "paternal_grandparents",
+"from": "ר' אברהם דוידי",
+"to": "אברהם דוידי"
+},
+{
+"id": 832,
+"col": "paternal_grandparents",
+"from": "ר' שאול ברזל",
+"to": "שאול ברזל"
+},
+{
+"id": 833,
+"col": "paternal_grandparents",
+"from": "הרב יוסף בולק",
+"to": "יוסף בולק"
+},
+{
+"id": 838,
+"col": "paternal_grandparents",
+"from": "הרב אליעזר ומושא רוט",
+"to": "אליעזר ומושא רוט"
+},
+{
+"id": 839,
+"col": "paternal_grandparents",
+"from": "הרב דוד ירחמיאל ומרת יעל",
+"to": "דוד ירחמיאל ומרת יעל"
+},
+{
+"id": 840,
+"col": "paternal_grandparents",
+"from": "ר' פנחס במברגר",
+"to": "פנחס במברגר"
+},
+{
+"id": 842,
+"col": "paternal_grandparents",
+"from": "ר' יעקב ורחל איינשטיין",
+"to": "יעקב ורחל איינשטיין"
+},
+{
+"id": 843,
+"col": "paternal_grandparents",
+"from": "ר' הלל כהן",
+"to": "הלל כהן"
+},
+{
+"id": 844,
+"col": "paternal_grandparents",
+"from": "הרב זאב פפויפר",
+"to": "זאב פפויפר"
+},
+{
+"id": 845,
+"col": "paternal_grandparents",
+"from": "הרב אי\"ש ונחמה פוגלבלט",
+"to": "אי\"ש ונחמה פוגלבלט"
+},
+{
+"id": 846,
+"col": "paternal_grandparents",
+"from": "הרב אליהו חיים ראקוב",
+"to": "אליהו חיים ראקוב"
+},
+{
+"id": 847,
+"col": "paternal_grandparents",
+"from": "הרב שלמה גרינוואלד",
+"to": "שלמה גרינוואלד"
+},
+{
+"id": 849,
+"col": "paternal_grandparents",
+"from": "הרב יעקב ומינדל שוב",
+"to": "יעקב ומינדל שוב"
+},
+{
+"id": 850,
+"col": "paternal_grandparents",
+"from": "הרב משה כץ",
+"to": "משה כץ"
+},
+{
+"id": 852,
+"col": "paternal_grandparents",
+"from": "הרב אלחנן הרוש",
+"to": "אלחנן הרוש"
+},
+{
+"id": 853,
+"col": "paternal_grandparents",
+"from": "הרב משה יעקב וחוה רבקה פליישמן",
+"to": "משה יעקב וחוה רבקה פליישמן"
+},
+{
+"id": 866,
+"col": "paternal_grandparents",
+"from": "הרב מיכאל ובתיה שחור",
+"to": "מיכאל ובתיה שחור"
+},
+{
+"id": 867,
+"col": "paternal_grandparents",
+"from": "הרב הלל שולץ",
+"to": "הלל שולץ"
+},
+{
+"id": 870,
+"col": "paternal_grandparents",
+"from": "הרב אברהם ורבקה הרט",
+"to": "אברהם ורבקה הרט"
+},
+{
+"id": 871,
+"col": "paternal_grandparents",
+"from": "הרב מאיר ויוכבד",
+"to": "מאיר ויוכבד"
+},
+{
+"id": 872,
+"col": "paternal_grandparents",
+"from": "הרב עוזיאל שרייבר",
+"to": "עוזיאל שרייבר"
+},
+{
+"id": 880,
+"col": "paternal_grandparents",
+"from": "הרב ניסן בריינס שליט\"א",
+"to": "ניסן בריינס שליט\"א"
+},
+{
+"id": 881,
+"col": "paternal_grandparents",
+"from": "משפחת גרדנויץ",
+"to": "גרדנויץ"
+},
+{
+"id": 133,
+"col": "maternal_grandparents",
+"from": "משפחת קניאל",
+"to": "קניאל"
+},
+{
+"id": 147,
+"col": "maternal_grandparents",
+"from": "משפחת רובין",
+"to": "רובין"
+},
+{
+"id": 150,
+"col": "maternal_grandparents",
+"from": "משפחת נחשון",
+"to": "נחשון"
+},
+{
+"id": 156,
+"col": "maternal_grandparents",
+"from": "משפחת קופרמן",
+"to": "קופרמן"
+},
+{
+"id": 161,
+"col": "maternal_grandparents",
+"from": "משפחת פולייעס",
+"to": "פולייעס"
+},
+{
+"id": 175,
+"col": "maternal_grandparents",
+"from": "משפחת שנקר",
+"to": "שנקר"
+},
+{
+"id": 176,
+"col": "maternal_grandparents",
+"from": "משפחת טננבוים",
+"to": "טננבוים"
+},
+{
+"id": 178,
+"col": "maternal_grandparents",
+"from": "משפחת לחיאני",
+"to": "לחיאני"
+},
+{
+"id": 195,
+"col": "maternal_grandparents",
+"from": "משפחת פוגלבלט",
+"to": "פוגלבלט"
+},
+{
+"id": 208,
+"col": "maternal_grandparents",
+"from": "משפחת ספרא",
+"to": "ספרא"
+},
+{
+"id": 291,
+"col": "maternal_grandparents",
+"from": "הרב האוזי",
+"to": "האוזי"
+},
+{
+"id": 315,
+"col": "maternal_grandparents",
+"from": "הרב ווזנסנקי",
+"to": "ווזנסנקי"
+},
+{
+"id": 333,
+"col": "maternal_grandparents",
+"from": "משפחת רוזנר",
+"to": "רוזנר"
+},
+{
+"id": 344,
+"col": "maternal_grandparents",
+"from": "משפחת זיאת",
+"to": "זיאת"
+},
+{
+"id": 346,
+"col": "maternal_grandparents",
+"from": "משפחת לוריא",
+"to": "לוריא"
+},
+{
+"id": 371,
+"col": "maternal_grandparents",
+"from": "משפחת במברגר",
+"to": "במברגר"
+},
+{
+"id": 384,
+"col": "maternal_grandparents",
+"from": "הרב מנחם קון",
+"to": "מנחם קון"
+},
+{
+"id": 399,
+"col": "maternal_grandparents",
+"from": "משפחת יעקבי",
+"to": "יעקבי"
+},
+{
+"id": 444,
+"col": "maternal_grandparents",
+"from": "משפחת מן",
+"to": "מן"
+},
+{
+"id": 446,
+"col": "maternal_grandparents",
+"from": "משפחת אפוליון",
+"to": "אפוליון"
+},
+{
+"id": 455,
+"col": "maternal_grandparents",
+"from": "משפחת חן",
+"to": "חן"
+},
+{
+"id": 519,
+"col": "maternal_grandparents",
+"from": "משפחת רייסנר",
+"to": "רייסנר"
+},
+{
+"id": 616,
+"col": "maternal_grandparents",
+"from": "משפחת סופר",
+"to": "סופר"
+},
+{
+"id": 676,
+"col": "maternal_grandparents",
+"from": "הגר\"מ גרוס שליט\"א",
+"to": "גרוס שליט\"א"
+},
+{
+"id": 694,
+"col": "maternal_grandparents",
+"from": "הרב שלום אזולאי",
+"to": "שלום אזולאי"
+},
+{
+"id": 697,
+"col": "maternal_grandparents",
+"from": "הרב יחיאל רוזנברג",
+"to": "יחיאל רוזנברג"
+},
+{
+"id": 702,
+"col": "maternal_grandparents",
+"from": "הרב יעקב שטיינהרטר",
+"to": "יעקב שטיינהרטר"
+},
+{
+"id": 703,
+"col": "maternal_grandparents",
+"from": "ר' יהודה ורחל זיצמן",
+"to": "יהודה ורחל זיצמן"
+},
+{
+"id": 708,
+"col": "maternal_grandparents",
+"from": "הרב מרדכי ליבר כהן",
+"to": "מרדכי ליבר כהן"
+},
+{
+"id": 709,
+"col": "maternal_grandparents",
+"from": "הרב חזקיהו אי\"ש טורצין",
+"to": "חזקיהו אי\"ש טורצין"
+},
+{
+"id": 710,
+"col": "maternal_grandparents",
+"from": "ר' חיים יוז'וק",
+"to": "חיים יוז'וק"
+},
+{
+"id": 715,
+"col": "maternal_grandparents",
+"from": "הרב משה יעקב ואילה זוהר",
+"to": "משה יעקב ואילה זוהר"
+},
+{
+"id": 716,
+"col": "maternal_grandparents",
+"from": "הרב חיים, טובה",
+"to": "חיים, טובה"
+},
+{
+"id": 720,
+"col": "maternal_grandparents",
+"from": "הרב יעקב בן סימון",
+"to": "יעקב בן סימון"
+},
+{
+"id": 722,
+"col": "maternal_grandparents",
+"from": "הרב שמואל אלאלוף",
+"to": "שמואל אלאלוף"
+},
+{
+"id": 726,
+"col": "maternal_grandparents",
+"from": "ר' אלעזר דוד ויהודית שיינר",
+"to": "אלעזר דוד ויהודית שיינר"
+},
+{
+"id": 729,
+"col": "maternal_grandparents",
+"from": "הרב יחאיל נדל",
+"to": "יחאיל נדל"
+},
+{
+"id": 730,
+"col": "maternal_grandparents",
+"from": "הרב דוד שטרן",
+"to": "דוד שטרן"
+},
+{
+"id": 732,
+"col": "maternal_grandparents",
+"from": "הרב יעקב ומרת חוה ויינגולד",
+"to": "יעקב ומרת חוה ויינגולד"
+},
+{
+"id": 734,
+"col": "maternal_grandparents",
+"from": "ר' נחום ורחל הופמן",
+"to": "נחום ורחל הופמן"
+},
+{
+"id": 738,
+"col": "maternal_grandparents",
+"from": "הרב יעקב גליס",
+"to": "יעקב גליס"
+},
+{
+"id": 739,
+"col": "maternal_grandparents",
+"from": "הרב מאיר טוביה פרקש",
+"to": "מאיר טוביה פרקש"
+},
+{
+"id": 740,
+"col": "maternal_grandparents",
+"from": "הרב מתתיהו ז. שטיגל",
+"to": "מתתיהו ז. שטיגל"
+},
+{
+"id": 741,
+"col": "maternal_grandparents",
+"from": "ר' ישראל טופורוביץ",
+"to": "ישראל טופורוביץ"
+},
+{
+"id": 744,
+"col": "maternal_grandparents",
+"from": "ר' משה ובת שבע פיגה",
+"to": "משה ובת שבע פיגה"
+},
+{
+"id": 746,
+"col": "maternal_grandparents",
+"from": "ר' מרדכי וענת פורת",
+"to": "מרדכי וענת פורת"
+},
+{
+"id": 751,
+"col": "maternal_grandparents",
+"from": "הרב דוד יצחק ונעמי גרוסברד",
+"to": "דוד יצחק ונעמי גרוסברד"
+},
+{
+"id": 752,
+"col": "maternal_grandparents",
+"from": "ר' אלחנן וחנה דש",
+"to": "אלחנן וחנה דש"
+},
+{
+"id": 766,
+"col": "maternal_grandparents",
+"from": "הרב כתריאל קולדיצקי",
+"to": "כתריאל קולדיצקי"
+},
+{
+"id": 767,
+"col": "maternal_grandparents",
+"from": "ר' יקותיאל פישל",
+"to": "יקותיאל פישל"
+},
+{
+"id": 769,
+"col": "maternal_grandparents",
+"from": "הג\"ר יודה טשזנר שליט\"א",
+"to": "יודה טשזנר שליט\"א"
+},
+{
+"id": 772,
+"col": "maternal_grandparents",
+"from": "הרב כתריאל ושרה קולודצקי",
+"to": "כתריאל ושרה קולודצקי"
+},
+{
+"id": 775,
+"col": "maternal_grandparents",
+"from": "הרב שמחה ז. וחנה כהנא",
+"to": "שמחה ז. וחנה כהנא"
+},
+{
+"id": 780,
+"col": "maternal_grandparents",
+"from": "ר' יצחק זאב פיינשטיין",
+"to": "יצחק זאב פיינשטיין"
+},
+{
+"id": 781,
+"col": "maternal_grandparents",
+"from": "ר' גד וביתיה וילנר",
+"to": "גד וביתיה וילנר"
+},
+{
+"id": 783,
+"col": "maternal_grandparents",
+"from": "ר' דוד וחנה פדיונדליך",
+"to": "דוד וחנה פדיונדליך"
+},
+{
+"id": 786,
+"col": "maternal_grandparents",
+"from": "ר' אברהם טאוב",
+"to": "אברהם טאוב"
+},
+{
+"id": 787,
+"col": "maternal_grandparents",
+"from": "ר' בן ציון ומרת דבורה חדש",
+"to": "בן ציון ומרת דבורה חדש"
+},
+{
+"id": 788,
+"col": "maternal_grandparents",
+"from": "הרב שמואל וינטרויב",
+"to": "שמואל וינטרויב"
+},
+{
+"id": 789,
+"col": "maternal_grandparents",
+"from": "הרב חיים אדלשטיין",
+"to": "חיים אדלשטיין"
+},
+{
+"id": 790,
+"col": "maternal_grandparents",
+"from": "הרב בנימין זלושינסקי",
+"to": "בנימין זלושינסקי"
+},
+{
+"id": 791,
+"col": "maternal_grandparents",
+"from": "ר' חיים ואסתרר ברטלר",
+"to": "חיים ואסתרר ברטלר"
+},
+{
+"id": 792,
+"col": "maternal_grandparents",
+"from": "הרב יחיאל פלק שליט\"א",
+"to": "יחיאל פלק שליט\"א"
+},
+{
+"id": 796,
+"col": "maternal_grandparents",
+"from": "הרב יעקב פורייס",
+"to": "יעקב פורייס"
+},
+{
+"id": 797,
+"col": "maternal_grandparents",
+"from": "הרב משה בוים שכטר",
+"to": "משה בוים שכטר"
+},
+{
+"id": 798,
+"col": "maternal_grandparents",
+"from": "הרב גדעון אקדע",
+"to": "גדעון אקדע"
+},
+{
+"id": 799,
+"col": "maternal_grandparents",
+"from": "הרב מיכאל גולי",
+"to": "מיכאל גולי"
+},
+{
+"id": 801,
+"col": "maternal_grandparents",
+"from": "ר' יעקב וג' הדסה אלקיים",
+"to": "יעקב וג' הדסה אלקיים"
+},
+{
+"id": 803,
+"col": "maternal_grandparents",
+"from": "ר' יהודה זיצמן",
+"to": "יהודה זיצמן"
+},
+{
+"id": 804,
+"col": "maternal_grandparents",
+"from": "הרב יחיאל ומרים שרייבר",
+"to": "יחיאל ומרים שרייבר"
+},
+{
+"id": 806,
+"col": "maternal_grandparents",
+"from": "הרב משה ולאה גליס",
+"to": "משה ולאה גליס"
+},
+{
+"id": 809,
+"col": "maternal_grandparents",
+"from": "הרה\"ג אלעזר ספרא",
+"to": "אלעזר ספרא"
+},
+{
+"id": 817,
+"col": "maternal_grandparents",
+"from": "משפחת גנוט",
+"to": "גנוט"
+},
+{
+"id": 827,
+"col": "maternal_grandparents",
+"from": "משפחת פרגר",
+"to": "פרגר"
+},
+{
+"id": 828,
+"col": "maternal_grandparents",
+"from": "רבי א. שמעון אלקובי",
+"to": "א. שמעון אלקובי"
+},
+{
+"id": 830,
+"col": "maternal_grandparents",
+"from": "ר' יצחק שבתאי",
+"to": "יצחק שבתאי"
+},
+{
+"id": 832,
+"col": "maternal_grandparents",
+"from": "ר' אברהן טיקוצינסקי",
+"to": "אברהן טיקוצינסקי"
+},
+{
+"id": 833,
+"col": "maternal_grandparents",
+"from": "הרב אברהם יצחק ליפקוביץ",
+"to": "אברהם יצחק ליפקוביץ"
+},
+{
+"id": 839,
+"col": "maternal_grandparents",
+"from": "הרב חיים פילפס ומרת רבקה",
+"to": "חיים פילפס ומרת רבקה"
+},
+{
+"id": 840,
+"col": "maternal_grandparents",
+"from": "ר' שמעון קרליץ",
+"to": "שמעון קרליץ"
+},
+{
+"id": 842,
+"col": "maternal_grandparents",
+"from": "ר' משה ולאה רודרמן",
+"to": "משה ולאה רודרמן"
+},
+{
+"id": 843,
+"col": "maternal_grandparents",
+"from": "ר' יהודה לייב וקסשטוק",
+"to": "יהודה לייב וקסשטוק"
+},
+{
+"id": 844,
+"col": "maternal_grandparents",
+"from": "הרב שלמה אליאך",
+"to": "שלמה אליאך"
+},
+{
+"id": 845,
+"col": "maternal_grandparents",
+"from": "הרב אברהם ועליזה פרידמן",
+"to": "אברהם ועליזה פרידמן"
+},
+{
+"id": 846,
+"col": "maternal_grandparents",
+"from": "הרב אלחנן זייק",
+"to": "אלחנן זייק"
+},
+{
+"id": 847,
+"col": "maternal_grandparents",
+"from": "הרב יהודה סאסלו",
+"to": "יהודה סאסלו"
+},
+{
+"id": 849,
+"col": "maternal_grandparents",
+"from": "הרב אברהם ומרים הוניגסברג",
+"to": "אברהם ומרים הוניגסברג"
+},
+{
+"id": 850,
+"col": "maternal_grandparents",
+"from": "הרב אהרן בכרך",
+"to": "אהרן בכרך"
+},
+{
+"id": 852,
+"col": "maternal_grandparents",
+"from": "הרב רפאל ברוך טמשטט",
+"to": "רפאל ברוך טמשטט"
+},
+{
+"id": 853,
+"col": "maternal_grandparents",
+"from": "הרב יחזקאל ורחל ויסנשטרן",
+"to": "יחזקאל ורחל ויסנשטרן"
+},
+{
+"id": 866,
+"col": "maternal_grandparents",
+"from": "הרב יהושע ורבקה אייזנשטיין",
+"to": "יהושע ורבקה אייזנשטיין"
+},
+{
+"id": 867,
+"col": "maternal_grandparents",
+"from": "הרב יעקב ישראל כהן",
+"to": "יעקב ישראל כהן"
+},
+{
+"id": 870,
+"col": "maternal_grandparents",
+"from": "הרב גרשון ופנינה שינקר",
+"to": "גרשון ופנינה שינקר"
+},
+{
+"id": 871,
+"col": "maternal_grandparents",
+"from": "הרב אביגדור וצביה שרה וובר",
+"to": "אביגדור וצביה שרה וובר"
+},
+{
+"id": 872,
+"col": "maternal_grandparents",
+"from": "הרב משה יהודה קופשיץ",
+"to": "משה יהודה קופשיץ"
+},
+{
+"id": 880,
+"col": "maternal_grandparents",
+"from": "הרב אברהם הרט שליט\"א",
+"to": "אברהם הרט שליט\"א"
+}
+]
