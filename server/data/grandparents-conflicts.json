@@ -1,0 +1,122 @@
+[
+{
+"id": 383,
+"ln": "אורנשטיין",
+"side": "הורי האב",
+"col": "paternal_grandparents",
+"from": "גדליה אורנשטיין",
+"to": "גדליה אורנשטיין ז\"ל"
+},
+{
+"id": 139,
+"ln": "בויאר",
+"side": "הורי האם",
+"col": "maternal_grandparents",
+"from": "חיים בן דב",
+"to": "יוסף חיים בן דב"
+},
+{
+"id": 144,
+"ln": "בן יאיר",
+"side": "הורי האם",
+"col": "maternal_grandparents",
+"from": "ר' אליעזר פרבשטיין",
+"to": "אליעזר פרבשטיין"
+},
+{
+"id": 195,
+"ln": "גריינמן",
+"side": "הורי האב",
+"col": "paternal_grandparents",
+"from": "יצחק ד. גריינמן",
+"to": "יצחק דוד גריינמן"
+},
+{
+"id": 150,
+"ln": "גריינמן",
+"side": "הורי האב",
+"col": "paternal_grandparents",
+"from": "משפחת גריינמן",
+"to": "יצחק דוד גריינמן"
+},
+{
+"id": 356,
+"ln": "גריינמן",
+"side": "הורי האב",
+"col": "paternal_grandparents",
+"from": "אי\"ש גריינמן",
+"to": "אברהם ישעיהו גריינמן"
+},
+{
+"id": 283,
+"ln": "הורן",
+"side": "הורי האם",
+"col": "maternal_grandparents",
+"from": "זאב זילבר",
+"to": "בתיה וזאב זילבר"
+},
+{
+"id": 156,
+"ln": "וילמן",
+"side": "הורי האב",
+"col": "paternal_grandparents",
+"from": "משפחת ראקוב",
+"to": "אליהו חיים ראקוב"
+},
+{
+"id": 162,
+"ln": "כהן",
+"side": "הורי האב",
+"col": "paternal_grandparents",
+"from": "צבי כהן",
+"to": "צבי כהן ז\"ל"
+},
+{
+"id": 342,
+"ln": "כהן",
+"side": "הורי האב",
+"col": "paternal_grandparents",
+"from": "חיים כהן",
+"to": "חיים כהן ז\"ל"
+},
+{
+"id": 364,
+"ln": "כהנוביץ",
+"side": "הורי האם",
+"col": "maternal_grandparents",
+"from": "משפחת פרבר",
+"to": "פרבר"
+},
+{
+"id": 200,
+"ln": "ליבוביץ",
+"side": "הורי האב",
+"col": "paternal_grandparents",
+"from": "מרת נעמי תליט\"א",
+"to": "מרת נעמי"
+},
+{
+"id": 357,
+"ln": "נויבירט",
+"side": "הורי האם",
+"col": "maternal_grandparents",
+"from": "זאב זילבר",
+"to": "בתיה וזאב זילבר"
+},
+{
+"id": 296,
+"ln": "ענבל",
+"side": "הורי האב",
+"col": "paternal_grandparents",
+"from": "צבי עינבל",
+"to": "צבי ענבל"
+},
+{
+"id": 178,
+"ln": "קפלן",
+"side": "הורי האם",
+"col": "maternal_grandparents",
+"from": "משפחת לחיאנג",
+"to": "משפחת לחיאני"
+}
+]

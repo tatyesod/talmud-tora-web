@@ -1359,6 +1359,42 @@ try {
   console.error("שגיאה בייבוא נתוני סבים:", e.message);
 }
 
+// הכרעת הסתירות מייבוא הסבים - 15 מקרים שהמשתמש סימן ידנית "החלף" בקובץ
+// שהוחזר. בניגוד לייבוא עצמו, כאן כן דורסים ערך קיים - אבל רק את הערכים
+// המדויקים שאושרו, ורק אם הערך במסד עדיין זהה למה שהוצג לאישור (from).
+// אם מישהו ערך את השדה בינתיים, השורה מדולגת ולא נדרסת עבודה חדשה.
+try {
+  const alreadySet = db.prepare("SELECT value FROM settings WHERE key = 'grandparents_conflicts_v1'").get();
+  if (!alreadySet) {
+    const fs = require("fs");
+    const path = require("path");
+    const file = path.join(__dirname, "data", "grandparents-conflicts.json");
+    if (fs.existsSync(file)) {
+      const records = JSON.parse(fs.readFileSync(file, "utf8"));
+      let applied = 0, skipped = 0;
+      db.exec("BEGIN");
+      try {
+        for (const r of records) {
+          const info = db.prepare(
+            `UPDATE families SET ${r.col} = ? WHERE id = ? AND ${r.col} = ?`
+          ).run(r.to, r.id, r.from);
+          if (info.changes) applied++; else skipped++;
+          if (r.acol && r.addr_to) {
+            db.prepare(
+              `UPDATE families SET ${r.acol} = ? WHERE id = ? AND (${r.acol} IS NULL OR ${r.acol} = '')`
+            ).run(r.addr_to, r.id);
+          }
+        }
+        db.exec("COMMIT");
+      } catch (err) { db.exec("ROLLBACK"); throw err; }
+      console.log(`[סתירות סבים] ${applied} הוחלפו, ${skipped} דולגו (הערך במסד כבר לא תאם)`);
+    }
+    db.prepare("INSERT INTO settings (key, value) VALUES ('grandparents_conflicts_v1', '1')").run();
+  }
+} catch (e) {
+  console.error("שגיאה בהכרעת סתירות סבים:", e.message);
+}
+
 // שדה נפרד לחברת גביה של תרומות - נבדל מ-billing_company (ששימש/משמש
 // ספציפית לשכ"ל). "קשר" היא ברירת המחדל הראשית לשתיהן, אבל הן עשויות
 // להיות שונות בפועל, ולכן שני שדות נפרדים.
