@@ -8,6 +8,26 @@
     שם המלמד נשלף מהשיוך שבמערכת; אם השיוך חסר או שברצונך שם אחר — אפשר להקליד אותו כאן.
   </p>
 
+  <%# סינון סניף בטופס נפרד, כדי שלא ייכנס לבקשת ההפקה עצמה.
+      מזכיר של סניף אחד רואה רק את הכיתות שלו במקום את כל הרשימה. %>
+  <form class="searchbar auto-filter" method="GET" action="/reports/class-roster">
+    <select name="branch" aria-label="סינון לפי סניף">
+      <option value="">כל הסניפים (<%= totalCount %>)</option>
+      <% branches.forEach(b => { %>
+        <option value="<%= b.name %>" <%= branch === b.name ? 'selected' : '' %>>
+          <%= b.name %> (<%= b.n %>)
+        </option>
+      <% }) %>
+    </select>
+  </form>
+
+  <% if (classes.length === 0) { %>
+    <p class="empty-state">
+      אין כיתות פעילות בסניף <%= branch %>.
+      <a href="/reports/class-roster">הצג את כל הסניפים</a>
+    </p>
+  <% } else { %>
+
   <form method="GET" action="/reports/class-roster/view" target="_blank">
     <div style="display:flex; gap:10px; margin-bottom:10px;">
       <button type="button" class="btn small secondary" onclick="toggleAll(true)">סמן הכל</button>
@@ -45,7 +65,8 @@
 
     <p style="color:var(--muted); font-size:0.85em; margin-top:14px; line-height:1.6;">
       <strong>דוח מלא</strong> — תשע העמודות, גיליון לכל כיתה.<br>
-      <strong>6 בעמוד</strong> — אותה טבלה בדיוק, שש כיתות בגריד על גיליון אחד, להדפסה וחיתוך.
+      <strong>כרטיס כיס למלמד</strong> — שש כיתות בגריד על עמוד A4 אחד, טבלה לכל מלמד,
+      להדפסה וחיתוך. בחירת שש כיתות = דף אחד, כרטיס לכל מלמד.
     </p>
 
     <div class="actions" style="margin-top:16px;">
@@ -55,10 +76,12 @@
       <button type="submit" class="btn secondary"
               formaction="/reports/class-roster/export" formtarget="_self">📥 ייצוא לאקסל (דוח מלא)</button>
       <button type="submit" class="btn secondary"
-              formaction="/reports/class-roster/export-cards" formtarget="_self">🗂️ ייצוא לאקסל (6 בעמוד)</button>
+              formaction="/reports/class-roster/export-cards" formtarget="_self">🪪 כרטיס כיס למלמד</button>
       <a href="/reports" class="btn secondary">חזרה לדוחות</a>
     </div>
   </form>
+
+  <% } %>
 </div>
 
 <style>

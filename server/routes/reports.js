@@ -316,20 +316,32 @@ router.get("/full-student-list/export", async (req, res) => {
 // טלפון בית, נייד אבא, נייד אמא. כותרת: "רשימת תלמידים כיתה X - שם המלמד Y".
 router.get("/class-roster", (req, res) => {
   const { GRADE_ORDER } = require("../yearManager");
+  const branch = req.query.branch || "";
+
+  // מספר הכיתות הפעילות בכל סניף, לתפריט הסינון. סניף בלי כיתות פעילות
+  // לא יופיע, ולכן הרשימה מצטמצמת מאליה.
+  const branches = db.prepare(`
+    SELECT branch AS name, COUNT(*) AS n FROM classes
+    WHERE status = 'פעיל' AND branch IS NOT NULL AND branch <> ''
+    GROUP BY branch ORDER BY branch
+  `).all();
+  const totalCount = db.prepare("SELECT COUNT(*) c FROM classes WHERE status = 'פעיל'").get().c;
+
   const classes = db.prepare(`
     SELECT c.id, c.name, c.parallel, c.branch,
            (SELECT GROUP_CONCAT(t.first_name || ' ' || t.last_name, ', ')
               FROM teacher_classes tc JOIN teachers t ON tc.teacher_id = t.id
              WHERE tc.class_id = c.id AND (tc.role = 'בוקר' OR tc.role IS NULL)) AS teacher_names
     FROM classes c WHERE c.status = 'פעיל'
-  `).all().sort((a, b) => {
+      ${branch ? "AND c.branch = ?" : ""}
+  `).all(...(branch ? [branch] : [])).sort((a, b) => {
     const ga = GRADE_ORDER.indexOf(a.name), gb = GRADE_ORDER.indexOf(b.name);
     if (ga !== gb) return ga - gb;
     const pa = parseInt(a.parallel, 10), pb = parseInt(b.parallel, 10);
     if (!isNaN(pa) && !isNaN(pb) && pa !== pb) return pa - pb;
     return String(a.branch || "").localeCompare(String(b.branch || ""), "he");
   });
-  res.render("reports/class-roster", { classes });
+  res.render("reports/class-roster", { classes, branches, branch, totalCount });
 });
 
 // בניית נתוני הרשימות. משותפת לתצוגה המקדימה ולייצוא לאקסל, כדי ששניהם
