@@ -36,67 +36,143 @@
   </form>
 
   <% const open = requests.filter(r => r.status !== 'סגור'); %>
+  <% const closed = requests.filter(r => r.status === 'סגור'); %>
   <% if (requests.length === 0) { %>
     <p class="empty-state">אין בקשות להצגה. 👍</p>
   <% } else { %>
     <p style="margin:10px 0; font-weight:600;">
-      <%= open.length %> ממתינות לטיפול<%= requests.length > open.length ? '  ·  ' + (requests.length - open.length) + ' סגורות' : '' %>
+      <%= open.length %> ממתינות לטיפול<%= closed.length ? '  ·  ' + closed.length + ' סגורות' : '' %>
     </p>
 
-    <%# כרטיסים ולא טבלה: הטאבלט הוא מסך מגע, ושדות בטבלה צרה קשים ללחיצה %>
-    <% requests.forEach(r => { %>
-      <% const place = r.class_name ? r.class_name + (r.parallel ? ' (' + r.parallel + ')' : '') : (r.location || ''); %>
-      <div class="wo-card <%= r.status === 'סגור' ? 'wo-closed' : '' %>">
-        <div class="wo-head">
-          <span class="wo-branch"><%= r.effective_branch || '' %></span>
-          <% if (place) { %><span class="wo-place">📍 <%= place %></span><% } %>
-          <% if (r.urgency && r.urgency !== 'רגיל') { %>
-            <span class="wo-urgent"><%= r.urgency %></span>
+    <%# שלוש עמודות לפי רמת דחיפות, כל אחת בצבע משלה. הדחוף מימין, כי בעברית
+        המבט מתחיל מימין. בטאבלט לרוחב שלוש העמודות נראות זו לצד זו; במסך צר
+        הן נערמות אחת מתחת לשנייה. %>
+    <div class="wo-board">
+      <%
+        const LEVELS = [
+          { key: 'דחוף מאוד', title: 'דחוף מאוד', cls: 'lvl-critical', icon: '🔴' },
+          { key: 'דחוף',      title: 'דחוף',      cls: 'lvl-urgent',   icon: '🟠' },
+          { key: 'רגיל',      title: 'רגיל',      cls: 'lvl-normal',   icon: '🟢' },
+        ];
+        // בקשה בלי דחיפות מוגדרת נחשבת "רגיל", כדי שלא תיעלם מהלוח
+        const bucket = (r) => LEVELS.some(l => l.key === r.urgency) ? r.urgency : 'רגיל';
+      %>
+      <% LEVELS.forEach(lvl => { %>
+        <% const items = open.filter(r => bucket(r) === lvl.key); %>
+        <section class="wo-col <%= lvl.cls %>">
+          <h2 class="wo-col-head">
+            <%= lvl.icon %> <%= lvl.title %>
+            <span class="wo-count"><%= items.length %></span>
+          </h2>
+
+          <% if (items.length === 0) { %>
+            <p class="wo-none">אין תיקונים ברמה זו</p>
           <% } %>
-          <span class="wo-date"><%= r.created_at_str || '' %></span>
-        </div>
 
-        <div class="wo-desc"><%= r.description %></div>
+          <% items.forEach(r => { %>
+            <% const place = r.class_name ? r.class_name + (r.parallel ? ' (' + r.parallel + ')' : '') : (r.location || ''); %>
+            <div class="wo-card">
+              <div class="wo-head">
+                <span class="wo-branch"><%= r.effective_branch || '' %></span>
+                <% if (place) { %><span class="wo-place">📍 <%= place %></span><% } %>
+                <span class="wo-date"><%= r.created_at_str || '' %></span>
+              </div>
 
-        <form method="POST" action="/inventory/maintenance/<%= r.id %>?_method=PUT" class="wo-form">
-          <div class="wo-row">
-            <label>סטטוס</label>
-            <select name="status">
-              <option value="פתוח" <%= r.status === 'פתוח' ? 'selected' : '' %>>פתוח</option>
-              <option value="בטיפול" <%= r.status === 'בטיפול' ? 'selected' : '' %>>בטיפול</option>
-              <option value="במעקב" <%= r.status === 'במעקב' ? 'selected' : '' %>>במעקב</option>
-              <option value="סגור" <%= r.status === 'סגור' ? 'selected' : '' %>>טופל / סגור</option>
-            </select>
+              <div class="wo-desc"><%= r.description %></div>
+
+              <% if (r.updated_str) { %>
+                <div class="wo-audit">
+                  עודכן<%= r.updater_name ? ' ע"י ' + r.updater_name : '' %> · <%= r.updated_str %>
+                </div>
+              <% } %>
+
+              <form method="POST" action="/inventory/maintenance/<%= r.id %>?_method=PUT" class="wo-form">
+                <div class="wo-row">
+                  <label>סטטוס</label>
+                  <select name="status">
+                    <option value="פתוח" <%= r.status === 'פתוח' ? 'selected' : '' %>>פתוח</option>
+                    <option value="בטיפול" <%= r.status === 'בטיפול' ? 'selected' : '' %>>בטיפול</option>
+                    <option value="במעקב" <%= r.status === 'במעקב' ? 'selected' : '' %>>במעקב</option>
+                    <option value="סגור" <%= r.status === 'סגור' ? 'selected' : '' %>>טופל / סגור</option>
+                  </select>
+                </div>
+                <div class="wo-row">
+                  <label>הערה</label>
+                  <textarea name="notes" rows="2" placeholder="מה נעשה? מה נדרש?"><%= r.notes || '' %></textarea>
+                </div>
+                <button type="submit" class="btn">💾 שמירה</button>
+              </form>
+            </div>
+          <% }) %>
+        </section>
+      <% }) %>
+    </div>
+
+    <% if (closed.length > 0) { %>
+      <details class="wo-history">
+        <summary>היסטוריה — <%= closed.length %> בקשות סגורות</summary>
+        <% closed.forEach(r => { %>
+          <% const place = r.class_name ? r.class_name + (r.parallel ? ' (' + r.parallel + ')' : '') : (r.location || ''); %>
+          <div class="wo-hist-row">
+            <span class="wo-branch"><%= r.effective_branch || '' %></span>
+            <% if (place) { %><span>📍 <%= place %></span><% } %>
+            <span class="wo-hist-desc"><%= r.description %></span>
+            <% if (r.updated_str) { %>
+              <span class="wo-audit">עודכן<%= r.updater_name ? ' ע"י ' + r.updater_name : '' %> · <%= r.updated_str %></span>
+            <% } %>
           </div>
-          <div class="wo-row">
-            <label>הערה</label>
-            <textarea name="notes" rows="2" placeholder="מה נעשה? מה נדרש?"><%= r.notes || '' %></textarea>
-          </div>
-          <button type="submit" class="btn">💾 שמירה</button>
-        </form>
-      </div>
-    <% }) %>
+        <% }) %>
+      </details>
+    <% } %>
   <% } %>
-</div>
 
 <style>
-  /* מותאם למסך מגע: שדות גדולים, מרווחים נדיבים */
-  .wo-card {
-    border: 1px solid rgba(0,0,0,0.12); border-radius: 10px;
-    padding: 12px 14px; margin-bottom: 14px; background: rgba(255,255,255,0.03);
+  /* לוח שלוש עמודות. בטאבלט לרוחב - זו לצד זו; במסך צר נערמות. */
+  .wo-board { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; align-items: start; }
+  @media (max-width: 900px) { .wo-board { grid-template-columns: 1fr; } }
+
+  .wo-col { border-radius: 12px; padding: 10px; border: 2px solid; min-height: 90px; }
+  .wo-col-head {
+    display: flex; align-items: center; gap: 8px; margin: 0 0 10px;
+    font-size: 1.05em; font-weight: 800; padding-bottom: 6px; border-bottom: 1px solid rgba(0,0,0,0.12);
   }
-  .wo-closed { opacity: 0.5; }
-  .wo-closed:hover { opacity: 1; }
-  .wo-head { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; font-size: 0.85em; color: var(--muted); margin-bottom: 6px; }
+  .wo-count {
+    margin-inline-start: auto; background: rgba(0,0,0,0.16);
+    border-radius: 999px; padding: 1px 10px; font-size: 0.9em;
+  }
+  /* שלוש רמות, שלושה צבעים */
+  .lvl-critical { border-color: #c0392b; background: rgba(192,57,43,0.10); }
+  .lvl-urgent   { border-color: #d68910; background: rgba(214,137,16,0.10); }
+  .lvl-normal   { border-color: #2d7a4f; background: rgba(45,122,79,0.10); }
+
+  .wo-none { color: var(--muted); font-size: 0.85em; text-align: center; padding: 8px 0; margin: 0; }
+
+  /* כרטיס - מותאם למסך מגע: שדות גדולים ומרווחים נדיבים */
+  .wo-card {
+    background: rgba(255,255,255,0.92); color: #1a1a1a;
+    border-radius: 10px; padding: 10px 12px; margin-bottom: 10px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+  }
+  .wo-head { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; font-size: 0.8em; color: #666; margin-bottom: 6px; }
   .wo-branch { font-weight: 700; }
-  .wo-urgent { color: #c0392b; font-weight: 700; }
   .wo-date { margin-inline-start: auto; }
-  .wo-desc { font-size: 1.15em; line-height: 1.5; margin-bottom: 10px; }
+  .wo-desc { font-size: 1.1em; line-height: 1.45; margin-bottom: 8px; }
+  .wo-audit { font-size: 0.78em; color: #2d7a4f; margin-bottom: 8px; }
   .wo-form { display: flex; flex-direction: column; gap: 8px; }
-  .wo-row { display: flex; flex-direction: column; gap: 4px; }
-  .wo-row label { font-size: 0.85em; color: var(--muted); }
+  .wo-row { display: flex; flex-direction: column; gap: 3px; }
+  .wo-row label { font-size: 0.8em; color: #666; }
   .wo-form select, .wo-form textarea { font-size: 1.05em; padding: 8px; width: 100%; }
-  .wo-form .btn { align-self: flex-start; padding: 10px 20px; font-size: 1.05em; }
+  .wo-form .btn { align-self: flex-start; padding: 9px 18px; font-size: 1.02em; }
+
+  /* היסטוריה מקופלת, כדי שלא תתחרה על תשומת הלב */
+  .wo-history { margin-top: 16px; }
+  .wo-history summary { cursor: pointer; font-weight: 700; padding: 8px 0; }
+  .wo-hist-row {
+    display: flex; gap: 10px; flex-wrap: wrap; align-items: center;
+    padding: 6px 4px; border-bottom: 1px solid rgba(0,0,0,0.08);
+    font-size: 0.88em; opacity: 0.75;
+  }
+  .wo-hist-desc { flex: 1; }
 </style>
 
 <%- include('../partials/footer') %>

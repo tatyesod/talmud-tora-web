@@ -11,6 +11,19 @@
       <% } %>
       <div class="form-group"><label>שם תצוגה</label><input type="text" name="display_name" value="<%= mode === 'edit' ? (editUser.display_name || '') : '' %>" /></div>
       <div class="form-group">
+        <label>סוג המשתמש</label>
+        <select name="role">
+          <option value="">משתמש רגיל (גישה מלאה)</option>
+          <option value="maintenance" <%= mode === 'edit' && editUser.role === 'maintenance' ? 'selected' : '' %>>
+            תחזוקן — מסך בקשות התחזוקה בלבד
+          </option>
+        </select>
+        <small style="color:var(--muted);">
+          "תחזוקן" רואה אך ורק את מסך בקשות התחזוקה ויכול לעדכן סטטוס והערות.
+          כל שאר המערכת — תלמידים, משפחות, מלמדים, שכר, דוחות — חסומה לו.
+        </small>
+      </div>
+      <div class="form-group">
         <label><%= mode === 'new' ? 'סיסמה' : 'סיסמה חדשה (השאר ריק כדי לא לשנות)' %></label>
         <input type="password" name="password" <%= mode === 'new' ? 'required' : '' %> />
       </div>

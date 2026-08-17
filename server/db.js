@@ -298,6 +298,10 @@ const migrations = [
   // הקיימים - כך שהמיגרציה לא משנה אף הרשאה קיימת.
   // "maintenance" = תחזוקן חיצוני: רואה אך ורק את מסך בקשות התחזוקה.
   "ALTER TABLE users ADD COLUMN role TEXT",
+  // תיעוד מי עדכן בקשת תחזוקה ומתי. resolved_at מסמן רק סגירה, ולכן בלי
+  // אלה אין דרך לדעת אם התחזוקן נגע בבקשה או שמזכיר שינה סטטוס.
+  "ALTER TABLE maintenance_requests ADD COLUMN updated_by_user_id INTEGER",
+  "ALTER TABLE maintenance_requests ADD COLUMN status_updated_at TEXT",
   // סכום תרומה חודשי שמשפחה אמורה לתרום לתלמוד תורה (רישום סכום בלבד,
   // בלי מעקב תשלומים פרטני - בדיוק כמו שכר לימוד אבל פשוט יותר)
   "ALTER TABLE families ADD COLUMN monthly_donation_amount REAL",

@@ -11,7 +11,7 @@
       <% users.forEach(u => { %>
         <tr>
           <td><%= u.username %></td>
-          <td><%= u.display_name || '' %></td>
+          <td><%= u.display_name || '' %><% if (u.role === 'maintenance') { %> <span style="background:#d68910; color:#fff; border-radius:4px; padding:1px 6px; font-size:0.78em;">תחזוקן</span><% } %></td>
           <td>
             <% if (u.force_password_change) { %>
               <span class="badge archive">ממתין לשינוי סיסמה</span>

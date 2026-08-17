@@ -91,10 +91,12 @@ router.get("/maintenance", (req, res) => {
   const { status, branch } = req.query;
   let sql = `
     SELECT m.*, c.name AS class_name, c.parallel, u.display_name AS reporter_name,
+           up.display_name AS updater_name,
            COALESCE(m.branch, c.branch) AS effective_branch
     FROM maintenance_requests m
     LEFT JOIN classes c ON m.class_id = c.id
     LEFT JOIN users u ON m.reported_by_user_id = u.id
+    LEFT JOIN users up ON m.updated_by_user_id = up.id
     WHERE 1=1
   `;
   const params = [];
@@ -116,6 +118,13 @@ router.get("/maintenance", (req, res) => {
   const requests = db.prepare(sql).all(...params).map((r) => ({
     ...r,
     created_at_str: r.created_at ? hd.formatGregorian(r.created_at) : "",
+    // "מי עדכן ומתי" - מוצג גם למזכירות וגם לתחזוקן, כולל שעה
+    updated_str: r.status_updated_at
+      ? hd.formatGregorian(r.status_updated_at) + " " +
+        new Intl.DateTimeFormat("en-GB", {
+          timeZone: "Asia/Jerusalem", hour: "2-digit", minute: "2-digit", hour12: false,
+        }).format(new Date(r.status_updated_at))
+      : "",
   }));
   // תצוגת התחזוקן: מסך מצומצם, בלי שליחת מייל ובלי תיבות סימון.
   // מנהל יכול לראות אותה בדיוק כמו שהוא רואה אותה, עם ?preview=maintenance -
@@ -135,10 +144,12 @@ router.get("/maintenance/print", (req, res) => {
   const { status, branch } = req.query;
   let sql = `
     SELECT m.*, c.name AS class_name, c.parallel, u.display_name AS reporter_name,
+           up.display_name AS updater_name,
            COALESCE(m.branch, c.branch) AS effective_branch
     FROM maintenance_requests m
     LEFT JOIN classes c ON m.class_id = c.id
     LEFT JOIN users u ON m.reported_by_user_id = u.id
+    LEFT JOIN users up ON m.updated_by_user_id = up.id
     WHERE 1=1
   `;
   const params = [];
@@ -211,8 +222,13 @@ router.put("/maintenance/:id", (req, res) => {
   const { status, notes } = req.body;
   // "במעקב" אינו סיום טיפול, ולכן אינו מסמן תאריך סגירה
   const resolvedAt = status === "סגור" ? new Date().toISOString() : null;
-  db.prepare("UPDATE maintenance_requests SET status = ?, notes = ?, resolved_at = ? WHERE id = ?").run(
-    status, notes || null, resolvedAt, req.params.id
+  // מתעדים מי עדכן ומתי, כדי שיהיה ברור אם התחזוקן טיפל או שמזכיר שינה סטטוס
+  db.prepare(`UPDATE maintenance_requests
+    SET status = ?, notes = ?, resolved_at = ?, updated_by_user_id = ?, status_updated_at = ?
+    WHERE id = ?`).run(
+    status, notes || null, resolvedAt,
+    req.currentUser ? req.currentUser.id : null, new Date().toISOString(),
+    req.params.id
   );
   res.redirect("/inventory/maintenance");
 });

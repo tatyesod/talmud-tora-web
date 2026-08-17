@@ -73,7 +73,14 @@
             </td>
             <td><%= r.created_at_str %></td>
             <td><%= r.effective_branch || 'כללי' %></td>
-            <td><%= r.description %></td>
+            <td>
+              <%= r.description %>
+              <% if (r.updated_str) { %>
+                <div style="font-size:0.78em; color:#2d7a4f; margin-top:2px;">
+                  עודכן<%= r.updater_name ? ' ע"י ' + r.updater_name : '' %> · <%= r.updated_str %>
+                </div>
+              <% } %>
+            </td>
             <td><%= place %></td>
             <td><%= r.urgency || '' %></td>
             <td><%= r.reporter_name || '' %></td>
