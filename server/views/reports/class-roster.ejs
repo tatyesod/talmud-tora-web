@@ -29,9 +29,16 @@
   <% } else { %>
 
   <form method="GET" action="/reports/class-roster/view" target="_blank">
-    <div style="display:flex; gap:10px; margin-bottom:10px;">
+    <div style="display:flex; gap:10px; margin-bottom:10px; align-items:center; flex-wrap:wrap;">
       <button type="button" class="btn small secondary" onclick="toggleAll(true)">סמן הכל</button>
       <button type="button" class="btn small secondary" onclick="toggleAll(false)">נקה</button>
+      <%# המיון נשלח יחד עם הבחירה, ולכן חל על שלושת הפלטים: תצוגה, דוח מלא
+          וכרטיס כיס. בתוך שם משפחה זהה המיון המשני הוא שם החיבה. %>
+      <label style="margin-inline-start:auto;">סדר בטבלה:</label>
+      <select name="sort">
+        <option value="family">שם משפחה (א-ב)</option>
+        <option value="birth">תאריך לידה — מהגדול לקטן</option>
+      </select>
     </div>
 
     <table class="roster-picker">
@@ -66,7 +73,8 @@
     <p style="color:var(--muted); font-size:0.85em; margin-top:14px; line-height:1.6;">
       <strong>דוח מלא</strong> — תשע העמודות, גיליון לכל כיתה.<br>
       <strong>כרטיס כיס למלמד</strong> — שש כיתות בגריד על עמוד A4 אחד, טבלה לכל מלמד,
-      להדפסה וחיתוך. בחירת שש כיתות = דף אחד, כרטיס לכל מלמד.
+      להדפסה וחיתוך. בחירת שש כיתות = דף אחד, כרטיס לכל מלמד.<br>
+      מיון לפי <strong>תאריך לידה</strong> נותן למלמד את סדר ימי ההולדת בכיתה.
     </p>
 
     <div class="actions" style="margin-top:16px;">

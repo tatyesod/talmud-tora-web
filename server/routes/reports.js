@@ -344,6 +344,26 @@ router.get("/class-roster", (req, res) => {
   res.render("reports/class-roster", { classes, branches, branch, totalCount });
 });
 
+// סדר התלמידים בטבלה.
+// "family" - אלפביתי לפי שם משפחה (ברירת מחדל).
+// "birth"  - לפי תאריך הלידה מהמבוגר לצעיר. birth_date_civil הוא מספר סידורי
+//            עולה, ולכן מיון עולה = מהגדול לקטן. תלמיד בלי תאריך לידה יורד
+//            לסוף הרשימה במקום להיערם בראשה.
+function sortStudents(students, mode) {
+  if (mode === "birth") {
+    students.sort((a, b) => {
+      if (a._birth == null && b._birth == null) return a.family.localeCompare(b.family, "he");
+      if (a._birth == null) return 1;
+      if (b._birth == null) return -1;
+      return a._birth - b._birth || a.family.localeCompare(b.family, "he");
+    });
+  } else {
+    students.sort((a, b) =>
+      a.family.localeCompare(b.family, "he") || a.nickname.localeCompare(b.nickname, "he"));
+  }
+  return students;
+}
+
 // בניית נתוני הרשימות. משותפת לתצוגה המקדימה ולייצוא לאקסל, כדי ששניהם
 // יראו בדיוק אותו דבר ולא ייווצר הפרש ביניהם.
 function buildRosterGroups(req) {
@@ -359,6 +379,7 @@ function buildRosterGroups(req) {
   // שולח את שדות הטקסט של כל הכיתות אך רק את תיבות הסימון שסומנו, ולכן
   // התאמה לפי אינדקס נתנה לכיתה שנבחרה את שם המלמד של כיתה אחרת.
   const manualFor = (cid) => String(req.query["teacher_name_" + cid] || "").trim();
+  const sortMode = req.query.sort === "birth" ? "birth" : "family";
 
   const classRows = db.prepare(`
     SELECT id, name, parallel, branch FROM classes
@@ -381,7 +402,6 @@ function buildRosterGroups(req) {
              f.street, f.house_number, f.apartment, f.city
       FROM students s LEFT JOIN families f ON s.family_id = f.id
       WHERE s.class_id = ? AND s.status = 'פעיל'
-      ORDER BY COALESCE(f.last_name, s.last_name), s.first_name
     `).all(c.id).map((r) => ({
       family: r.family_last_name || r.last_name || "",
       nickname: r.nickname || r.first_name || "",
@@ -392,12 +412,17 @@ function buildRosterGroups(req) {
       homePhone: r.home_phone || "",
       fatherMobile: r.father_mobile || "",
       motherMobile: r.mother_mobile || "",
+      // נשמר לצורך מיון בלבד, לא מוצג
+      _birth: r.birth_date_civil || null,
     }));
+
+    sortStudents(students, sortMode);
 
     return {
       className: c.name + (c.parallel ? " " + c.parallel : ""),
       branch: c.branch || "",
       teacherName: manualFor(cid) || assigned || "",
+      sortLabel: sortMode === "birth" ? "לפי תאריך לידה" : "",
       students,
     };
   }).filter(Boolean);
@@ -452,7 +477,7 @@ router.get("/class-roster/export", async (req, res) => {
 
     ws.mergeCells(2, 1, 2, HEADER.length);
     const sub = ws.getCell(2, 1);
-    sub.value = [g.branch, g.students.length + " תלמידים",
+    sub.value = [g.branch, g.students.length + " תלמידים", g.sortLabel,
                  "הופק: " + hd.serialToHebrewString(hd.todayAccessSerial())].filter(Boolean).join(" · ");
     sub.font = { size: 9, italic: true, color: { argb: "FF888888" } };
     sub.alignment = { horizontal: "right" };
@@ -563,7 +588,7 @@ router.get("/class-roster/export-cards", async (req, res) => {
 
       ws.mergeCells(r0 + 1, c0, r0 + 1, c0 + COLS - 1);
       const sub = ws.getCell(r0 + 1, c0);
-      sub.value = [g.branch, g.students.length + " תלמידים",
+      sub.value = [g.branch, g.students.length + " תלמידים", g.sortLabel,
                    "הופק: " + hd.serialToHebrewString(hd.todayAccessSerial())]
                    .filter(Boolean).join(" · ");
       sub.font = { size: 9, italic: true, color: { argb: "FF888888" } };
