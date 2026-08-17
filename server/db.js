@@ -302,6 +302,20 @@ const migrations = [
   // אלה אין דרך לדעת אם התחזוקן נגע בבקשה או שמזכיר שינה סטטוס.
   "ALTER TABLE maintenance_requests ADD COLUMN updated_by_user_id INTEGER",
   "ALTER TABLE maintenance_requests ADD COLUMN status_updated_at TEXT",
+  // תמונות וסרטונים שמצורפים לבקשת תחזוקה. size_bytes נשמר כדי שניתן יהיה
+  // להציג תפוסת דיסק ולמחוק את הכבדים - הדיסק ב-Render הוא 1GB בלבד.
+  `CREATE TABLE IF NOT EXISTS maintenance_media (
+     id INTEGER PRIMARY KEY AUTOINCREMENT,
+     request_id INTEGER NOT NULL,
+     kind TEXT,
+     file_name TEXT NOT NULL,
+     orig_name TEXT,
+     mime TEXT,
+     size_bytes INTEGER,
+     uploaded_by_user_id INTEGER,
+     created_at TEXT
+   )`,
+  "CREATE INDEX IF NOT EXISTS idx_maintenance_media_request ON maintenance_media(request_id)",
   // סכום תרומה חודשי שמשפחה אמורה לתרום לתלמוד תורה (רישום סכום בלבד,
   // בלי מעקב תשלומים פרטני - בדיוק כמו שכר לימוד אבל פשוט יותר)
   "ALTER TABLE families ADD COLUMN monthly_donation_amount REAL",

@@ -1,0 +1,80 @@
+<%- include('../partials/header', {title: 'נפח תמונות וסרטונים'}) %>
+
+<div class="card">
+  <h1>💾 נפח תמונות וסרטונים</h1>
+  <p style="color:var(--muted); font-size:0.9em; line-height:1.6;">
+    הדיסק הקבוע של המערכת הוא <strong>1 GB</strong>, ומשמש גם למסד הנתונים, לגיבויים
+    ולקבצים מצורפים. סרטונים הם הדבר הכבד ביותר — כאן רואים מה תופס מקום ומוחקים.
+  </p>
+
+  <div style="display:flex; gap:18px; flex-wrap:wrap; margin:14px 0; font-size:0.95em;">
+    <span>סה"כ תפוס: <strong><%= totalStr %></strong></span>
+    <span>תמונות: <strong><%= imageCount %></strong></span>
+    <span>סרטונים: <strong><%= videoCount %></strong></span>
+    <% if (closedCount > 0) { %>
+      <span style="color:#c0392b;">בבקשות סגורות: <strong><%= closedCount %></strong> קבצים · <%= closedStr %></span>
+    <% } %>
+  </div>
+
+  <% if (closedCount > 0) { %>
+    <%# הניקוי המשמעותי: מדיה של תקלות שנסגרו כבר לא נחוצה לעבודה שוטפת %>
+    <form method="POST" action="/inventory/maintenance/media/purge-closed"
+          onsubmit="return confirm('למחוק <%= closedCount %> קבצים מבקשות שנסגרו (<%= closedStr %>)? הפעולה אינה ניתנת לביטול.');"
+          style="margin-bottom:16px;">
+      <button type="submit" class="btn danger">
+        🗑️ מחיקת כל המדיה מבקשות סגורות (<%= closedStr %>)
+      </button>
+      <small style="display:block; color:var(--muted); margin-top:4px;">
+        הבקשות עצמן וההערות שלהן נשארות — נמחקים רק התמונות והסרטונים.
+      </small>
+    </form>
+  <% } %>
+
+  <% if (rows.length === 0) { %>
+    <p class="empty-state">אין תמונות או סרטונים במערכת.</p>
+  <% } else { %>
+    <p style="font-size:0.85em; color:var(--muted);">ממוין מהכבד לקל — כך הראשונים ברשימה הם אלה ששווה למחוק.</p>
+    <table class="media-table">
+      <thead>
+        <tr>
+          <th>גודל</th><th>סוג</th><th>התקלה</th><th>סניף</th>
+          <th>סטטוס</th><th>הועלה ע"י</th><th>תאריך</th><th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <% rows.forEach(m => { %>
+          <tr class="<%= m.status === 'סגור' ? 'row-closed' : '' %>">
+            <td style="font-weight:700; white-space:nowrap;"><%= m.size_str %></td>
+            <td><%= m.kind === 'video' ? '🎥 סרטון' : '📷 תמונה' %></td>
+            <td><a href="/inventory/maintenance/media/<%= m.id %>/file" target="_blank" rel="noopener"><%= (m.description || '').slice(0, 60) %></a></td>
+            <td><%= m.branch || '' %></td>
+            <td><%= m.status || '' %></td>
+            <td><%= m.uploader || '' %></td>
+            <td style="white-space:nowrap;"><%= m.date_str %></td>
+            <td>
+              <form method="POST" action="/inventory/maintenance/media/<%= m.id %>?_method=DELETE"
+                    onsubmit="return confirm('למחוק את הקובץ?');">
+                <button type="submit" class="btn small danger">מחיקה</button>
+              </form>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  <% } %>
+
+  <div class="actions" style="margin-top:16px;">
+    <a href="/inventory/maintenance" class="btn secondary">חזרה לבקשות תחזוקה</a>
+  </div>
+</div>
+
+<style>
+  table.media-table { width: 100%; border-collapse: collapse; }
+  table.media-table th, table.media-table td {
+    border-bottom: 1px solid rgba(0,0,0,0.08); padding: 6px 8px; text-align: right;
+  }
+  table.media-table tbody tr:hover { background: rgba(201,151,76,0.08); }
+  table.media-table tr.row-closed { opacity: 0.6; }
+</style>
+
+<%- include('../partials/footer') %>

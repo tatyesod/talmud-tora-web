@@ -102,6 +102,8 @@
                 </div>
                 <button type="submit" class="btn">💾 שמירה</button>
               </form>
+
+              <%- include('_media-box', { r: r, notifyUsers: notifyUsers, isPreview: isPreview }) %>
             </div>
           <% }) %>
         </section>
@@ -164,6 +166,36 @@
   .wo-form select, .wo-form textarea { font-size: 1.05em; padding: 8px; width: 100%; }
   .wo-form .btn { align-self: flex-start; padding: 9px 18px; font-size: 1.02em; }
 
+  /* --- תמונות וסרטונים --- */
+  .media-box { margin-top: 8px; border-top: 1px dashed rgba(0,0,0,0.15); padding-top: 8px; }
+  .media-gallery { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 6px; }
+  .media-item { position: relative; }
+  .media-thumb {
+    width: 58px; height: 58px; object-fit: cover; border-radius: 6px;
+    border: 1px solid rgba(0,0,0,0.15); display: flex; align-items: center; justify-content: center;
+    font-size: 24px; background: rgba(0,0,0,0.06);
+  }
+  .media-del {
+    position: absolute; top: -6px; left: -6px; width: 20px; height: 20px;
+    border: none; border-radius: 50%; background: #c0392b; color: #fff;
+    font-size: 12px; line-height: 1; cursor: pointer; padding: 0;
+  }
+  .media-add summary { cursor: pointer; font-size: 0.9em; padding: 4px 0; }
+  .media-btns { display: flex; gap: 8px; flex-wrap: wrap; margin: 6px 0; }
+  .media-btns label { cursor: pointer; }
+  .media-record.recording { background: #c0392b; color: #fff; }
+  .media-preview { width: 100%; max-height: 180px; border-radius: 8px; background: #000; margin: 6px 0; }
+  .media-rec-note { font-size: 0.8em; color: #c0392b; min-height: 1em; }
+  .media-qrow { display: flex; align-items: center; gap: 6px; font-size: 0.82em; padding: 2px 0; }
+  .media-qrow span { flex: 1; }
+  .media-total { font-size: 0.8em; color: #666; }
+  .media-notify summary { font-size: 0.85em; cursor: pointer; padding: 4px 0; }
+  .media-notify textarea { width: 100%; font-size: 0.95em; padding: 6px; }
+  .media-users { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0; font-size: 0.85em; }
+  .media-users label { display: flex; align-items: center; gap: 4px; }
+  .media-users input { width: auto; }
+  .media-hint { display: block; font-size: 0.75em; color: #666; margin-top: 4px; }
+
   /* היסטוריה מקופלת, כדי שלא תתחרה על תשומת הלב */
   .wo-history { margin-top: 16px; }
   .wo-history summary { cursor: pointer; font-weight: 700; padding: 8px 0; }
@@ -175,4 +207,5 @@
   .wo-hist-desc { flex: 1; }
 </style>
 
+<script src="/js/media-capture.js" defer></script>
 <%- include('../partials/footer') %>

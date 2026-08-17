@@ -38,6 +38,7 @@
       <%# מרנדר את אותה תבנית שהתחזוקן מקבל, כדי שמה שנבדק הוא מה שהוא רואה %>
       <% if (typeof isAdmin !== 'undefined' && isAdmin) { %>
         <a href="/inventory/maintenance?preview=maintenance" class="btn secondary">👁️ תצוגה כמו התחזוקן</a>
+      <a href="/inventory/maintenance/media" class="btn secondary">💾 נפח תמונות וסרטונים</a>
       <% } %>
     <% } %>
   </div>
@@ -80,6 +81,7 @@
                   עודכן<%= r.updater_name ? ' ע"י ' + r.updater_name : '' %> · <%= r.updated_str %>
                 </div>
               <% } %>
+              <%- include('_media-box', { r: r, notifyUsers: notifyUsers, isPreview: false }) %>
             </td>
             <td><%= place %></td>
             <td><%= r.urgency || '' %></td>
@@ -152,7 +154,28 @@
 
 <%- include('../partials/footer') %>
 
+<script src="/js/media-capture.js" defer></script>
 <style>
+  .media-box { margin-top: 6px; }
+  .media-gallery { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 4px; }
+  .media-item { position: relative; }
+  .media-thumb { width: 48px; height: 48px; object-fit: cover; border-radius: 5px; border: 1px solid rgba(0,0,0,0.15); display: inline-flex; align-items: center; justify-content: center; font-size: 20px; background: rgba(0,0,0,0.06); }
+  .media-del { position: absolute; top: -5px; left: -5px; width: 18px; height: 18px; border: none; border-radius: 50%; background: #c0392b; color: #fff; font-size: 11px; line-height: 1; cursor: pointer; padding: 0; }
+  .media-add summary { cursor: pointer; font-size: 0.82em; padding: 2px 0; color: var(--muted); }
+  .media-btns { display: flex; gap: 6px; flex-wrap: wrap; margin: 5px 0; }
+  .media-record.recording { background: #c0392b; color: #fff; }
+  .media-preview { width: 100%; max-width: 260px; border-radius: 6px; background: #000; margin: 5px 0; }
+  .media-rec-note { font-size: 0.78em; color: #c0392b; }
+  .media-qrow { display: flex; align-items: center; gap: 5px; font-size: 0.8em; }
+  .media-qrow span { flex: 1; }
+  .media-total { font-size: 0.78em; color: var(--muted); }
+  .media-notify summary { font-size: 0.82em; cursor: pointer; }
+  .media-notify textarea { width: 100%; max-width: 320px; }
+  .media-users { display: flex; flex-wrap: wrap; gap: 6px; font-size: 0.82em; margin: 4px 0; }
+  .media-users label { display: flex; align-items: center; gap: 3px; }
+  .media-users input { width: auto; }
+  .media-hint { display: block; font-size: 0.72em; color: var(--muted); margin-top: 3px; }
+
   /* בקשות סגורות - מעומעמות, כדי שהפתוחות יבלטו */
   tr.row-closed { opacity: 0.55; }
   tr.row-closed:hover { opacity: 1; }

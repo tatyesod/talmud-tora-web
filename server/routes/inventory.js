@@ -2,6 +2,41 @@ const express = require("express");
 const router = express.Router();
 const db = require("../db");
 const hd = require("../hebrewDate");
+const fs = require("fs");
+const path = require("path");
+const multer = require("multer");
+
+// המדיה נשמרת על הדיסק הקבוע, לא בתוך תיקיית הקוד - אחרת כל פריסה מוחקת אותה
+const MEDIA_DIR = path.join(
+  process.env.RENDER_PERSISTENT_DIR || path.join(__dirname, ".."),
+  "uploads", "maintenance"
+);
+if (!fs.existsSync(MEDIA_DIR)) fs.mkdirSync(MEDIA_DIR, { recursive: true });
+
+// 12MB לקובץ. התמונות מוקטנות בדפדפן לפני ההעלאה והסרטון מוגבל ל-20 שניות
+// באיכות מופחתת, ולכן זו תקרת ביטחון ולא הגודל הצפוי.
+const MEDIA_MAX_BYTES = 12 * 1024 * 1024;
+const MEDIA_ALLOWED = {
+  "image/jpeg": ".jpg", "image/png": ".png", "image/webp": ".webp",
+  "video/mp4": ".mp4", "video/webm": ".webm", "video/quicktime": ".mov",
+};
+
+const mediaUpload = multer({
+  storage: multer.diskStorage({
+    destination: (req, file, cb) => cb(null, MEDIA_DIR),
+    // שם הקובץ נבנה בשרת בלבד. שם מקורי מהמכשיר עלול להכיל תווי נתיב
+    // ולשמש למעבר תיקיות, ולכן הוא נשמר במסד לתצוגה אך לא בשם הקובץ.
+    filename: (req, file, cb) => {
+      const ext = MEDIA_ALLOWED[file.mimetype] || ".bin";
+      cb(null, `m${req.params.id}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}${ext}`);
+    },
+  }),
+  limits: { fileSize: MEDIA_MAX_BYTES, files: 6 },
+  fileFilter: (req, file, cb) => cb(null, !!MEDIA_ALLOWED[file.mimetype]),
+});
+
+const kindOf = (mime) => (String(mime).startsWith("video") ? "video" : "image");
+const fmtSize = (b) => (b >= 1048576 ? (b / 1048576).toFixed(1) + " MB" : Math.round(b / 1024) + " KB");
 
 function getMaintenanceEmail() {
   // מושכים ישירות מהכרטיס האישי של משה זילברשלג (התחזוקן) - כדי שלא
@@ -118,6 +153,8 @@ router.get("/maintenance", (req, res) => {
   const requests = db.prepare(sql).all(...params).map((r) => ({
     ...r,
     created_at_str: r.created_at ? hd.formatGregorian(r.created_at) : "",
+    media: db.prepare(`SELECT id, kind, orig_name, size_bytes FROM maintenance_media
+                        WHERE request_id = ? ORDER BY id`).all(r.id),
     // "מי עדכן ומתי" - מוצג גם למזכירות וגם לתחזוקן, כולל שעה
     updated_str: r.status_updated_at
       ? hd.formatGregorian(r.status_updated_at) + " " +
@@ -137,9 +174,13 @@ router.get("/maintenance", (req, res) => {
   // החזרה למסך הרגיל היא דרך הקישור בפס הצהוב.
   if (isMaintenanceView) res.locals.isMaintenanceUser = true;
 
+  // מי אפשר לשתף איתו: כל המשתמשים הרגילים (לא התחזוקן עצמו)
+  const notifyUsers = db.prepare(`SELECT id, display_name, username FROM users
+    WHERE (role IS NULL OR role <> 'maintenance') ORDER BY display_name`).all();
+
   res.render(isMaintenanceView ? "inventory/maintenance-worker" : "inventory/maintenance-list", {
     requests, status: status || "", branch: branch || "",
-    maintenanceEmail: getMaintenanceEmail(),
+    maintenanceEmail: getMaintenanceEmail(), notifyUsers,
     isPreview: !!(res.locals.isAdmin && req.query.preview === "maintenance"),
   });
 });
@@ -235,6 +276,130 @@ router.put("/maintenance/:id", (req, res) => {
     req.params.id
   );
   res.redirect("/inventory/maintenance");
+});
+
+// ============ תמונות וסרטונים לבקשת תחזוקה ============
+
+// העלאה. ניתן לבחור משתמשים שיקבלו הודעה עם הקובץ המצורף - לצורך התייעצות.
+router.post("/maintenance/:id/media", mediaUpload.array("media", 6), (req, res) => {
+  const reqRow = db.prepare("SELECT id FROM maintenance_requests WHERE id = ?").get(req.params.id);
+  if (!reqRow) return res.redirect("/inventory/maintenance");
+
+  const files = req.files || [];
+  const now = new Date().toISOString();
+  const ins = db.prepare(`INSERT INTO maintenance_media
+    (request_id, kind, file_name, orig_name, mime, size_bytes, uploaded_by_user_id, created_at)
+    VALUES (?,?,?,?,?,?,?,?)`);
+  for (const f of files) {
+    ins.run(reqRow.id, kindOf(f.mimetype), f.filename,
+            Buffer.from(f.originalname, "latin1").toString("utf8"),
+            f.mimetype, f.size, req.currentUser ? req.currentUser.id : null, now);
+  }
+
+  // הודעה למשתמשים שנבחרו. הקובץ עצמו לא משוכפל - ההודעה מפנה לאותו קובץ,
+  // כדי לא להכפיל את הנפח על דיסק של 1GB.
+  let to = req.body.notify_user_id || [];
+  if (!Array.isArray(to)) to = [to];
+  to = to.map((v) => parseInt(v, 10)).filter((v) => !isNaN(v));
+  if (to.length && files.length && req.currentUser) {
+    const note = String(req.body.notify_body || "").trim() || "צורפו תמונות/סרטון לבקשת תחזוקה — נדרשת התייעצות";
+    const body = `${note}\n\nבקשת תחזוקה #${reqRow.id}: /inventory/maintenance`;
+    const msg = db.prepare(`INSERT INTO messages
+      (sender_id, recipient_id, body, created_at, attachment_path, attachment_name, attachment_type)
+      VALUES (?,?,?,?,?,?,?)`);
+    for (const uid of to) {
+      for (const f of files) {
+        msg.run(req.currentUser.id, uid, body, now,
+                path.join("maintenance", f.filename),
+                Buffer.from(f.originalname, "latin1").toString("utf8"), f.mimetype);
+      }
+    }
+  }
+
+  const back = req.body.preview === "maintenance" ? "?preview=maintenance" : "";
+  res.redirect("/inventory/maintenance" + back);
+});
+
+// הגשת הקובץ עצמו. שם הקובץ מגיע מהמסד ולא מהכתובת, ולכן אין דרך לבקש
+// קובץ שרירותי מהדיסק דרך ../
+router.get("/maintenance/media/:mediaId/file", (req, res) => {
+  const m = db.prepare("SELECT file_name, mime, orig_name FROM maintenance_media WHERE id = ?").get(req.params.mediaId);
+  if (!m) return res.status(404).end();
+  const full = path.join(MEDIA_DIR, path.basename(m.file_name));
+  if (!fs.existsSync(full)) return res.status(404).end();
+  res.setHeader("Content-Type", m.mime || "application/octet-stream");
+  res.setHeader("Cache-Control", "private, max-age=86400");
+  fs.createReadStream(full).pipe(res);
+});
+
+// מחיקה - משחררת מקום בדיסק בפועל, לא רק מסתירה
+router.delete("/maintenance/media/:mediaId", (req, res) => {
+  const m = db.prepare("SELECT file_name FROM maintenance_media WHERE id = ?").get(req.params.mediaId);
+  if (m) {
+    const full = path.join(MEDIA_DIR, path.basename(m.file_name));
+    try { if (fs.existsSync(full)) fs.unlinkSync(full); } catch (e) { /* הרשומה תימחק בכל מקרה */ }
+    db.prepare("DELETE FROM maintenance_media WHERE id = ?").run(req.params.mediaId);
+  }
+  const back = req.body && req.body.preview === "maintenance" ? "?preview=maintenance" : "";
+  res.redirect(req.get("referer") || "/inventory/maintenance" + back);
+});
+
+// ============ ניהול נפח המדיה ============
+// ניהול הדיסק הוא פעולה של המשרד. השער מתיר לתחזוקן כל נתיב שמתחיל
+// ב-/inventory/maintenance, ולכן צריך חסימה מפורשת כאן - אחרת הוא היה מגיע
+// למסך הזה ויכול למחוק מדיה בכמות.
+function blockMaintenanceRole(req, res, next) {
+  if (req.currentUser && req.currentUser.role === "maintenance") {
+    return res.redirect("/inventory/maintenance");
+  }
+  next();
+}
+
+router.get("/maintenance/media", blockMaintenanceRole, (req, res) => {
+  const rows = db.prepare(`
+    SELECT mm.*, m.description, m.status, COALESCE(m.branch, c.branch) AS branch,
+           u.display_name AS uploader
+    FROM maintenance_media mm
+    LEFT JOIN maintenance_requests m ON mm.request_id = m.id
+    LEFT JOIN classes c ON m.class_id = c.id
+    LEFT JOIN users u ON mm.uploaded_by_user_id = u.id
+    ORDER BY mm.size_bytes DESC
+  `).all().map((r) => ({
+    ...r,
+    size_str: fmtSize(r.size_bytes || 0),
+    date_str: r.created_at ? hd.formatGregorian(r.created_at) : "",
+  }));
+  const total = rows.reduce((s, r) => s + (r.size_bytes || 0), 0);
+  const closed = rows.filter((r) => r.status === "סגור");
+  res.render("inventory/maintenance-media", {
+    rows,
+    totalStr: fmtSize(total),
+    totalBytes: total,
+    videoCount: rows.filter((r) => r.kind === "video").length,
+    imageCount: rows.filter((r) => r.kind === "image").length,
+    closedCount: closed.length,
+    closedStr: fmtSize(closed.reduce((s, r) => s + (r.size_bytes || 0), 0)),
+  });
+});
+
+// מחיקה מרוכזת של מדיה מבקשות שנסגרו - זה מה שמשחרר מקום בפועל
+router.post("/maintenance/media/purge-closed", blockMaintenanceRole, (req, res) => {
+  const rows = db.prepare(`
+    SELECT mm.id, mm.file_name FROM maintenance_media mm
+    JOIN maintenance_requests m ON mm.request_id = m.id
+    WHERE m.status = 'סגור'
+  `).all();
+  let freed = 0;
+  const del = db.prepare("DELETE FROM maintenance_media WHERE id = ?");
+  for (const r of rows) {
+    const full = path.join(MEDIA_DIR, path.basename(r.file_name));
+    try {
+      if (fs.existsSync(full)) { freed += fs.statSync(full).size; fs.unlinkSync(full); }
+    } catch (e) { /* ממשיכים - הרשומה נמחקת בכל מקרה */ }
+    del.run(r.id);
+  }
+  console.log(`[מדיית תחזוקה] נמחקו ${rows.length} קבצים, שוחררו ${fmtSize(freed)}`);
+  res.redirect("/inventory/maintenance/media");
 });
 
 module.exports = router;

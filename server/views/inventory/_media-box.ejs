@@ -1,0 +1,68 @@
+<%# בלוק תמונות/סרטונים לבקשת תחזוקה. משותף למסך התחזוקן ולמסך המזכירות,
+    כדי ששניהם יתנהגו זהה ולא ייווצר הפרש ביניהם. %>
+<div class="media-box" data-request-id="<%= r.id %>">
+
+  <% if (r.media && r.media.length) { %>
+    <div class="media-gallery">
+      <% r.media.forEach(m => { %>
+        <div class="media-item">
+          <a href="/inventory/maintenance/media/<%= m.id %>/file" target="_blank" rel="noopener">
+            <% if (m.kind === 'video') { %>
+              <span class="media-thumb media-vid">🎥</span>
+            <% } else { %>
+              <img class="media-thumb" src="/inventory/maintenance/media/<%= m.id %>/file" alt="" loading="lazy" />
+            <% } %>
+          </a>
+          <form method="POST" action="/inventory/maintenance/media/<%= m.id %>?_method=DELETE"
+                onsubmit="return confirm('למחוק את הקובץ? הפעולה משחררת מקום בדיסק ואינה ניתנת לביטול.');">
+            <% if (isPreview) { %><input type="hidden" name="preview" value="maintenance" /><% } %>
+            <button type="submit" class="media-del" title="מחיקה — משחררת מקום בדיסק">✕</button>
+          </form>
+        </div>
+      <% }) %>
+    </div>
+  <% } %>
+
+  <details class="media-add">
+    <summary>📷 צילום / סרטון<% if (r.media && r.media.length) { %> (<%= r.media.length %>)<% } %></summary>
+
+    <form class="media-form" method="POST" enctype="multipart/form-data">
+      <% if (isPreview) { %><input type="hidden" name="preview" value="maintenance" /><% } %>
+
+      <div class="media-btns">
+        <%# capture פותח את המצלמה ישר במכשיר נייד/טאבלט %>
+        <label class="btn small secondary">
+          📷 צילום תמונה
+          <input type="file" class="media-file" name="media" accept="image/*" capture="environment" multiple hidden />
+        </label>
+        <button type="button" class="btn small secondary media-record">🎥 הקלטת סרטון (עד 20 שנ')</button>
+      </div>
+
+      <video class="media-preview" muted playsinline style="display:none;"></video>
+      <div class="media-rec-note"></div>
+      <div class="media-queue"></div>
+      <div class="media-total"></div>
+
+      <% if (notifyUsers && notifyUsers.length) { %>
+        <details class="media-notify">
+          <summary>שליחה להתייעצות</summary>
+          <textarea name="notify_body" rows="2" placeholder="מה השאלה? (לא חובה)"></textarea>
+          <div class="media-users">
+            <% notifyUsers.forEach(u => { %>
+              <label>
+                <input type="checkbox" name="notify_user_id" value="<%= u.id %>" />
+                <%= u.display_name || u.username %>
+              </label>
+            <% }) %>
+          </div>
+          <small>הנבחרים יקבלו הודעה במערכת עם הקובץ המצורף.</small>
+        </details>
+      <% } %>
+
+      <button type="submit" class="btn media-send" disabled>📤 שליחה</button>
+      <small class="media-hint">
+        התמונות מוקטנות אוטומטית לפני ההעלאה, וההקלטה נעצרת אחרי 20 שניות — כדי לחסוך מקום בדיסק.
+      </small>
+    </form>
+  </details>
+</div>
