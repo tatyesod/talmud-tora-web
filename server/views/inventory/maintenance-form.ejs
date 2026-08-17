@@ -33,9 +33,16 @@
     <button type="button" class="btn small secondary" onclick="addRow()" style="margin-top:10px;">+ הוספת שורה</button>
 
     <div class="actions" style="margin-top:16px;">
-      <button type="submit" class="btn">📧 שליחת הרשימה לתחזוקן</button>
+      <%# שני הכפתורים שומרים במערכת. ההבדל היחיד הוא אם נפתח גם חלון מייל.
+          קודם היה כפתור אחד בלבד, ולכן מי שלא רצה לשלוח לתחזוקן יצא מהעמוד
+          בלי לשמור. %>
+      <button type="submit" class="btn" data-send="1">📧 שמירה ושליחה לתחזוקן</button>
+      <button type="submit" class="btn secondary" data-send="0">💾 שמירה בלבד</button>
       <a href="/inventory/maintenance" class="btn secondary">ביטול</a>
     </div>
+    <p style="color:var(--muted); font-size:0.85em; margin-top:8px;">
+      שני הכפתורים שומרים את הרשימה במערכת. "שמירה ושליחה" פותח בנוסף חלון מייל לתחזוקן.
+    </p>
   </form>
 </div>
 
@@ -82,7 +89,17 @@
     btn.closest('tr').remove();
   }
 
-  document.getElementById('maintenance-form').addEventListener('submit', function () {
+  // זוכרים באיזה כפתור נלחץ. event.submitter לא נתמך בכל הדפדפנים, ולכן
+  // מסתמכים על ההקלקה עצמה, עם submitter כגיבוי.
+  let lastSubmitter = null;
+  document.querySelectorAll('#maintenance-form button[type="submit"]').forEach(function (b) {
+    b.addEventListener('click', function () { lastSubmitter = b; });
+  });
+
+  document.getElementById('maintenance-form').addEventListener('submit', function (ev) {
+    const btn = lastSubmitter || ev.submitter;
+    // "שמירה בלבד" - הטופס נשלח ונשמר כרגיל, פשוט בלי לפתוח מייל
+    if (btn && btn.dataset.send === '0') return;
     if (!MAINTENANCE_EMAIL) return; // אין כתובת מייל - רק שומר במערכת, בלי לפתוח מייל
 
     const rows = [...document.querySelectorAll('#maintenance-rows tr')].map(tr => {
