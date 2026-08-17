@@ -27,6 +27,18 @@ const upload = multer({
     cb(null, allowed.includes(ext));
   },
 });
+// רשימת בני-השיח. התחזוקן מוצג רק למי שמסומן כרלוונטי להתייעצויות תחזוקה,
+// אחרת הוא מופיע בחלונית של אנשים שלא עוסקים בתחזוקה כלל.
+function partnersFor(myId) {
+  const me = db.prepare("SELECT exclude_from_consult FROM users WHERE id = ?").get(myId);
+  const seesMaintenance = !(me && me.exclude_from_consult);
+  return db.prepare(`
+    SELECT id, username, display_name FROM users
+    WHERE id != ? AND (? = 1 OR role IS NULL OR role <> 'maintenance')
+    ORDER BY display_name
+  `).all(myId, seesMaintenance ? 1 : 0);
+}
+
 const IMAGE_EXTS = [".jpg", ".jpeg", ".png", ".gif", ".webp"];
 
 function fmtTime(iso) {
@@ -39,7 +51,7 @@ router.get("/recent/json", (req, res) => {
   const myId = req.currentUser.id;
 
   // כל המשתמשים האחרים + הודעה אחרונה עם כל אחד
-  const otherUsers = db.prepare("SELECT id, username, display_name FROM users WHERE id != ? ORDER BY display_name").all(myId);
+  const otherUsers = partnersFor(myId);
 
   const result = otherUsers.map((u) => {
     const lastMsg = db.prepare(`
@@ -71,7 +83,7 @@ router.get("/recent/json", (req, res) => {
 
 router.get("/", (req, res) => {
   const myId = req.currentUser.id;
-  const otherUsers = db.prepare("SELECT id, username, display_name FROM users WHERE id != ? ORDER BY display_name").all(myId);
+  const otherUsers = partnersFor(myId);
 
   const conversations = otherUsers.map((u) => {
     const lastMsg = db

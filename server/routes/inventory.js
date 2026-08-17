@@ -174,6 +174,36 @@ router.get("/maintenance", (req, res) => {
   // החזרה למסך הרגיל היא דרך הקישור בפס הצהוב.
   if (isMaintenanceView) res.locals.isMaintenanceUser = true;
 
+  // הודעות התחזוקן. לא מודול הודעות מלא: אותה טבלת messages, אבל אך ורק מול
+  // אנשי הצוות הרלוונטיים - הוא לא יכול להתכתב עם מי שלא עוסק בתחזוקה,
+  // ואין לו גישה למסך ההודעות הכללי.
+  let workerThread = [], workerUnread = 0;
+  if (isMaintenanceView && req.currentUser) {
+    const uid = req.currentUser.role === "maintenance" ? req.currentUser.id : null;
+    if (uid) {
+      workerThread = db.prepare(`
+        SELECT m.*, s.display_name AS sender_name, r.display_name AS recipient_name
+        FROM messages m
+        LEFT JOIN users s ON m.sender_id = s.id
+        LEFT JOIN users r ON m.recipient_id = r.id
+        WHERE m.sender_id = ? OR m.recipient_id = ?
+        ORDER BY m.created_at DESC LIMIT 40
+      `).all(uid, uid).map((m) => ({
+        ...m,
+        mine: m.sender_id === uid,
+        when: hd.formatGregorian(m.created_at) + " " + new Intl.DateTimeFormat("en-GB", {
+          timeZone: "Asia/Jerusalem", hour: "2-digit", minute: "2-digit", hour12: false,
+        }).format(new Date(m.created_at)),
+      }));
+      workerUnread = db.prepare(
+        "SELECT COUNT(*) c FROM messages WHERE recipient_id = ? AND read_at IS NULL"
+      ).get(uid).c;
+      // סימון כנקרא ברגע שהוא רואה את המסך
+      db.prepare("UPDATE messages SET read_at = ? WHERE recipient_id = ? AND read_at IS NULL")
+        .run(new Date().toISOString(), uid);
+    }
+  }
+
   // מי אפשר לשתף איתו: כל המשתמשים הרגילים (לא התחזוקן עצמו)
   const notifyUsers = db.prepare(`SELECT id, display_name, username FROM users
     WHERE (role IS NULL OR role <> 'maintenance')
@@ -183,6 +213,7 @@ router.get("/maintenance", (req, res) => {
   res.render(isMaintenanceView ? "inventory/maintenance-worker" : "inventory/maintenance-list", {
     requests, status: status || "", branch: branch || "",
     maintenanceEmail: getMaintenanceEmail(), notifyUsers,
+    workerThread, workerUnread,
     isPreview: !!(res.locals.isAdmin && req.query.preview === "maintenance"),
   });
 });
@@ -278,6 +309,22 @@ router.put("/maintenance/:id", (req, res) => {
     req.params.id
   );
   res.redirect("/inventory/maintenance");
+});
+
+// שליחת הודעה מהתחזוקן לצוות. הנמען מאומת מול אותה רשימה שמוצגת לו,
+// כדי שלא ניתן יהיה לשלוח למשתמש שהוצא מרשימת ההתייעצות ע"י שינוי הטופס.
+router.post("/maintenance/message", (req, res) => {
+  const to = parseInt(req.body.recipient_id, 10);
+  const body = String(req.body.body || "").trim();
+  const allowed = db.prepare(`SELECT id FROM users
+    WHERE id = ? AND (role IS NULL OR role <> 'maintenance')
+      AND COALESCE(exclude_from_consult, 0) = 0`).get(to);
+  if (allowed && body && req.currentUser) {
+    db.prepare(`INSERT INTO messages (sender_id, recipient_id, body, created_at)
+                VALUES (?,?,?,?)`).run(req.currentUser.id, to, body, new Date().toISOString());
+  }
+  const back = req.body.preview === "maintenance" ? "?preview=maintenance" : "";
+  res.redirect("/inventory/maintenance" + back);
 });
 
 // ============ תמונות וסרטונים לבקשת תחזוקה ============
