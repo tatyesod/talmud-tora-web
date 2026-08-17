@@ -502,7 +502,7 @@ router.get("/class-roster/export", async (req, res) => {
                            st.address, st.homePhone, st.fatherMobile, st.motherMobile]);
       r.alignment = { horizontal: "right" };
       r.font = { size: 12 };
-      r.height = 17;
+      r.height = 22;   // שורות מרווחות יותר - ב-17 הן יצאו צפופות מדי
       CENTERED.forEach((c) => { r.getCell(c).alignment = { horizontal: "center" }; });
       // פסים אפור/לבן לקריאות. הצביעה נעשית תא-תא ולא על השורה, אחרת היא
       // נמשכת גם על עמודות ריקות מימין לטבלה.
@@ -620,7 +620,7 @@ router.get("/class-roster/export-cards", async (req, res) => {
             cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF0F0F0" } };
           }
         });
-        ws.getRow(rr).height = 17;
+        ws.getRow(rr).height = 22;   // זהה לדוח המלא
       });
     });
 
