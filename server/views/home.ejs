@@ -141,6 +141,10 @@
 
     <div class="nav-section-divider"></div>
 
+    <div class="nav-actions">
+      <button type="button" id="arrange-toggle" class="btn small secondary">⇅ סידור הלחצנים</button>
+    </div>
+
     <div class="nav-grid" id="nav-grid">
       <a href="/reports" class="nav-card" style="--d:1">
         <div class="nav-icon">
@@ -562,9 +566,30 @@
 
     let dragSrc = null;
 
+    // מצב סידור. קודם כל הכרטיסים היו draggable תמיד, והדפדפן ממתין בכל
+    // לחיצה כדי להבחין בין קליק לגרירה - וזה בדיוק ההשהיה שהורגשה בפתיחת
+    // הדפים. במצב רגיל הכרטיסים הם קישורים פשוטים ונפתחים מיד; הגרירה
+    // נדלקת רק כשלוחצים על "סידור".
+    let arrangeMode = false;
+    function setArrange(on) {
+      arrangeMode = on;
+      grid.classList.toggle('arranging', on);
+      grid.querySelectorAll('.nav-card').forEach(c => {
+        if (on) { c.setAttribute('draggable', 'true'); c.style.cursor = 'grab'; }
+        else { c.removeAttribute('draggable'); c.style.cursor = ''; }
+      });
+      const b = document.getElementById('arrange-toggle');
+      if (b) {
+        b.textContent = on ? '✓ סיום סידור' : '⇅ סידור הלחצנים';
+        b.classList.toggle('active', on);
+      }
+    }
+    const toggleBtn = document.getElementById('arrange-toggle');
+    if (toggleBtn) toggleBtn.addEventListener('click', () => setArrange(!arrangeMode));
+
     grid.querySelectorAll('.nav-card').forEach(card => {
-      card.setAttribute('draggable', 'true');
-      card.style.cursor = 'grab';
+      // במצב סידור בלבד - ראה setArrange למעלה
+      card.addEventListener('click', e => { if (arrangeMode) e.preventDefault(); });
 
       card.addEventListener('dragstart', e => {
         dragSrc = card;

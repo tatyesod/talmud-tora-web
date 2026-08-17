@@ -395,6 +395,14 @@
 .nav-sub { font-size: 0.7em; color: #b9c4cd; }
 
 .nav-card[draggable="true"]:active { cursor: grabbing; }
+
+/* מצב סידור - סימון ויזואלי שהכרטיסים ניתנים לגרירה כרגע */
+.nav-actions { display: flex; justify-content: flex-end; margin-bottom: 8px; }
+#arrange-toggle.active { background: rgba(201,151,76,0.35); border-color: #c9974c; color: #fff; }
+.nav-grid.arranging .nav-card {
+  outline: 1px dashed rgba(201,151,76,0.6);
+  outline-offset: -3px;
+}
 .nav-card.dragging { opacity: 0.4; transform: scale(0.95); }
 .nav-card.drag-over { border-color: #c9974c !important; box-shadow: 0 0 0 2px #c9974c; transform: scale(1.04); }
 
@@ -423,33 +431,13 @@
   font-size: 0.9em;
   letter-spacing: 0.02em;
 }
-/* נקודה ירוקה פועמת - מסמנת שהנתון חי ומתעדכן.
-   ההנפשה על transform ו-opacity בלבד, ולא על box-shadow: הנפשת צל מכריחה
-   את הדפדפן לצייר מחדש בכל פריים ללא הפסקה, תופסת את החוט הראשי, ומשהה
-   את תגובת הלחיצות בכל הדף. transform ו-opacity רצים על כרטיס המסך. */
+/* נקודה ירוקה סטטית. הייתה כאן פעימה אין-סופית; היא הוסרה לגמרי -
+   הנפשה שרצה ללא הפסקה בדף הראשי אינה שווה את הסיכון להשהיית לחיצות,
+   והנקודה מסמנת "חי" גם בלעדיה. */
 .presence-dot-live {
-  position: relative;
   width: 9px; height: 9px; border-radius: 50%;
   background: #37d67a;
   flex: none;
-}
-.presence-dot-live::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: 50%;
-  background: rgba(55,214,122,0.45);
-  animation: presence-pulse 2.4s ease-out infinite;
-  will-change: transform, opacity;
-  pointer-events: none;
-}
-@keyframes presence-pulse {
-  0%   { transform: scale(1);   opacity: 0.55; }
-  70%  { transform: scale(2.6); opacity: 0; }
-  100% { transform: scale(2.6); opacity: 0; }
-}
-@media (prefers-reduced-motion: reduce) {
-  .presence-dot-live::after { animation: none; display: none; }
 }
 
 .presence-list-mini {
