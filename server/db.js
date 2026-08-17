@@ -279,6 +279,17 @@ const migrations = [
   // רלוונטי רק לתלמידים בסטטוס "ארכיון". המחזור (cohort_id) נשאר כפי שהוא
   // ואינו מושפע - זה שדה נוסף לצדו, לא תחליף לו.
   "ALTER TABLE students ADD COLUMN archive_type TEXT",
+  // סייע/מסייע לתלמיד. aide_eligible הוא "כן"/"לא"; aide_type הוא "רפואי"/"לימודי".
+  // aide_payer = למי משולם (הגוף/האדם שמקבל את התשלום).
+  "ALTER TABLE students ADD COLUMN aide_eligible TEXT",
+  "ALTER TABLE students ADD COLUMN aide_type TEXT",
+  "ALTER TABLE students ADD COLUMN aide_name TEXT",
+  "ALTER TABLE students ADD COLUMN aide_mobile TEXT",
+  "ALTER TABLE students ADD COLUMN aide_id_number TEXT",
+  "ALTER TABLE students ADD COLUMN aide_payer TEXT",
+  // כמות שעות הסיוע. TEXT ולא מספר, כדי לאפשר גם ערכים כמו "10 שבועיות"
+  // או "לפי אישור" שמופיעים בפועל באישורי הזכאות.
+  "ALTER TABLE students ADD COLUMN aide_hours TEXT",
   // סדר כרטיסי הניווט בדף הבית, לכל משתמש. נשמר בשרת ולא ב-localStorage
   // כדי שהסדר יילך עם המשתמש בין כל המחשבים שהוא עובד בהם, ולא יאבד
   // בניקוי דפדפן או בכניסה ממחשב אחר.

@@ -311,6 +311,80 @@ router.get("/full-student-list/export", async (req, res) => {
   await sendWorkbook(res, "רשימת תלמידים מלא.xlsx", "תלמידים", "רשימת תלמידים מלא", header, data);
 });
 
+// ============ דוח סייעים ============
+// רשימת התלמידים הזכאים לסייע, עם פרטי הסייע ולמי משולם.
+function loadAides(req) {
+  const { branch, aide_type, status } = req.query;
+  let sql = `
+    SELECT s.id, s.first_name, s.nickname, s.last_name, s.status,
+           s.aide_eligible, s.aide_type, s.aide_name, s.aide_mobile,
+           s.aide_id_number, s.aide_payer, s.aide_hours,
+           c.name AS class_name, c.parallel, c.branch,
+           f.last_name AS family_last_name, f.father_mobile, f.mother_mobile
+    FROM students s
+    LEFT JOIN classes c ON s.class_id = c.id
+    LEFT JOIN families f ON s.family_id = f.id
+    WHERE s.aide_eligible = 'כן'
+  `;
+  const params = [];
+  // ברירת המחדל היא תלמידים פעילים; ריק מפורש מציג את כולם
+  const st = status === undefined ? "פעיל" : status;
+  if (st) { sql += " AND s.status = ?"; params.push(st); }
+  if (branch) { sql += " AND c.branch = ?"; params.push(branch); }
+  if (aide_type) { sql += " AND s.aide_type = ?"; params.push(aide_type); }
+  const rows = db.prepare(sql).all(...params);
+
+  const { GRADE_ORDER } = require("../yearManager");
+  rows.sort((a, b) => {
+    const ga = GRADE_ORDER.indexOf(a.class_name), gb = GRADE_ORDER.indexOf(b.class_name);
+    if (ga !== gb) return ga - gb;
+    const pa = parseInt(a.parallel, 10), pb = parseInt(b.parallel, 10);
+    if (!isNaN(pa) && !isNaN(pb) && pa !== pb) return pa - pb;
+    return String(a.last_name || a.family_last_name || "").localeCompare(String(b.last_name || b.family_last_name || ""), "he");
+  });
+
+  return rows.map((r) => ({
+    ...r,
+    studentName: ((r.last_name || r.family_last_name || "") + " " + (r.nickname || r.first_name || "")).trim(),
+    className: r.class_name ? r.class_name + (r.parallel ? " " + r.parallel : "") : "",
+    // שדות חסרים מסומנים, כדי שיהיה ברור מה עוד צריך להשלים
+    missing: [
+      !r.aide_type && "סוג", !r.aide_name && "שם", !r.aide_mobile && "נייד",
+      !r.aide_id_number && 'ת"ז', !r.aide_hours && "שעות", !r.aide_payer && "למי משולם",
+    ].filter(Boolean),
+  }));
+}
+
+router.get("/aides", (req, res) => {
+  const rows = loadAides(req);
+  const branches = db.prepare("SELECT DISTINCT branch FROM classes WHERE branch IS NOT NULL AND branch <> '' ORDER BY branch").all().map(r => r.branch);
+  const statuses = db.prepare("SELECT DISTINCT status FROM students WHERE status IS NOT NULL ORDER BY status").all().map(r => r.status);
+  const counts = {
+    total: rows.length,
+    medical: rows.filter(r => r.aide_type === "רפואי").length,
+    academic: rows.filter(r => r.aide_type === "לימודי").length,
+    incomplete: rows.filter(r => r.missing.length > 0).length,
+  };
+  res.render("reports/aides", {
+    rows, branches, statuses, counts,
+    branch: req.query.branch || "",
+    aide_type: req.query.aide_type || "",
+    status: req.query.status === undefined ? "פעיל" : req.query.status,
+  });
+});
+
+router.get("/aides/export", async (req, res) => {
+  const rows = loadAides(req);
+  const header = ["#", "שם התלמיד", "כיתה", "סניף", "סוג הסיוע", "שם הסייע",
+                  "נייד הסייע", 'ת"ז הסייע', "כמות שעות", "למי משולם", "חסר"];
+  const data = rows.map((r, i) => [
+    i + 1, r.studentName, r.className, r.branch || "", r.aide_type || "",
+    r.aide_name || "", r.aide_mobile || "", r.aide_id_number || "",
+    r.aide_hours || "", r.aide_payer || "", r.missing.join(", "),
+  ]);
+  await sendWorkbook(res, "דוח סייעים.xlsx", "סייעים", "דוח סייעים", header, data);
+});
+
 // ============ בני דודים באותה כיתה ============
 // שתי משפחות שרשומות אצלן אותו סב - האבות (או האמהות) אחים, והילדים בני
 // דודים. המוסד משתדל לא לשבץ בני דודים באותה כיתה, ולכן זו התראה לבדיקה.

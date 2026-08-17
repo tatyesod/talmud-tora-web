@@ -128,6 +128,37 @@
       </div>
     </fieldset>
 
+    <%# ======= סייע ======= %>
+    <fieldset>
+      <legend>סייע / מסייע</legend>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>זכאי לסייע</label>
+          <select name="aide_eligible" id="aide-eligible">
+            <option value="">--</option>
+            <option value="כן" <%= student.aide_eligible === 'כן' ? 'selected' : '' %>>כן</option>
+            <option value="לא" <%= student.aide_eligible === 'לא' ? 'selected' : '' %>>לא</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>סוג הסיוע</label>
+          <select name="aide_type">
+            <option value="">--</option>
+            <option value="רפואי" <%= student.aide_type === 'רפואי' ? 'selected' : '' %>>רפואי</option>
+            <option value="לימודי" <%= student.aide_type === 'לימודי' ? 'selected' : '' %>>לימודי</option>
+          </select>
+        </div>
+        <div class="form-group"><label>שם הסייע</label><input type="text" name="aide_name" value="<%= student.aide_name || '' %>" /></div>
+        <div class="form-group"><label>נייד הסייע</label><input type="tel" name="aide_mobile" value="<%= student.aide_mobile || '' %>" /></div>
+        <div class="form-group"><label>ת.ז הסייע</label><input type="text" class="israeli-id-input" name="aide_id_number" value="<%= student.aide_id_number || '' %>" /></div>
+        <div class="form-group"><label>כמות שעות</label><input type="text" name="aide_hours" value="<%= student.aide_hours || '' %>" placeholder="לדוגמה: 10 שבועיות" /></div>
+        <div class="form-group"><label>למי משולם</label><input type="text" name="aide_payer" value="<%= student.aide_payer || '' %>" /></div>
+      </div>
+      <p style="color:var(--muted); font-size:0.85em; margin-top:6px;">
+        שדות הסייע רלוונטיים כאשר "זכאי לסייע" = כן. הם נשמרים בכל מקרה, כדי שלא יאבד מידע אם הזכאות משתנה.
+      </p>
+    </fieldset>
+
     <%# ======= משפחה / הורים ======= %>
     <fieldset>
       <legend>משפחה / הורים</legend>

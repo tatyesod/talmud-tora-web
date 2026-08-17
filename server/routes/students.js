@@ -321,6 +321,9 @@ const STUDENT_FIELDS = [
   // "בוגר" / "עזב" - רלוונטי רק לסטטוס ארכיון. נכתב אוטומטית בהעלאת שנה
   // למי שסיים כיתה ח', וניתן לשינוי ידני מהטופס.
   "archive_type",
+  // סייע/מסייע
+  "aide_eligible", "aide_type", "aide_name", "aide_mobile", "aide_id_number", "aide_payer",
+  "aide_hours",
 ];
 const DATE_FIELDS = ["birth_date_civil", "entry_date", "update_date", "exit_date", "registration_date", "admission_date"];
 

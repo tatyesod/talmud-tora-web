@@ -1,0 +1,95 @@
+<%- include('../partials/header', {title: 'דוח סייעים'}) %>
+
+<div class="card">
+  <h1>🧑‍🏫 דוח סייעים</h1>
+  <p style="color:var(--muted); font-size:0.9em;">
+    תלמידים שסומנו "זכאי לסייע = כן" בכרטיס התלמיד, עם פרטי הסייע ולמי משולם.
+  </p>
+
+  <div style="display:flex; gap:18px; flex-wrap:wrap; margin:12px 0; font-size:0.9em;">
+    <span>סה"כ: <strong><%= counts.total %></strong></span>
+    <span>רפואי: <strong><%= counts.medical %></strong></span>
+    <span>לימודי: <strong><%= counts.academic %></strong></span>
+    <% if (counts.incomplete > 0) { %>
+      <span style="color:#c0392b;">חסרים פרטים: <strong><%= counts.incomplete %></strong></span>
+    <% } %>
+  </div>
+
+  <form class="searchbar auto-filter" method="GET" action="/reports/aides">
+    <select name="status" aria-label="סטטוס תלמיד">
+      <option value="">כל הסטטוסים</option>
+      <% statuses.forEach(st => { %>
+        <option value="<%= st %>" <%= status === st ? 'selected' : '' %>><%= st %></option>
+      <% }) %>
+    </select>
+    <select name="branch" aria-label="סניף">
+      <option value="">כל הסניפים</option>
+      <% branches.forEach(b => { %>
+        <option value="<%= b %>" <%= branch === b ? 'selected' : '' %>><%= b %></option>
+      <% }) %>
+    </select>
+    <select name="aide_type" aria-label="סוג הסיוע">
+      <option value="">כל סוגי הסיוע</option>
+      <option value="רפואי" <%= aide_type === 'רפואי' ? 'selected' : '' %>>רפואי</option>
+      <option value="לימודי" <%= aide_type === 'לימודי' ? 'selected' : '' %>>לימודי</option>
+    </select>
+  </form>
+
+  <% if (rows.length === 0) { %>
+    <p class="empty-state">
+      לא נמצאו תלמידים זכאים לסייע בסינון הנוכחי.
+      <a href="/reports/aides">הצג הכל</a>
+    </p>
+  <% } else { %>
+    <div class="table-scroll-wrap">
+      <table class="aides-table">
+        <thead>
+          <tr>
+            <th>#</th><th>שם התלמיד</th><th>כיתה</th><th>סניף</th><th>סוג</th>
+            <th>שם הסייע</th><th>נייד הסייע</th><th>ת.ז הסייע</th><th>שעות</th><th>למי משולם</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% rows.forEach((r, i) => { %>
+            <tr>
+              <td><%= i + 1 %></td>
+              <td><a href="/students/<%= r.id %>"><%= r.studentName %></a></td>
+              <td><%= r.className %></td>
+              <td><%= r.branch || '' %></td>
+              <td><%= r.aide_type || '—' %></td>
+              <td><%= r.aide_name || '—' %></td>
+              <td><%- r.aide_mobile ? phoneLink(r.aide_mobile) : '—' %></td>
+              <td><%= r.aide_id_number || '—' %></td>
+              <td><%= r.aide_hours || '—' %></td>
+              <td><%= r.aide_payer || '—' %></td>
+            </tr>
+            <% if (r.missing.length) { %>
+              <tr class="missing-row">
+                <td></td>
+                <td colspan="9">חסר: <%= r.missing.join(", ") %></td>
+              </tr>
+            <% } %>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  <% } %>
+
+  <div class="actions" style="margin-top:16px;">
+    <a href="/reports/aides/export?status=<%= encodeURIComponent(status) %><%= branch ? '&branch=' + encodeURIComponent(branch) : '' %><%= aide_type ? '&aide_type=' + encodeURIComponent(aide_type) : '' %>" class="btn secondary">📥 ייצוא לאקסל (לפי הסינון)</a>
+    <a href="/reports" class="btn secondary">חזרה לדוחות</a>
+  </div>
+</div>
+
+<style>
+  table.aides-table { width:100%; border-collapse:collapse; }
+  table.aides-table th, table.aides-table td {
+    border-bottom:1px solid rgba(0,0,0,0.08); padding:6px 8px; text-align:right;
+  }
+  table.aides-table tbody tr:hover { background:rgba(201,151,76,0.08); }
+  table.aides-table tr.missing-row td {
+    color:#c0392b; font-size:0.85em; padding-top:0; border-bottom:1px solid rgba(0,0,0,0.08);
+  }
+</style>
+
+<%- include('../partials/footer') %>

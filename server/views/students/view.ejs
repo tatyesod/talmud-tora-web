@@ -42,6 +42,18 @@
     <tr><th>סמל מוסד</th><td><%= student.institution_code || '' %></td><th>קופת חולים</th><td><%= student.health_fund || '' %></td></tr>
     <tr><th>מגזר</th><td><%= student.sector || '' %></td><th>הולך לבדו</th><td><%= student.walks_alone || '' %></td></tr>
     <tr><th>אלרגיות</th><td><%= student.allergies || '' %></td><th>תרופות</th><td><%= student.medications || '' %></td></tr>
+    <%# פרטי הסייע מוצגים רק כשיש זכאות, כדי לא להעמיס את הכרטיס ברובם המוחלט
+        של התלמידים שאין להם סייע %>
+    <% if (student.aide_eligible === 'כן') { %>
+      <tr><th>זכאי לסייע</th><td>כן<%= student.aide_type ? ' — ' + student.aide_type : '' %></td>
+          <th>שם הסייע</th><td><%= student.aide_name || '' %></td></tr>
+      <tr><th>נייד הסייע</th><td><%- student.aide_mobile ? phoneLink(student.aide_mobile) : '' %></td>
+          <th>ת.ז הסייע</th><td><%= student.aide_id_number || '' %></td></tr>
+      <tr><th>כמות שעות</th><td><%= student.aide_hours || '' %></td>
+          <th>למי משולם</th><td><%= student.aide_payer || '' %></td></tr>
+    <% } else if (student.aide_eligible === 'לא') { %>
+      <tr><th>זכאי לסייע</th><td colspan="3">לא</td></tr>
+    <% } %>
     <tr><th>תאריך רישום</th><td><%= student.registration_date_str || '' %></td><th>תאריך קבלה</th><td><%= student.admission_date_str || '' %></td></tr>
     <tr><th>תאריך כניסה</th><td><%= student.entry_date_str || '' %></td><th>תאריך יציאה</th><td><%= student.exit_date_str || '' %></td></tr>
     <tr><th>הערות</th><td colspan="3"><%= student.notes || '' %></td></tr>
