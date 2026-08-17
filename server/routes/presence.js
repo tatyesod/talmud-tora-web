@@ -14,10 +14,11 @@ router.post("/ping", (req, res) => {
 router.get("/list", (req, res) => {
   const rows = db
     .prepare(`
-      SELECT u.id, u.username, u.display_name, p.last_seen
+      SELECT u.id, u.username, u.display_name, u.is_admin, p.last_seen
       FROM users u
       LEFT JOIN user_presence p ON p.user_id = u.id
-      ORDER BY u.display_name
+      -- מנהל המערכת ראשון תמיד, ואחריו השאר לפי שם
+      ORDER BY u.is_admin DESC, u.display_name
     `)
     .all();
   const now = Date.now();
