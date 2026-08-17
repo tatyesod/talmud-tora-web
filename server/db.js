@@ -1468,19 +1468,6 @@ try {
   console.error("שגיאה בניקוי תחיליות סבים:", e.message);
 }
 
-// כיבוי חד-פעמי של קלדנית user4 מרשימת ההתייעצויות של בקשות התחזוקה -
-// היא אינה מטפלת בתחזוקה. מוגן בדגל, כך שאם תופעל שוב ידנית זה לא יידרס.
-try {
-  const alreadySet = db.prepare("SELECT value FROM settings WHERE key = 'maintenance_consult_defaults_v1'").get();
-  if (!alreadySet) {
-    const result = db.prepare("UPDATE users SET exclude_from_consult = 1 WHERE username = 'user4'").run();
-    if (result.changes) console.log(`[התייעצויות תחזוקה] ${result.changes} משתמשים הוסרו מרשימת ההתייעצות`);
-    db.prepare("INSERT INTO settings (key, value) VALUES ('maintenance_consult_defaults_v1', '1')").run();
-  }
-} catch (e) {
-  console.error("שגיאה בהגדרת רשימת ההתייעצויות:", e.message);
-}
-
 // שדה נפרד לחברת גביה של תרומות - נבדל מ-billing_company (ששימש/משמש
 // ספציפית לשכ"ל). "קשר" היא ברירת המחדל הראשית לשתיהן, אבל הן עשויות
 // להיות שונות בפועל, ולכן שני שדות נפרדים.
