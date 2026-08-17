@@ -148,6 +148,11 @@ router.get("/:userId", (req, res) => {
 });
 
 router.post("/:userId", upload.single("attachment"), (req, res) => {
+  // הודעה לעצמו נספרת במונה ההודעות החדשות אך לא מופיעה בשום שיחה, כי
+  // רשימת השיחות מציגה רק משתמשים אחרים - כלומר מונה שאי אפשר לאפס.
+  if (parseInt(req.params.userId, 10) === req.currentUser.id) {
+    return res.redirect("/messages");
+  }
   const { body, reply_to_id } = req.body;
   let cleanBody = body ? body.replace(/\n{3,}/g, "\n\n").trim() : "";
   const hasText = cleanBody.length > 0;

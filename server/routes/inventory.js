@@ -179,7 +179,13 @@ router.get("/maintenance", (req, res) => {
   // ואין לו גישה למסך ההודעות הכללי.
   let workerThread = [], workerUnread = 0;
   if (isMaintenanceView && req.currentUser) {
-    const uid = req.currentUser.role === "maintenance" ? req.currentUser.id : null;
+    // בתצוגה מקדימה המשתמש המחובר הוא המנהל, ולכן אין לו שרשור "של תחזוקן".
+    // קודם החלונית חזרה ריקה והמנהל הסיק שההודעה שלו לא הגיעה - בעוד
+    // שהתחזוקן האמיתי כן היה רואה אותה. עכשיו התצוגה מציגה את השרשור של
+    // התחזוקן עצמו, כדי שמה שהמנהל בודק יהיה מה שהתחזוקן רואה.
+    const uid = req.currentUser.role === "maintenance"
+      ? req.currentUser.id
+      : (db.prepare("SELECT id FROM users WHERE role = 'maintenance' ORDER BY id LIMIT 1").get() || {}).id;
     if (uid) {
       workerThread = db.prepare(`
         SELECT m.*, s.display_name AS sender_name, r.display_name AS recipient_name
@@ -198,9 +204,12 @@ router.get("/maintenance", (req, res) => {
       workerUnread = db.prepare(
         "SELECT COUNT(*) c FROM messages WHERE recipient_id = ? AND read_at IS NULL"
       ).get(uid).c;
-      // סימון כנקרא ברגע שהוא רואה את המסך
-      db.prepare("UPDATE messages SET read_at = ? WHERE recipient_id = ? AND read_at IS NULL")
-        .run(new Date().toISOString(), uid);
+      // סימון כנקרא רק כשהתחזוקן עצמו צופה. בתצוגה מקדימה אסור לסמן -
+      // אחרת המנהל "קורא" בשמו ומונה ההודעות החדשות שלו מתאפס.
+      if (req.currentUser.role === "maintenance") {
+        db.prepare("UPDATE messages SET read_at = ? WHERE recipient_id = ? AND read_at IS NULL")
+          .run(new Date().toISOString(), uid);
+      }
     }
   }
 
@@ -213,7 +222,7 @@ router.get("/maintenance", (req, res) => {
   res.render(isMaintenanceView ? "inventory/maintenance-worker" : "inventory/maintenance-list", {
     requests, status: status || "", branch: branch || "",
     maintenanceEmail: getMaintenanceEmail(), notifyUsers,
-    workerThread, workerUnread,
+    workerThread, workerUnread, noSend: req.query.noSend === "1",
     isPreview: !!(res.locals.isAdmin && req.query.preview === "maintenance"),
   });
 });
@@ -314,12 +323,19 @@ router.put("/maintenance/:id", (req, res) => {
 // שליחת הודעה מהתחזוקן לצוות. הנמען מאומת מול אותה רשימה שמוצגת לו,
 // כדי שלא ניתן יהיה לשלוח למשתמש שהוצא מרשימת ההתייעצות ע"י שינוי הטופס.
 router.post("/maintenance/message", (req, res) => {
+  // שליחה מותרת לתחזוקן בלבד. בתצוגה מקדימה השולח הוא המנהל, וקודם נשלחה
+  // כך הודעה ממנו אל עצמו - היא נספרה בכותרת אבל לא הופיעה בשום שיחה,
+  // כי רשימת השיחות מציגה רק משתמשים אחרים.
+  if (!req.currentUser || req.currentUser.role !== "maintenance") {
+    return res.redirect("/inventory/maintenance" +
+      (req.body.preview === "maintenance" ? "?preview=maintenance&noSend=1" : ""));
+  }
   const to = parseInt(req.body.recipient_id, 10);
   const body = String(req.body.body || "").trim();
-  const allowed = db.prepare(`SELECT id FROM users
+  const allowed = to !== req.currentUser.id && db.prepare(`SELECT id FROM users
     WHERE id = ? AND (role IS NULL OR role <> 'maintenance')
       AND COALESCE(exclude_from_consult, 0) = 0`).get(to);
-  if (allowed && body && req.currentUser) {
+  if (allowed && body) {
     db.prepare(`INSERT INTO messages (sender_id, recipient_id, body, created_at)
                 VALUES (?,?,?,?)`).run(req.currentUser.id, to, body, new Date().toISOString());
   }

@@ -1468,6 +1468,21 @@ try {
   console.error("שגיאה בניקוי תחיליות סבים:", e.message);
 }
 
+// ניקוי חד-פעמי: הודעות שמשתמש שלח אל עצמו. הן נוצרו בגלל באג בתצוגה
+// המקדימה של מסך התחזוקן - השולח שם היה המנהל ולא התחזוקן, וההודעה יצאה
+// ממנו אל עצמו. הן נספרו במונה ההודעות החדשות אך לא הופיעו בשום שיחה,
+// כי רשימת השיחות מציגה רק משתמשים אחרים. כלומר מונה שלא ניתן לאפס.
+try {
+  const alreadySet = db.prepare("SELECT value FROM settings WHERE key = 'self_messages_cleanup_v1'").get();
+  if (!alreadySet) {
+    const result = db.prepare("DELETE FROM messages WHERE sender_id = recipient_id").run();
+    if (result.changes) console.log(`[הודעות] נמחקו ${result.changes} הודעות שנשלחו לעצמו (באג בתצוגה מקדימה)`);
+    db.prepare("INSERT INTO settings (key, value) VALUES ('self_messages_cleanup_v1', '1')").run();
+  }
+} catch (e) {
+  console.error("שגיאה בניקוי הודעות לעצמו:", e.message);
+}
+
 // שדה נפרד לחברת גביה של תרומות - נבדל מ-billing_company (ששימש/משמש
 // ספציפית לשכ"ל). "קשר" היא ברירת המחדל הראשית לשתיהן, אבל הן עשויות
 // להיות שונות בפועל, ולכן שני שדות נפרדים.

@@ -43,19 +43,29 @@
       <% if (workerUnread > 0) { %><span class="wo-msg-badge"><%= workerUnread %> חדשות</span><% } %>
     </summary>
 
-    <form method="POST" action="/inventory/maintenance/message" class="wo-msg-form">
-      <% if (isPreview) { %><input type="hidden" name="preview" value="maintenance" /><% } %>
-      <div class="wo-msg-row">
-        <label>אל</label>
-        <select name="recipient_id" required>
-          <% notifyUsers.forEach(u => { %>
-            <option value="<%= u.id %>"><%= u.display_name || u.username %></option>
-          <% }) %>
-        </select>
-      </div>
-      <textarea name="body" rows="2" placeholder="כתוב הודעה…" required></textarea>
-      <button type="submit" class="btn">📨 שליחה</button>
-    </form>
+    <% if (isPreview) { %>
+      <%# בתצוגה מקדימה אין שליחה: השולח היה המנהל ולא התחזוקן, וההודעה
+          הייתה יוצאת ממנו אל עצמו ונעלמת מרשימת השיחות. %>
+      <p class="wo-msg-preview-note">
+        בתצוגה מקדימה אין שליחת הודעות — כאן רואים רק מה שהתחזוקן רואה.
+        <% if (typeof noSend !== 'undefined' && noSend) { %>
+          <strong>ההודעה לא נשלחה.</strong> כדי לשלוח, התחבר עם המשתמש שלו.
+        <% } %>
+      </p>
+    <% } else { %>
+      <form method="POST" action="/inventory/maintenance/message" class="wo-msg-form">
+        <div class="wo-msg-row">
+          <label>אל</label>
+          <select name="recipient_id" required>
+            <% notifyUsers.forEach(u => { %>
+              <option value="<%= u.id %>"><%= u.display_name || u.username %></option>
+            <% }) %>
+          </select>
+        </div>
+        <textarea name="body" rows="2" placeholder="כתוב הודעה…" required></textarea>
+        <button type="submit" class="btn">📨 שליחה</button>
+      </form>
+    <% } %>
 
     <% if (workerThread.length === 0) { %>
       <p class="wo-msg-none">אין הודעות עדיין.</p>
@@ -226,6 +236,10 @@
   .wo-msg-body { font-size: 1em; line-height: 1.4; white-space: pre-wrap; }
   .wo-msg-att { font-size: 0.82em; color: #2d7a4f; }
   .wo-msg-none { color: var(--muted); font-size: 0.88em; }
+  .wo-msg-preview-note {
+    font-size: 0.85em; color: #7a5b18; background: #fff3cd;
+    border: 1px solid #e0c880; border-radius: 6px; padding: 6px 10px; margin: 8px 0;
+  }
 
   /* --- תמונות וסרטונים --- */
   .media-box { margin-top: 8px; border-top: 1px dashed rgba(0,0,0,0.15); padding-top: 8px; }
