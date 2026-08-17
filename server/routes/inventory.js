@@ -106,7 +106,13 @@ router.get("/maintenance", (req, res) => {
     sql += " AND COALESCE(m.branch, c.branch) = ?";
     params.push(branch);
   }
-  sql += " ORDER BY m.created_at DESC";
+  // סדר התצוגה: פתוח -> בטיפול -> במעקב -> סגור, ובתוך כל קבוצה החדש קודם.
+  // הסגורים יורדים לתחתית ואינם נמחקים, כדי שתישאר היסטוריית תחזוקה שממנה
+  // אפשר לזהות תקלות חוזרות באותו מקום.
+  sql += ` ORDER BY CASE m.status
+             WHEN 'פתוח' THEN 0 WHEN 'בטיפול' THEN 1
+             WHEN 'במעקב' THEN 2 WHEN 'סגור' THEN 3 ELSE 4 END,
+           m.created_at DESC`;
   const requests = db.prepare(sql).all(...params).map((r) => ({
     ...r,
     created_at_str: r.created_at ? hd.formatGregorian(r.created_at) : "",
@@ -133,7 +139,14 @@ router.get("/maintenance/print", (req, res) => {
     sql += " AND COALESCE(m.branch, c.branch) = ?";
     params.push(branch);
   }
-  sql += " ORDER BY m.created_at DESC";
+  // ההדפסה מיועדת לעבודה שוטפת ולכן אינה כוללת בקשות סגורות. הן נשארות
+  // במערכת ונראות במסך, אבל אין טעם להדפיס לתחזוקן מה שכבר טופל.
+  // סינון מפורש לסטטוס "סגור" עדיין עובד, למי שרוצה להדפיס דווקא אותן.
+  if (status !== "סגור") sql += " AND m.status <> 'סגור'";
+  sql += ` ORDER BY CASE m.status
+             WHEN 'פתוח' THEN 0 WHEN 'בטיפול' THEN 1
+             WHEN 'במעקב' THEN 2 ELSE 3 END,
+           m.created_at DESC`;
   const requests = db.prepare(sql).all(...params);
   const headers = ["תאריך", "סניף", "תיאור", "מיקום", "דווח ע\"י", "סטטוס"];
   const rows = requests.map((r) => [
@@ -185,6 +198,7 @@ router.post("/maintenance", (req, res) => {
 
 router.put("/maintenance/:id", (req, res) => {
   const { status, notes } = req.body;
+  // "במעקב" אינו סיום טיפול, ולכן אינו מסמן תאריך סגירה
   const resolvedAt = status === "סגור" ? new Date().toISOString() : null;
   db.prepare("UPDATE maintenance_requests SET status = ?, notes = ?, resolved_at = ? WHERE id = ?").run(
     status, notes || null, resolvedAt, req.params.id

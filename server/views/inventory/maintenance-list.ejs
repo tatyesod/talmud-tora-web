@@ -13,6 +13,7 @@
       <option value="">כל הסטטוסים</option>
       <option value="פתוח" <%= status === 'פתוח' ? 'selected' : '' %>>פתוח</option>
       <option value="בטיפול" <%= status === 'בטיפול' ? 'selected' : '' %>>בטיפול</option>
+      <option value="במעקב" <%= status === 'במעקב' ? 'selected' : '' %>>במעקב</option>
       <option value="סגור" <%= status === 'סגור' ? 'selected' : '' %>>סגור</option>
     </select>
     <select name="branch">
@@ -48,9 +49,17 @@
         </tr>
       </thead>
       <tbody>
+        <% let firstClosed = true; %>
         <% requests.forEach(r => { %>
           <% const place = r.class_name ? r.class_name+(r.parallel?' ('+r.parallel+')':'') : (r.location || ''); %>
-          <tr>
+          <%# הסגורות יורדות לתחתית ומופרדות בקו + כותרת, כדי שיהיו זמינות
+              כהיסטוריה (תקלות חוזרות באותו מקום) בלי להפריע לעבודה השוטפת %>
+          <% if (r.status === 'סגור' && firstClosed) { firstClosed = false; %>
+            <tr class="closed-divider">
+              <td colspan="9">היסטוריה — בקשות סגורות (אינן נכללות בהדפסה)</td>
+            </tr>
+          <% } %>
+          <tr class="<%= r.status === 'סגור' ? 'row-closed' : '' %>">
             <td>
               <input type="checkbox" class="task-check"
                      data-description="<%= r.description %>"
@@ -69,6 +78,7 @@
                 <select name="status" onchange="this.form.submit()">
                   <option value="פתוח" <%= r.status === 'פתוח' ? 'selected' : '' %>>פתוח</option>
                   <option value="בטיפול" <%= r.status === 'בטיפול' ? 'selected' : '' %>>בטיפול</option>
+                  <option value="במעקב" <%= r.status === 'במעקב' ? 'selected' : '' %>>במעקב</option>
                   <option value="סגור" <%= r.status === 'סגור' ? 'selected' : '' %>>סגור</option>
                 </select>
                 <input type="hidden" name="notes" value="<%= r.notes || '' %>" />
@@ -130,3 +140,16 @@
 </script>
 
 <%- include('../partials/footer') %>
+
+<style>
+  /* בקשות סגורות - מעומעמות, כדי שהפתוחות יבלטו */
+  tr.row-closed { opacity: 0.55; }
+  tr.row-closed:hover { opacity: 1; }
+  tr.closed-divider td {
+    background: rgba(0,0,0,0.05);
+    font-weight: 700;
+    text-align: center;
+    padding: 6px;
+    border-top: 2px solid rgba(0,0,0,0.25);
+  }
+</style>
