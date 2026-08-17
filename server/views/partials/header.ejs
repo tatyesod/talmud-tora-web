@@ -27,7 +27,6 @@
         <a href="/inventory/maintenance" class="nav-current">🔧 בקשות תחזוקה</a>
         <% if (user) { %>
           <span class="nav-who">👤 <%= user %></span>
-          <a href="/users/profile" class="nav-small">החלפת סיסמה</a>
           <form action="/logout" method="POST" style="display:inline">
             <button type="submit" class="btn small secondary">יציאה</button>
           </form>

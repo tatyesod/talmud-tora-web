@@ -171,6 +171,10 @@ app.use("/uploads", express.static(UPLOADS_DIR));
 
 // אם המשתמש חייב לשנות סיסמה — מנתב לעמוד שינוי סיסמה בלבד
 function checkForcePasswordChange(req, res, next) {
+  // התחזוקן אינו מנהל את הסיסמה שלו - המשרד קובע אותה דרך מסך המשתמשים.
+  // הפטור כאן קריטי: בלעדיו הוא נשלח לעמוד שינוי סיסמה, השער חוסם אותו
+  // ומחזיר למסך שלו, ונוצר לופ שמונע ממנו להיכנס בכלל.
+  if (req.currentUser && req.currentUser.role === "maintenance") return next();
   if (
     req.currentUser &&
     req.currentUser.force_password_change &&
@@ -243,8 +247,6 @@ app.use(requireLogin);
 const MAINTENANCE_ALLOWED = [
   "/inventory/maintenance",   // המסך שלו - כולל עדכון סטטוס והערות
   "/logout",
-  "/force-change-password",   // הכרח שינוי סיסמה בכניסה ראשונה
-  "/users/profile",           // הפרופיל שלו - שם משנים סיסמה
   "/js/", "/css/", "/images/", "/favicon.ico", "/sw.js", "/manifest.json",
 ];
 app.use((req, res, next) => {
