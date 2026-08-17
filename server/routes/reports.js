@@ -340,16 +340,18 @@ router.get("/class-roster/view", (req, res) => {
   if (classIds.length === 0) return res.redirect("/reports/class-roster");
 
   // שם המלמד שהוקלד ידנית גובר על השיוך במערכת, כדי שאפשר להפיק את הדוח
-  // גם לכיתה שהשיוך שלה עוד לא הוזן
-  let manual = req.query.teacher_name || [];
-  if (!Array.isArray(manual)) manual = [manual];
+  // גם לכיתה שהשיוך שלה עוד לא הוזן.
+  // הקריאה היא לפי מזהה הכיתה (teacher_name_<id>) ולא לפי מקום במערך: הדפדפן
+  // שולח את שדות הטקסט של כל הכיתות אך רק את תיבות הסימון שסומנו, ולכן
+  // התאמה לפי אינדקס נתנה לכיתה שנבחרה את שם המלמד של כיתה אחרת.
+  const manualFor = (cid) => String(req.query["teacher_name_" + cid] || "").trim();
 
   const classRows = db.prepare(`
     SELECT id, name, parallel, branch FROM classes
     WHERE id IN (${classIds.map(() => "?").join(",")})
   `).all(...classIds);
 
-  const groups = classIds.map((cid, i) => {
+  const groups = classIds.map((cid) => {
     const c = classRows.find((x) => String(x.id) === String(cid));
     if (!c) return null;
     const assigned = db.prepare(`
@@ -381,7 +383,7 @@ router.get("/class-roster/view", (req, res) => {
     return {
       className: c.name + (c.parallel ? " " + c.parallel : ""),
       branch: c.branch || "",
-      teacherName: (manual[i] || "").trim() || assigned || "",
+      teacherName: manualFor(cid) || assigned || "",
       students,
     };
   }).filter(Boolean);

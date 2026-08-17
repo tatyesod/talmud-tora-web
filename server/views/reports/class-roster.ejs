@@ -32,9 +32,10 @@
             <td><strong><%= c.name %><%= c.parallel ? ' ' + c.parallel : '' %></strong></td>
             <td><%= c.branch || '—' %></td>
             <td>
-              <%# שדה אחד לכל שורה, בסדר זהה לתיבות הסימון, כדי שהשרת יתאים
-                  בין שם המלמד לכיתה לפי המקום במערך %>
-              <input type="text" name="teacher_name" value="<%= c.teacher_names || '' %>"
+              <%# שם השדה כולל את מזהה הכיתה. אסור להסתמך על סדר: הדפדפן שולח
+                  את כל שדות הטקסט אך רק את תיבות הסימון שסומנו, ולכן התאמה
+                  לפי מקום במערך שייכה את שם המלמד לכיתה הלא נכונה. %>
+              <input type="text" name="teacher_name_<%= c.id %>" value="<%= c.teacher_names || '' %>"
                      placeholder="<%= c.teacher_names ? '' : 'לא הוזן שיוך — אפשר להקליד' %>" />
             </td>
           </tr>
