@@ -463,6 +463,13 @@ router.get("/class-roster/export", async (req, res) => {
                            st.address, st.homePhone, st.fatherMobile, st.motherMobile]);
       r.alignment = { horizontal: "right" };
       CENTERED.forEach((c) => { r.getCell(c).alignment = { horizontal: "center" }; });
+      // פסים אפור/לבן לקריאות. הצביעה נעשית תא-תא ולא על השורה, אחרת היא
+      // נמשכת גם על עמודות ריקות מימין לטבלה.
+      if (i % 2 === 0) {
+        for (let c = 1; c <= 9; c++) {
+          r.getCell(c).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF0F0F0" } };
+        }
+      }
       // הטלפונים נשמרים כטקסט: אקסל היה הופך "0501234567" למספר ומוחק את
       // האפס המוביל, ומספרים עם מקף היה מנסה לפרש כתאריך.
       [7, 8, 9].forEach((c) => { r.getCell(c).numFmt = "@"; });
