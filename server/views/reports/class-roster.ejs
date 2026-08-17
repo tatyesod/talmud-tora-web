@@ -45,6 +45,10 @@
 
     <div class="actions" style="margin-top:16px;">
       <button type="submit" class="btn">👁️ תצוגה מקדימה / הדפסה</button>
+      <%# formaction מפנה את אותו טופס למסלול הייצוא, כך ששני הכפתורים
+          שולחים בדיוק אותה בחירה. formtarget=_self כדי שההורדה לא תיפתח בטאב. %>
+      <button type="submit" class="btn secondary"
+              formaction="/reports/class-roster/export" formtarget="_self">📥 ייצוא לאקסל</button>
       <a href="/reports" class="btn secondary">חזרה לדוחות</a>
     </div>
   </form>

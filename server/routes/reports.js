@@ -332,12 +332,14 @@ router.get("/class-roster", (req, res) => {
   res.render("reports/class-roster", { classes });
 });
 
-router.get("/class-roster/view", (req, res) => {
+// בניית נתוני הרשימות. משותפת לתצוגה המקדימה ולייצוא לאקסל, כדי ששניהם
+// יראו בדיוק אותו דבר ולא ייווצר הפרש ביניהם.
+function buildRosterGroups(req) {
   const { GRADE_ORDER } = require("../yearManager");
   let classIds = req.query.class_id || [];
   if (!Array.isArray(classIds)) classIds = [classIds];
   classIds = classIds.filter(Boolean);
-  if (classIds.length === 0) return res.redirect("/reports/class-roster");
+  if (classIds.length === 0) return [];
 
   // שם המלמד שהוקלד ידנית גובר על השיוך במערכת, כדי שאפשר להפיק את הדוח
   // גם לכיתה שהשיוך שלה עוד לא הוזן.
@@ -394,7 +396,89 @@ router.get("/class-roster/view", (req, res) => {
            a.className.localeCompare(b.className, "he");
   });
 
+    return groups;
+}
+
+router.get("/class-roster/view", (req, res) => {
+  const groups = buildRosterGroups(req);
+  if (groups.length === 0) return res.redirect("/reports/class-roster");
   res.render("reports/class-roster-view", { groups });
+});
+
+router.get("/class-roster/export", async (req, res) => {
+  const groups = buildRosterGroups(req);
+  if (groups.length === 0) return res.redirect("/reports/class-roster");
+
+  const HEADER = ["#", "משפחה", "חיבה", "שם האב", "לידה עברי", "כתובת",
+                  "טלפון בית", "נייד אבא", "נייד אמא"];
+
+  const wb = new ExcelJS.Workbook();
+  wb.creator = "מערכת ניהול תלמוד תורה החדש";
+
+  // שם גיליון באקסל: עד 31 תווים, ובלי : \ / ? * [ ] . שמות כפולים
+  // (אותה שכבה בשני סניפים) מקבלים סיומת מספרית כדי שהייצוא לא ייכשל.
+  const used = new Set();
+  const sheetName = (g) => {
+    let base = (g.className + (g.branch ? " " + g.branch : "")).replace(/[:\\\/\?\*\[\]]/g, "-").slice(0, 31);
+    let name = base, i = 2;
+    while (used.has(name)) { name = base.slice(0, 28) + "(" + i++ + ")"; }
+    used.add(name);
+    return name;
+  };
+
+  for (const g of groups) {
+    const ws = wb.addWorksheet(sheetName(g), { views: [{ rightToLeft: true }] });
+
+    ws.mergeCells(1, 1, 1, HEADER.length);
+    const t = ws.getCell(1, 1);
+    t.value = "רשימת תלמידים כיתה " + g.className + (g.teacherName ? "   שם המלמד: " + g.teacherName : "");
+    t.font = { size: 14, bold: true, color: { argb: "FF2C5F7C" } };
+    t.alignment = { horizontal: "right", vertical: "middle" };
+    ws.getRow(1).height = 24;
+
+    ws.mergeCells(2, 1, 2, HEADER.length);
+    const sub = ws.getCell(2, 1);
+    sub.value = [g.branch, g.students.length + " תלמידים",
+                 "הופק: " + hd.serialToHebrewString(hd.todayAccessSerial())].filter(Boolean).join(" · ");
+    sub.font = { size: 9, italic: true, color: { argb: "FF888888" } };
+    sub.alignment = { horizontal: "right" };
+
+    ws.addRow([]);
+    const hr = ws.addRow(HEADER);
+    hr.font = { bold: true, color: { argb: "FFFFFFFF" } };
+    hr.height = 18;
+    hr.eachCell((cell) => {
+      cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF2C5F7C" } };
+      cell.alignment = { horizontal: "right", vertical: "middle" };
+    });
+
+    g.students.forEach((st, i) => {
+      const r = ws.addRow([i + 1, st.family, st.nickname, st.fatherName, st.hebrewBirth,
+                           st.address, st.homePhone, st.fatherMobile, st.motherMobile]);
+      r.alignment = { horizontal: "right" };
+    });
+
+    // גבולות מלאים על כל טווח הנתונים
+    const thin = { style: "thin" };
+    for (let rr = 4; rr <= 4 + g.students.length; rr++) {
+      const row = ws.getRow(rr);
+      for (let cc = 1; cc <= HEADER.length; cc++) {
+        row.getCell(cc).border = { top: thin, bottom: thin, left: thin, right: thin };
+      }
+    }
+    [5, 16, 13, 15, 15, 30, 13, 13, 13].forEach((w, i) => { ws.getColumn(i + 1).width = w; });
+    ws.pageSetup = { paperSize: 9, orientation: "portrait", fitToPage: true, fitToWidth: 1, fitToHeight: 0 };
+  }
+
+  // שם קובץ בעברית - חובה filename* מקודד, אחרת HTTP נופל על ERR_INVALID_CHAR
+  const fileName = groups.length === 1
+    ? `רשימת תלמידים ${groups[0].className}.xlsx`
+    : "רשימות תלמידים.xlsx";
+  res.setHeader("Content-Disposition",
+    `attachment; filename="class-roster.xlsx"; filename*=UTF-8''${encodeURIComponent(fileName)}`);
+  res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+  await wb.xlsx.write(res);
+  res.end();
 });
 
 // ============ דוח סייעים ============
