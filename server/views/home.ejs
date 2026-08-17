@@ -552,12 +552,17 @@
     // עכשיו, כשהסדר הסופי ידוע, קובעים לכל כרטיס השהיה לפי מיקומו בפועל.
     // שתי מסגרות המתנה נחוצות: בלעדיהן הדפדפן מצרף את מצב הפתיחה ואת הוספת
     // המחלקה לאותה מסגרת, ההנפשה לא מתחילה כלל, והכרטיסים פשוט "קופצים".
+    // ההשהיות קוצרו: קודם החשיפה נמשכה כ-1.5 שניות, ובחלון הזה החוט הראשי
+    // עסוק בהנפשת 16 כרטיסים - כל לחיצה בתוכו ממתינה. עכשיו הכל מסתיים
+    // בפחות מחצי שנייה, וההשהיה בין כרטיס לכרטיס קטנה מכדי להיות מורגשת
+    // כעיכוב אך מספיקה כדי שהחשיפה תיראה הדרגתית.
     const navCards = [...grid.querySelectorAll('.nav-card')];
-    navCards.forEach((c, i) => { c.style.animationDelay = (0.12 + i * 0.055) + 's'; });
+    navCards.forEach((c, i) => { c.style.animationDelay = (0.04 + i * 0.018) + 's'; });
     requestAnimationFrame(() => requestAnimationFrame(() => {
       grid.classList.add('ordered');
       // בתום החשיפה מסירים את ההנפשה, כדי שאפקט הריחוף יחזור לעבוד כרגיל
-      const totalMs = (0.12 + navCards.length * 0.055 + 0.5) * 1000;
+      // ושלא יישאר שום דבר פעיל על החוט הראשי
+      const totalMs = (0.04 + navCards.length * 0.018 + 0.3) * 1000;
       setTimeout(() => {
         navCards.forEach(c => { c.style.animationDelay = ''; });
         grid.classList.add('done');
