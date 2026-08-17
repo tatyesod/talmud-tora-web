@@ -302,6 +302,9 @@
 .nav-grid {
   display: grid;
   grid-template-columns: repeat(6, 1fr);
+  /* גובה אחיד לכל הלחצנים. auto-rows קובע את הגובה מראש, כך שכרטיס עם
+     כיתוב ארוך יותר לא מותח את כל השורה שלו. */
+  grid-auto-rows: 104px;
   gap: 8px;
 }
 @media (max-width: 1100px) {
@@ -313,6 +316,10 @@
 
 .nav-card {
   position: relative;
+  height: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+  justify-content: center;
   background: linear-gradient(145deg, rgba(255,255,255,0.10), rgba(255,255,255,0.03));
   border: 1px solid rgba(201,151,76,0.30);
   box-shadow: 0 3px 12px rgba(0,0,0,0.2);
@@ -397,34 +404,63 @@
   font-size: 0.75em;
 }
 
-.nav-card-presence {
-  cursor: default;
-  justify-content: center;
+/* ===== "מחוברים כעת" - פאנל מידע בעמודה השמאלית ===== */
+/* היה כרטיס בתוך רשת הלחצנים, למרות שאינו לחצן ואינו נגרר. התוכן שלו
+   הכתיב את גובה כל השורה שלידו, ולכן הלחצנים נמתחו. כאן הוא עומד בפני
+   עצמו, ורשת הלחצנים חזרה לגובה אחיד. */
+.presence-panel {
+  margin-top: 12px;
+  border: 1px solid rgba(201,151,76,0.22);
+  border-radius: 14px;
+  background:
+    radial-gradient(120% 80% at 100% 0%, rgba(45,122,79,0.16), transparent 60%),
+    linear-gradient(160deg, rgba(255,255,255,0.07), rgba(255,255,255,0.02));
 }
-.nav-card-presence:hover { transform: none; border-color: rgba(201,151,76,0.25); box-shadow: none; background: linear-gradient(160deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02)); }
+.presence-panel h3 {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.9em;
+  letter-spacing: 0.02em;
+}
+/* נקודה ירוקה פועמת - מסמנת שהנתון חי ומתעדכן */
+.presence-dot-live {
+  width: 9px; height: 9px; border-radius: 50%;
+  background: #37d67a;
+  box-shadow: 0 0 0 0 rgba(55,214,122,0.55);
+  animation: presence-pulse 2.2s ease-out infinite;
+  flex: none;
+}
+@keyframes presence-pulse {
+  0%   { box-shadow: 0 0 0 0 rgba(55,214,122,0.55); }
+  70%  { box-shadow: 0 0 0 8px rgba(55,214,122,0); }
+  100% { box-shadow: 0 0 0 0 rgba(55,214,122,0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .presence-dot-live { animation: none; }
+}
 
-.presence-mini-title {
-  display: block;
-  font-size: 0.78em;
-  color: #c9974c;
-  text-align: center;
-  margin-bottom: 6px;
-  font-weight: 700;
-}
 .presence-list-mini {
   list-style: none;
   padding: 0;
-  margin: 0;
+  margin: 6px 0 0;
   width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 2px;
+  max-height: 190px;
+  overflow-y: auto;
 }
 .presence-list-mini .presence-item {
-  justify-content: center;
-  font-size: 0.78em;
-  padding: 1px 0;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.85em;
+  padding: 4px 6px;
+  border-radius: 7px;
+  background: rgba(255,255,255,0.04);
 }
+.presence-list-mini .presence-loading { font-size: 0.82em; color: var(--muted); padding: 4px 6px; }
 
 /* ===== עוגן פאנלי צד - שני פאנלים בלבד: טאבים בימין, הודעות בשמאל ===== */
 .side-dock {

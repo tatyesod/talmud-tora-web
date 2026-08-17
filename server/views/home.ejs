@@ -193,11 +193,6 @@
         <div class="nav-sub">הוספה מהירה</div>
       </a>
 
-      <div class="nav-card nav-card-presence" style="--d:6">
-        <span class="presence-mini-title">🟢 מחוברים כעת</span>
-        <ul class="presence-list-mini" id="presence-list"><li class="presence-loading">טוען...</li></ul>
-      </div>
-
       <a href="/suppliers" class="nav-card" style="--d:7">
         <div class="nav-icon">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
@@ -429,6 +424,14 @@
       </div>
       <a href="/messages" class="btn small secondary" style="width:100%; text-align:center; margin-top:8px;">כל ההודעות</a>
     </aside>
+
+    <%# "מחוברים כעת" הועבר לכאן מתוך רשת הלחצנים. שם הוא היה כרטיס בין
+        הכרטיסים למרות שאינו לחצן, לא ניתן לגרירה, והתוכן שלו הרחיב את
+        כל שורת הלחצנים שלידו. כאן הוא פאנל מידע, וזה גם מה שהוא באמת. %>
+    <aside class="side-panel presence-panel">
+      <h3><span class="presence-dot-live"></span> מחוברים כעת</h3>
+      <ul class="presence-list-mini" id="presence-list"><li class="presence-loading">טוען...</li></ul>
+    </aside>
   </div>
 
   <div class="info-bar" id="info-bar">
@@ -529,7 +532,6 @@
       try {
         const order = JSON.parse(saved);
         const cards = [...grid.children];
-        const presence = cards.find(c => c.classList.contains('nav-card-presence'));
         const moved = new Set();
         order.forEach(href => {
           const card = cards.find(c => c.getAttribute('href') === href);
@@ -539,9 +541,8 @@
         // סדר מותאם אישית) - חייבים עדיין להופיע, אז מוסיפים אותם בסוף
         // באופן מפורש, במקום לסמוך על המיקום המקרי שלהם בדום
         cards.forEach(card => {
-          if (!moved.has(card) && card !== presence) grid.appendChild(card);
+          if (!moved.has(card)) grid.appendChild(card);
         });
-        if (presence) grid.appendChild(presence);
       } catch(e) {}
     }
     // עכשיו, כשהסדר הסופי ידוע, קובעים לכל כרטיס השהיה לפי מיקומו בפועל.
@@ -561,7 +562,7 @@
 
     let dragSrc = null;
 
-    grid.querySelectorAll('.nav-card:not(.nav-card-presence)').forEach(card => {
+    grid.querySelectorAll('.nav-card').forEach(card => {
       card.setAttribute('draggable', 'true');
       card.style.cursor = 'grab';
 
@@ -578,14 +579,14 @@
       });
       card.addEventListener('dragover', e => {
         e.preventDefault();
-        if (card !== dragSrc && !card.classList.contains('nav-card-presence')) {
+        if (card !== dragSrc) {
           grid.querySelectorAll('.nav-card').forEach(c => c.classList.remove('drag-over'));
           card.classList.add('drag-over');
         }
       });
       card.addEventListener('drop', e => {
         e.preventDefault();
-        if (dragSrc && dragSrc !== card && !card.classList.contains('nav-card-presence')) {
+        if (dragSrc && dragSrc !== card) {
           const allCards = [...grid.children];
           const srcIdx = allCards.indexOf(dragSrc);
           const tgtIdx = allCards.indexOf(card);
