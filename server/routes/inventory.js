@@ -117,7 +117,18 @@ router.get("/maintenance", (req, res) => {
     ...r,
     created_at_str: r.created_at ? hd.formatGregorian(r.created_at) : "",
   }));
-  res.render("inventory/maintenance-list", { requests, status: status || "", branch: branch || "", maintenanceEmail: getMaintenanceEmail() });
+  // תצוגת התחזוקן: מסך מצומצם, בלי שליחת מייל ובלי תיבות סימון.
+  // מנהל יכול לראות אותה בדיוק כמו שהוא רואה אותה, עם ?preview=maintenance -
+  // אותה תבנית ואותו קוד, כדי שמה שהמנהל בודק יהיה מה שהתחזוקן מקבל.
+  const isMaintenanceView =
+    (req.currentUser && req.currentUser.role === "maintenance") ||
+    (res.locals.isAdmin && req.query.preview === "maintenance");
+
+  res.render(isMaintenanceView ? "inventory/maintenance-worker" : "inventory/maintenance-list", {
+    requests, status: status || "", branch: branch || "",
+    maintenanceEmail: getMaintenanceEmail(),
+    isPreview: !!(res.locals.isAdmin && req.query.preview === "maintenance"),
+  });
 });
 
 router.get("/maintenance/print", (req, res) => {

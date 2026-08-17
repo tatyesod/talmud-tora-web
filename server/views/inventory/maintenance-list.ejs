@@ -35,6 +35,10 @@
       <span style="color:var(--muted); font-size:0.85em;">⚠️ לא נמצא מייל תחזוקן בכרטיס האישי - שליחה חוזרת לא זמינה</span>
     <% } else { %>
       <button type="button" class="btn" onclick="resendSelected()">📧 שליחה חוזרת לתחזוקן (נבחרים)</button>
+      <%# מרנדר את אותה תבנית שהתחזוקן מקבל, כדי שמה שנבדק הוא מה שהוא רואה %>
+      <% if (typeof isAdmin !== 'undefined' && isAdmin) { %>
+        <a href="/inventory/maintenance?preview=maintenance" class="btn secondary">👁️ תצוגה כמו התחזוקן</a>
+      <% } %>
     <% } %>
   </div>
 

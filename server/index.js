@@ -52,10 +52,14 @@ app.use(
 // ניתוק אחרי חוסר פעילות. קודם זה נשען על תפוגת העוגייה; מרגע שהעוגייה היא
 // עוגיית סשן אין לה תפוגה משלה, ולכן הבדיקה נעשית כאן מול חותמת זמן בסשן.
 const IDLE_LIMIT_MS = 1000 * 60 * 20; // 20 דקות
+// לתחזוקן הטאבלט יושב במשרד ומוצג לאורך היום, ולכן ניתוק כל 20 דקות היה
+// מקבל אותו במסך התחברות בכל פעם. התפקיד שלו מקבל חלון ארוך במקום.
+const IDLE_LIMIT_MAINTENANCE_MS = 1000 * 60 * 60 * 12; // 12 שעות
 app.use((req, res, next) => {
   if (!req.session.userId) return next();
   const now = Date.now();
-  if (req.session.lastSeen && now - req.session.lastSeen > IDLE_LIMIT_MS) {
+  const limit = req.session.userRole === "maintenance" ? IDLE_LIMIT_MAINTENANCE_MS : IDLE_LIMIT_MS;
+  if (req.session.lastSeen && now - req.session.lastSeen > limit) {
     return req.session.destroy(() => res.redirect("/login"));
   }
   req.session.lastSeen = now;
@@ -66,13 +70,15 @@ app.use((req, res, next) => {
 app.use((req, res, next) => {
   if (req.session.userId) {
     const db = require("./db");
-    const u = db.prepare("SELECT id, username, display_name, full_name, role_title, is_admin, force_password_change, drive_letter, nav_order FROM users WHERE id = ?").get(req.session.userId);
+    const u = db.prepare("SELECT id, username, display_name, full_name, role_title, is_admin, force_password_change, drive_letter, nav_order, role FROM users WHERE id = ?").get(req.session.userId);
     if (u) {
       req.currentUser = u;
       res.locals.user = u.display_name || u.username;
       res.locals.currentUserId = u.id;
       res.locals.currentUserFullName = u.full_name || u.display_name || u.username;
       res.locals.isAdmin = !!u.is_admin;
+      res.locals.userRole = u.role || "";
+      res.locals.isMaintenanceUser = u.role === "maintenance";
       db.prepare(
         "INSERT INTO user_presence (user_id, last_seen) VALUES (?, ?) ON CONFLICT(user_id) DO UPDATE SET last_seen = excluded.last_seen"
       ).run(u.id, new Date().toISOString());
@@ -207,7 +213,11 @@ app.post("/login", (req, res) => {
   const u = db.prepare("SELECT * FROM users WHERE username = ?").get(username);
   if (u && verifyPassword(password, u.password_hash)) {
     req.session.userId = u.id;
-    return res.redirect("/");
+    // התפקיד נשמר בסשן כי בדיקת חוסר הפעילות רצה לפני שליפת המשתמש מהמסד,
+    // ובלעדיו הפטור של התחזוקן לא היה נכנס לתוקף לעולם.
+    req.session.userRole = u.role || "";
+    // התחזוקן נשלח ישר למסך היחיד שלו, כדי שהטאבלט ייפתח על מה שהוא צריך
+    return res.redirect(u.role === "maintenance" ? "/inventory/maintenance" : "/");
   }
   res.render("login", { error: "שם משתמש או סיסמה שגויים" });
 });
@@ -226,6 +236,23 @@ app.use("/api/proxy", (req, res, next) => next());
 app.use("/api/jewish-calendar", (req, res, next) => next());
 
 app.use(requireLogin);
+
+// ===== שער הרשאות לתחזוקן החיצוני =====
+// רשימה לבנה ולא שחורה: כל נתיב שאינו כאן חסום לו. כך פיצ'ר שנבנה בעתיד
+// חסום עבורו אוטומטית, ולא נגלה יום אחד שהוא רואה נתוני שכר או תלמידים.
+const MAINTENANCE_ALLOWED = [
+  "/inventory/maintenance",   // המסך שלו - כולל עדכון סטטוס והערות
+  "/logout",
+  "/change-password",
+  "/js/", "/css/", "/images/", "/favicon.ico", "/sw.js", "/manifest.json",
+];
+app.use((req, res, next) => {
+  if (!req.currentUser || req.currentUser.role !== "maintenance") return next();
+  const ok = MAINTENANCE_ALLOWED.some((p) => req.path === p || req.path.startsWith(p + "/") || req.path.startsWith(p));
+  if (ok) return next();
+  // לא שגיאה - פשוט מחזירים אותו למסך היחיד שלו
+  return res.redirect("/inventory/maintenance");
+});
 app.use(checkForcePasswordChange);
 
 app.get("/", (req, res) => {

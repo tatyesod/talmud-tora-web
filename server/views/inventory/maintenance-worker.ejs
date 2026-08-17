@@ -1,0 +1,102 @@
+<%- include('../partials/header', {title: 'בקשות תחזוקה'}) %>
+
+<% if (isPreview) { %>
+  <%# פס אזהרה למנהל בלבד. התחזוקן עצמו לא רואה אותו. %>
+  <div style="background:#fff3cd; border:2px solid #e0a800; border-radius:8px; padding:10px 14px; margin-bottom:14px;">
+    <strong>👁️ תצוגה מקדימה — זה המסך שהתחזוקן רואה.</strong>
+    כל שינוי שתעשה כאן נשמר במערכת באמת.
+    <a href="/inventory/maintenance" style="margin-inline-start:10px;">חזרה למסך הרגיל</a>
+  </div>
+<% } %>
+
+<div class="card">
+  <h1>🔧 בקשות תחזוקה</h1>
+  <p style="color:var(--muted); font-size:0.95em;">
+    שלום<%= typeof user !== 'undefined' && user ? ' ' + user : '' %>. להלן התיקונים שממתינים.
+    לאחר הטיפול — עדכן את הסטטוס וכתוב הערה אם צריך.
+  </p>
+
+  <%# סינון מצומצם: רק סטטוס וסניף. אין תיבות סימון ואין שליחת מייל -
+      אלה כלים של המזכירות. %>
+  <form class="searchbar auto-filter" method="GET" action="/inventory/maintenance">
+    <% if (isPreview) { %><input type="hidden" name="preview" value="maintenance" /><% } %>
+    <select name="status" aria-label="סטטוס">
+      <option value="">פתוחות ובטיפול</option>
+      <option value="פתוח" <%= status === 'פתוח' ? 'selected' : '' %>>פתוח</option>
+      <option value="בטיפול" <%= status === 'בטיפול' ? 'selected' : '' %>>בטיפול</option>
+      <option value="במעקב" <%= status === 'במעקב' ? 'selected' : '' %>>במעקב</option>
+      <option value="סגור" <%= status === 'סגור' ? 'selected' : '' %>>סגור (היסטוריה)</option>
+    </select>
+    <select name="branch" aria-label="סניף">
+      <option value="">כל הסניפים</option>
+      <option value="סוקולוב" <%= branch === 'סוקולוב' ? 'selected' : '' %>>סוקולוב</option>
+      <option value="בן פתחיה" <%= branch === 'בן פתחיה' ? 'selected' : '' %>>בן פתחיה</option>
+      <option value="נפחא" <%= branch === 'נפחא' ? 'selected' : '' %>>נפחא</option>
+    </select>
+  </form>
+
+  <% const open = requests.filter(r => r.status !== 'סגור'); %>
+  <% if (requests.length === 0) { %>
+    <p class="empty-state">אין בקשות להצגה. 👍</p>
+  <% } else { %>
+    <p style="margin:10px 0; font-weight:600;">
+      <%= open.length %> ממתינות לטיפול<%= requests.length > open.length ? '  ·  ' + (requests.length - open.length) + ' סגורות' : '' %>
+    </p>
+
+    <%# כרטיסים ולא טבלה: הטאבלט הוא מסך מגע, ושדות בטבלה צרה קשים ללחיצה %>
+    <% requests.forEach(r => { %>
+      <% const place = r.class_name ? r.class_name + (r.parallel ? ' (' + r.parallel + ')' : '') : (r.location || ''); %>
+      <div class="wo-card <%= r.status === 'סגור' ? 'wo-closed' : '' %>">
+        <div class="wo-head">
+          <span class="wo-branch"><%= r.effective_branch || '' %></span>
+          <% if (place) { %><span class="wo-place">📍 <%= place %></span><% } %>
+          <% if (r.urgency && r.urgency !== 'רגיל') { %>
+            <span class="wo-urgent"><%= r.urgency %></span>
+          <% } %>
+          <span class="wo-date"><%= r.created_at_str || '' %></span>
+        </div>
+
+        <div class="wo-desc"><%= r.description %></div>
+
+        <form method="POST" action="/inventory/maintenance/<%= r.id %>?_method=PUT" class="wo-form">
+          <div class="wo-row">
+            <label>סטטוס</label>
+            <select name="status">
+              <option value="פתוח" <%= r.status === 'פתוח' ? 'selected' : '' %>>פתוח</option>
+              <option value="בטיפול" <%= r.status === 'בטיפול' ? 'selected' : '' %>>בטיפול</option>
+              <option value="במעקב" <%= r.status === 'במעקב' ? 'selected' : '' %>>במעקב</option>
+              <option value="סגור" <%= r.status === 'סגור' ? 'selected' : '' %>>טופל / סגור</option>
+            </select>
+          </div>
+          <div class="wo-row">
+            <label>הערה</label>
+            <textarea name="notes" rows="2" placeholder="מה נעשה? מה נדרש?"><%= r.notes || '' %></textarea>
+          </div>
+          <button type="submit" class="btn">💾 שמירה</button>
+        </form>
+      </div>
+    <% }) %>
+  <% } %>
+</div>
+
+<style>
+  /* מותאם למסך מגע: שדות גדולים, מרווחים נדיבים */
+  .wo-card {
+    border: 1px solid rgba(0,0,0,0.12); border-radius: 10px;
+    padding: 12px 14px; margin-bottom: 14px; background: rgba(255,255,255,0.03);
+  }
+  .wo-closed { opacity: 0.5; }
+  .wo-closed:hover { opacity: 1; }
+  .wo-head { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; font-size: 0.85em; color: var(--muted); margin-bottom: 6px; }
+  .wo-branch { font-weight: 700; }
+  .wo-urgent { color: #c0392b; font-weight: 700; }
+  .wo-date { margin-inline-start: auto; }
+  .wo-desc { font-size: 1.15em; line-height: 1.5; margin-bottom: 10px; }
+  .wo-form { display: flex; flex-direction: column; gap: 8px; }
+  .wo-row { display: flex; flex-direction: column; gap: 4px; }
+  .wo-row label { font-size: 0.85em; color: var(--muted); }
+  .wo-form select, .wo-form textarea { font-size: 1.05em; padding: 8px; width: 100%; }
+  .wo-form .btn { align-self: flex-start; padding: 10px 20px; font-size: 1.05em; }
+</style>
+
+<%- include('../partials/footer') %>
