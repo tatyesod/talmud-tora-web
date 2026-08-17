@@ -445,23 +445,25 @@ router.get("/class-roster/export", async (req, res) => {
 
     ws.addRow([]);
     const hr = ws.addRow(HEADER);
-    hr.font = { bold: true, color: { argb: "FFFFFFFF" } };
-    hr.height = 18;
-    hr.eachCell((cell, colNumber) => {
+    hr.font = { size: 12, bold: true, color: { argb: "FFFFFFFF" } };
+    hr.height = 20;
+    // שורת הכותרות ממורכזת כולה, בלי קשר ליישור העמודה עצמה
+    hr.eachCell((cell) => {
       cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF2C5F7C" } };
-      cell.alignment = {
-        horizontal: [1, 5, 7, 8, 9].includes(colNumber) ? "center" : "right",
-        vertical: "middle",
-      };
+      cell.alignment = { horizontal: "center", vertical: "middle" };
     });
 
     // מספר סידורי, תאריך עברי ושלושת הטלפונים ממורכזים; הטקסט לימין.
     // אותו יישור בדיוק כמו בתצוגה להדפסה, כדי ששני הפלטים ייראו זהים.
-    const CENTERED = [1, 5, 7, 8, 9];
+    // תאריך הלידה העברי מיושר לימין ככל טקסט; ממורכזים רק המספר הסידורי
+    // ושלושת הטלפונים.
+    const CENTERED = [1, 7, 8, 9];
     g.students.forEach((st, i) => {
       const r = ws.addRow([i + 1, st.family, st.nickname, st.fatherName, st.hebrewBirth,
                            st.address, st.homePhone, st.fatherMobile, st.motherMobile]);
       r.alignment = { horizontal: "right" };
+      r.font = { size: 12 };
+      r.height = 17;
       CENTERED.forEach((c) => { r.getCell(c).alignment = { horizontal: "center" }; });
       // פסים אפור/לבן לקריאות. הצביעה נעשית תא-תא ולא על השורה, אחרת היא
       // נמשכת גם על עמודות ריקות מימין לטבלה.
