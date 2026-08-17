@@ -1,0 +1,67 @@
+<%- include('../partials/header', {title: 'רשימת תלמידים לכיתה'}) %>
+
+<div class="card">
+  <h1>📋 רשימת תלמידים לכיתה</h1>
+  <p style="color:var(--muted); font-size:0.9em; line-height:1.6;">
+    בחר כיתה אחת או כמה. לכל כיתה נדפס דף נפרד עם הכותרת
+    "רשימת תלמידים כיתה ___ שם המלמד ___".
+    שם המלמד נשלף מהשיוך שבמערכת; אם השיוך חסר או שברצונך שם אחר — אפשר להקליד אותו כאן.
+  </p>
+
+  <form method="GET" action="/reports/class-roster/view" target="_blank">
+    <div style="display:flex; gap:10px; margin-bottom:10px;">
+      <button type="button" class="btn small secondary" onclick="toggleAll(true)">סמן הכל</button>
+      <button type="button" class="btn small secondary" onclick="toggleAll(false)">נקה</button>
+    </div>
+
+    <table class="roster-picker">
+      <thead>
+        <tr>
+          <th style="width:40px;"></th>
+          <th>כיתה</th>
+          <th>סניף</th>
+          <th>שם המלמד (ניתן לעריכה)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% classes.forEach(c => { %>
+          <tr>
+            <td>
+              <input type="checkbox" name="class_id" value="<%= c.id %>" style="width:auto;" />
+            </td>
+            <td><strong><%= c.name %><%= c.parallel ? ' ' + c.parallel : '' %></strong></td>
+            <td><%= c.branch || '—' %></td>
+            <td>
+              <%# שדה אחד לכל שורה, בסדר זהה לתיבות הסימון, כדי שהשרת יתאים
+                  בין שם המלמד לכיתה לפי המקום במערך %>
+              <input type="text" name="teacher_name" value="<%= c.teacher_names || '' %>"
+                     placeholder="<%= c.teacher_names ? '' : 'לא הוזן שיוך — אפשר להקליד' %>" />
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+
+    <div class="actions" style="margin-top:16px;">
+      <button type="submit" class="btn">👁️ תצוגה מקדימה / הדפסה</button>
+      <a href="/reports" class="btn secondary">חזרה לדוחות</a>
+    </div>
+  </form>
+</div>
+
+<style>
+  table.roster-picker { width:100%; border-collapse:collapse; }
+  table.roster-picker th, table.roster-picker td {
+    border-bottom:1px solid rgba(0,0,0,0.08); padding:6px 8px; text-align:right;
+  }
+  table.roster-picker input[type="text"] { width:100%; }
+  table.roster-picker tbody tr:hover { background:rgba(201,151,76,0.08); }
+</style>
+
+<script>
+  function toggleAll(v) {
+    document.querySelectorAll('input[name="class_id"]').forEach(function (el) { el.checked = v; });
+  }
+</script>
+
+<%- include('../partials/footer') %>

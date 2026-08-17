@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <title>רשימת תלמידים</title>
+  <style>
+    /* צבעי רקע אינם מודפסים כברירת מחדל בדפדפנים - שתי השורות מכריחות */
+    * { -webkit-print-color-adjust: exact; print-color-adjust: exact; box-sizing: border-box; }
+    @page { size: A4 portrait; margin: 12mm; }
+    body { font-family: "David", "Times New Roman", serif; direction: rtl; margin: 0; }
+    .noprint { text-align: center; margin: 12px 0; }
+    @media print { .noprint { display: none; } }
+
+    /* כל כיתה בדף נפרד. last-of-type ולא last-child, כי אחרי הבלוק האחרון
+       יש עוד תגיות בקונטיינר וה-last-child לא היה תופס. */
+    .cls { page-break-after: always; }
+    .cls:last-of-type { page-break-after: auto; }
+
+    h1 { text-align: center; font-size: 17pt; margin: 0 0 2px; }
+    .sub { text-align: center; font-size: 11pt; color: #444; margin-bottom: 10px; }
+    table { width: 100%; border-collapse: collapse; font-size: 10pt; }
+    th, td { border: 0.7pt solid #999; padding: 3px 5px; }
+    th { background: #e8eef4; font-weight: 700; text-align: center; }
+    td { text-align: right; }
+    td.c { text-align: center; }
+    thead { display: table-header-group; }
+    tr { page-break-inside: avoid; }
+    .empty { text-align: center; color: #777; padding: 12px; }
+  </style>
+</head>
+<body>
+  <div class="noprint"><button onclick="window.print()">🖨️ הדפסה</button></div>
+
+  <% groups.forEach(g => { %>
+    <div class="cls">
+      <h1>רשימת תלמידים כיתה <%= g.className %><%= g.teacherName ? '   שם המלמד: ' + g.teacherName : '' %></h1>
+      <div class="sub">
+        <%= g.branch %><%= g.students.length ? ' · ' + g.students.length + ' תלמידים' : '' %>
+      </div>
+
+      <% if (g.students.length === 0) { %>
+        <p class="empty">אין תלמידים פעילים בכיתה זו.</p>
+      <% } else { %>
+        <table>
+          <thead>
+            <tr>
+              <th style="width:26px;">#</th>
+              <th>משפחה</th>
+              <th>חיבה</th>
+              <th>שם האב</th>
+              <th style="width:104px;">לידה עברי</th>
+              <th>כתובת</th>
+              <th style="width:82px;">טלפון בית</th>
+              <th style="width:82px;">נייד אבא</th>
+              <th style="width:82px;">נייד אמא</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% g.students.forEach((s, i) => { %>
+              <tr>
+                <td class="c"><%= i + 1 %></td>
+                <td><%= s.family %></td>
+                <td><%= s.nickname %></td>
+                <td><%= s.fatherName %></td>
+                <td class="c"><%= s.hebrewBirth %></td>
+                <td><%= s.address %></td>
+                <td class="c"><%= s.homePhone %></td>
+                <td class="c"><%= s.fatherMobile %></td>
+                <td class="c"><%= s.motherMobile %></td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      <% } %>
+    </div>
+  <% }) %>
+</body>
+</html>

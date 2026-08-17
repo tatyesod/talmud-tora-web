@@ -311,6 +311,90 @@ router.get("/full-student-list/export", async (req, res) => {
   await sendWorkbook(res, "רשימת תלמידים מלא.xlsx", "תלמידים", "רשימת תלמידים מלא", header, data);
 });
 
+// ============ רשימת תלמידים לכיתה (להדפסה) ============
+// עמודות בסדר שהוגדר: משפחה, חיבה, שם האב, לידה עברי, כתובת,
+// טלפון בית, נייד אבא, נייד אמא. כותרת: "רשימת תלמידים כיתה X - שם המלמד Y".
+router.get("/class-roster", (req, res) => {
+  const { GRADE_ORDER } = require("../yearManager");
+  const classes = db.prepare(`
+    SELECT c.id, c.name, c.parallel, c.branch,
+           (SELECT GROUP_CONCAT(t.first_name || ' ' || t.last_name, ', ')
+              FROM teacher_classes tc JOIN teachers t ON tc.teacher_id = t.id
+             WHERE tc.class_id = c.id AND (tc.role = 'בוקר' OR tc.role IS NULL)) AS teacher_names
+    FROM classes c WHERE c.status = 'פעיל'
+  `).all().sort((a, b) => {
+    const ga = GRADE_ORDER.indexOf(a.name), gb = GRADE_ORDER.indexOf(b.name);
+    if (ga !== gb) return ga - gb;
+    const pa = parseInt(a.parallel, 10), pb = parseInt(b.parallel, 10);
+    if (!isNaN(pa) && !isNaN(pb) && pa !== pb) return pa - pb;
+    return String(a.branch || "").localeCompare(String(b.branch || ""), "he");
+  });
+  res.render("reports/class-roster", { classes });
+});
+
+router.get("/class-roster/view", (req, res) => {
+  const { GRADE_ORDER } = require("../yearManager");
+  let classIds = req.query.class_id || [];
+  if (!Array.isArray(classIds)) classIds = [classIds];
+  classIds = classIds.filter(Boolean);
+  if (classIds.length === 0) return res.redirect("/reports/class-roster");
+
+  // שם המלמד שהוקלד ידנית גובר על השיוך במערכת, כדי שאפשר להפיק את הדוח
+  // גם לכיתה שהשיוך שלה עוד לא הוזן
+  let manual = req.query.teacher_name || [];
+  if (!Array.isArray(manual)) manual = [manual];
+
+  const classRows = db.prepare(`
+    SELECT id, name, parallel, branch FROM classes
+    WHERE id IN (${classIds.map(() => "?").join(",")})
+  `).all(...classIds);
+
+  const groups = classIds.map((cid, i) => {
+    const c = classRows.find((x) => String(x.id) === String(cid));
+    if (!c) return null;
+    const assigned = db.prepare(`
+      SELECT t.first_name, t.last_name FROM teacher_classes tc
+      JOIN teachers t ON tc.teacher_id = t.id
+      WHERE tc.class_id = ? AND (tc.role = 'בוקר' OR tc.role IS NULL)
+    `).all(c.id).map((t) => (t.first_name + " " + t.last_name).trim()).join(", ");
+
+    const students = db.prepare(`
+      SELECT s.id, s.first_name, s.nickname, s.last_name, s.birth_date_civil,
+             f.last_name AS family_last_name, f.father_name, f.home_phone,
+             f.father_mobile, f.mother_mobile,
+             f.street, f.house_number, f.apartment, f.city
+      FROM students s LEFT JOIN families f ON s.family_id = f.id
+      WHERE s.class_id = ? AND s.status = 'פעיל'
+      ORDER BY COALESCE(f.last_name, s.last_name), s.first_name
+    `).all(c.id).map((r) => ({
+      family: r.family_last_name || r.last_name || "",
+      nickname: r.nickname || r.first_name || "",
+      fatherName: r.father_name || "",
+      hebrewBirth: r.birth_date_civil ? hd.serialToHebrewString(r.birth_date_civil) : "",
+      address: [r.street, r.house_number, r.apartment ? "דירה " + r.apartment : "", r.city]
+        .filter(Boolean).join(" "),
+      homePhone: r.home_phone || "",
+      fatherMobile: r.father_mobile || "",
+      motherMobile: r.mother_mobile || "",
+    }));
+
+    return {
+      className: c.name + (c.parallel ? " " + c.parallel : ""),
+      branch: c.branch || "",
+      teacherName: (manual[i] || "").trim() || assigned || "",
+      students,
+    };
+  }).filter(Boolean);
+
+  groups.sort((a, b) => {
+    const base = (x) => x.className.replace(/\s+\S+$/, "");
+    return GRADE_ORDER.indexOf(base(a)) - GRADE_ORDER.indexOf(base(b)) ||
+           a.className.localeCompare(b.className, "he");
+  });
+
+  res.render("reports/class-roster-view", { groups });
+});
+
 // ============ דוח סייעים ============
 // רשימת התלמידים הזכאים לסייע, עם פרטי הסייע ולמי משולם.
 function loadAides(req) {
