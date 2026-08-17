@@ -447,15 +447,25 @@ router.get("/class-roster/export", async (req, res) => {
     const hr = ws.addRow(HEADER);
     hr.font = { bold: true, color: { argb: "FFFFFFFF" } };
     hr.height = 18;
-    hr.eachCell((cell) => {
+    hr.eachCell((cell, colNumber) => {
       cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF2C5F7C" } };
-      cell.alignment = { horizontal: "right", vertical: "middle" };
+      cell.alignment = {
+        horizontal: [1, 5, 7, 8, 9].includes(colNumber) ? "center" : "right",
+        vertical: "middle",
+      };
     });
 
+    // מספר סידורי, תאריך עברי ושלושת הטלפונים ממורכזים; הטקסט לימין.
+    // אותו יישור בדיוק כמו בתצוגה להדפסה, כדי ששני הפלטים ייראו זהים.
+    const CENTERED = [1, 5, 7, 8, 9];
     g.students.forEach((st, i) => {
       const r = ws.addRow([i + 1, st.family, st.nickname, st.fatherName, st.hebrewBirth,
                            st.address, st.homePhone, st.fatherMobile, st.motherMobile]);
       r.alignment = { horizontal: "right" };
+      CENTERED.forEach((c) => { r.getCell(c).alignment = { horizontal: "center" }; });
+      // הטלפונים נשמרים כטקסט: אקסל היה הופך "0501234567" למספר ומוחק את
+      // האפס המוביל, ומספרים עם מקף היה מנסה לפרש כתאריך.
+      [7, 8, 9].forEach((c) => { r.getCell(c).numFmt = "@"; });
     });
 
     // גבולות מלאים על כל טווח הנתונים
