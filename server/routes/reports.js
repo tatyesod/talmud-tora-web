@@ -500,10 +500,14 @@ router.get("/class-roster/export", async (req, res) => {
     g.students.forEach((st, i) => {
       const r = ws.addRow([i + 1, st.family, st.nickname, st.fatherName, st.hebrewBirth,
                            st.address, st.homePhone, st.fatherMobile, st.motherMobile]);
-      r.alignment = { horizontal: "right" };
+      // vertical: middle - בלעדיו אקסל מצמיד את הטקסט לתחתית התא, וזה בולט
+      // במיוחד אחרי שהעלינו את גובה השורה ל-22
+      r.alignment = { horizontal: "right", vertical: "middle" };
       r.font = { size: 12 };
       r.height = 22;   // שורות מרווחות יותר - ב-17 הן יצאו צפופות מדי
-      CENTERED.forEach((c) => { r.getCell(c).alignment = { horizontal: "center" }; });
+      CENTERED.forEach((c) => {
+        r.getCell(c).alignment = { horizontal: "center", vertical: "middle" };
+      });
       // פסים אפור/לבן לקריאות. הצביעה נעשית תא-תא ולא על השורה, אחרת היא
       // נמשכת גם על עמודות ריקות מימין לטבלה.
       if (i % 2 === 0) {
@@ -524,7 +528,10 @@ router.get("/class-roster/export", async (req, res) => {
         row.getCell(cc).border = { top: thin, bottom: thin, left: thin, right: thin };
       }
     }
-    [5, 16, 13, 15, 15, 30, 13, 13, 13].forEach((w, i) => { ws.getColumn(i + 1).width = w; });
+      // רוחב לפי התוכן שנמדד על 837 התלמידים הפעילים: הכתובת הארוכה ביותר
+    // היא 32 תווים והחיבה 16, ולכן העמודות הקודמות חתכו טקסט. אקסל חותך
+    // ולא גולש כשהתא השכן מלא, ולכן הרוחב חייב להכיל את התוכן.
+    [4, 13, 16, 16, 18, 36, 17, 13, 13].forEach((w, i) => { ws.getColumn(i + 1).width = w; });
     ws.pageSetup = { paperSize: 9, orientation: "portrait", fitToPage: true, fitToWidth: 1, fitToHeight: 0 };
   }
 
@@ -552,7 +559,7 @@ router.get("/class-roster/export-cards", async (req, res) => {
   const COLS = HEADER.length;      // 9
   const SEP = 1;                   // עמודה ריקה בין שני הצדדים (עמודה 10)
   const PER_ROW = 2, PER_PAGE = 6;
-  const WIDTHS = [3.4, 10.5, 10.5, 12, 14.3, 22.8, 13, 13, 13];
+  const WIDTHS = [4, 13, 16, 16, 18, 36, 17, 13, 13];   // זהה לדוח המלא
   const CENTERED = [1, 7, 8, 9];   // מספר סידורי + שלושת הטלפונים
   const thin = { style: "thin" };
 
@@ -613,7 +620,10 @@ router.get("/class-roster/export-cards", async (req, res) => {
           const cell = ws.getCell(rr, c0 + ci);
           cell.value = v;
           cell.font = { size: 12 };
-          cell.alignment = { horizontal: CENTERED.includes(ci + 1) ? "center" : "right" };
+          cell.alignment = {
+            horizontal: CENTERED.includes(ci + 1) ? "center" : "right",
+            vertical: "middle",
+          };
           if (ci + 1 >= 7) cell.numFmt = "@";  // טלפון כטקסט - שומר אפס מוביל
           cell.border = { top: thin, bottom: thin, left: thin, right: thin };
           if (i % 2 === 0) {
