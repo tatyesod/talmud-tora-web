@@ -35,7 +35,8 @@
 
   <% groups.forEach(g => { %>
     <div class="cls">
-      <h1>רשימת תלמידים כיתה <%= g.className %><%= g.teacherName ? '   שם המלמד: ' + g.teacherName : '' %></h1>
+      <%# className כבר מכיל "כיתה"/"מכינה" - אין להוסיף את המילה שוב %>
+      <h1>רשימת תלמידים <%= g.className %><%= g.teacherName ? '   שם המלמד: ' + g.teacherName : '' %></h1>
       <div class="sub">
         <%= g.branch %><%= g.students.length ? ' · ' + g.students.length + ' תלמידים' : '' %>
       </div>

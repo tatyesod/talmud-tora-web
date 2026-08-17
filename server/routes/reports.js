@@ -431,7 +431,9 @@ router.get("/class-roster/export", async (req, res) => {
 
     ws.mergeCells(1, 1, 1, HEADER.length);
     const t = ws.getCell(1, 1);
-    t.value = "רשימת תלמידים כיתה " + g.className + (g.teacherName ? "   שם המלמד: " + g.teacherName : "");
+    // className כבר מכיל "כיתה" או "מכינה" - הוספת המילה שוב יצרה
+    // "רשימת תלמידים כיתה כיתה ד' 1", וגם שיבשה את שכבות המכינה
+    t.value = "רשימת תלמידים " + g.className + (g.teacherName ? "   שם המלמד: " + g.teacherName : "");
     t.font = { size: 14, bold: true, color: { argb: "FF2C5F7C" } };
     t.alignment = { horizontal: "right", vertical: "middle" };
     ws.getRow(1).height = 24;
@@ -498,6 +500,110 @@ router.get("/class-roster/export", async (req, res) => {
   res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
   await wb.xlsx.write(res);
   res.end();
+});
+
+// ייצוא "6 בעמוד" - שש טבלאות בגריד 2×3 על גיליון אחד, להדפסה וחיתוך.
+// הפריסה הועתקה ממדידה של קובץ דוגמה שהמשתמש הכין: אותן תשע עמודות ואותו
+// גופן 12 כמו הדוח המלא, בלי הקטנה - רק רוחב עמודות מכווץ למינימום,
+// עמודה 10 ריקה כמפריד בין שני הצדדים, ומרווח של 40 שורות בין הבלוקים.
+router.get("/class-roster/export-cards", async (req, res) => {
+  const groups = buildRosterGroups(req);
+  if (groups.length === 0) return res.redirect("/reports/class-roster");
+
+  const HEADER = ["#", "משפחה", "חיבה", "שם האב", "לידה עברי", "כתובת",
+                  "טלפון בית", "נייד אבא", "נייד אמא"];
+  const COLS = HEADER.length;      // 9
+  const SEP = 1;                   // עמודה ריקה בין שני הצדדים (עמודה 10)
+  const PER_ROW = 2, PER_PAGE = 6;
+  const WIDTHS = [3.4, 10.5, 10.5, 12, 14.3, 22.8, 13, 13, 13];
+  const CENTERED = [1, 7, 8, 9];   // מספר סידורי + שלושת הטלפונים
+  const thin = { style: "thin" };
+
+  const wb = new ExcelJS.Workbook();
+  wb.creator = "מערכת ניהול תלמוד תורה החדש";
+
+  for (let p = 0; p < Math.ceil(groups.length / PER_PAGE); p++) {
+    const pageGroups = groups.slice(p * PER_PAGE, (p + 1) * PER_PAGE);
+    const ws = wbSheetName(p);
+
+    // גובה הבלוק נגזר מהטבלה הגדולה בעמוד, כדי ששורה אחת של טבלאות לא
+    // תזלוג לתוך זו שמתחתיה גם בכיתה חריגה בגודלה
+    const maxRows = Math.max(...pageGroups.map((g) => g.students.length), 1);
+    const PITCH = maxRows + 6;
+
+    for (let side = 0; side < PER_ROW; side++) {
+      const base = side * (COLS + SEP);
+      WIDTHS.forEach((w, i) => { ws.getColumn(base + i + 1).width = w; });
+      if (side < PER_ROW - 1) ws.getColumn(base + COLS + 1).width = 2.5;
+    }
+
+    pageGroups.forEach((g, idx) => {
+      const r0 = Math.floor(idx / PER_ROW) * PITCH + 1;
+      const c0 = (idx % PER_ROW) * (COLS + SEP) + 1;
+
+      ws.mergeCells(r0, c0, r0, c0 + COLS - 1);
+      const t = ws.getCell(r0, c0);
+      t.value = "רשימת תלמידים " + g.className +
+                (g.teacherName ? "   שם המלמד: " + g.teacherName : "");
+      t.font = { size: 14, bold: true, color: { argb: "FF2C5F7C" } };
+      t.alignment = { horizontal: "right", vertical: "middle" };
+      ws.getRow(r0).height = 24;
+
+      ws.mergeCells(r0 + 1, c0, r0 + 1, c0 + COLS - 1);
+      const sub = ws.getCell(r0 + 1, c0);
+      sub.value = [g.branch, g.students.length + " תלמידים",
+                   "הופק: " + hd.serialToHebrewString(hd.todayAccessSerial())]
+                   .filter(Boolean).join(" · ");
+      sub.font = { size: 9, italic: true, color: { argb: "FF888888" } };
+      sub.alignment = { horizontal: "right" };
+
+      const hRow = r0 + 3;
+      HEADER.forEach((h, i) => {
+        const cell = ws.getCell(hRow, c0 + i);
+        cell.value = h;
+        cell.font = { size: 12, bold: true, color: { argb: "FFFFFFFF" } };
+        cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF2C5F7C" } };
+        cell.alignment = { horizontal: "center", vertical: "middle" };
+        cell.border = { top: thin, bottom: thin, left: thin, right: thin };
+      });
+      ws.getRow(hRow).height = 20;
+
+      g.students.forEach((st, i) => {
+        const rr = hRow + 1 + i;
+        const vals = [i + 1, st.family, st.nickname, st.fatherName, st.hebrewBirth,
+                      st.address, st.homePhone, st.fatherMobile, st.motherMobile];
+        vals.forEach((v, ci) => {
+          const cell = ws.getCell(rr, c0 + ci);
+          cell.value = v;
+          cell.font = { size: 12 };
+          cell.alignment = { horizontal: CENTERED.includes(ci + 1) ? "center" : "right" };
+          if (ci + 1 >= 7) cell.numFmt = "@";  // טלפון כטקסט - שומר אפס מוביל
+          cell.border = { top: thin, bottom: thin, left: thin, right: thin };
+          if (i % 2 === 0) {
+            cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF0F0F0" } };
+          }
+        });
+        ws.getRow(rr).height = 17;
+      });
+    });
+
+    ws.pageSetup = {
+      paperSize: 9, orientation: "portrait",
+      fitToPage: true, fitToWidth: 1, fitToHeight: 0, scale: 35,
+      margins: { left: 0.3, right: 0.3, top: 0.4, bottom: 0.4, header: 0.2, footer: 0.2 },
+    };
+  }
+
+  const fileName = "רשימות כיתה - 6 בעמוד.xlsx";
+  res.setHeader("Content-Disposition",
+    `attachment; filename="roster-6up.xlsx"; filename*=UTF-8''${encodeURIComponent(fileName)}`);
+  res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+  await wb.xlsx.write(res);
+  res.end();
+
+  function wbSheetName(i) {
+    return wb.addWorksheet("עמוד " + (i + 1), { views: [{ rightToLeft: true }] });
+  }
 });
 
 // ============ דוח סייעים ============

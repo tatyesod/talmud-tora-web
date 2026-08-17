@@ -43,12 +43,19 @@
       </tbody>
     </table>
 
+    <p style="color:var(--muted); font-size:0.85em; margin-top:14px; line-height:1.6;">
+      <strong>דוח מלא</strong> — תשע העמודות, גיליון לכל כיתה.<br>
+      <strong>6 בעמוד</strong> — אותה טבלה בדיוק, שש כיתות בגריד על גיליון אחד, להדפסה וחיתוך.
+    </p>
+
     <div class="actions" style="margin-top:16px;">
       <button type="submit" class="btn">👁️ תצוגה מקדימה / הדפסה</button>
       <%# formaction מפנה את אותו טופס למסלול הייצוא, כך ששני הכפתורים
           שולחים בדיוק אותה בחירה. formtarget=_self כדי שההורדה לא תיפתח בטאב. %>
       <button type="submit" class="btn secondary"
-              formaction="/reports/class-roster/export" formtarget="_self">📥 ייצוא לאקסל</button>
+              formaction="/reports/class-roster/export" formtarget="_self">📥 ייצוא לאקסל (דוח מלא)</button>
+      <button type="submit" class="btn secondary"
+              formaction="/reports/class-roster/export-cards" formtarget="_self">🗂️ ייצוא לאקסל (6 בעמוד)</button>
       <a href="/reports" class="btn secondary">חזרה לדוחות</a>
     </div>
   </form>
