@@ -188,6 +188,14 @@
   .media-rec-note { font-size: 0.8em; color: #c0392b; min-height: 1em; }
   .media-qrow { display: flex; align-items: center; gap: 6px; font-size: 0.82em; padding: 2px 0; }
   .media-qrow span { flex: 1; }
+  /* תצוגה מקדימה: הוא רואה מה נשלח לפני שהוא שולח */
+  .media-qrow { align-items: center; }
+  .media-qprev {
+    width: 76px; height: 76px; object-fit: cover; border-radius: 6px;
+    border: 1px solid rgba(0,0,0,0.2); display: block; background: #000;
+  }
+  .media-qvideo { width: 150px; height: auto; max-height: 76px; }
+  .media-qinfo { flex: 1; }
   .media-total { font-size: 0.8em; color: #666; }
   .media-notify summary { font-size: 0.85em; cursor: pointer; padding: 4px 0; }
   .media-notify textarea { width: 100%; font-size: 0.95em; padding: 6px; }

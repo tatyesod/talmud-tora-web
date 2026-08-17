@@ -53,24 +53,66 @@
     let queue = [];        // הקבצים שיישלחו
     let recorder = null, stream = null, timer = null;
 
+    // כתובות ה-blob של התצוגה המקדימה. משוחררות בכל ציור מחדש, אחרת הן
+    // נצברות בזיכרון של הטאבלט לאורך יום עבודה.
+    let previewUrls = [];
+    function releasePreviews() {
+      previewUrls.forEach(function (u) { URL.revokeObjectURL(u); });
+      previewUrls = [];
+    }
+
     function draw() {
+      releasePreviews();
       list.innerHTML = "";
       let total = 0;
       queue.forEach(function (f, i) {
         total += f.size;
         const row = document.createElement("div");
         row.className = "media-qrow";
-        row.innerHTML = '<span>' + (f.type.startsWith("video") ? "🎥" : "📷") + " " +
-          f.name + ' <small>(' + fmtSize(f.size) + ')</small></span>';
+
+        // תצוגה מקדימה של הקובץ שיישלח בפועל - התמונה שמוצגת היא זו שאחרי
+        // ההקטנה, כך שמה שהוא מאשר הוא בדיוק מה שיישמר.
+        const url = URL.createObjectURL(f);
+        previewUrls.push(url);
+        const isVideo = f.type.startsWith("video");
+
+        if (isVideo) {
+          const v = document.createElement("video");
+          v.src = url; v.controls = true; v.playsInline = true; v.preload = "metadata";
+          v.className = "media-qprev media-qvideo";
+          row.appendChild(v);
+        } else {
+          const a = document.createElement("a");
+          a.href = url; a.target = "_blank"; a.rel = "noopener";
+          a.title = "לחיצה לתמונה מוגדלת";
+          const img = document.createElement("img");
+          img.src = url; img.className = "media-qprev";
+          a.appendChild(img);
+          row.appendChild(a);
+        }
+
+        const info = document.createElement("span");
+        info.className = "media-qinfo";
+        info.innerHTML = (isVideo ? "🎥 סרטון" : "📷 תמונה") +
+          ' <small>(' + fmtSize(f.size) + ')</small>';
+        row.appendChild(info);
+
         const x = document.createElement("button");
-        x.type = "button"; x.className = "btn small danger"; x.textContent = "✕";
+        x.type = "button"; x.className = "btn small danger";
+        x.textContent = "✕";
+        x.title = isVideo ? "מחיקת הסרטון" : "מחיקת התמונה";
         x.onclick = function () { queue.splice(i, 1); draw(); };
         row.appendChild(x);
+
         list.appendChild(row);
       });
       form.querySelector(".media-send").disabled = queue.length === 0;
       const t = box.querySelector(".media-total");
-      if (t) t.textContent = queue.length ? "סה\"כ " + fmtSize(total) : "";
+      if (t) {
+        t.textContent = queue.length
+          ? "סה\"כ " + fmtSize(total) + " · בדוק שהצילום תקין לפני השליחה"
+          : "";
+      }
     }
 
     // ---- בחירת/צילום תמונה ----
@@ -164,6 +206,8 @@
           if (recNote) recNote.textContent = "ההעלאה נכשלה. נסה שוב.";
         });
     });
+
+    window.addEventListener("pagehide", releasePreviews);
 
     draw();
   });
