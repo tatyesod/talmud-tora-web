@@ -19,6 +19,21 @@
 <body>
   <header class="topbar">
     <div class="brand"><a href="/" style="color:#fff; display:flex; align-items:center; gap:10px;"><img src="/images/logo.png" alt="לוגו" style="height:40px; width:auto;" /> תלמוד תורה החדש</a></div>
+    <%# לתחזוקן החיצוני אין גישה לאף מודול חוץ מבקשות התחזוקה, ולכן תפריט
+        עם עשרים כרטיסיות חסומות רק מבלבל ומזמין לחיצות שיחזירו אותו לאחור.
+        מקבל תפריט משלו עם מה שרלוונטי לו בלבד. %>
+    <% if (typeof isMaintenanceUser !== 'undefined' && isMaintenanceUser) { %>
+      <nav class="nav-maintenance">
+        <a href="/inventory/maintenance" class="nav-current">🔧 בקשות תחזוקה</a>
+        <% if (user) { %>
+          <span class="nav-who">👤 <%= user %></span>
+          <a href="/users/profile" class="nav-small">החלפת סיסמה</a>
+          <form action="/logout" method="POST" style="display:inline">
+            <button type="submit" class="btn small secondary">יציאה</button>
+          </form>
+        <% } %>
+      </nav>
+    <% } else { %>
     <nav>
       <a href="/">בית</a>
       <a href="/students">תלמידים</a>
@@ -46,5 +61,16 @@
         </form>
       <% } %>
     </nav>
+    <% } %>
   </header>
+  <style>
+    /* תפריט התחזוקן: פריט אחד גדול וברור, ולידו שמו והיציאה */
+    nav.nav-maintenance { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+    nav.nav-maintenance .nav-current {
+      font-size: 1.1em; font-weight: 700; background: rgba(255,255,255,0.14);
+      border-radius: 8px; padding: 7px 16px; color: #fff;
+    }
+    nav.nav-maintenance .nav-who { margin-inline-start: auto; font-size: 0.9em; opacity: 0.85; }
+    nav.nav-maintenance .nav-small { font-size: 0.85em; opacity: 0.85; }
+  </style>
   <div class="container <%= typeof wide !== 'undefined' && wide ? 'container-wide' : '' %>">

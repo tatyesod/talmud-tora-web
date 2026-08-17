@@ -133,6 +133,10 @@ router.get("/maintenance", (req, res) => {
     (req.currentUser && req.currentUser.role === "maintenance") ||
     (res.locals.isAdmin && req.query.preview === "maintenance");
 
+  // בתצוגה מקדימה גם הכותרת תהיה שלו, אחרת המנהל רואה תפריט אחר מהתחזוקן.
+  // החזרה למסך הרגיל היא דרך הקישור בפס הצהוב.
+  if (isMaintenanceView) res.locals.isMaintenanceUser = true;
+
   res.render(isMaintenanceView ? "inventory/maintenance-worker" : "inventory/maintenance-list", {
     requests, status: status || "", branch: branch || "",
     maintenanceEmail: getMaintenanceEmail(),

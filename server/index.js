@@ -199,7 +199,7 @@ app.post("/force-change-password", requireLogin, (req, res) => {
   db.prepare("UPDATE users SET password_hash = ?, force_password_change = 0 WHERE id = ?").run(
     hashPassword(password), req.currentUser.id
   );
-  res.redirect("/");
+  res.redirect(req.currentUser.role === "maintenance" ? "/inventory/maintenance" : "/");
 });
 
 app.get("/login", (req, res) => {
@@ -243,7 +243,8 @@ app.use(requireLogin);
 const MAINTENANCE_ALLOWED = [
   "/inventory/maintenance",   // המסך שלו - כולל עדכון סטטוס והערות
   "/logout",
-  "/change-password",
+  "/force-change-password",   // הכרח שינוי סיסמה בכניסה ראשונה
+  "/users/profile",           // הפרופיל שלו - שם משנים סיסמה
   "/js/", "/css/", "/images/", "/favicon.ico", "/sw.js", "/manifest.json",
 ];
 app.use((req, res, next) => {
