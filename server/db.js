@@ -298,6 +298,11 @@ const migrations = [
   // הקיימים - כך שהמיגרציה לא משנה אף הרשאה קיימת.
   // "maintenance" = תחזוקן חיצוני: רואה אך ורק את מסך בקשות התחזוקה.
   "ALTER TABLE users ADD COLUMN role TEXT",
+  // סימון "לא לכלול בשליחה להתייעצות תחזוקה". ברירת המחדל 0 = כן נכלל,
+  // כך שהמיגרציה לא משנה את ההתנהגות הקיימת לאף משתמש.
+  // מסומן פר-משתמש ולא מקודד בקוד לפי שם, כדי שהחלפת תפקיד או שינוי שם
+  // לא ישברו את זה.
+  "ALTER TABLE users ADD COLUMN exclude_from_consult INTEGER DEFAULT 0",
   // תיעוד מי עדכן בקשת תחזוקה ומתי. resolved_at מסמן רק סגירה, ולכן בלי
   // אלה אין דרך לדעת אם התחזוקן נגע בבקשה או שמזכיר שינה סטטוס.
   "ALTER TABLE maintenance_requests ADD COLUMN updated_by_user_id INTEGER",
@@ -1461,6 +1466,19 @@ try {
   }
 } catch (e) {
   console.error("שגיאה בניקוי תחיליות סבים:", e.message);
+}
+
+// כיבוי חד-פעמי של קלדנית user4 מרשימת ההתייעצויות של בקשות התחזוקה -
+// היא אינה מטפלת בתחזוקה. מוגן בדגל, כך שאם תופעל שוב ידנית זה לא יידרס.
+try {
+  const alreadySet = db.prepare("SELECT value FROM settings WHERE key = 'maintenance_consult_defaults_v1'").get();
+  if (!alreadySet) {
+    const result = db.prepare("UPDATE users SET exclude_from_consult = 1 WHERE username = 'user4'").run();
+    if (result.changes) console.log(`[התייעצויות תחזוקה] ${result.changes} משתמשים הוסרו מרשימת ההתייעצות`);
+    db.prepare("INSERT INTO settings (key, value) VALUES ('maintenance_consult_defaults_v1', '1')").run();
+  }
+} catch (e) {
+  console.error("שגיאה בהגדרת רשימת ההתייעצויות:", e.message);
 }
 
 // שדה נפרד לחברת גביה של תרומות - נבדל מ-billing_company (ששימש/משמש

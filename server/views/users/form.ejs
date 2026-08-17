@@ -23,6 +23,17 @@
           כל שאר המערכת — תלמידים, משפחות, מלמדים, שכר, דוחות — חסומה לו.
         </small>
       </div>
+      <div class="form-group full">
+        <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+          <input type="checkbox" name="exclude_from_consult" style="width:auto;"
+                 <%= mode === 'edit' && editUser.exclude_from_consult ? 'checked' : '' %> />
+          <span>לא לכלול ברשימת "שליחה להתייעצות" בתחזוקה</span>
+        </label>
+        <small style="color:var(--muted);">
+          כשמסומן, המשתמש לא יופיע ברשימת הנמענים שהתחזוקן בוחר מתוכה כשהוא מצרף תמונה או סרטון.
+          שאר המערכת אינה מושפעת.
+        </small>
+      </div>
       <div class="form-group">
         <label><%= mode === 'new' ? 'סיסמה' : 'סיסמה חדשה (השאר ריק כדי לא לשנות)' %></label>
         <input type="password" name="password" <%= mode === 'new' ? 'required' : '' %> />

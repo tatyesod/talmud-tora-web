@@ -176,7 +176,9 @@ router.get("/maintenance", (req, res) => {
 
   // מי אפשר לשתף איתו: כל המשתמשים הרגילים (לא התחזוקן עצמו)
   const notifyUsers = db.prepare(`SELECT id, display_name, username FROM users
-    WHERE (role IS NULL OR role <> 'maintenance') ORDER BY display_name`).all();
+    WHERE (role IS NULL OR role <> 'maintenance')
+      AND COALESCE(exclude_from_consult, 0) = 0
+    ORDER BY display_name`).all();
 
   res.render(isMaintenanceView ? "inventory/maintenance-worker" : "inventory/maintenance-list", {
     requests, status: status || "", branch: branch || "",
