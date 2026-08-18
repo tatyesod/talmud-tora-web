@@ -51,8 +51,15 @@
     .no-print button { background:#fff; color:#2c5f7c; border:none; border-radius:6px; padding:6px 14px; cursor:pointer; font-weight:700; }
     .no-print a { color:#fff; }
 
-    .page { page-break-after: always; min-height: 260mm; }
-    .page:last-child { page-break-after: auto; }
+    .page { page-break-after: always; }
+    /* גם last-child וגם last-of-type: אם יתווסף אי פעם אלמנט אחרי הדף
+       האחרון, last-child יפסיק להתאים והמעבר הכפוי יחזור - ואיתו עמוד ריק. */
+    .page:last-child, .page:last-of-type { page-break-after: auto; }
+    /* min-height נועד רק כדי שהדף ייראה מלא על המסך. בהדפסה הוא מסוכן:
+       260 מ"מ ועוד כותרת ותחתית עלולים לעבור את שטח ההדפסה בפועל (271 מ"מ
+       בשוליים של 13, ופחות מכך אם הדפדפן מוסיף שוליים משלו) - וחריגה של
+       מילימטר אחד יוצרת עמוד שני ריק. */
+    @media screen { .page { min-height: 260mm; } }
 
     /* כותרת (לדפי תוכן, לא לדף השער) */
     .bsd { text-align: right; font-size: 8pt; margin-bottom: 2px; }
