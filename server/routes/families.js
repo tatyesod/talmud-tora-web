@@ -57,6 +57,68 @@ router.post("/donations/save", (req, res) => {
   res.redirect(`/families/donations?saved=1${req.body.q ? "&q=" + encodeURIComponent(req.body.q) : ""}`);
 });
 
+// ============ סיווג מקום לימוד / תפילה ============
+// בייבוא מ-Access הייתה עמודה אחת בלבד, "מקום עבודת האב", והמזכירות הזינו
+// לתוכה גם כוללים וגם בתי כנסת. הפרדה אוטומטית אינה אפשרית - "פוניבז'"
+// יכול להיות שניהם - ולכן זהו מסך חד-פעמי לסיווג ידני לפי ערך.
+// מוצב לפני "/:id" בכוונה: אחרת Express תופס "classify" כמזהה משפחה.
+router.get("/classify-workplace", (req, res) => {
+  const rows = db.prepare(`
+    SELECT father_workplace AS value, COUNT(*) AS families,
+           SUM(CASE WHEN father_synagogue IS NOT NULL AND father_synagogue <> '' THEN 1 ELSE 0 END) AS done
+    FROM families
+    WHERE father_workplace IS NOT NULL AND father_workplace <> ''
+    GROUP BY father_workplace
+    ORDER BY COUNT(*) DESC, father_workplace
+  `).all();
+
+  // הצעה ראשונית לפי מילות מפתח - רק כדי לחסוך קליקים, לא כדי להחליט
+  const suggest = (v) => {
+    if (/(בית הכנסת|ביהכנ|ביה"כ|בהכנ"ס|שטיבל|קלויז|מנין|מניין)/.test(v)) return "prayer";
+    if (/^(כולל|ישיבת|ישיבה|בית מדרש|בי"מ|מתיבתא)/.test(v)) return "study";
+    return "";
+  };
+
+  res.render("families/classify-workplace", {
+    rows: rows.map((r) => ({ ...r, suggest: suggest(r.value) })),
+    totalValues: rows.length,
+    totalFamilies: rows.reduce((s, r) => s + r.families, 0),
+  });
+});
+
+router.post("/classify-workplace", (req, res) => {
+  let values = req.body.value || [];
+  let choices = req.body.choice || [];
+  if (!Array.isArray(values)) values = [values];
+  if (!Array.isArray(choices)) choices = [choices];
+
+  const toStudy = db.prepare("UPDATE families SET father_synagogue = NULL WHERE father_workplace = ?");
+  const toPrayer = db.prepare(
+    "UPDATE families SET father_synagogue = father_workplace, father_workplace = NULL WHERE father_workplace = ?"
+  );
+  const toBoth = db.prepare(
+    "UPDATE families SET father_synagogue = father_workplace WHERE father_workplace = ?"
+  );
+
+  let changed = 0;
+  db.exec("BEGIN");
+  try {
+    values.forEach((v, i) => {
+      const c = choices[i];
+      if (c === "study") changed += toStudy.run(v).changes;
+      else if (c === "prayer") changed += toPrayer.run(v).changes;
+      else if (c === "both") changed += toBoth.run(v).changes;
+      // ריק = לא נבחר, לא נוגעים
+    });
+    db.exec("COMMIT");
+  } catch (e) {
+    db.exec("ROLLBACK");
+    console.error("סיווג מקום לימוד/תפילה נכשל:", e.message);
+    return res.redirect("/families/classify-workplace?error=1");
+  }
+  res.redirect("/families/classify-workplace?saved=" + changed);
+});
+
 router.get("/", (req, res) => {
   const { q, sector, branch } = req.query;
   const status = req.query.status !== undefined ? req.query.status : "פעיל";

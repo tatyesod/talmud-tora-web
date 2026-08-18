@@ -5,6 +5,9 @@
     <h1>משפחות</h1>
     <a href="/families/donations" class="btn secondary">💝 ניהול תרומות חודשיות</a>
     <a href="/families/import-external" class="btn secondary">📥 ייבוא תרומות/מיילים מסליקה</a>
+      <%# מסך חד-פעמי. אחרי שכל הערכים סווגו אפשר להסיר את הקישור ואת שני
+          המסלולים ב-families.js. %>
+      <a href="/families/classify-workplace" class="btn secondary">🏛️ סיווג מקום לימוד / תפילה</a>
   </div>
   <form class="searchbar auto-filter" method="GET" action="/families">
     <input type="text" name="q" placeholder="חיפוש לפי שם משפחה, שם אב, טלפון..." value="<%= q %>" autofocus />

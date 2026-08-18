@@ -1,0 +1,100 @@
+<%- include('../partials/header', {title: 'סיווג מקום לימוד / תפילה'}) %>
+
+<div class="card">
+  <h1>🏛️ סיווג מקום לימוד / תפילה</h1>
+
+  <p style="color:var(--muted); font-size:0.9em; line-height:1.7;">
+    בייבוא מהמערכת הישנה הייתה עמודה אחת בלבד — "מקום עבודת האב" — ולתוכה הוזנו
+    גם כוללים וגם בתי כנסת. כאן מפרידים ביניהם.
+    הסיווג הוא <strong>לפי ערך ולא לפי משפחה</strong>: בחירה אחת עבור "פוניבז'"
+    מחילה את עצמה על כל המשפחות שרשום אצלן פוניבז'.
+  </p>
+
+  <% if (typeof query !== 'undefined') { } %>
+  <% const saved = locals.saved; %>
+
+  <div style="display:flex; gap:18px; flex-wrap:wrap; margin:12px 0; font-size:0.92em;">
+    <span>ערכים לסיווג: <strong><%= totalValues %></strong></span>
+    <span>משפחות מושפעות: <strong><%= totalFamilies %></strong></span>
+  </div>
+
+  <div style="background:#fff8e6; border:1px solid #e0c880; border-radius:8px; padding:10px 14px; margin-bottom:14px; font-size:0.88em; line-height:1.7;">
+    <strong>מה כל בחירה עושה:</strong><br>
+    <strong>לימוד</strong> — הערך נשאר במקום הלימוד. זו ברירת המחדל של המצב הקיים.<br>
+    <strong>תפילה</strong> — הערך <em>עובר</em> למקום התפילה, ומקום הלימוד מתרוקן.<br>
+    <strong>שניהם</strong> — הערך מועתק גם למקום התפילה ונשאר גם בלימוד
+    (למי שלומד ומתפלל באותו מקום).<br>
+    <strong>ללא בחירה</strong> — לא נוגעים. אפשר לסווג בכמה פעימות.
+  </div>
+
+  <form method="POST" action="/families/classify-workplace">
+    <div style="display:flex; gap:10px; margin-bottom:10px; flex-wrap:wrap;">
+      <button type="button" class="btn small secondary" onclick="setAll('study')">הכל לימוד</button>
+      <button type="button" class="btn small secondary" onclick="setAll('prayer')">הכל תפילה</button>
+      <button type="button" class="btn small secondary" onclick="setAll('')">נקה בחירה</button>
+      <button type="button" class="btn small secondary" onclick="applySuggestions()">קבל את ההצעות</button>
+    </div>
+
+    <div class="table-scroll-wrap">
+      <table class="cw-table">
+        <thead>
+          <tr>
+            <th>הערך שרשום היום</th>
+            <th style="width:70px;">משפחות</th>
+            <th style="width:230px;">סיווג</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% rows.forEach((r, i) => { %>
+            <tr>
+              <td>
+                <%= r.value %>
+                <% if (r.suggest) { %>
+                  <span class="cw-hint"><%= r.suggest === 'study' ? 'נראה כלימוד' : 'נראה כתפילה' %></span>
+                <% } %>
+              </td>
+              <td style="text-align:center;"><%= r.families %></td>
+              <td>
+                <%# תפריט ולא רדיו: רדיו עם שם זהה בכל השורות נחשב קבוצה אחת
+                    בדפדפן, ואז רק בחירה אחת בכל הטופס נשלחת. תפריט שולח ערך
+                    לכל שורה תמיד, כך שהמערך נשאר מיושר מול מערך הערכים. %>
+                <input type="hidden" name="value" value="<%= r.value %>" />
+                <select name="choice" class="cw-select" data-suggest="<%= r.suggest %>">
+                  <option value="">— ללא שינוי —</option>
+                  <option value="study">לימוד</option>
+                  <option value="prayer">תפילה</option>
+                  <option value="both">שניהם</option>
+                </select>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="actions" style="margin-top:16px; position:sticky; bottom:0; background:var(--card-bg); padding:10px 0;">
+      <button type="submit" class="btn">💾 שמירת הסיווג</button>
+      <a href="/families" class="btn secondary">חזרה למשפחות</a>
+    </div>
+  </form>
+</div>
+
+<style>
+  table.cw-table { width:100%; border-collapse:collapse; }
+  table.cw-table th, table.cw-table td { border-bottom:1px solid rgba(0,0,0,0.08); padding:5px 8px; text-align:right; }
+  .cw-hint { font-size:0.78em; color:#2d7a4f; margin-inline-start:6px; }
+  .cw-select { width:100%; max-width:200px; font-size:0.92em; padding:4px 6px; }
+</style>
+
+<script>
+  function setAll(v) {
+    document.querySelectorAll('select.cw-select').forEach(function (el) { el.value = v; });
+  }
+  function applySuggestions() {
+    document.querySelectorAll('select.cw-select').forEach(function (el) {
+      if (el.dataset.suggest) el.value = el.dataset.suggest;
+    });
+  }
+</script>
+
+<%- include('../partials/footer') %>
