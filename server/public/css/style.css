@@ -735,6 +735,16 @@ legend { color: var(--primary-dark); font-weight: 700; padding: 0 8px; }
   background: #efe9da;
   box-shadow: 2px 0 5px rgba(0,0,0,0.10);
 }
+/* העמודה הדביקה צרה ככל האפשר: היא מכילה כפתורי פעולה בלבד, ובלי הגבלה
+   היא תופסת רוחב מיותר - ובכותרת, שם היא ריקה, זה נראה כמלבן ריק תלוי
+   באוויר. width: 1% מכווץ עמודה לרוחב התוכן שלה בטבלה.
+   בלי nowrap: בחלק מהרשימות יש שני כפתורים בתא, ואילוץ שורה אחת היה
+   מרחיב את העמודה בדיוק במקום שרצינו לצמצם. */
+.table-scroll-wrap table tr > *:last-child {
+  width: 1%;
+  padding-inline: 6px;
+  text-align: center;
+}
 
 @media (max-width: 1000px) {
   /* מרווחים מצטמצמים כדי לפנות מקום לתוכן עצמו */
