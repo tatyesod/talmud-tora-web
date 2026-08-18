@@ -221,6 +221,10 @@ router.get("/export-docx", async (req, res) => {
     const table = new Table({
       rows: tableRows,
       layout: TableLayoutType.FIXED,
+      // כיווניות הטבלה. בלי זה וורד ממלא את התאים משמאל לימין, ולכן השם
+      // הראשון בסדר הא"ב נחת במדבקה השמאלית ביותר במקום בימנית.
+      // מייצר w:bidiVisual, שהוא מה שוורד קורא בפועל להיפוך סדר העמודות.
+      visuallyRightToLeft: true,
       width: { size: mmToTwips(labelWmm * fmt.cols), type: WidthType.DXA },
       // חובה להגדיר את זה במפורש - זו ה"אמת" שוורד בפועל מסתמך עליה
       // לרוחב כל עמודה (ה-tblGrid ב-XML), לא רק רוחב כל תא בנפרד. בלעדיו
