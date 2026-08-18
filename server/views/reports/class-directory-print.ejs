@@ -1,3 +1,15 @@
+<%
+  // התאמה אוטומטית לעמוד אחד. קודם הגופן היה קבוע, וכיתה גדולה גלשה לעמוד
+  // שני - בדיוק מה שקרה אחרי שהגופן הועלה ל-13. עכשיו 13 הוא היעד, והגופן
+  // מתכווץ רק כשמספר התלמידים מחייב.
+  // A4 = 297 מ"מ, שוליים 13 כפול 2, כותרת וכיתוב עליון כ-30 -> נשארים כ-215.
+  const DIR_AVAILABLE_MM = 215;
+  const dirRows = students.length + 1;                 // + שורת הכותרת
+  const dirRowMM = Math.min(DIR_AVAILABLE_MM / dirRows, 12);
+  const dirFontPt = Math.max(7, Math.min(13, Math.round(dirRowMM * 1.55)));
+  const dirHeadPt = Math.max(dirFontPt, Math.min(16, Math.round(dirRowMM * 1.9)));
+  const dirPadPx = dirRowMM < 6 ? 1 : (dirRowMM < 8 ? 2 : 4);
+%>
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>
@@ -7,6 +19,13 @@
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: "David", "DavidCLM", "Times New Roman", serif; direction: rtl; }
     @page { size: A4 portrait; margin: 13mm; }
+    /* האלפון הוא תמיד עמוד אחד: אסור לשבור בתוך הטבלה, והשארית נחתכת
+       במקום לייצר עמוד שני עם שתי שורות. */
+    @media print {
+      table.dir { page-break-inside: avoid; break-inside: avoid; }
+      table.dir tr { page-break-inside: avoid; break-inside: avoid; }
+      body { overflow: hidden; }
+    }
     @media print { .no-print { display: none !important; } }
 
     .no-print {
@@ -24,9 +43,9 @@
       border-bottom: 1.5pt solid #2c5f7c; padding-bottom: 8px; margin-bottom: 14px;
     }
 
-    table.dir { width: 97%; margin: 0 auto; border-collapse: collapse; font-size: 13pt; }
-    table.dir th, table.dir td { border: 0.6pt solid #999; padding: 4px 6px; text-align: right; }
-    table.dir th { background: #dde8f0; font-weight: 700; text-align: center; font-size: 16pt; }
+    table.dir { width: 97%; margin: 0 auto; border-collapse: collapse; font-size: <%= dirFontPt %>pt; }
+    table.dir th, table.dir td { border: 0.6pt solid #999; padding: <%= dirPadPx %>px 6px; text-align: right; }
+    table.dir th { background: #dde8f0; font-weight: 700; text-align: center; font-size: <%= dirHeadPt %>pt; }
     table.dir td.num { width: 7mm; text-align: center; font-weight: 700; background: #f5f5f5; }
     table.dir td.phone, table.dir th.phone-col { text-align: center; direction: ltr; }
     .dir-title .teacher-phone { font-weight: normal; }
