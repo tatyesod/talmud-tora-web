@@ -25,7 +25,7 @@
   let gridRowHeightMM = Math.min(AVAILABLE_BODY_HEIGHT_MM / gridRowsForHeightCalc, 16);
   const gridFontSizePt = Math.max(5, Math.min(9, Math.round(gridRowHeightMM * 1.1)));
 
-  const PAGE_LABELS = { '7col': '7 טורים', '2col': '2 טורים', '1col': 'דו"ח דו חודשי', general_notes: 'הערות כלליות', grid: 'נוכחות חודשית', blank: 'דף ריק' };
+  const PAGE_LABELS = { '7col': '7 טורים', '3col': '3 טורים', '2col': '2 טורים', '1col': 'דו"ח דו חודשי', general_notes: 'הערות כלליות', grid: 'נוכחות חודשית', blank: 'דף ריק' };
   const classFullName = classRow ? classRow.name + (classRow.parallel ? ' ' + classRow.parallel : '') : '';
 %>
 <!DOCTYPE html>
@@ -165,6 +165,30 @@
             <td></td><td></td><td></td>
             <td></td><td></td><td></td>
             <td></td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+
+  <%# === 3 טורים === %>
+  <% } else if (fmt === '3col') { %>
+    <table class="journal" style="table-layout:fixed; font-size:<%= journalFontSize %>;">
+      <colgroup>
+        <col style="width:7mm">
+        <col style="width:<%= nameColWidthMM %>mm">
+        <col><col><col>
+      </colgroup>
+      <thead><tr style="height:<%= rowHeightMM %>mm;">
+        <th>#</th>
+        <th style="text-align:right; padding-right:5px;">שם התלמיד</th>
+        <th> </th><th> </th><th> </th>
+      </tr></thead>
+      <tbody>
+        <% students.forEach((s, i) => { %>
+          <tr style="height:<%= rowHeightMM %>mm;">
+            <td class="num"><%= i+1 %></td>
+            <td class="name"><%= s.displayName %></td>
+            <td></td><td></td><td></td>
           </tr>
         <% }) %>
       </tbody>
