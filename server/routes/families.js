@@ -192,6 +192,7 @@ const FAMILY_FIELDS = [
   "last_name", "sector", "father_name", "father_id_number", "father_email",
   "mother_name", "mother_id_number", "mother_email",
   "home_phone", "father_mobile", "mother_mobile", "father_workplace", "father_work_phone",
+  "father_synagogue",
   "mother_workplace", "mother_work_phone", "street", "house_number", "apartment", "city", "zip_code",
   "notes", "billing_company", "donation_billing_company", "status",
   "paternal_grandparents", "paternal_grandparents_address",

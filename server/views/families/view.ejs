@@ -43,8 +43,11 @@
     <tr><th>שם האם</th><td><%= family.mother_name || '' %></td><th>ת.ז אם</th><td><%= family.mother_id_number || '' %></td></tr>
     <tr><th>מייל אם</th><td><%- emailLink(family.mother_email) %></td><th></th><td></td></tr>
     <tr><th>טלפון בית</th><td><%- phoneLink(family.home_phone) %></td><th>נייד אב</th><td><%- phoneLink(family.father_mobile) %></td></tr>
-    <tr><th>נייד אם</th><td><%- phoneLink(family.mother_mobile) %></td><th>מקום עבודת האב</th><td><%= family.father_workplace || '' %></td></tr>
-    <tr><th>טלפון עבודת האב</th><td><%- phoneLink(family.father_work_phone) %></td><th>מקום עבודת האם</th><td><%= family.mother_workplace || '' %></td></tr>
+    <%# "טלפון עבודת האב" הוסר לבקשת המשתמש. השורות סודרו מחדש כדי שלא
+        יישאר תא ריק באמצע הטבלה. %>
+    <tr><th>נייד אם</th><td><%- phoneLink(family.mother_mobile) %></td><th>מקום לימוד האב</th><td><%= family.father_workplace || '' %></td></tr>
+    <tr><th>מקום תפילה האב</th><td><%= family.father_synagogue || '' %></td><th>מקום עבודת האם</th><td><%= family.mother_workplace || '' %></td></tr>
+    <tr><th>טלפון עבודת האם</th><td><%- phoneLink(family.mother_work_phone) %></td><th></th><td></td></tr>
     <tr><th>טלפון עבודת האם</th><td><%- phoneLink(family.mother_work_phone) %></td>
         <th>כתובת</th><td><%= [family.street, family.house_number, family.apartment?'דירה '+family.apartment:'', family.city].filter(Boolean).join(', ') %></td></tr>
     <tr><th>הורי האב</th><td><%= family.paternal_grandparents || '' %></td><th>כתובת הורי האב</th><td><%= family.paternal_grandparents_address || '' %></td></tr>
