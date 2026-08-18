@@ -277,6 +277,26 @@ app.use("/api/jewish-calendar", (req, res, next) => next());
 
 app.use(requireLogin);
 
+// canAccess זמינה בכל התצוגות: התפריט וכרטיסי דף הבית מסתירים לפיה פריטים,
+// והיא נגזרת מאותה ROLE_RULES של השער עצמו. כך אי אפשר שהתפריט יציג משהו
+// שהשער חוסם, או שיסתיר משהו שמותר - שניהם נגזרים ממקור אחד.
+function pathAllowedForRole(role, p) {
+  const rules = ROLE_RULES[role];
+  if (!rules) return true;                 // מנהל ומזכירים - הכל
+  const matches = (list) =>
+    (list || []).some((base) =>
+      base === "/" ? p === "/" : (p === base || p.startsWith(base + "/"))
+    );
+  if (matches(rules.deny)) return false;
+  return matches(rules.allow);
+}
+
+app.use((req, res, next) => {
+  res.locals.canAccess = (p) =>
+    pathAllowedForRole(req.currentUser && req.currentUser.role, p);
+  next();
+});
+
 app.use((req, res, next) => {
   const rules = req.currentUser && ROLE_RULES[req.currentUser.role];
   if (!rules) return next();

@@ -18,7 +18,9 @@
 </head>
 <body>
   <header class="topbar">
-    <div class="brand"><a href="/" style="color:#fff; display:flex; align-items:center; gap:10px;"><img src="/images/logo.png" alt="לוגו" style="height:40px; width:auto;" /> תלמוד תורה החדש</a></div>
+    <%# הלוגו מקשר לדף הבית של המשתמש ולא ל-"/" קבוע: לתחזוקן דף הבית חסום,
+        ולחיצה על הלוגו הייתה מחזירה אותו לאחור בלי הסבר. %>
+    <div class="brand"><a href="<%= typeof canAccess === 'function' && canAccess('/') ? '/' : '/inventory/maintenance' %>" style="color:#fff; display:flex; align-items:center; gap:10px;"><img src="/images/logo.png" alt="לוגו" style="height:40px; width:auto;" /> תלמוד תורה החדש</a></div>
     <%# לתחזוקן החיצוני אין גישה לאף מודול חוץ מבקשות התחזוקה, ולכן תפריט
         עם עשרים כרטיסיות חסומות רק מבלבל ומזמין לחיצות שיחזירו אותו לאחור.
         מקבל תפריט משלו עם מה שרלוונטי לו בלבד. %>
@@ -34,24 +36,24 @@
       </nav>
     <% } else { %>
     <nav>
-      <a href="/">בית</a>
-      <a href="/students">תלמידים</a>
-      <a href="/classes">כיתות ומחזורים</a>
-      <a href="/letters">מכתבי שיבוץ</a>
-      <a href="/teachers">מלמדים</a>
-      <a href="/families">משפחות</a>
-      <a href="/tuition">שכר לימוד</a>
-      <a href="/suppliers">ספקים והזמנות</a>
-      <a href="/expenses">הוצאות</a>
-      <a href="/events">אירועים</a>
-      <a href="/campaigns">מבצעים כיתתיים</a>
-      <a href="/inventory">מלאי ותחזוקה</a>
-      <a href="/parent-comm">תקשורת הורים</a>
-      <a href="/books">הזמנת ספרים</a>
-      <a href="/reports">דוחות</a>
-      <a href="/year">ניהול שנה</a>
-      <a href="/messages">הודעות</a>
-      <% if (isAdmin) { %><a href="/users">משתמשים</a><% } %>
+      <% if (canAccess("/")) { %><a href="/">בית</a><% } %>
+      <% if (canAccess("/students")) { %><a href="/students">תלמידים</a><% } %>
+      <% if (canAccess("/classes")) { %><a href="/classes">כיתות ומחזורים</a><% } %>
+      <% if (canAccess("/letters")) { %><a href="/letters">מכתבי שיבוץ</a><% } %>
+      <% if (canAccess("/teachers")) { %><a href="/teachers">מלמדים</a><% } %>
+      <% if (canAccess("/families")) { %><a href="/families">משפחות</a><% } %>
+      <% if (canAccess("/tuition")) { %><a href="/tuition">שכר לימוד</a><% } %>
+      <% if (canAccess("/suppliers")) { %><a href="/suppliers">ספקים והזמנות</a><% } %>
+      <% if (canAccess("/expenses")) { %><a href="/expenses">הוצאות</a><% } %>
+      <% if (canAccess("/events")) { %><a href="/events">אירועים</a><% } %>
+      <% if (canAccess("/campaigns")) { %><a href="/campaigns">מבצעים כיתתיים</a><% } %>
+      <% if (canAccess("/inventory")) { %><a href="/inventory">מלאי ותחזוקה</a><% } %>
+      <% if (canAccess("/parent-comm")) { %><a href="/parent-comm">תקשורת הורים</a><% } %>
+      <% if (canAccess("/books")) { %><a href="/books">הזמנת ספרים</a><% } %>
+      <% if (canAccess("/reports")) { %><a href="/reports">דוחות</a><% } %>
+      <% if (canAccess("/year")) { %><a href="/year">ניהול שנה</a><% } %>
+      <% if (canAccess("/messages")) { %><a href="/messages">הודעות</a><% } %>
+      <% if (isAdmin) { %><% if (canAccess("/users")) { %><a href="/users">משתמשים</a><% } %><% } %>
       <a href="/profile">הפרופיל שלי</a>
       <% if (user) { %>
         <a href="/profile" style="margin-inline-start:16px; font-size:0.9em; color:var(--text);">👤 <%= user %></a>
