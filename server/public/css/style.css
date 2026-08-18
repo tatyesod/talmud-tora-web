@@ -728,12 +728,17 @@ legend { color: var(--primary-dark); font-weight: 700; padding: 0 8px; }
    איתה - אחרת הוא נשאר לבן ובולט כמו טלאי */
 .table-scroll-wrap table tbody tr:hover > *:last-child { background: #faf8f3; }
 /* הכותרת שומרת על צבע הכותרות */
+/* כותרת עמודת הפעולות: אותו רקע בדיוק כמו שאר הכותרות בטבלה הזו.
+   בטבלאות עם גלילה הכותרות נצבעות ב-#e8ecf0 (ראה .table-scroll-wrap
+   thead th למעלה) ולא ב-#efe9da של טבלה רגילה - וזה מה שהחמצתי: נתתי לה
+   את הגוון של הטבלה הרגילה, והיא בלטה כמלבן חול על רקע תכלת.
+   z-index גבוה משתיהן כי היא דביקה גם אנכית וגם אופקית - הפינה. */
 .table-scroll-wrap table thead tr > *:last-child {
   position: sticky;
   left: 0;
-  z-index: 3;
-  background: #efe9da;
-  box-shadow: 2px 0 5px rgba(0,0,0,0.10);
+  z-index: 11;
+  background: var(--table-header, #e8ecf0);
+  box-shadow: 0 1px 0 var(--border);
 }
 /* העמודה הדביקה צרה ככל האפשר: היא מכילה כפתורי פעולה בלבד, ובלי הגבלה
    היא תופסת רוחב מיותר - ובכותרת, שם היא ריקה, זה נראה כמלבן ריק תלוי
