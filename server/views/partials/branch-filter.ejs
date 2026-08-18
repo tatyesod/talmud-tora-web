@@ -8,7 +8,7 @@
   </select>
   <span style="color:var(--muted); font-size:0.85em;">בחר סניף לסינון הכיתות</span>
 </div>
-<script src="/js/branch-filter.js"></script>
+<script src="/js/branch-filter.js?v=<%= typeof assetVersion !== 'undefined' ? assetVersion : '' %>"></script>
 <script>
   BranchFilter.init('branch-filter-select');
 </script>

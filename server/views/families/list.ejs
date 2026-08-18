@@ -82,7 +82,7 @@
   <% } %>
 </div>
 
-<script src="/js/bulk-select.js"></script>
+<script src="/js/bulk-select.js?v=<%= typeof assetVersion !== 'undefined' ? assetVersion : '' %>"></script>
 <script>initBulkSelect('select-all-rows', 'משפחות');</script>
 
 <%- include('../partials/footer') %>

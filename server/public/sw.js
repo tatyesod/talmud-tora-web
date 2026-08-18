@@ -3,7 +3,7 @@
 
 // שם המטמון מקבל גרסה חדשה בכל שינוי מבני כאן, כדי שמטמונים ישנים יימחקו
 // אוטומטית ב-activate ולא יישארו תקועים אצל משתמשים ותיקים.
-const CACHE_NAME = "tt-hachadash-v4";
+const CACHE_NAME = "tt-hachadash-v5";
 
 // נכסים סטטיים בלבד. "/" הוסר מכאן בכוונה: זה דף HTML שמחייב התחברות,
 // ובמצב לא-מחובר הוא מחזיר הפניה ל-/login. Cache.put דוחה תגובות שעברו
@@ -36,17 +36,16 @@ self.addEventListener("activate", (event) => {
   self.clients.claim();
 });
 
-// אסטרטגיה: network-first עם נפילה לקאש.
+// אסטרטגיה לנכסים סטטיים: מטמון קודם, ורענון ברקע.
 //
-// הבאג שתוקן כאן: קודם ה-catch תפס רק כשל רשת אמיתי (אין חיבור), ותגובה
-// שהגיעה בהצלחה אבל הייתה שגויה - 502 בזמן פריסה ב-Render, 503, או דף
-// חסימה של מסנן אינטרנט - הוחזרה לדפדפן כמו שהיא. התוצאה הייתה שהלוגו
-// "נעלם" מדי פעם למרות שעותק תקין שלו ישב במטמון ולא נגעו בו.
-// עכשיו כל תגובה שאינה תקינה נחשבת ככישלון ונופלת קודם למטמון.
+// קודם זה היה "רשת קודם": בכל טעינת דף הדפדפן פנה לשרת עבור כל קובץ עיצוב,
+// סקריפט ותמונה, והמטמון שימש רק כגיבוי לכישלון. כלומר המטמון היה קיים אבל
+// לא האיץ דבר, וכל מעבר בין דפים שילם סבב רשת מלא על כל נכס - וזו הייתה
+// ההשהיה שהורגשה בכל ניווט, גם מהתפריט וגם מהכרטיסים.
 //
-// בנוסף: אם גם הרשת נכשלה וגם אין עותק במטמון, caches.match מחזיר undefined,
-// ו-respondWith(undefined) מייצר שגיאת רשת קשה בדפדפן. לכן מוחזרת תגובה
-// מפורשת במקום.
+// עכשיו: אם יש עותק במטמון הוא מוחזר מיד, ובמקביל נשלחת בקשה ברקע שמעדכנת
+// אותו לפעם הבאה. קבצי העיצוב נטענים עם ?v=<גרסה>, ולכן שינוי בקוד מייצר
+// כתובת חדשה שאין לה עותק - והמשתמש מקבל את הגרסה החדשה מיד ולא תקוע על ישן.
 self.addEventListener("fetch", (event) => {
   const req = event.request;
   if (req.method !== "GET") return;
@@ -54,33 +53,34 @@ self.addEventListener("fetch", (event) => {
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return; // בקשות לשירותים חיצוניים
 
-  // מטפלים אך ורק בנכסים סטטיים - עיצוב, סקריפטים, תמונות וגופנים.
-  //
-  // חשוב במיוחד: בקשות ניווט (טעינת דף) ובקשות נתונים חייבות לעבור ישירות
-  // לדפדפן בלי מגע. בבקשת ניווט הדפדפן מבקש redirect: "manual", ולכן הפניה
-  // ל-/login חוזרת כתגובת opaqueredirect שבה response.ok הוא false. גרסה
-  // קודמת של הקובץ הזה ראתה "לא ok" ושירתה במקום זה את דף הבית מהמטמון -
-  // כך שאחרי סגירה ופתיחה האפליקציה נראתה מחוברת, בעוד שכל בקשות הנתונים
-  // נכשלו והפאנלים בצדדים נתקעו על "טוען...".
+  // בקשות ניווט (טעינת דף) ובקשות נתונים חייבות לעבור ישירות לדפדפן בלי מגע.
+  // בבקשת ניווט הדפדפן מבקש redirect: "manual", ולכן הפניה ל-/login חוזרת
+  // כתגובת opaqueredirect שבה response.ok הוא false. גרסה קודמת ראתה
+  // "לא ok" ושירתה במקום זה את דף הבית מהמטמון - כך שאחרי סגירה ופתיחה
+  // האפליקציה נראתה מחוברת, בעוד שכל בקשות הנתונים נכשלו.
   const STATIC = ["style", "script", "image", "font"];
   if (!STATIC.includes(req.destination)) return;
 
   event.respondWith(
-    fetch(req)
-      .then((response) => {
-        if (!response || !response.ok || response.redirected) {
-          // תגובה שגויה (502 בזמן פריסה, דף חסימה של מסנן) - מנסים את המטמון.
-          // אם אין שם עותק, מחזירים את התגובה המקורית כדי לא להסתיר שגיאה אמיתית.
-          return caches.match(req).then((cached) => cached || response);
-        }
-        const copy = response.clone();
-        caches.open(CACHE_NAME).then((cache) => cache.put(req, copy)).catch(() => {});
-        return response;
-      })
-      .catch(() =>
-        caches.match(req).then((cached) =>
-          cached || new Response("", { status: 504, statusText: "Offline and not cached" })
-        )
-      )
+    caches.match(req).then((cached) => {
+      // רענון ברקע. לא ממתינים לו, ולכן הוא לא מעכב את הצגת הדף.
+      const network = fetch(req)
+        .then((response) => {
+          if (response && response.ok && !response.redirected) {
+            const copy = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(req, copy)).catch(() => {});
+          }
+          return response;
+        })
+        .catch(() => null);
+
+      // יש עותק - מחזירים אותו מיד. אין - ממתינים לרשת.
+      if (cached) return cached;
+      return network.then(
+        (response) =>
+          response ||
+          new Response("", { status: 504, statusText: "Offline and not cached" })
+      );
+    })
   );
 });

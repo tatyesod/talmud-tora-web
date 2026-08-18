@@ -488,11 +488,11 @@
     <div class="zman-item"><span class="zman-label">חצות הלילה</span><span class="zman-value" id="z-chatzotNight">--:--</span></div>
   </div>
 
-  <script src="/js/info-bar.js"></script>
-  <script src="/js/presence.js"></script>
-  <script src="/js/messages-preview.js"></script>
-  <script src="/js/notifications.js"></script>
-  <script src="/js/shared-tasks.js"></script>
+  <script src="/js/info-bar.js?v=<%= typeof assetVersion !== 'undefined' ? assetVersion : '' %>"></script>
+  <script src="/js/presence.js?v=<%= typeof assetVersion !== 'undefined' ? assetVersion : '' %>"></script>
+  <script src="/js/messages-preview.js?v=<%= typeof assetVersion !== 'undefined' ? assetVersion : '' %>"></script>
+  <script src="/js/notifications.js?v=<%= typeof assetVersion !== 'undefined' ? assetVersion : '' %>"></script>
+  <script src="/js/shared-tasks.js?v=<%= typeof assetVersion !== 'undefined' ? assetVersion : '' %>"></script>
   <script>
   // פותח טאב חדש לג'ימייל/יומן, אבל אם כבר יש כזה פתוח (מלחיצה קודמת
   // באותו טעינת-דף) - קופץ אליו ישירות במקום לפתוח עוד אחד

@@ -154,7 +154,7 @@
 
 <%- include('../partials/footer') %>
 
-<script src="/js/media-capture.js" defer></script>
+<script src="/js/media-capture.js?v=<%= typeof assetVersion !== 'undefined' ? assetVersion : '' %>" defer></script>
 <style>
   .media-box { margin-top: 6px; }
   .media-gallery { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 4px; }

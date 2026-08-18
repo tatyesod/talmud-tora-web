@@ -290,5 +290,5 @@
   .wo-hist-desc { flex: 1; }
 </style>
 
-<script src="/js/media-capture.js" defer></script>
+<script src="/js/media-capture.js?v=<%= typeof assetVersion !== 'undefined' ? assetVersion : '' %>" defer></script>
 <%- include('../partials/footer') %>

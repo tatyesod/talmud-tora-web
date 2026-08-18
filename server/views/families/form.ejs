@@ -148,6 +148,6 @@
   </form>
 </div>
 
-<script src="/js/id-validator.js"></script>
+<script src="/js/id-validator.js?v=<%= typeof assetVersion !== 'undefined' ? assetVersion : '' %>"></script>
 
 <%- include('../partials/footer') %>
