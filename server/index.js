@@ -34,16 +34,18 @@ const ROLE_RULES = {
     allow: [
       "/",                    // דף הבית
       "/students",            // תלמידים - כולל עריכה
-      "/classes",             // כיתות ושיבוץ
+      "/classes",             // כיתות ומחזורים
       "/families",            // משפחות והורים
-      "/parent-comm",         // תקשורת הורים
       "/reports",             // דוחות
-      "/letters", "/labels",  // מכתבים ומדבקות
-      "/events",              // אירועים
+      // נדרשים לתפעול ולא מופיעים ככרטיס: הודעות, משימות, נוכחות, קבצים
       "/messages", "/tasks", "/presence", "/uploads",
       "/users/profile",       // הפרופיל שלה בלבד
       "/logout",
     ],
+    // כרטיסי דף הבית. רשימה נפרדת מ-allow בכוונה: היא רשאית לערוך תלמידים,
+    // אבל "רישום תלמיד חדש" ו"חומרי לימוד" הם תת-נתיבים של מודולים מותרים
+    // ולכן היו מופיעים ככרטיס. כאן נקבע מה מוצג, ושם מה מותר.
+    cards: ["/families", "/classes", "/students", "/reports"],
     // תת-נתיבים כספיים שיושבים בתוך מודולים מותרים
     deny: [
       "/families/donations",
@@ -292,8 +294,16 @@ function pathAllowedForRole(role, p) {
 }
 
 app.use((req, res, next) => {
-  res.locals.canAccess = (p) =>
-    pathAllowedForRole(req.currentUser && req.currentUser.role, p);
+  const role = req.currentUser && req.currentUser.role;
+  res.locals.canAccess = (p) => pathAllowedForRole(role, p);
+  // showCard נפרדת מ-canAccess: תפקיד יכול להיות רשאי לנתיב בלי שהוא יופיע
+  // ככרטיס בדף הבית. בלי רשימת cards מוצג כל מה שמותר.
+  res.locals.showCard = (p) => {
+    const rules = ROLE_RULES[role];
+    if (!rules) return true;
+    if (!rules.cards) return pathAllowedForRole(role, p);
+    return rules.cards.includes(p);
+  };
   next();
 });
 
