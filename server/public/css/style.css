@@ -704,3 +704,45 @@ legend { color: var(--primary-dark); font-weight: 700; padding: 0 8px; }
 }
 #scroll-to-top:hover { opacity: 1; transform: translateY(-2px); }
 #scroll-to-top.visible { display: flex; }
+
+
+/* ===== התאמה למסכים קטנים ולטאבלט ===== */
+/* עד כה לא היה בקובץ הזה שום כלל רספונסיבי מלבד הדפסה, ולכן במסך קטן
+   הטבלאות והטפסים גלשו הצידה. */
+
+/* עמודת הפעולות דביקה: בטבלאות רחבות כמו רשימת התלמידים כפתור הצפייה יושב
+   בסוף השורה, והמשתמש נאלץ לגלול הצידה עד הסוף כדי להגיע אליו. עכשיו
+   העמודה האחרונה נשארת צמודה לקצה ונראית תמיד, בלי קשר לגלילה. */
+.table-scroll-wrap { position: relative; }
+.table-scroll-wrap table tr > *:last-child {
+  position: sticky;
+  left: 0;                      /* בעמוד RTL הקצה השמאלי הוא סוף השורה */
+  z-index: 2;
+  background: var(--panel, #16233a);
+  box-shadow: 2px 0 4px rgba(0,0,0,0.18);
+}
+.table-scroll-wrap table thead tr > *:last-child { z-index: 3; }
+
+@media (max-width: 1000px) {
+  /* מרווחים מצטמצמים כדי לפנות מקום לתוכן עצמו */
+  .container, .container-wide { padding-inline: 8px; }
+  .card { padding: 12px; }
+  table th, table td { padding: 5px 6px; font-size: 0.92em; }
+  .searchbar { gap: 6px; }
+  .searchbar input[type=text] { min-width: 130px; }
+  .actions { flex-wrap: wrap; gap: 6px; }
+}
+
+@media (max-width: 700px) {
+  table th, table td { padding: 4px 5px; font-size: 0.86em; }
+  .btn { padding: 7px 12px; }
+  h1 { font-size: 1.3rem; }
+  /* טפסים לעמודה אחת - שתי עמודות במסך צר גורמות לשדות זעירים */
+  .form-grid { grid-template-columns: 1fr !important; }
+}
+
+/* מסך נמוך - פחות מרווח אנכי, כדי שלא יידרש לגלול בשביל הכותרת */
+@media (max-height: 750px) {
+  .card { padding-block: 10px; }
+  h1 { margin-bottom: 8px; }
+}

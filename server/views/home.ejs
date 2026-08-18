@@ -276,6 +276,9 @@
   </main>
 
   <!-- עוגן פאנל צד ימין - טאבים למשימות + שתי חלוניות קבועות לימי הולדת -->
+  <%# עוטף לשני הפאנלים: במסך רחב הם צפים בצדדים (position: fixed), ובמסך
+      צר יותר העוטף הופך אותם לשורה רגילה מתחת לתוכן במקום להסתיר אותם. %>
+  <div class="side-dock-wrap">
   <div class="side-dock side-dock-right">
     <aside class="side-panel dock-tabs-panel">
       <%
@@ -436,6 +439,7 @@
       <h3><span class="presence-dot-live"></span> מחוברים כעת</h3>
       <ul class="presence-list-mini" id="presence-list"><li class="presence-loading">טוען...</li></ul>
     </aside>
+  </div>
   </div>
 
   <div class="info-bar" id="info-bar">
