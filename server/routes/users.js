@@ -40,7 +40,8 @@ router.post("/", (req, res) => {
   if (!username || !password) return res.redirect("/users/new");
   // רק "maintenance" מתקבל כתפקיד; כל ערך אחר הופך למשתמש רגיל, כדי שלא
   // ייכתב לשדה תפקיד שרירותי שהשער לא מכיר
-  const safeRole = role === "maintenance" ? "maintenance" : null;
+  // רק תפקידים מוכרים מתקבלים; כל ערך אחר הופך למשתמש רגיל
+  const safeRole = ["maintenance", "pedagogic"].includes(role) ? role : null;
   try {
     db.prepare(`INSERT INTO users (username, password_hash, display_name, created_at, role, exclude_from_consult)
       VALUES (?,?,?,?,?,?)`).run(
@@ -61,7 +62,8 @@ router.get("/:id/edit", (req, res) => {
 
 router.put("/:id", (req, res) => {
   const { display_name, password, force_password_change, role, exclude_from_consult } = req.body;
-  const safeRole = role === "maintenance" ? "maintenance" : null;
+  // רק תפקידים מוכרים מתקבלים; כל ערך אחר הופך למשתמש רגיל
+  const safeRole = ["maintenance", "pedagogic"].includes(role) ? role : null;
   // הגנה: מנהל לא יכול להפוך את עצמו לתחזוקן ולנעול את עצמו מחוץ למערכת
   const isSelf = parseInt(req.params.id, 10) === req.currentUser.id;
   const target = db.prepare("SELECT is_admin FROM users WHERE id = ?").get(req.params.id);

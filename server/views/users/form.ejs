@@ -14,13 +14,20 @@
         <label>סוג המשתמש</label>
         <select name="role">
           <option value="">משתמש רגיל (גישה מלאה)</option>
+          <option value="pedagogic" <%= mode === 'edit' && editUser.role === 'pedagogic' ? 'selected' : '' %>>
+            צוות פדגוגי — תלמידים, משפחות ודוחות (בלי כספים)
+          </option>
           <option value="maintenance" <%= mode === 'edit' && editUser.role === 'maintenance' ? 'selected' : '' %>>
             תחזוקן — מסך בקשות התחזוקה בלבד
           </option>
         </select>
-        <small style="color:var(--muted);">
-          "תחזוקן" רואה אך ורק את מסך בקשות התחזוקה ויכול לעדכן סטטוס והערות.
-          כל שאר המערכת — תלמידים, משפחות, מלמדים, שכר, דוחות — חסומה לו.
+        <small style="color:var(--muted); display:block; line-height:1.6; margin-top:4px;">
+          <strong>משתמש רגיל</strong> — גישה מלאה לכל המערכת.<br>
+          <strong>צוות פדגוגי</strong> — תלמידים, כיתות, משפחות והורים, תקשורת הורים,
+          דוחות, מכתבים, מדבקות ואירועים, <em>כולל עריכה</em>.
+          חסומים: שכר לימוד, תרומות, הוצאות, ספקים, מבצעים, מלמדים, מלאי, גיבויים,
+          ניהול שנה וניהול משתמשים.<br>
+          <strong>תחזוקן</strong> — מסך בקשות התחזוקה בלבד; כל השאר חסום.
         </small>
       </div>
       <div class="form-group full">

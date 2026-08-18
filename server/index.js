@@ -18,6 +18,42 @@ const PORT = process.env.PORT || 3000;
 
 // גרסת נכסים (CSS/JS) - מחושבת פעם אחת בהפעלת השרת, כך שכל פריסה חדשה (Render)
 // מכריחה את הדפדפן למשוך קבצי עיצוב/סקריפט טריים במקום גרסה שמורה בקאש.
+// ===== שער הרשאות לפי תפקיד =====
+// רשימה לבנה ולא שחורה: כל נתיב שאינו ברשימה חסום. כך פיצ'ר שייבנה בעתיד
+// חסום אוטומטית לתפקידים המוגבלים, ולא נגלה יום אחד שמישהו רואה נתונים
+// שלא נועדו לו. deny נבדק לפני allow, לחסימת תת-נתיב בתוך מודול מותר.
+const ROLE_RULES = {
+  // תחזוקן חיצוני - מסך בקשות התחזוקה בלבד
+  maintenance: {
+    allow: ["/inventory/maintenance", "/logout"],
+    deny: ["/inventory/maintenance/media"],   // ניהול נפח הדיסק הוא של המשרד
+    home: "/inventory/maintenance",
+  },
+  // רכזת שילוב - כל הצד הפדגוגי, בלי כספים ובלי ניהול מערכת
+  pedagogic: {
+    allow: [
+      "/",                    // דף הבית
+      "/students",            // תלמידים - כולל עריכה
+      "/classes",             // כיתות ושיבוץ
+      "/families",            // משפחות והורים
+      "/parent-comm",         // תקשורת הורים
+      "/reports",             // דוחות
+      "/letters", "/labels",  // מכתבים ומדבקות
+      "/events",              // אירועים
+      "/messages", "/tasks", "/presence", "/uploads",
+      "/users/profile",       // הפרופיל שלה בלבד
+      "/logout",
+    ],
+    // תת-נתיבים כספיים שיושבים בתוך מודולים מותרים
+    deny: [
+      "/families/donations",
+      "/families/import-external/donations",
+      "/reports/tuition-by-billing-company",
+    ],
+    home: "/",
+  },
+};
+
 const ASSET_VERSION = Date.now();
 app.use((req, res, next) => {
   res.locals.assetVersion = ASSET_VERSION;
@@ -203,7 +239,7 @@ app.post("/force-change-password", requireLogin, (req, res) => {
   db.prepare("UPDATE users SET password_hash = ?, force_password_change = 0 WHERE id = ?").run(
     hashPassword(password), req.currentUser.id
   );
-  res.redirect(req.currentUser.role === "maintenance" ? "/inventory/maintenance" : "/");
+  res.redirect((ROLE_RULES[req.currentUser.role] && ROLE_RULES[req.currentUser.role].home) || "/");
 });
 
 app.get("/login", (req, res) => {
@@ -221,7 +257,7 @@ app.post("/login", (req, res) => {
     // ובלעדיו הפטור של התחזוקן לא היה נכנס לתוקף לעולם.
     req.session.userRole = u.role || "";
     // התחזוקן נשלח ישר למסך היחיד שלו, כדי שהטאבלט ייפתח על מה שהוא צריך
-    return res.redirect(u.role === "maintenance" ? "/inventory/maintenance" : "/");
+    return res.redirect((ROLE_RULES[u.role] && ROLE_RULES[u.role].home) || "/");
   }
   res.render("login", { error: "שם משתמש או סיסמה שגויים" });
 });
@@ -241,21 +277,23 @@ app.use("/api/jewish-calendar", (req, res, next) => next());
 
 app.use(requireLogin);
 
-// ===== שער הרשאות לתחזוקן החיצוני =====
-// רשימה לבנה ולא שחורה: כל נתיב שאינו כאן חסום לו. כך פיצ'ר שנבנה בעתיד
-// חסום עבורו אוטומטית, ולא נגלה יום אחד שהוא רואה נתוני שכר או תלמידים.
-const MAINTENANCE_ALLOWED = [
-  "/inventory/maintenance",   // המסך שלו - כולל עדכון סטטוס והערות
-  "/logout",
-  "/js/", "/css/", "/images/", "/favicon.ico", "/sw.js", "/manifest.json",
-];
 app.use((req, res, next) => {
-  if (!req.currentUser || req.currentUser.role !== "maintenance") return next();
-  const ok = MAINTENANCE_ALLOWED.some((p) => req.path === p || req.path.startsWith(p + "/") || req.path.startsWith(p));
-  if (ok) return next();
-  // לא שגיאה - פשוט מחזירים אותו למסך היחיד שלו
-  return res.redirect("/inventory/maintenance");
+  const rules = req.currentUser && ROLE_RULES[req.currentUser.role];
+  if (!rules) return next();
+
+  // התאמה מדויקת או תת-נתיב.
+  // "/" מטופל כהתאמה מדויקת בלבד: אחרת base.replace הופך אותו למחרוזת ריקה,
+  // כל נתיב "מתחיל" בו, והשער כולו מתבטל בשקט. זה נתפס בבדיקה.
+  const matches = (list) =>
+    (list || []).some((base) =>
+      base === "/" ? req.path === "/" : (req.path === base || req.path.startsWith(base + "/"))
+    );
+
+  if (matches(rules.deny || [])) return res.redirect(rules.home);
+  if (matches(rules.allow)) return next();
+  return res.redirect(rules.home);
 });
+
 app.use(checkForcePasswordChange);
 
 app.get("/", (req, res) => {
