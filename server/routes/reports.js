@@ -1497,7 +1497,8 @@ router.get("/stay-arrangement/guard/view", (req, res) => {
   const COL_PADDING_MM = 7 * 4;      // ריפוד וגבולות של 7 עמודות
   const MM_PER_CHAR_PER_PT = 0.3528 * 0.52; // רוחב תו עברי ממוצע
   const widthCapPt = (AVAILABLE_WIDTH_MM - COL_PADDING_MM) / (widest * MM_PER_CHAR_PER_PT);
-  const bodyFontPt = Math.max(7, Math.min(16, Math.round(rowHeightMM * 1.3), Math.floor(widthCapPt)));
+  // תקרה 13 כמו בשאר רשימות התלמידים; מתכווץ מתחתיה רק כשהעמוד לא מספיק
+  const bodyFontPt = Math.max(7, Math.min(13, Math.round(rowHeightMM * 1.3), Math.floor(widthCapPt)));
 
   res.render("reports/stay-arrangement-guard", { branch, students, rowHeightMM, bodyFontPt });
 });
@@ -1612,7 +1613,8 @@ router.get("/single-page/view", (req, res) => {
     const rowsForCalc = students.length + 1;
     let rowHeightMM = Math.min(AVAILABLE_HEIGHT_MM / rowsForCalc, 14);
     rowHeightMM = Math.max(rowHeightMM, 3.5);
-    const bodyFontPt = Math.max(6.5, Math.min(20, Math.round(rowHeightMM * 1.6)));
+    // תקרה 13 כמו בשאר רשימות התלמידים
+    const bodyFontPt = Math.max(6.5, Math.min(13, Math.round(rowHeightMM * 1.6)));
     return res.render("reports/stay-arrangement", { classRow, students, rowHeightMM, bodyFontPt });
   }
 

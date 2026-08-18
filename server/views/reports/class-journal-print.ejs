@@ -12,7 +12,12 @@
   const journalFontSize = rowHeightMM < 6.5 ? '7pt' : (rowHeightMM < 8.5 ? '7.8pt' : '8.5pt');
   // גופן שם התלמיד גדל/קטן יחד עם גובה השורה בפועל (לא קבוע יותר) - עד תקרה
   // של 16pt לכיתות קטנות, אבל מתכווץ כמה שצריך לכיתות גדולות כדי שלא לגלוש
-  const nameFontSizePt = Math.max(6, Math.min(16, Math.round(rowHeightMM * 1.9)));
+  // יעד: גופן 13 בכל רשימות התלמידים. מתכווץ רק כשהשורה צרה מדי - אחרת
+  // כיתה גדולה הייתה גולשת לעמוד שני, וזו בדיוק התקלה שתוקנה זה עתה.
+  // 13pt דורש כ-7.4 מ"מ לשורה, ולכן ההקטנה נכנסת מכ-31 תלמידים ומעלה.
+  const nameFontSizePt = Math.max(6, Math.min(13, Math.round(rowHeightMM * 1.9)));
+  // כותרת הטבלה: 16 אם השורה מרשה, אחרת כגודל השם
+  const headFontSizePt = Math.max(nameFontSizePt, Math.min(16, Math.floor(rowHeightMM * 2.2)));
   const maxNameLen = students.reduce((m, s) => Math.max(m, (s.displayName || '').length), 4);
   // רוחב עמודת השם מחושב לפי הגופן הדינמי בפועל, כדי שהשם תמיד ייכנס בשורה
   // אחת בלי גלישה או חיתוך, בכל גודל כיתה
@@ -39,7 +44,7 @@
   <title>יומן — <%= classRow ? classRow.name + ' ' + (classRow.parallel||'') : '' %></title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: "FrankRuehl", "FrankRuehlCLM", "Guttman Mantova", Arial, 'Arial Hebrew', sans-serif; direction: rtl; }
+    body { font-family: "David", "DavidCLM", "Times New Roman", serif; direction: rtl; }
 
     @page { size: A4 portrait; margin: 13mm; }
     @media print { .no-print { display: none !important; } }
@@ -78,7 +83,7 @@
     table.journal th, table.journal td {
       border: 0.7pt solid #666; padding: 2px 4px; text-align: center;
     }
-    table.journal th { background: #dde8f0; font-weight: 700; font-size: 8pt; }
+    table.journal th { background: #dde8f0; font-weight: 700; font-size: <%= headFontSizePt %>pt; text-align: center; }
     table.journal td.num { width: 7mm; font-weight: 700; background: #f5f5f5; text-align: center; }
     /* חייב להיות table.journal td.name ולא td.name: הכלל
        "table.journal th, table.journal td" שלמעלה ספציפי יותר, ולכן
@@ -169,8 +174,8 @@
       </colgroup>
       <thead><tr style="height:<%= rowHeightMM %>mm;">
         <th>#</th>
-        <th style="text-align:right; padding-right:5px;">שם משפחה</th>
-        <th style="text-align:right; padding-right:5px;">שם פרטי</th>
+        <th>שם משפחה</th>
+        <th>שם פרטי</th>
         <th></th><th></th><th></th><th></th><th></th><th></th><th></th>
       </tr></thead>
       <tbody>
@@ -198,8 +203,8 @@
       </colgroup>
       <thead><tr style="height:<%= rowHeightMM %>mm;">
         <th>#</th>
-        <th style="text-align:right; padding-right:5px;">שם משפחה</th>
-        <th style="text-align:right; padding-right:5px;">שם פרטי</th>
+        <th>שם משפחה</th>
+        <th>שם פרטי</th>
         <th> </th><th> </th><th> </th>
       </tr></thead>
       <tbody>
@@ -225,8 +230,8 @@
       </colgroup>
       <thead><tr style="height:<%= rowHeightMM %>mm;">
         <th>#</th>
-        <th style="text-align:right; padding-right:5px;">שם משפחה</th>
-        <th style="text-align:right; padding-right:5px;">שם פרטי</th>
+        <th>שם משפחה</th>
+        <th>שם פרטי</th>
         <th> </th><th> </th>
       </tr></thead>
       <tbody>
@@ -252,8 +257,8 @@
       </colgroup>
       <thead><tr style="height:<%= rowHeightMM %>mm;">
         <th>#</th>
-        <th style="text-align:right; padding-right:5px;">שם משפחה</th>
-        <th style="text-align:right; padding-right:5px;">שם פרטי</th>
+        <th>שם משפחה</th>
+        <th>שם פרטי</th>
         <th>הערות</th>
       </tr></thead>
       <tbody>
@@ -275,8 +280,8 @@
       <thead>
         <tr>
           <th style="width:7mm;" rowspan="2">#</th>
-          <th style="min-width:22mm; text-align:right; padding-right:5px;" rowspan="2">שם משפחה</th>
-          <th style="min-width:18mm; text-align:right; padding-right:5px;" rowspan="2">שם פרטי</th>
+          <th style="min-width:22mm;" rowspan="2">שם משפחה</th>
+          <th style="min-width:18mm;" rowspan="2">שם פרטי</th>
           <% for (let w=1; w<=4; w++) { %><th colspan="6">שבוע <%= w %></th><% } %>
         </tr>
         <tr>
