@@ -15,6 +15,10 @@
        יש עוד תגיות בקונטיינר וה-last-child לא היה תופס. */
     .cls { page-break-after: always; }
     .cls:last-of-type { page-break-after: auto; }
+    @media print {
+      .cls:last-child, .cls:last-of-type { page-break-after: avoid; break-after: avoid-page; }
+      .cls { overflow: hidden; }
+    }
 
     h1 { text-align: center; font-size: 17pt; margin: 0 0 2px; }
     .sub { text-align: center; font-size: 11pt; color: #444; margin-bottom: 10px; }

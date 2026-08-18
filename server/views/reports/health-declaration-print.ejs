@@ -23,6 +23,10 @@
       page-break-after: always;
     }
     .page:last-child, .page:last-of-type { page-break-after: auto; }
+    @media print {
+      .page:last-child, .page:last-of-type { page-break-after: avoid; break-after: avoid-page; }
+      .page { overflow: hidden; }
+    }
 
     .form-header {
       display: flex;
