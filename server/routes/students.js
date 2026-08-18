@@ -220,7 +220,14 @@ router.get("/students", (req, res) => {
   );
 
   const students = db.prepare(sql).all(...params).map(withDates);
-  const classes = db.prepare("SELECT id, name, parallel FROM classes ORDER BY name, parallel").all();
+  // כשהסינון הוא "פעיל", אין טעם להציג במסנן הכיתות את כיתות "עדיין לא
+  // נכנסו" - הן מכילות בהגדרה תלמידים שטרם התחילו. בכל סינון אחר, וגם
+  // כשמציגים הכל, הן כן מוצגות כדי שניתן יהיה להגיע אליהן.
+  const classes = db.prepare(
+    "SELECT id, name, parallel FROM classes" +
+    (status === "פעיל" ? " WHERE name NOT LIKE 'עדיין לא נכנסו%'" : "") +
+    " ORDER BY grade_order, name, parallel"
+  ).all();
   const cohorts = db.prepare("SELECT id, name FROM cohorts ORDER BY to_date DESC, from_date DESC").all();
   const statuses = db.prepare("SELECT DISTINCT status FROM students WHERE status IS NOT NULL ORDER BY status").all();
 
@@ -305,7 +312,7 @@ router.post("/students/bulk-archive-type", (req, res) => {
 });
 
 router.get("/students/new", (req, res) => {
-  const classes = db.prepare("SELECT id, name, parallel FROM classes ORDER BY name, parallel").all();
+  const classes = db.prepare("SELECT id, name, parallel FROM classes ORDER BY grade_order, name, parallel").all();
   const cohorts = db.prepare("SELECT id, name FROM cohorts ORDER BY to_date DESC, from_date DESC").all();
   const families = db.prepare("SELECT id, last_name, father_name, sector FROM families ORDER BY last_name").all();
   const chassidut = db.prepare("SELECT id, name FROM chassidut ORDER BY name").all();
@@ -345,7 +352,7 @@ router.post("/students", (req, res) => {
       WHERE s.id_number = ?
     `).get(body.id_number.trim());
     if (dup) {
-      const classes = db.prepare("SELECT id, name, parallel FROM classes ORDER BY name, parallel").all();
+      const classes = db.prepare("SELECT id, name, parallel FROM classes ORDER BY grade_order, name, parallel").all();
       const cohorts = db.prepare("SELECT id, name FROM cohorts ORDER BY to_date DESC, from_date DESC").all();
       const families = db.prepare("SELECT id, last_name, father_name, sector FROM families ORDER BY last_name").all();
       const chassidut = db.prepare("SELECT id, name FROM chassidut ORDER BY name").all();
@@ -362,7 +369,7 @@ router.post("/students", (req, res) => {
   if (body.class_id && body.cohort_id && body.confirm_cohort_mismatch !== "1") {
     const mismatch = checkCohortMismatch(body.class_id, body.cohort_id, null);
     if (mismatch) {
-      const classes = db.prepare("SELECT id, name, parallel FROM classes ORDER BY name, parallel").all();
+      const classes = db.prepare("SELECT id, name, parallel FROM classes ORDER BY grade_order, name, parallel").all();
       const cohorts = db.prepare("SELECT id, name FROM cohorts ORDER BY to_date DESC, from_date DESC").all();
       const families = db.prepare("SELECT id, last_name, father_name, sector FROM families ORDER BY last_name").all();
       const chassidut = db.prepare("SELECT id, name FROM chassidut ORDER BY name").all();
@@ -443,7 +450,7 @@ router.post("/students", (req, res) => {
   if (body.branch && body.family_id && !body.confirm_sibling_mismatch) {
     const conflict = findSiblingBranchConflict(db, body.family_id, body.branch);
     if (conflict) {
-      const classes = db.prepare("SELECT id, name, parallel FROM classes ORDER BY name, parallel").all();
+      const classes = db.prepare("SELECT id, name, parallel FROM classes ORDER BY grade_order, name, parallel").all();
       const cohorts = db.prepare("SELECT id, name FROM cohorts ORDER BY to_date DESC, from_date DESC").all();
       const families = db.prepare("SELECT id, last_name, father_name, sector FROM families ORDER BY last_name").all();
       const chassidut = db.prepare("SELECT id, name FROM chassidut ORDER BY name").all();
@@ -492,7 +499,7 @@ router.get("/students/:id/edit", (req, res) => {
     LEFT JOIN families f ON s.family_id = f.id WHERE s.id = ?
   `).get(req.params.id);
   if (!student) return res.status(404).render("404");
-  const classes = db.prepare("SELECT id, name, parallel FROM classes ORDER BY name, parallel").all();
+  const classes = db.prepare("SELECT id, name, parallel FROM classes ORDER BY grade_order, name, parallel").all();
   const cohorts = db.prepare("SELECT id, name FROM cohorts ORDER BY to_date DESC, from_date DESC").all();
   const families = db.prepare("SELECT id, last_name, father_name, sector FROM families ORDER BY last_name").all();
   res.render("students/form", {
@@ -523,7 +530,7 @@ router.put("/students/:id", (req, res) => {
       WHERE s.id_number = ? AND s.id != ?
     `).get(body.id_number.trim(), req.params.id);
     if (dup) {
-      const classes = db.prepare("SELECT id, name, parallel FROM classes ORDER BY name, parallel").all();
+      const classes = db.prepare("SELECT id, name, parallel FROM classes ORDER BY grade_order, name, parallel").all();
       const cohorts = db.prepare("SELECT id, name FROM cohorts ORDER BY to_date DESC, from_date DESC").all();
       const families = db.prepare("SELECT id, last_name, father_name, sector FROM families ORDER BY last_name").all();
       return res.render("students/form", {
@@ -537,7 +544,7 @@ router.put("/students/:id", (req, res) => {
   if (body.branch && body.family_id && !body.confirm_sibling_mismatch) {
     const conflict = findSiblingBranchConflict(db, body.family_id, body.branch, req.params.id);
     if (conflict) {
-      const classes = db.prepare("SELECT id, name, parallel FROM classes ORDER BY name, parallel").all();
+      const classes = db.prepare("SELECT id, name, parallel FROM classes ORDER BY grade_order, name, parallel").all();
       const cohorts = db.prepare("SELECT id, name FROM cohorts ORDER BY to_date DESC, from_date DESC").all();
       const families = db.prepare("SELECT id, last_name, father_name, sector FROM families ORDER BY last_name").all();
       return res.render("students/form", {
@@ -552,7 +559,7 @@ router.put("/students/:id", (req, res) => {
   if (body.class_id && body.cohort_id && body.confirm_cohort_mismatch !== "1") {
     const mismatch = checkCohortMismatch(body.class_id, body.cohort_id, req.params.id);
     if (mismatch) {
-      const classes = db.prepare("SELECT id, name, parallel FROM classes ORDER BY name, parallel").all();
+      const classes = db.prepare("SELECT id, name, parallel FROM classes ORDER BY grade_order, name, parallel").all();
       const cohorts = db.prepare("SELECT id, name FROM cohorts ORDER BY to_date DESC, from_date DESC").all();
       const families = db.prepare("SELECT id, last_name, father_name, sector FROM families ORDER BY last_name").all();
       const targetClass = classes.find((c) => String(c.id) === String(body.class_id));

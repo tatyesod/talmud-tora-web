@@ -72,8 +72,11 @@
       border: 0.7pt solid #666; padding: 2px 4px; text-align: center;
     }
     table.journal th { background: #dde8f0; font-weight: 700; font-size: 8pt; }
-    td.num { width: 7mm; font-weight: 700; background: #f5f5f5; text-align: center; }
-    td.name { text-align: right; padding-right: 5px; white-space: nowrap; overflow: hidden; font-size: <%= nameFontSizePt %>pt; font-weight: 700; }
+    table.journal td.num { width: 7mm; font-weight: 700; background: #f5f5f5; text-align: center; }
+    /* חייב להיות table.journal td.name ולא td.name: הכלל
+       "table.journal th, table.journal td" שלמעלה ספציפי יותר, ולכן
+       text-align:center שלו גבר והשמות יצאו ממורכזים. */
+    table.journal td.name { text-align: right; padding-right: 5px; white-space: nowrap; overflow: hidden; font-size: <%= nameFontSizePt %>pt; font-weight: 700; }
     .col-narrow { width: 10mm; }
 
     .footer-date { font-size: 7pt; color: #888; margin-top: 6px; text-align: left; }

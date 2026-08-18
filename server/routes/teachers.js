@@ -620,13 +620,13 @@ router.get("/:id/edit", (req, res) => {
   const teacher = db.prepare("SELECT * FROM teachers WHERE id = ?").get(req.params.id);
   if (!teacher) return res.status(404).render("404");
   const chassidut = db.prepare("SELECT id, name FROM chassidut ORDER BY name").all();
-  const allClasses = db.prepare("SELECT id, name, parallel, branch FROM classes ORDER BY name, parallel").all();
+  const allClasses = db.prepare("SELECT id, name, parallel, branch FROM classes ORDER BY grade_order, name, parallel").all();
   const assignments = db
     .prepare(`
       SELECT tc.id AS assignment_id, tc.role, c.id AS class_id, c.name, c.parallel
       FROM teacher_classes tc JOIN classes c ON tc.class_id = c.id
       WHERE tc.teacher_id = ?
-      ORDER BY c.name, c.parallel
+      ORDER BY c.grade_order, c.name, c.parallel
     `)
     .all(req.params.id);
   const staffRoles = db.prepare("SELECT * FROM staff_roles ORDER BY branch IS NOT NULL, branch, name").all();

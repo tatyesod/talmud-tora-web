@@ -85,10 +85,10 @@ router.get("/", (req, res) => {
     LEFT JOIN categories cat ON c.category_id = cat.id
     LEFT JOIN letter_templates lt ON c.letter_template_id = lt.id
     WHERE c.status = 'פעיל' OR c.name LIKE 'עדיין לא נכנסו%'
-    ORDER BY c.name, c.parallel
+    ORDER BY c.grade_order, c.name, c.parallel
   `).all().map((c) => ({ ...c, auto_template_name: getNextStageTemplateName(c.name) }));  // כל הכיתות (כולל ח') - לבחירת "כיתת יעד לשנה הבאה" (כי גם כיתה ח' יכולה להיות יעד של כיתה ז')
   const allClasses = db.prepare(`
-    SELECT id, name, parallel FROM classes WHERE status = 'פעיל' OR name LIKE 'עדיין לא נכנסו%' ORDER BY name, parallel
+    SELECT id, name, parallel FROM classes WHERE status = 'פעיל' OR name LIKE 'עדיין לא נכנסו%' ORDER BY grade_order, name, parallel
   `).all().map((c) => ({ ...c, full_name: `${c.name}${c.parallel ? " " + c.parallel : ""}` }));
   const templates = db.prepare("SELECT id, name FROM letter_templates ORDER BY name").all();
   const settings = {
@@ -321,7 +321,7 @@ router.get("/generate-all/docx", async (req, res) => {
     LEFT JOIN categories cat ON c.category_id = cat.id
     WHERE (c.status = 'פעיל' OR c.name LIKE 'עדיין לא נכנסו%') AND c.name NOT LIKE 'כיתה ח%'
       AND c.letter_template_id IS NOT NULL AND c.next_year_class_id IS NOT NULL
-    ORDER BY c.name, c.parallel
+    ORDER BY c.grade_order, c.name, c.parallel
   `).all();
 
   if (classes.length === 0) {

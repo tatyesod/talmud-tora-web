@@ -1,4 +1,13 @@
 const express = require("express");
+
+// מיקום שכבה בסדר הגילאים. GRADE_ORDER.indexOf מחזיר -1 לשם שאינו ברשימה
+// (למשל "עדיין לא נכנסו"), ומינוס אחד ממוין לפני אפס - כלומר הכיתה הזו
+// הייתה קופצת לראש כל רשימה. 999 מוריד אותה לסוף, כמו grade_order במסד.
+function gradeIdxOf(name) {
+  const { GRADE_ORDER } = require("../yearManager");
+  const i = GRADE_ORDER.indexOf(String(name || "").trim());
+  return i === -1 ? 999 : i;
+}
 const router = express.Router();
 const db = require("../db");
 const ExcelJS = require("exceljs");
@@ -215,7 +224,7 @@ router.get("/completed-families/export", async (req, res) => {
 
 // ============ רשימת כיתות - ייצוא לאקסל ============
 router.get("/class-list", (req, res) => {
-  const classes = db.prepare("SELECT id, name, parallel, status, branch FROM classes ORDER BY name, parallel").all();
+  const classes = db.prepare("SELECT id, name, parallel, status, branch FROM classes ORDER BY grade_order, name, parallel").all();
   const statuses = db.prepare("SELECT DISTINCT status FROM students WHERE status IS NOT NULL ORDER BY status").all();
   const branches = db.prepare("SELECT DISTINCT branch FROM classes WHERE branch IS NOT NULL ORDER BY branch").all().map(r=>r.branch);
   res.render("reports/class-list", { classes, statuses, branches });
@@ -243,7 +252,7 @@ router.get("/class-list/export", async (req, res) => {
     sql += " AND s.status = ?";
     params.push(status);
   }
-  sql += " ORDER BY c.name, c.parallel, s.last_name, s.first_name";
+  sql += " ORDER BY c.grade_order, c.name, c.parallel, s.last_name, s.first_name";
 
   const rows = db.prepare(sql).all(...params);
   const header = ["שם משפחה", "שם פרטי", "שם חיבה", "כתה", "כתובת", "טלפון בבית", "נייד אב", "נייד אם"];
@@ -264,7 +273,7 @@ router.get("/class-list/export", async (req, res) => {
 // ============ רשימת תלמידים מלא - ייצוא לאקסל ============
 router.get("/full-student-list", (req, res) => {
   const statuses = db.prepare("SELECT DISTINCT status FROM students WHERE status IS NOT NULL ORDER BY status").all();
-  const classes = db.prepare("SELECT id, name, parallel, branch FROM classes ORDER BY name, parallel").all();
+  const classes = db.prepare("SELECT id, name, parallel, branch FROM classes ORDER BY grade_order, name, parallel").all();
   const branches = db.prepare("SELECT DISTINCT branch FROM classes WHERE branch IS NOT NULL ORDER BY branch").all().map(r=>r.branch);
   res.render("reports/full-student-list", { statuses, classes, branches });
 });
@@ -293,7 +302,7 @@ router.get("/full-student-list/export", async (req, res) => {
     sql += ` AND s.class_id IN (${classIds.map(() => "?").join(",")})`;
     params.push(...classIds);
   }
-  sql += " ORDER BY c.name, c.parallel, s.last_name, s.first_name";
+  sql += " ORDER BY c.grade_order, c.name, c.parallel, s.last_name, s.first_name";
   const rows = db.prepare(sql).all(...params);
 
   const header = [
@@ -335,7 +344,7 @@ router.get("/class-roster", (req, res) => {
     FROM classes c WHERE c.status = 'פעיל'
       ${branch ? "AND c.branch = ?" : ""}
   `).all(...(branch ? [branch] : [])).sort((a, b) => {
-    const ga = GRADE_ORDER.indexOf(a.name), gb = GRADE_ORDER.indexOf(b.name);
+    const ga = gradeIdxOf(a.name), gb = gradeIdxOf(b.name);
     if (ga !== gb) return ga - gb;
     const pa = parseInt(a.parallel, 10), pb = parseInt(b.parallel, 10);
     if (!isNaN(pa) && !isNaN(pb) && pa !== pb) return pa - pb;
@@ -429,7 +438,7 @@ function buildRosterGroups(req) {
 
   groups.sort((a, b) => {
     const base = (x) => x.className.replace(/\s+\S+$/, "");
-    return GRADE_ORDER.indexOf(base(a)) - GRADE_ORDER.indexOf(base(b)) ||
+    return gradeIdxOf(base(a)) - gradeIdxOf(base(b)) ||
            a.className.localeCompare(b.className, "he");
   });
 
@@ -678,7 +687,7 @@ function loadAides(req) {
 
   const { GRADE_ORDER } = require("../yearManager");
   rows.sort((a, b) => {
-    const ga = GRADE_ORDER.indexOf(a.class_name), gb = GRADE_ORDER.indexOf(b.class_name);
+    const ga = gradeIdxOf(a.class_name), gb = gradeIdxOf(b.class_name);
     if (ga !== gb) return ga - gb;
     const pa = parseInt(a.parallel, 10), pb = parseInt(b.parallel, 10);
     if (!isNaN(pa) && !isNaN(pb) && pa !== pb) return pa - pb;
@@ -929,7 +938,7 @@ router.get("/birthdays/export", async (req, res) => {
 
 // ============ דוח משפחות - ייצוא לאקסל ============
 router.get("/families-report", (req, res) => {
-  const classes = db.prepare("SELECT id, name, parallel, branch FROM classes ORDER BY name, parallel").all();
+  const classes = db.prepare("SELECT id, name, parallel, branch FROM classes ORDER BY grade_order, name, parallel").all();
   const branches = db.prepare("SELECT DISTINCT branch FROM classes WHERE branch IS NOT NULL ORDER BY branch").all().map(r=>r.branch);
   res.render("reports/families-report", { classes, branches });
 });
@@ -969,7 +978,15 @@ router.get("/families-report/export", async (req, res) => {
     const eldestClass = eldest?.class_name ? eldest.class_name + (eldest.parallel ? " " + eldest.parallel : "") : "";
     return { r, eldestName, eldestClass };
   });
-  enriched.sort((a, b) => a.eldestClass.localeCompare(b.eldestClass, "he"));
+  // מיון לפי סדר גילאים ולא אלפביתי, כמו בכל שאר המערכת
+    const { GRADE_ORDER: GO } = require("../yearManager");
+    const gradeIdx = (label) => {
+      const i = GO.indexOf(String(label || "").replace(/\s+\d+$/, ""));
+      return i === -1 ? 999 : i;
+    };
+    enriched.sort((a, b) =>
+      gradeIdx(a.eldestClass) - gradeIdx(b.eldestClass) ||
+      a.eldestClass.localeCompare(b.eldestClass, "he"));
   const data = enriched.map(({ r, eldestName, eldestClass }) => [
     r.last_name || "", r.father_name || "", r.mother_name || "",
     r.home_phone || "", r.father_mobile || "", r.mother_mobile || "",
@@ -1066,7 +1083,7 @@ router.get("/grandparents-report/export", async (req, res) => {
 
 // ============ יומן כיתה (4 פורמטים) ============
 router.get("/class-journal", (req, res) => {
-  const classes = db.prepare("SELECT id, name, parallel, branch FROM classes ORDER BY name, parallel").all();
+  const classes = db.prepare("SELECT id, name, parallel, branch FROM classes ORDER BY grade_order, name, parallel").all();
   const branches = db.prepare("SELECT DISTINCT branch FROM classes WHERE branch IS NOT NULL ORDER BY branch").all().map(r=>r.branch);
   // כל שיוכי מלמד-כיתה, כדי לבנות ברשימה הנפתחת "מלמד" את האפשרויות
   // המתאימות לכיתה שנבחרה (בוקר/אחה"צ/עוזר) - בלי צורך בקריאת שרת נוספת
@@ -1377,7 +1394,7 @@ router.delete("/misc-extensions/:id", (req, res) => {
 });
 
 router.get("/class-directory", (req, res) => {
-  const classes = db.prepare("SELECT id, name, parallel, branch FROM classes ORDER BY name, parallel").all();
+  const classes = db.prepare("SELECT id, name, parallel, branch FROM classes ORDER BY grade_order, name, parallel").all();
   const branches = db.prepare("SELECT DISTINCT branch FROM classes WHERE branch IS NOT NULL ORDER BY branch").all().map(r=>r.branch);
   res.render("reports/class-directory", { classes, branches });
 });
@@ -1413,7 +1430,7 @@ router.get("/class-directory/view", (req, res) => {
 });
 
 router.get("/single-page", (req, res) => {
-  const classes = db.prepare("SELECT id, name, parallel, branch FROM classes ORDER BY name, parallel").all();
+  const classes = db.prepare("SELECT id, name, parallel, branch FROM classes ORDER BY grade_order, name, parallel").all();
   const branches = db.prepare("SELECT DISTINCT branch FROM classes WHERE branch IS NOT NULL ORDER BY branch").all().map(r=>r.branch);
   const teacherAssignments = db.prepare(`
     SELECT tc.class_id, t.id AS teacher_id, t.first_name, t.last_name, tc.role
@@ -1446,7 +1463,7 @@ router.get("/stay-arrangement/guard/view", (req, res) => {
     WHERE s.status = 'פעיל' AND c.branch = ?
       AND c.name IN (${STAY_ARRANGEMENT_CLASS_NAMES.map(() => "?").join(",")})
       AND (sa.passover_interested = 'כן' OR sa.summer_interested = 'כן')
-    ORDER BY c.name, c.parallel, f.last_name, s.first_name
+    ORDER BY c.grade_order, c.name, c.parallel, f.last_name, s.first_name
   `).all(branch, ...STAY_ARRANGEMENT_CLASS_NAMES).map((s) => ({
     ...s,
     className: s.class_name + (s.parallel ? " " + s.parallel : ""),
@@ -1497,7 +1514,7 @@ router.get("/stay-arrangement/edit", (req, res) => {
   // ובתוך אותה שכבה לפי מספר המקביל. ORDER BY name במסד היה ממיין
   // "כיתה א'" לפני "מכינה א'", כלומר הפוך מסדר הגילאים.
   const classes = all.slice().sort((a, b) => {
-    const ga = GRADE_ORDER.indexOf(a.name), gb = GRADE_ORDER.indexOf(b.name);
+    const ga = gradeIdxOf(a.name), gb = gradeIdxOf(b.name);
     if (ga !== gb) return ga - gb;
     const pa = parseInt(a.parallel, 10), pb = parseInt(b.parallel, 10);
     if (!isNaN(pa) && !isNaN(pb) && pa !== pb) return pa - pb;
@@ -1622,7 +1639,7 @@ router.get("/single-page/view", (req, res) => {
 
 // ============ הצהרת בריאות ============
 router.get("/health-declaration", (req, res) => {
-  const classes = db.prepare("SELECT id, name, parallel FROM classes ORDER BY name, parallel").all();
+  const classes = db.prepare("SELECT id, name, parallel FROM classes ORDER BY grade_order, name, parallel").all();
   res.render("reports/health-declaration", { classes });
 });
 
@@ -1646,7 +1663,7 @@ router.get("/health-declaration/view", (req, res) => {
     sql += ` AND s.class_id IN (${classIds.map(() => "?").join(",")})`;
     params.push(...classIds);
   }
-  sql += " ORDER BY c.name, c.parallel, s.last_name, s.first_name";
+  sql += " ORDER BY c.grade_order, c.name, c.parallel, s.last_name, s.first_name";
 
   const students = db.prepare(sql).all(...params).map((s) => ({
     ...s,
@@ -1682,7 +1699,7 @@ router.get("/furniture-count", (req, res) => {
   // מיון לפי גיל התלמידים (מכינה א' -> מכינה ב' -> כיתה א' -> ... -> כיתה
   // ח'), ואז לפי מספר הכיתה - לא אלפביתי
   rows.sort((a, b) => {
-    const gradeA = GRADE_ORDER.indexOf(a.name), gradeB = GRADE_ORDER.indexOf(b.name);
+    const gradeA = gradeIdxOf(a.name), gradeB = gradeIdxOf(b.name);
     if (gradeA !== gradeB) return (gradeA === -1 ? 999 : gradeA) - (gradeB === -1 ? 999 : gradeB);
     return (parseInt(a.parallel, 10) || 0) - (parseInt(b.parallel, 10) || 0);
   });
@@ -1726,7 +1743,7 @@ router.get("/photocopies", (req, res) => {
   });
 
   rows.sort((a, b) => {
-    const gradeA = GRADE_ORDER.indexOf(a.name), gradeB = GRADE_ORDER.indexOf(b.name);
+    const gradeA = gradeIdxOf(a.name), gradeB = gradeIdxOf(b.name);
     if (gradeA !== gradeB) return (gradeA === -1 ? 999 : gradeA) - (gradeB === -1 ? 999 : gradeB);
     return (parseInt(a.parallel, 10) || 0) - (parseInt(b.parallel, 10) || 0);
   });
@@ -1781,7 +1798,7 @@ router.get("/photocopies/export", async (req, res) => {
   });
 
   rows.sort((a, b) => {
-    const gradeA = GRADE_ORDER.indexOf(a.name), gradeB = GRADE_ORDER.indexOf(b.name);
+    const gradeA = gradeIdxOf(a.name), gradeB = gradeIdxOf(b.name);
     if (gradeA !== gradeB) return (gradeA === -1 ? 999 : gradeA) - (gradeB === -1 ? 999 : gradeB);
     return (parseInt(a.parallel, 10) || 0) - (parseInt(b.parallel, 10) || 0);
   });
@@ -1878,7 +1895,7 @@ router.get("/gan-export", async (req, res) => {
   const classes = db.prepare(`
     SELECT id, name, parallel, institution_code FROM classes
     WHERE (name = 'מכינה א''' OR name = 'מכינה ב''') AND status = 'פעיל'
-    ORDER BY name, parallel
+    ORDER BY grade_order, name, parallel
   `).all();
 
   const wb = new ExcelJS.Workbook();
@@ -2010,7 +2027,7 @@ router.get("/print-view", (req, res) => {
     const params = [];
     if (status) { sql += " AND s.status=?"; params.push(status); }
     if (classIds.length > 0) { sql += ` AND s.class_id IN (${classIds.map(()=>"?").join(",")})`; params.push(...classIds); }
-    sql += " ORDER BY c.name, c.parallel, s.last_name, s.first_name";
+    sql += " ORDER BY c.grade_order, c.name, c.parallel, s.last_name, s.first_name";
     rows = db.prepare(sql).all(...params).map(r => [r.last_name, r.first_name, r.nickname, r.cls, r.status, r.home_phone, r.father_mobile, r.mother_mobile, r.addr]);
 
   } else if (type === "families-report") {

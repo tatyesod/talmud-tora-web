@@ -83,7 +83,7 @@ router.get("/print", (req, res) => {
 });
 
 router.get("/new", (req, res) => {
-  const classes = db.prepare("SELECT id, name, parallel FROM classes ORDER BY name, parallel").all();
+  const classes = db.prepare("SELECT id, name, parallel FROM classes ORDER BY grade_order, name, parallel").all();
   res.render("inventory/form", { item: {}, mode: "new", classes });
 });
 
@@ -102,7 +102,7 @@ router.post("/", (req, res) => {
 router.get("/:id/edit", (req, res) => {
   const item = db.prepare("SELECT * FROM inventory_items WHERE id = ?").get(req.params.id);
   if (!item) return res.status(404).render("404");
-  const classes = db.prepare("SELECT id, name, parallel FROM classes ORDER BY name, parallel").all();
+  const classes = db.prepare("SELECT id, name, parallel FROM classes ORDER BY grade_order, name, parallel").all();
   res.render("inventory/form", { item, mode: "edit", classes });
 });
 
@@ -271,7 +271,7 @@ router.get("/maintenance/print", (req, res) => {
 });
 
 router.get("/maintenance/new", (req, res) => {
-  const classes = db.prepare("SELECT id, name, parallel FROM classes ORDER BY name, parallel").all();
+  const classes = db.prepare("SELECT id, name, parallel FROM classes ORDER BY grade_order, name, parallel").all();
   res.render("inventory/maintenance-form", { classes, maintenanceEmail: getMaintenanceEmail() });
 });
 

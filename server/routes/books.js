@@ -1,4 +1,13 @@
 const express = require("express");
+
+// מיקום שכבה בסדר הגילאים. GRADE_ORDER.indexOf מחזיר -1 לשם שאינו ברשימה
+// (למשל "עדיין לא נכנסו"), ומינוס אחד ממוין לפני אפס - כלומר הכיתה הזו
+// הייתה קופצת לראש כל רשימה. 999 מוריד אותה לסוף, כמו grade_order במסד.
+function gradeIdxOf(name) {
+  const { GRADE_ORDER } = require("../yearManager");
+  const i = GRADE_ORDER.indexOf(String(name || "").trim());
+  return i === -1 ? 999 : i;
+}
 const router = express.Router();
 const db = require("../db");
 const ExcelJS = require("exceljs");
@@ -673,7 +682,7 @@ router.get("/renewals", (req, res) => {
   const { year, class_id, summary_branch } = req.query;
   const defaultYear = db.prepare("SELECT value FROM settings WHERE key='current_hebrew_year'").get()?.value || 'תשפ"ז';
   const activeYear = year || defaultYear;
-  const classes = db.prepare("SELECT id, name, parallel FROM classes ORDER BY name, parallel").all();
+  const classes = db.prepare("SELECT id, name, parallel FROM classes ORDER BY grade_order, name, parallel").all();
   let students = [];
   if (class_id) {
     students = db.prepare("SELECT s.id, s.first_name, s.last_name, f.last_name AS family_last FROM students s LEFT JOIN families f ON s.family_id=f.id WHERE s.class_id=? AND s.status='פעיל' ORDER BY s.last_name, s.first_name").all(class_id);
@@ -909,7 +918,7 @@ function getStudentsWithNoOrders(year) {
         JOIN book_catalog bc ON bo.catalog_id = bc.id
         WHERE bo.student_id = s.id AND bc.year_label = ?
       )
-    ORDER BY c.name, c.parallel, s.last_name, s.first_name
+    ORDER BY c.grade_order, c.name, c.parallel, s.last_name, s.first_name
   `).all(...BOOK_GRADE_OPTIONS, year);
 }
 
@@ -1342,7 +1351,7 @@ router.get("/class-summary", (req, res) => {
     SELECT id, name, parallel FROM classes
     WHERE branch = ? AND status = 'פעיל' AND name IN (${BOOK_GRADE_OPTIONS.map(() => "?").join(",")})
   `).all(branch, ...BOOK_GRADE_OPTIONS).sort((a, b) => {
-    const gA = GRADE_ORDER.indexOf(a.name), gB = GRADE_ORDER.indexOf(b.name);
+    const gA = gradeIdxOf(a.name), gB = gradeIdxOf(b.name);
     if (gA !== gB) return (gA === -1 ? 999 : gA) - (gB === -1 ? 999 : gB);
     return (parseInt(a.parallel, 10) || 0) - (parseInt(b.parallel, 10) || 0);
   });
@@ -1410,7 +1419,7 @@ router.get("/class-summary/export", async (req, res) => {
     SELECT id, name, parallel FROM classes
     WHERE branch = ? AND status = 'פעיל' AND name IN (${BOOK_GRADE_OPTIONS.map(() => "?").join(",")})
   `).all(branch, ...BOOK_GRADE_OPTIONS).sort((a, b) => {
-    const gA = GRADE_ORDER.indexOf(a.name), gB = GRADE_ORDER.indexOf(b.name);
+    const gA = gradeIdxOf(a.name), gB = gradeIdxOf(b.name);
     if (gA !== gB) return (gA === -1 ? 999 : gA) - (gB === -1 ? 999 : gB);
     return (parseInt(a.parallel, 10) || 0) - (parseInt(b.parallel, 10) || 0);
   });

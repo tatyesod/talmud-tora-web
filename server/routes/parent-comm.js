@@ -5,7 +5,7 @@ const hd = require("../hebrewDate");
 
 // ============ שליחת מייל קבוצתי להורים ============
 router.get("/", (req, res) => {
-  const classes = db.prepare("SELECT id, name, parallel FROM classes ORDER BY name, parallel").all();
+  const classes = db.prepare("SELECT id, name, parallel FROM classes ORDER BY grade_order, name, parallel").all();
   res.render("parent-comm/compose", { classes, emails: null, classLabel: null });
 });
 
@@ -34,7 +34,7 @@ router.get("/emails", (req, res) => {
   });
   const uniqueEmails = [...new Set(emails)];
 
-  const classes = db.prepare("SELECT id, name, parallel FROM classes ORDER BY name, parallel").all();
+  const classes = db.prepare("SELECT id, name, parallel FROM classes ORDER BY grade_order, name, parallel").all();
   res.render("parent-comm/compose", { classes, emails: uniqueEmails, classLabel, selectedClassId: classId || "" });
 });
 

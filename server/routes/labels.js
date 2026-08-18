@@ -44,7 +44,7 @@ function fetchLabelItems(content_type, class_id) {
     `;
     const params = [];
     if (class_id) { sql += " AND s.class_id = ?"; params.push(class_id); }
-    sql += " ORDER BY c.name, c.parallel, s.last_name, s.first_name";
+    sql += " ORDER BY c.grade_order, c.name, c.parallel, s.last_name, s.first_name";
     const rows = db.prepare(sql).all(...params);
     items = rows.map(r => ({
       line1: "",
@@ -62,7 +62,7 @@ function fetchLabelItems(content_type, class_id) {
     `;
     const params = [];
     if (class_id) { sql += " AND s.class_id = ?"; params.push(class_id); }
-    sql += " ORDER BY c.name, c.parallel, s.last_name, s.first_name";
+    sql += " ORDER BY c.grade_order, c.name, c.parallel, s.last_name, s.first_name";
     const rows = db.prepare(sql).all(...params);
     items = rows.map(r => ({
       line1: r.nickname || r.first_name || "",
@@ -96,7 +96,7 @@ router.get("/", (req, res) => {
   const classes = db.prepare(`
     SELECT c.id, c.name, c.parallel, c.branch,
       (SELECT COUNT(*) FROM students s WHERE s.class_id = c.id AND s.status = 'פעיל') AS student_count
-    FROM classes c ORDER BY c.name, c.parallel
+    FROM classes c ORDER BY c.grade_order, c.name, c.parallel
   `).all();
   const branches = db.prepare("SELECT DISTINCT branch FROM classes WHERE branch IS NOT NULL ORDER BY branch").all().map(r=>r.branch);
   const totalActiveStudents = db.prepare("SELECT COUNT(*) c FROM students WHERE status = 'פעיל'").get().c;

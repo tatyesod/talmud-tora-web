@@ -408,7 +408,7 @@ router.get("/list", (req, res) => {
 });
 
 router.get("/new", (req, res) => {
-  const classes = db.prepare("SELECT id, name, parallel FROM classes ORDER BY name, parallel").all();
+  const classes = db.prepare("SELECT id, name, parallel FROM classes ORDER BY grade_order, name, parallel").all();
   res.render("events/form", { event: { event_date: req.query.date || "" }, mode: "new", classes });
 });
 
@@ -453,7 +453,7 @@ router.get("/:id", (req, res) => {
 router.get("/:id/edit", (req, res) => {
   const event = db.prepare("SELECT * FROM events WHERE id = ?").get(req.params.id);
   if (!event) return res.status(404).render("404");
-  const classes = db.prepare("SELECT id, name, parallel FROM classes ORDER BY name, parallel").all();
+  const classes = db.prepare("SELECT id, name, parallel FROM classes ORDER BY grade_order, name, parallel").all();
   res.render("events/form", {
     event: {
       ...event,

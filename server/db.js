@@ -298,6 +298,11 @@ const migrations = [
   // הקיימים - כך שהמיגרציה לא משנה אף הרשאה קיימת.
   // "maintenance" = תחזוקן חיצוני: רואה אך ורק את מסך בקשות התחזוקה.
   "ALTER TABLE users ADD COLUMN role TEXT",
+  // סדר גילאי הכיתות: מכינה א' -> מכינה ב' -> כיתה א'...ח'. עמודה קבועה
+  // ולא ביטוי CASE בכל שאילתה - יש 48 מקומות שממיינים כיתות, ועמודה אחת
+  // מבטיחה שגם שאילתה שתיכתב בעתיד תמיין נכון.
+  // 99 = כיתה שאינה בסדר הרגיל (למשל "עדיין לא נכנסו") - יורדת לסוף.
+  "ALTER TABLE classes ADD COLUMN grade_order INTEGER DEFAULT 99",
   // סימון "לא לכלול בשליחה להתייעצות תחזוקה". ברירת המחדל 0 = כן נכלל,
   // כך שהמיגרציה לא משנה את ההתנהגות הקיימת לאף משתמש.
   // מסומן פר-משתמש ולא מקודד בקוד לפי שם, כדי שהחלפת תפקיד או שינוי שם
@@ -1481,6 +1486,25 @@ try {
   }
 } catch (e) {
   console.error("שגיאה בניקוי הודעות לעצמו:", e.message);
+}
+
+// מילוי ותחזוקה של סדר גילאי הכיתות. רץ בכל עלייה ולא פעם אחת: כיתה
+// שנוספה או ששמה שונה מקבלת את הסדר הנכון מאליה, בלי מיגרציה נוספת.
+try {
+  const GRADE_ORDER = [
+    "מכינה א'", "מכינה ב'", "כיתה א'", "כיתה ב'", "כיתה ג'",
+    "כיתה ד'", "כיתה ה'", "כיתה ו'", "כיתה ז'", "כיתה ח'",
+  ];
+  const upd = db.prepare("UPDATE classes SET grade_order = ? WHERE name = ? AND (grade_order IS NULL OR grade_order <> ?)");
+  let changed = 0;
+  GRADE_ORDER.forEach((name, i) => { changed += upd.run(i + 1, name, i + 1).changes; });
+  // כל השאר לסוף הרשימה
+  changed += db.prepare(
+    `UPDATE classes SET grade_order = 99 WHERE name NOT IN (${GRADE_ORDER.map(() => "?").join(",")}) AND (grade_order IS NULL OR grade_order <> 99)`
+  ).run(...GRADE_ORDER).changes;
+  if (changed) console.log(`[סדר כיתות] עודכן סדר גילאים ל-${changed} כיתות`);
+} catch (e) {
+  console.error("שגיאה בעדכון סדר הכיתות:", e.message);
 }
 
 // שדה נפרד לחברת גביה של תרומות - נבדל מ-billing_company (ששימש/משמש

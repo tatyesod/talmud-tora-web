@@ -1,4 +1,13 @@
 const express = require("express");
+
+// מיקום שכבה בסדר הגילאים. GRADE_ORDER.indexOf מחזיר -1 לשם שאינו ברשימה
+// (למשל "עדיין לא נכנסו"), ומינוס אחד ממוין לפני אפס - כלומר הכיתה הזו
+// הייתה קופצת לראש כל רשימה. 999 מוריד אותה לסוף, כמו grade_order במסד.
+function gradeIdxOf(name) {
+  const { GRADE_ORDER } = require("../yearManager");
+  const i = GRADE_ORDER.indexOf(String(name || "").trim());
+  return i === -1 ? 999 : i;
+}
 const router = express.Router();
 const db = require("../db");
 const hd = require("../hebrewDate");
@@ -11,7 +20,7 @@ router.get("/", (req, res) => {
   if (!Array.isArray(classIds)) classIds = [classIds];
 
   const allClassesForFilter = db
-    .prepare("SELECT id, name, parallel FROM classes ORDER BY name, parallel")
+    .prepare("SELECT id, name, parallel FROM classes ORDER BY grade_order, name, parallel")
     .all();
 
   let sql = `
@@ -42,7 +51,7 @@ router.get("/", (req, res) => {
       total_count: "total_count",
       status: "c.status",
     },
-    "ORDER BY c.name, c.parallel"
+    "ORDER BY c.grade_order, c.name, c.parallel"
   );
   const classes = db.prepare(sql).all(...params);
   const filteredTotal = classes.reduce((sum, c) => sum + c.active_count, 0);
@@ -99,7 +108,7 @@ router.get("/study-materials", (req, res) => {
     WHERE status = 'פעיל' AND name NOT LIKE 'עדיין לא נכנסו%'
   `).all().sort((a, b) => {
     if (a.branch !== b.branch) return (a.branch || "").localeCompare(b.branch || "", "he");
-    const gA = GRADE_ORDER.indexOf(a.name), gB = GRADE_ORDER.indexOf(b.name);
+    const gA = gradeIdxOf(a.name), gB = gradeIdxOf(b.name);
     if (gA !== gB) return (gA === -1 ? 999 : gA) - (gB === -1 ? 999 : gB);
     return (parseInt(a.parallel, 10) || 0) - (parseInt(b.parallel, 10) || 0);
   });
@@ -119,7 +128,7 @@ router.get("/study-materials/edit", (req, res) => {
     WHERE status = 'פעיל' AND name NOT LIKE 'עדיין לא נכנסו%'
   `).all().sort((a, b) => {
     if (a.branch !== b.branch) return (a.branch || "").localeCompare(b.branch || "", "he");
-    const gA = GRADE_ORDER.indexOf(a.name), gB = GRADE_ORDER.indexOf(b.name);
+    const gA = gradeIdxOf(a.name), gB = gradeIdxOf(b.name);
     if (gA !== gB) return (gA === -1 ? 999 : gA) - (gB === -1 ? 999 : gB);
     return (parseInt(a.parallel, 10) || 0) - (parseInt(b.parallel, 10) || 0);
   });
@@ -152,7 +161,7 @@ router.get("/extensions", (req, res) => {
   const classes = db.prepare(`
     SELECT id, name, parallel, branch, extension FROM classes
     WHERE status = 'פעיל'
-    ORDER BY branch IS NOT NULL, branch, name, parallel
+    ORDER BY branch IS NOT NULL, branch, grade_order, name, parallel
   `).all();
   res.render("classes/extensions", { classes });
 });
@@ -194,7 +203,7 @@ router.get("/:id/edit", (req, res) => {
   const allTeachers = db.prepare("SELECT id, first_name, last_name FROM teachers ORDER BY last_name, first_name").all();
 
   // ניווט חצים בין כיתות - לפי אותו סדר כמו ברשימת הכיתות (שם, מקבילה)
-  const orderedIds = db.prepare("SELECT id FROM classes ORDER BY name, parallel").all().map((r) => r.id);
+  const orderedIds = db.prepare("SELECT id FROM classes ORDER BY grade_order, name, parallel").all().map((r) => r.id);
   const curIdx = orderedIds.findIndex((id) => String(id) === String(req.params.id));
   const prevId = curIdx > 0 ? orderedIds[curIdx - 1] : null;
   const nextId = curIdx >= 0 && curIdx < orderedIds.length - 1 ? orderedIds[curIdx + 1] : null;
@@ -351,7 +360,7 @@ router.get("/swap", (req, res) => {
   const classes = db.prepare(`
     SELECT c.id, c.name, c.parallel, c.branch,
       (SELECT COUNT(*) FROM students s WHERE s.class_id = c.id AND s.status NOT IN ('ארכיון', 'לא התקבל')) AS student_count
-    FROM classes c ORDER BY c.name, c.parallel
+    FROM classes c ORDER BY c.grade_order, c.name, c.parallel
   `).all();
   res.render("classes/swap", { classes, result: null });
 });
@@ -387,7 +396,7 @@ router.post("/swap/run", (req, res) => {
     const classes = db.prepare(`
       SELECT c.id, c.name, c.parallel, c.branch,
         (SELECT COUNT(*) FROM students s WHERE s.class_id = c.id AND s.status NOT IN ('ארכיון', 'לא התקבל')) AS student_count
-      FROM classes c ORDER BY c.name, c.parallel
+      FROM classes c ORDER BY c.grade_order, c.name, c.parallel
     `).all();
 
     res.render("classes/swap", {
@@ -404,7 +413,7 @@ router.post("/swap/run", (req, res) => {
     const classes = db.prepare(`
       SELECT c.id, c.name, c.parallel, c.branch,
         (SELECT COUNT(*) FROM students s WHERE s.class_id = c.id AND s.status NOT IN ('ארכיון', 'לא התקבל')) AS student_count
-      FROM classes c ORDER BY c.name, c.parallel
+      FROM classes c ORDER BY c.grade_order, c.name, c.parallel
     `).all();
     res.render("classes/swap", { classes, result: null, serverError: e.message });
   }
@@ -563,7 +572,7 @@ router.get("/:id", (req, res) => {
   const totalStudentsInClass = sectorBreakdown.reduce((sum, r) => sum + r.count, 0);
 
   // ניווט הקודם/הבא - לפי אותו סדר שמופיע ברשימת הכיתות
-  const orderedIds = db.prepare("SELECT id FROM classes ORDER BY name, parallel").all().map((r) => r.id);
+  const orderedIds = db.prepare("SELECT id FROM classes ORDER BY grade_order, name, parallel").all().map((r) => r.id);
   const curIdx = orderedIds.findIndex((id) => String(id) === String(req.params.id));
   const prevId = curIdx > 0 ? orderedIds[curIdx - 1] : null;
   const nextId = curIdx >= 0 && curIdx < orderedIds.length - 1 ? orderedIds[curIdx + 1] : null;

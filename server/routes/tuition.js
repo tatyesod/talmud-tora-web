@@ -231,7 +231,7 @@ router.get("/export-by-billing-company", async (req, res) => {
 
 // ============ קטגוריות שכר לימוד - עריכה ============
 router.get("/categories/new", (req, res) => {
-  const allClasses = db.prepare("SELECT id, name, parallel, category_id FROM classes WHERE name NOT LIKE 'עדיין לא נכנסו%' ORDER BY name, parallel").all();
+  const allClasses = db.prepare("SELECT id, name, parallel, category_id FROM classes WHERE name NOT LIKE 'עדיין לא נכנסו%' ORDER BY grade_order, name, parallel").all();
   res.render("tuition/category-form", { category: {}, mode: "new", allClasses, selectedClassIds: [] });
 });
 
@@ -251,7 +251,7 @@ router.post("/categories", (req, res) => {
 router.get("/categories/:id/edit", (req, res) => {
   const category = db.prepare("SELECT * FROM categories WHERE id = ?").get(req.params.id);
   if (!category) return res.status(404).render("404");
-  const allClasses = db.prepare("SELECT id, name, parallel, category_id FROM classes WHERE name NOT LIKE 'עדיין לא נכנסו%' ORDER BY name, parallel").all();
+  const allClasses = db.prepare("SELECT id, name, parallel, category_id FROM classes WHERE name NOT LIKE 'עדיין לא נכנסו%' ORDER BY grade_order, name, parallel").all();
   const selectedClassIds = allClasses.filter((c) => String(c.category_id) === String(req.params.id)).map((c) => c.id);
   res.render("tuition/category-form", { category, mode: "edit", allClasses, selectedClassIds });
 });
