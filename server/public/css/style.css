@@ -714,14 +714,27 @@ legend { color: var(--primary-dark); font-weight: 700; padding: 0 8px; }
    בסוף השורה, והמשתמש נאלץ לגלול הצידה עד הסוף כדי להגיע אליו. עכשיו
    העמודה האחרונה נשארת צמודה לקצה ונראית תמיד, בלי קשר לגלילה. */
 .table-scroll-wrap { position: relative; }
-.table-scroll-wrap table tr > *:last-child {
+/* תא דביק חייב רקע אטום, אחרת התוכן שמתחתיו נראה מבעדו בזמן גלילה.
+   הרקע חייב להיות זהה לרקע הטבלה: קודם השתמשתי כאן במשתנה --panel שאינו
+   קיים בקובץ, ולכן נכנס ערך ברירת המחדל הכהה והעמודה יצאה כחולה. */
+.table-scroll-wrap table tbody tr > *:last-child {
   position: sticky;
   left: 0;                      /* בעמוד RTL הקצה השמאלי הוא סוף השורה */
   z-index: 2;
-  background: var(--panel, #16233a);
-  box-shadow: 2px 0 4px rgba(0,0,0,0.18);
+  background: var(--card-bg);
+  box-shadow: 2px 0 5px rgba(0,0,0,0.10);
 }
-.table-scroll-wrap table thead tr > *:last-child { z-index: 3; }
+/* ריחוף: השורה כולה מקבלת #faf8f3 (שורה 110), והתא הדביק חייב להשתנות
+   איתה - אחרת הוא נשאר לבן ובולט כמו טלאי */
+.table-scroll-wrap table tbody tr:hover > *:last-child { background: #faf8f3; }
+/* הכותרת שומרת על צבע הכותרות */
+.table-scroll-wrap table thead tr > *:last-child {
+  position: sticky;
+  left: 0;
+  z-index: 3;
+  background: #efe9da;
+  box-shadow: 2px 0 5px rgba(0,0,0,0.10);
+}
 
 @media (max-width: 1000px) {
   /* מרווחים מצטמצמים כדי לפנות מקום לתוכן עצמו */
