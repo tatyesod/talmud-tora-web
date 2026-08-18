@@ -63,13 +63,18 @@ router.post("/donations/save", (req, res) => {
 // יכול להיות שניהם - ולכן זהו מסך חד-פעמי לסיווג ידני לפי ערך.
 // מוצב לפני "/:id" בכוונה: אחרת Express תופס "classify" כמזהה משפחה.
 router.get("/classify-workplace", (req, res) => {
+  // הקיבוץ לפי הערך האפקטיבי: אחרי סיווג כ"תפילה" השדה father_workplace
+  // מתרוקן, ולכן קיבוץ לפיו היה גורם לשורה להיעלם מהמסך לגמרי - והמשתמש
+  // לא היה יכול לראות מה סיווג או לשנות את דעתו.
   const rows = db.prepare(`
-    SELECT father_workplace AS value, COUNT(*) AS families,
-           SUM(CASE WHEN father_synagogue IS NOT NULL AND father_synagogue <> '' THEN 1 ELSE 0 END) AS done
+    SELECT COALESCE(NULLIF(father_workplace, ''), father_synagogue) AS value,
+           COUNT(*) AS families,
+           MAX(COALESCE(father_place_reviewed, '')) AS reviewed
     FROM families
-    WHERE father_workplace IS NOT NULL AND father_workplace <> ''
-    GROUP BY father_workplace
-    ORDER BY COUNT(*) DESC, father_workplace
+    WHERE COALESCE(NULLIF(father_workplace, ''), father_synagogue) IS NOT NULL
+      AND COALESCE(NULLIF(father_workplace, ''), father_synagogue) <> ''
+    GROUP BY value
+    ORDER BY (MAX(COALESCE(father_place_reviewed, '')) <> ''), COUNT(*) DESC, value
   `).all();
 
   // הצעה ראשונית לפי מילות מפתח - רק כדי לחסוך קליקים, לא כדי להחליט
@@ -79,10 +84,13 @@ router.get("/classify-workplace", (req, res) => {
     return "";
   };
 
+  const mapped = rows.map((r) => ({ ...r, suggest: suggest(r.value) }));
   res.render("families/classify-workplace", {
-    rows: rows.map((r) => ({ ...r, suggest: suggest(r.value) })),
+    rows: mapped,
     totalValues: rows.length,
     totalFamilies: rows.reduce((s, r) => s + r.families, 0),
+    reviewedValues: mapped.filter((r) => r.reviewed).length,
+    savedCount: req.query.saved ? parseInt(req.query.saved, 10) : null,
   });
 });
 
@@ -92,12 +100,20 @@ router.post("/classify-workplace", (req, res) => {
   if (!Array.isArray(values)) values = [values];
   if (!Array.isArray(choices)) choices = [choices];
 
-  const toStudy = db.prepare("UPDATE families SET father_synagogue = NULL WHERE father_workplace = ?");
+  // ההתאמה לפי הערך האפקטיבי בשני השדות, כדי שניתן יהיה לשנות סיווג
+  // גם אחרי שהערך כבר הועבר למקום התפילה.
+  const WHERE = "COALESCE(NULLIF(father_workplace, ''), father_synagogue) = ?";
+  const toStudy = db.prepare(
+    `UPDATE families SET father_workplace = ?, father_synagogue = NULL,
+     father_place_reviewed = 'study' WHERE ${WHERE}`
+  );
   const toPrayer = db.prepare(
-    "UPDATE families SET father_synagogue = father_workplace, father_workplace = NULL WHERE father_workplace = ?"
+    `UPDATE families SET father_synagogue = ?, father_workplace = NULL,
+     father_place_reviewed = 'prayer' WHERE ${WHERE}`
   );
   const toBoth = db.prepare(
-    "UPDATE families SET father_synagogue = father_workplace WHERE father_workplace = ?"
+    `UPDATE families SET father_workplace = ?, father_synagogue = ?,
+     father_place_reviewed = 'both' WHERE ${WHERE}`
   );
 
   let changed = 0;
@@ -105,9 +121,9 @@ router.post("/classify-workplace", (req, res) => {
   try {
     values.forEach((v, i) => {
       const c = choices[i];
-      if (c === "study") changed += toStudy.run(v).changes;
-      else if (c === "prayer") changed += toPrayer.run(v).changes;
-      else if (c === "both") changed += toBoth.run(v).changes;
+      if (c === "study") changed += toStudy.run(v, v).changes;
+      else if (c === "prayer") changed += toPrayer.run(v, v).changes;
+      else if (c === "both") changed += toBoth.run(v, v, v).changes;
       // ריק = לא נבחר, לא נוגעים
     });
     db.exec("COMMIT");

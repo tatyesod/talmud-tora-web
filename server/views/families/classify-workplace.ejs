@@ -13,9 +13,17 @@
   <% if (typeof query !== 'undefined') { } %>
   <% const saved = locals.saved; %>
 
+  <% if (savedCount !== null) { %>
+    <div style="background:#e8f5ec; border:1px solid #2d7a4f; color:#1b5233; border-radius:8px; padding:9px 14px; margin:10px 0;">
+      ✓ נשמר. <%= savedCount %> רשומות משפחה עודכנו.
+    </div>
+  <% } %>
+
   <div style="display:flex; gap:18px; flex-wrap:wrap; margin:12px 0; font-size:0.92em;">
-    <span>ערכים לסיווג: <strong><%= totalValues %></strong></span>
-    <span>משפחות מושפעות: <strong><%= totalFamilies %></strong></span>
+    <span>ערכים בסך הכל: <strong><%= totalValues %></strong></span>
+    <span style="color:#2d7a4f;">סווגו: <strong><%= reviewedValues %></strong></span>
+    <span style="color:#c0392b;">נותרו: <strong><%= totalValues - reviewedValues %></strong></span>
+    <span>משפחות: <strong><%= totalFamilies %></strong></span>
   </div>
 
   <div style="background:#fff8e6; border:1px solid #e0c880; border-radius:8px; padding:10px 14px; margin-bottom:14px; font-size:0.88em; line-height:1.7;">
@@ -46,9 +54,12 @@
         </thead>
         <tbody>
           <% rows.forEach((r, i) => { %>
-            <tr>
+            <tr class="<%= r.reviewed ? 'cw-done' : '' %>">
               <td>
                 <%= r.value %>
+                <% if (r.reviewed) { %>
+                  <span class="cw-badge"><%= r.reviewed === 'study' ? 'לימוד' : (r.reviewed === 'prayer' ? 'תפילה' : 'שניהם') %></span>
+                <% } %>
                 <% if (r.suggest) { %>
                   <span class="cw-hint"><%= r.suggest === 'study' ? 'נראה כלימוד' : 'נראה כתפילה' %></span>
                 <% } %>
@@ -59,11 +70,13 @@
                     בדפדפן, ואז רק בחירה אחת בכל הטופס נשלחת. תפריט שולח ערך
                     לכל שורה תמיד, כך שהמערך נשאר מיושר מול מערך הערכים. %>
                 <input type="hidden" name="value" value="<%= r.value %>" />
+                <%# הבחירה שנשמרה נטענת מחדש. קודם התפריט חזר תמיד ל"ללא
+                    שינוי", ולא היה שום סימן למה שכבר סווג. %>
                 <select name="choice" class="cw-select" data-suggest="<%= r.suggest %>">
-                  <option value="">— ללא שינוי —</option>
-                  <option value="study">לימוד</option>
-                  <option value="prayer">תפילה</option>
-                  <option value="both">שניהם</option>
+                  <option value="" <%= !r.reviewed ? 'selected' : '' %>>— טרם סווג —</option>
+                  <option value="study" <%= r.reviewed === 'study' ? 'selected' : '' %>>לימוד</option>
+                  <option value="prayer" <%= r.reviewed === 'prayer' ? 'selected' : '' %>>תפילה</option>
+                  <option value="both" <%= r.reviewed === 'both' ? 'selected' : '' %>>שניהם</option>
                 </select>
               </td>
             </tr>
@@ -82,7 +95,10 @@
 <style>
   table.cw-table { width:100%; border-collapse:collapse; }
   table.cw-table th, table.cw-table td { border-bottom:1px solid rgba(0,0,0,0.08); padding:5px 8px; text-align:right; }
-  .cw-hint { font-size:0.78em; color:#2d7a4f; margin-inline-start:6px; }
+  .cw-hint { font-size:0.78em; color:#888; margin-inline-start:6px; }
+  .cw-badge { font-size:0.75em; background:#2d7a4f; color:#fff; border-radius:4px; padding:1px 7px; margin-inline-start:6px; }
+  tr.cw-done { opacity:0.62; }
+  tr.cw-done:hover { opacity:1; }
   /* רוחב מפורש לעמודת הסיווג. הכלל הכללי בגיליון הראשי מצמצם עמודה
      אחרונה בטבלה, ובלי ההגדרה הזו התפריט נדחס עד שלא רואים מה נבחר.
      ההגדרה כאן ספציפית יותר ולכן גוברת, גם בדפדפן בלי תמיכה ב-:has. */
@@ -91,11 +107,12 @@
 </style>
 
 <script>
+  // "הכל" ו"ההצעות" מדלגים על שורות שכבר סווגו, כדי לא לדרוס עבודה קודמת
   function setAll(v) {
-    document.querySelectorAll('select.cw-select').forEach(function (el) { el.value = v; });
+    document.querySelectorAll('tr:not(.cw-done) select.cw-select').forEach(function (el) { el.value = v; });
   }
   function applySuggestions() {
-    document.querySelectorAll('select.cw-select').forEach(function (el) {
+    document.querySelectorAll('tr:not(.cw-done) select.cw-select').forEach(function (el) {
       if (el.dataset.suggest) el.value = el.dataset.suggest;
     });
   }
