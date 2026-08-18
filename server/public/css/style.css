@@ -745,10 +745,22 @@ legend { color: var(--primary-dark); font-weight: 700; padding: 0 8px; }
    באוויר. width: 1% מכווץ עמודה לרוחב התוכן שלה בטבלה.
    בלי nowrap: בחלק מהרשימות יש שני כפתורים בתא, ואילוץ שורה אחת היה
    מרחיב את העמודה בדיוק במקום שרצינו לצמצם. */
-.table-scroll-wrap table tr > *:last-child {
+/* צמצום העמודה האחרונה חל רק כשהיא באמת עמודת פעולות - כלומר מכילה
+   קישור-כפתור. קודם הכלל חל על כל עמודה אחרונה, ובטבלה שבה היא מכילה
+   תפריט בחירה (למשל מסך סיווג מקום לימוד/תפילה) התפריט נדחס עד שלא ניתן
+   היה לקרוא את הערך שנבחר. */
+.table-scroll-wrap table tr:has(> *:last-child > a.btn) > *:last-child {
   width: 1%;
   padding-inline: 6px;
   text-align: center;
+}
+/* דפדפן ישן בלי תמיכה ב-:has - נפילה בטוחה: העמודה לא מצטמצמת, אבל
+   שום דבר לא נשבר. תא שמכיל תפריט או קלט לעולם לא מצטמצם. */
+.table-scroll-wrap table tr > *:last-child:has(select),
+.table-scroll-wrap table tr > *:last-child:has(input),
+.table-scroll-wrap table tr > *:last-child:has(textarea) {
+  width: auto;
+  min-width: 190px;
 }
 
 @media (max-width: 1000px) {

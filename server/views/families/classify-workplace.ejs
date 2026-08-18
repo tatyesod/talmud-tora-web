@@ -41,7 +41,7 @@
           <tr>
             <th>הערך שרשום היום</th>
             <th style="width:70px;">משפחות</th>
-            <th style="width:230px;">סיווג</th>
+            <th style="width:210px;">סיווג</th>
           </tr>
         </thead>
         <tbody>
@@ -83,7 +83,11 @@
   table.cw-table { width:100%; border-collapse:collapse; }
   table.cw-table th, table.cw-table td { border-bottom:1px solid rgba(0,0,0,0.08); padding:5px 8px; text-align:right; }
   .cw-hint { font-size:0.78em; color:#2d7a4f; margin-inline-start:6px; }
-  .cw-select { width:100%; max-width:200px; font-size:0.92em; padding:4px 6px; }
+  /* רוחב מפורש לעמודת הסיווג. הכלל הכללי בגיליון הראשי מצמצם עמודה
+     אחרונה בטבלה, ובלי ההגדרה הזו התפריט נדחס עד שלא רואים מה נבחר.
+     ההגדרה כאן ספציפית יותר ולכן גוברת, גם בדפדפן בלי תמיכה ב-:has. */
+  table.cw-table tr > *:last-child { width: 210px; min-width: 210px; padding-inline: 8px; }
+  .cw-select { width: 100%; font-size: 0.95em; padding: 5px 6px; }
 </style>
 
 <script>
