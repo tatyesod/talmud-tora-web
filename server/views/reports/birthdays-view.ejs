@@ -43,7 +43,8 @@
       <thead>
         <tr>
           <th style="width:34px;">#</th>
-          <th>שם התלמיד</th>
+          <th>שם משפחה</th>
+          <th>שם פרטי</th>
           <% if (!title || title.indexOf(',') > -1) { %><th style="width:90px;">כיתה</th><% } %>
           <th style="width:60px;">יום</th>
           <th style="width:80px;">חודש</th>
@@ -56,7 +57,8 @@
         <% rows.forEach((r, i) => { %>
           <tr class="<%= prevMonth !== null && r.hebrewMonth !== prevMonth ? 'month-start' : '' %>">
             <td><%= i + 1 %></td>
-            <td class="name"><%= r.name %></td>
+            <td class="name"><%= r.familyName %></td>
+            <td class="name"><%= r.givenName %></td>
             <% if (!title || title.indexOf(',') > -1) { %><td><%= r.className %></td><% } %>
             <td><%= r.hebrewDay %></td>
             <td><%= r.hebrewMonth %></td>

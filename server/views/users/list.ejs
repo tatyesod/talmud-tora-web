@@ -3,6 +3,13 @@
 <div class="card">
   <div style="display:flex; justify-content:space-between; align-items:center;">
     <h1>ניהול משתמשים</h1>
+
+  <% if (typeof deleteError !== 'undefined' && deleteError) { %>
+    <div style="background:#fdecea; border:1px solid #c0392b; color:#8e2419; border-radius:8px; padding:10px 14px; margin:12px 0;">
+      <strong>מחיקת המשתמש נכשלה.</strong> שום דבר לא נמחק — כל הנתונים במקומם.
+      נסה שוב, ואם זה חוזר יש לבדוק את הלוג.
+    </div>
+  <% } %>
     <a href="/users/new" class="btn">+ משתמש חדש</a>
   </div>
   <table>

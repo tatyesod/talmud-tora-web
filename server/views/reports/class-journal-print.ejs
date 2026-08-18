@@ -17,6 +17,10 @@
   // רוחב עמודת השם מחושב לפי הגופן הדינמי בפועל, כדי שהשם תמיד ייכנס בשורה
   // אחת בלי גלישה או חיתוך, בכל גודל כיתה
   const nameColWidthMM = Math.min(65, Math.max(20, Math.round(maxNameLen * nameFontSizePt * 0.21) + 8));
+  // שם משפחה ושם פרטי בשתי עמודות נפרדות. הרוחב הכולל נשאר זהה לקודם, כדי
+  // שלא ייגרע מקום מטורי הכתיבה. שם משפחה מעט רחב יותר - הוא בדרך כלל ארוך.
+  const famColWidthMM = Math.round(nameColWidthMM * 0.55);
+  const givenColWidthMM = nameColWidthMM - famColWidthMM;
 
   // חישוב נפרד לדף "נוכחות חודשית" (grid) - לו יש כותרת של *שתי* שורות
   // (שבוע + יום), לא שורה אחת כמו שאר הפורמטים - אם משתמשים באותו rowHeightMM
@@ -149,19 +153,22 @@
     <table class="journal" style="table-layout:fixed; font-size:<%= journalFontSize %>;">
       <colgroup>
         <col style="width:7mm">
-        <col style="width:<%= nameColWidthMM %>mm">
+        <col style="width:<%= famColWidthMM %>mm">
+        <col style="width:<%= givenColWidthMM %>mm">
         <col><col><col><col><col><col><col>
       </colgroup>
       <thead><tr style="height:<%= rowHeightMM %>mm;">
         <th>#</th>
-        <th style="text-align:right; padding-right:5px;">שם התלמיד</th>
+        <th style="text-align:right; padding-right:5px;">שם משפחה</th>
+        <th style="text-align:right; padding-right:5px;">שם פרטי</th>
         <th></th><th></th><th></th><th></th><th></th><th></th><th></th>
       </tr></thead>
       <tbody>
         <% students.forEach((s, i) => { %>
           <tr style="height:<%= rowHeightMM %>mm;">
             <td class="num"><%= i+1 %></td>
-            <td class="name"><%= s.displayName %></td>
+            <td class="name"><%= s.familyName %></td>
+            <td class="name"><%= s.givenName %></td>
             <td></td><td></td><td></td>
             <td></td><td></td><td></td>
             <td></td>
@@ -175,19 +182,22 @@
     <table class="journal" style="table-layout:fixed; font-size:<%= journalFontSize %>;">
       <colgroup>
         <col style="width:7mm">
-        <col style="width:<%= nameColWidthMM %>mm">
+        <col style="width:<%= famColWidthMM %>mm">
+        <col style="width:<%= givenColWidthMM %>mm">
         <col><col><col>
       </colgroup>
       <thead><tr style="height:<%= rowHeightMM %>mm;">
         <th>#</th>
-        <th style="text-align:right; padding-right:5px;">שם התלמיד</th>
+        <th style="text-align:right; padding-right:5px;">שם משפחה</th>
+        <th style="text-align:right; padding-right:5px;">שם פרטי</th>
         <th> </th><th> </th><th> </th>
       </tr></thead>
       <tbody>
         <% students.forEach((s, i) => { %>
           <tr style="height:<%= rowHeightMM %>mm;">
             <td class="num"><%= i+1 %></td>
-            <td class="name"><%= s.displayName %></td>
+            <td class="name"><%= s.familyName %></td>
+            <td class="name"><%= s.givenName %></td>
             <td></td><td></td><td></td>
           </tr>
         <% }) %>
@@ -199,19 +209,22 @@
     <table class="journal" style="table-layout:fixed; font-size:<%= journalFontSize %>;">
       <colgroup>
         <col style="width:7mm">
-        <col style="width:<%= nameColWidthMM %>mm">
+        <col style="width:<%= famColWidthMM %>mm">
+        <col style="width:<%= givenColWidthMM %>mm">
         <col><col>
       </colgroup>
       <thead><tr style="height:<%= rowHeightMM %>mm;">
         <th>#</th>
-        <th style="text-align:right; padding-right:5px;">שם התלמיד</th>
+        <th style="text-align:right; padding-right:5px;">שם משפחה</th>
+        <th style="text-align:right; padding-right:5px;">שם פרטי</th>
         <th> </th><th> </th>
       </tr></thead>
       <tbody>
         <% students.forEach((s, i) => { %>
           <tr style="height:<%= rowHeightMM %>mm;">
             <td class="num"><%= i+1 %></td>
-            <td class="name"><%= s.displayName %></td>
+            <td class="name"><%= s.familyName %></td>
+            <td class="name"><%= s.givenName %></td>
             <td></td><td></td>
           </tr>
         <% }) %>
@@ -223,19 +236,22 @@
     <table class="journal" style="table-layout:fixed; font-size:<%= journalFontSize %>;">
       <colgroup>
         <col style="width:7mm">
-        <col style="width:<%= nameColWidthMM %>mm">
+        <col style="width:<%= famColWidthMM %>mm">
+        <col style="width:<%= givenColWidthMM %>mm">
         <col>
       </colgroup>
       <thead><tr style="height:<%= rowHeightMM %>mm;">
         <th>#</th>
-        <th style="text-align:right; padding-right:5px;">שם התלמיד</th>
+        <th style="text-align:right; padding-right:5px;">שם משפחה</th>
+        <th style="text-align:right; padding-right:5px;">שם פרטי</th>
         <th>הערות</th>
       </tr></thead>
       <tbody>
         <% students.forEach((s, i) => { %>
           <tr style="height:<%= rowHeightMM %>mm;">
             <td class="num"><%= i+1 %></td>
-            <td class="name"><%= s.displayName %></td>
+            <td class="name"><%= s.familyName %></td>
+            <td class="name"><%= s.givenName %></td>
             <td></td>
           </tr>
         <% }) %>
@@ -249,7 +265,8 @@
       <thead>
         <tr>
           <th style="width:7mm;" rowspan="2">#</th>
-          <th style="min-width:40mm; text-align:right; padding-right:5px;" rowspan="2">שם התלמיד</th>
+          <th style="min-width:22mm; text-align:right; padding-right:5px;" rowspan="2">שם משפחה</th>
+          <th style="min-width:18mm; text-align:right; padding-right:5px;" rowspan="2">שם פרטי</th>
           <% for (let w=1; w<=4; w++) { %><th colspan="6">שבוע <%= w %></th><% } %>
         </tr>
         <tr>
@@ -262,7 +279,8 @@
         <% students.forEach((s, i) => { %>
           <tr style="height:<%= gridRowHeightMM %>mm;">
             <td class="num"><%= i+1 %></td>
-            <td class="name" style="font-size:<%= gridFontSizePt %>pt;"><%= s.displayName %></td>
+            <td class="name" style="font-size:<%= gridFontSizePt %>pt;"><%= s.familyName %></td>
+            <td class="name" style="font-size:<%= gridFontSizePt %>pt;"><%= s.givenName %></td>
             <% for (let d=1; d<=24; d++) { %><td class="col-narrow"></td><% } %>
           </tr>
         <% }) %>

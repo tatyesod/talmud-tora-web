@@ -687,6 +687,8 @@ function loadAides(req) {
 
   return rows.map((r) => ({
     ...r,
+    familyName: (r.last_name || r.family_last_name || "").trim(),
+    givenName: (r.nickname || r.first_name || "").trim(),
     studentName: ((r.last_name || r.family_last_name || "") + " " + (r.nickname || r.first_name || "")).trim(),
     className: r.class_name ? r.class_name + (r.parallel ? " " + r.parallel : "") : "",
     // שדות חסרים מסומנים, כדי שיהיה ברור מה עוד צריך להשלים
@@ -717,10 +719,10 @@ router.get("/aides", (req, res) => {
 
 router.get("/aides/export", async (req, res) => {
   const rows = loadAides(req);
-  const header = ["#", "שם התלמיד", "כיתה", "סניף", "סוג הסיוע", "שם הסייע",
+  const header = ["#", "שם משפחה", "שם פרטי", "כיתה", "סניף", "סוג הסיוע", "שם הסייע",
                   "נייד הסייע", 'ת"ז הסייע', "כמות שעות", "למי משולם", "חסר"];
   const data = rows.map((r, i) => [
-    i + 1, r.studentName, r.className, r.branch || "", r.aide_type || "",
+    i + 1, r.familyName, r.givenName, r.className, r.branch || "", r.aide_type || "",
     r.aide_name || "", r.aide_mobile || "", r.aide_id_number || "",
     r.aide_hours || "", r.aide_payer || "", r.missing.join(", "),
   ]);
@@ -878,6 +880,8 @@ function loadBirthdays(req) {
   for (const r of rows) {
     const name = (r.last_name || r.family_last_name || "") + " " + (r.nickname || r.first_name || "");
     const base = {
+      familyName: (r.last_name || r.family_last_name || "").trim(),
+      givenName: (r.nickname || r.first_name || "").trim(),
       name: name.trim(),
       className: r.class_name ? r.class_name + (r.parallel ? " " + r.parallel : "") : "",
       branch: r.branch || "",
@@ -913,12 +917,12 @@ router.get("/birthdays/view", (req, res) => {
 
 router.get("/birthdays/export", async (req, res) => {
   const { withDate, missing } = loadBirthdays(req);
-  const header = ["#", "שם התלמיד", "כיתה", "יום", "חודש", "תאריך עברי מלא", "תאריך לועזי"];
+  const header = ["#", "שם משפחה", "שם פרטי", "כיתה", "יום", "חודש", "תאריך עברי מלא", "תאריך לועזי"];
   const data = withDate.map((r, i) => [
-    i + 1, r.name, r.className, r.hebrewDay, r.hebrewMonth, r.hebrew, r.gregorian,
+    i + 1, r.familyName, r.givenName, r.className, r.hebrewDay, r.hebrewMonth, r.hebrew, r.gregorian,
   ]);
   missing.forEach((r, i) => {
-    data.push([withDate.length + i + 1, r.name, r.className, "", "", "חסר תאריך לידה", ""]);
+    data.push([withDate.length + i + 1, r.familyName, r.givenName, r.className, "", "", "חסר תאריך לידה", ""]);
   });
   await sendWorkbook(res, "ימי הולדת - תאריך עברי.xlsx", "ימי הולדת", "ימי הולדת לפי תאריך עברי", header, data);
 });
@@ -1112,7 +1116,14 @@ router.get("/class-journal/view", (req, res) => {
   const students = db
     .prepare("SELECT s.first_name, s.nickname, s.last_name, f.last_name AS family_last FROM students s LEFT JOIN families f ON s.family_id=f.id WHERE s.class_id = ? AND s.status = 'פעיל' ORDER BY s.last_name, s.first_name")
     .all(class_id)
-    .map(s => ({ ...s, displayName: (s.last_name || s.family_last || "") + " " + (s.nickname || s.first_name || "") }));
+    .map(s => ({
+      ...s,
+      // שם משפחה ופרטי בעמודות נפרדות. displayName נשמר לשימושים שצריכים
+      // מחרוזת אחת (למשל חישוב רוחב העמודה).
+      familyName: (s.last_name || s.family_last || "").trim(),
+      givenName: (s.nickname || s.first_name || "").trim(),
+      displayName: (s.last_name || s.family_last || "") + " " + (s.nickname || s.first_name || ""),
+    }));
   // מלמד - אם נבחר מלמד מפורש (יש בוקר ואחה"צ, ולפעמים גם עוזר) משתמשים בו;
   // אחרת (למשל קישור ישן בלי הבחירה) נופלים חזרה לברירת המחדל הישנה
   const teacher = teacher_id
@@ -1593,7 +1604,14 @@ router.get("/single-page/view", (req, res) => {
   const students = db
     .prepare("SELECT s.first_name, s.nickname, s.last_name, f.last_name AS family_last FROM students s LEFT JOIN families f ON s.family_id=f.id WHERE s.class_id = ? AND s.status = 'פעיל' ORDER BY s.last_name, s.first_name")
     .all(class_id)
-    .map(s => ({ ...s, displayName: (s.last_name || s.family_last || "") + " " + (s.nickname || s.first_name || "") }));
+    .map(s => ({
+      ...s,
+      // שם משפחה ופרטי בעמודות נפרדות. displayName נשמר לשימושים שצריכים
+      // מחרוזת אחת (למשל חישוב רוחב העמודה).
+      familyName: (s.last_name || s.family_last || "").trim(),
+      givenName: (s.nickname || s.first_name || "").trim(),
+      displayName: (s.last_name || s.family_last || "") + " " + (s.nickname || s.first_name || ""),
+    }));
   const teacher = teacher_id
     ? db.prepare("SELECT t.first_name, t.last_name, tc.role FROM teachers t LEFT JOIN teacher_classes tc ON tc.teacher_id = t.id AND tc.class_id = ? WHERE t.id = ?").get(class_id, teacher_id)
     : db.prepare("SELECT t.first_name, t.last_name, tc.role FROM teacher_classes tc JOIN teachers t ON tc.teacher_id=t.id WHERE tc.class_id=? ORDER BY tc.id LIMIT 1").get(class_id);

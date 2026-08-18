@@ -45,7 +45,7 @@
       <table class="aides-table">
         <thead>
           <tr>
-            <th>#</th><th>שם התלמיד</th><th>כיתה</th><th>סניף</th><th>סוג</th>
+            <th>#</th><th>שם משפחה</th><th>שם פרטי</th><th>כיתה</th><th>סניף</th><th>סוג</th>
             <th>שם הסייע</th><th>נייד הסייע</th><th>ת.ז הסייע</th><th>שעות</th><th>למי משולם</th>
           </tr>
         </thead>
@@ -53,7 +53,8 @@
           <% rows.forEach((r, i) => { %>
             <tr>
               <td><%= i + 1 %></td>
-              <td><a href="/students/<%= r.id %>"><%= r.studentName %></a></td>
+              <td style="text-align:right;"><a href="/students/<%= r.id %>"><%= r.familyName %></a></td>
+              <td style="text-align:right;"><%= r.givenName %></td>
               <td><%= r.className %></td>
               <td><%= r.branch || '' %></td>
               <td><%= r.aide_type || '—' %></td>
@@ -66,7 +67,7 @@
             <% if (r.missing.length) { %>
               <tr class="missing-row">
                 <td></td>
-                <td colspan="9">חסר: <%= r.missing.join(", ") %></td>
+                <td colspan="10">חסר: <%= r.missing.join(", ") %></td>
               </tr>
             <% } %>
           <% }) %>

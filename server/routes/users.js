@@ -28,7 +28,7 @@ router.post("/profile", (req, res) => {
 
 router.get("/", (req, res) => {
   const users = db.prepare("SELECT id, username, display_name, force_password_change, created_at, role FROM users ORDER BY id").all();
-  res.render("users/list", { users });
+  res.render("users/list", { deleteError: req.query.deleteError === "1", users });
 });
 
 router.get("/new", (req, res) => {
@@ -79,12 +79,38 @@ router.put("/:id", (req, res) => {
 });
 
 router.delete("/:id", (req, res) => {
-  if (parseInt(req.params.id) === req.currentUser.id) {
-    return res.redirect("/users");
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id) || id === req.currentUser.id) return res.redirect("/users");
+
+  // כל הטבלאות שמצביעות על המשתמש חייבות להתנקות לפניו. אכיפת המפתחות
+  // הזרים דלוקה, ולכן ניסיון למחוק משתמש שיש לו רשומת נוכחות או משימה
+  // נכשל ב-FOREIGN KEY constraint - וזה מה שהופיע כ"שגיאת שרת פנימית".
+  // נוכחות קיימת לכל מי שהתחבר אי פעם, ולכן זה נכשל כמעט תמיד.
+  //
+  // מה נמחק ומה נשמר: הודעות ונוכחות נמחקות - הן חסרות ערך בלי המשתמש.
+  // משימות ובקשות תחזוקה נשמרות והשיוך שלהן מתאפס בלבד, כדי לא לאבד
+  // היסטוריית עבודה בגלל מחיקת עובד שעזב.
+  const tx = () => {
+    db.prepare("DELETE FROM messages WHERE sender_id = ? OR recipient_id = ?").run(id, id);
+    db.prepare("DELETE FROM user_presence WHERE user_id = ?").run(id);
+    db.prepare("UPDATE tasks SET user_id = NULL WHERE user_id = ?").run(id);
+    // העמודות האלה נוספו ב-ALTER TABLE בלי מפתח זר, אך איפוסן מונע שיוך
+    // תלוי-באוויר שיציג מזהה של משתמש שאינו קיים
+    db.prepare("UPDATE maintenance_requests SET reported_by_user_id = NULL WHERE reported_by_user_id = ?").run(id);
+    db.prepare("UPDATE maintenance_requests SET updated_by_user_id = NULL WHERE updated_by_user_id = ?").run(id);
+    db.prepare("UPDATE maintenance_media SET uploaded_by_user_id = NULL WHERE uploaded_by_user_id = ?").run(id);
+    db.prepare("DELETE FROM users WHERE id = ?").run(id);
+  };
+
+  db.exec("BEGIN");
+  try {
+    tx();
+    db.exec("COMMIT");
+  } catch (e) {
+    db.exec("ROLLBACK");
+    console.error("מחיקת משתמש נכשלה:", e.message);
+    return res.redirect("/users?deleteError=1");
   }
-  // ניקוי הודעות ומשימות ששייכות למשתמש הנמחק, כדי לא להשאיר "הודעות יתומות" תקועות כלא-נקראות
-  db.prepare("DELETE FROM messages WHERE sender_id = ? OR recipient_id = ?").run(req.params.id, req.params.id);
-  db.prepare("DELETE FROM users WHERE id = ?").run(req.params.id);
   res.redirect("/users");
 });
 
