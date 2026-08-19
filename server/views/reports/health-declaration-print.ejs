@@ -27,7 +27,11 @@
     .page:last-child, .page:last-of-type { page-break-after: auto; }
     @media print {
       .page:last-child, .page:last-of-type { page-break-after: avoid; break-after: avoid-page; }
-      .page { overflow: hidden; }
+      <%# בכוונה בלי overflow: hidden. הוא נועד למנוע עמוד ריק שנוצר
+          מחריגה של מילימטר, אבל בטופס שההורים ממלאים המחיר גבוה מדי:
+          אם התוכן יגלש - למשל אצל תלמיד עם שם ארוך במיוחד - טבלת
+          החתימות תיחתך בשקט ואיש לא ישים לב. עדיף עמוד שני גלוי
+          מאשר חתימה חסרה. %>
     }
 
     .form-header {
