@@ -16,6 +16,15 @@
     <span style="color:#c0392b;">חסרים: <strong><%= totalStudents - totalScanned %></strong></span>
   </div>
 
+  <%# מסך חד-פעמי לטפסים שהודפסו לפני הוספת קוד הזיהוי - כלומר כל טפסי
+      השנה הנוכחית. יוסר בשנה הבאה. %>
+  <div style="background:#fff8e6; border:1px solid #e0c880; border-radius:8px; padding:11px 15px; margin-bottom:16px; font-size:0.9em; line-height:1.7;">
+    <strong>טפסים שהודפסו ללא קוד זיהוי?</strong>
+    כל טפסי השנה הנוכחית הודפסו לפני שהוספנו את הקוד, ולכן לא ניתן לזהות
+    אותם אוטומטית.
+    <a href="/scans/manual?year=<%= encodeURIComponent(year) %>" class="btn small" style="margin-inline-start:8px;">🔗 שיוך ידני — כל הכיתות</a>
+  </div>
+
   <table>
     <thead>
       <tr><th>כיתה</th><th>סניף</th><th>תלמידים</th><th>התקבלו</th><th>חסרים</th><th></th></tr>

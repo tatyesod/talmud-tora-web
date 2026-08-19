@@ -90,6 +90,31 @@ router.get("/class/:id", (req, res) => {
 // התלמיד - ולידו בחירת תלמיד. השיוך מוצע מראש לפי סדר ההדפסה, שהוא לפי
 // שם משפחה, ולכן ברוב המקרים נותר רק לאשר.
 // מיועד להימחק אחרי הסבב הזה, כשכל הטפסים יישאו קוד.
+// שיוך ידני מעורב - סריקה שמכילה כמה כיתות יחד ובכל סדר.
+// בלי קוד אין דרך לדעת לאיזו כיתה שייך טופס, אבל גם אין צורך: ברגע
+// שנבחר התלמיד, הכיתה נגזרת ממנו. לכן הרשימה כאן היא של כל התלמידים
+// הפעילים, עם חיפוש לפי שם - והמיון לכיתות קורה מאליו.
+router.get("/manual", (req, res) => {
+  const year = req.query.year || getCurrentYear();
+  const students = db.prepare(`
+    SELECT s.id, s.first_name, s.nickname, s.last_name,
+           COALESCE(f.last_name, s.last_name) AS family_name,
+           c.name AS class_name, c.parallel, c.branch, c.grade_order,
+           (SELECT COUNT(*) FROM scanned_forms sf
+            WHERE sf.student_id = s.id AND sf.year = ? AND sf.form_type = 'health') AS has_form
+    FROM students s
+    LEFT JOIN families f ON s.family_id = f.id
+    LEFT JOIN classes c ON s.class_id = c.id
+    WHERE s.status = 'פעיל'
+    ORDER BY c.grade_order, c.name, c.parallel, s.last_name, s.first_name
+  `).all(year);
+
+  res.render("scans/manual-all", {
+    year, students,
+    pending: students.filter((s) => !s.has_form).length,
+  });
+});
+
 router.get("/class/:id/manual", (req, res) => {
   const year = req.query.year || getCurrentYear();
   const cls = db.prepare("SELECT * FROM classes WHERE id = ?").get(req.params.id);

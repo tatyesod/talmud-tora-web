@@ -1,0 +1,71 @@
+<%- include('../partials/header', {title: 'שיוך ידני — כל הכיתות'}) %>
+
+<div class="card">
+  <h1>🔗 שיוך ידני — סריקה מעורבת</h1>
+
+  <div style="background:#fff8e6; border:1px solid #e0c880; border-radius:8px; padding:11px 15px; margin-bottom:14px; font-size:0.9em; line-height:1.7;">
+    <strong>מסך חד-פעמי לטפסים שהודפסו ללא קוד זיהוי.</strong>
+    אפשר להעלות כאן סריקה שמכילה <strong>כמה כיתות יחד ובכל סדר</strong> —
+    אין צורך למיין מראש. לכל טופס מוצג ראש העמוד, שעליו מודפסים שם התלמיד
+    והכיתה, ומקלידים שם משפחה. <strong>הכיתה נגזרת מהתלמיד</strong>, וכל טופס
+    נכנס לכיתה שלו ולתיק האישי שלו אוטומטית.
+  </div>
+
+  <div id="manual-all"
+       data-year="<%= year %>"
+       data-students='<%- JSON.stringify(students.map(s => ({
+         id: s.id,
+         label: (s.family_name || "") + " " + (s.nickname || s.first_name || "") +
+                " — " + (s.class_name || "") + " " + (s.parallel || "") +
+                (s.has_form ? " ✓" : "")
+       }))) %>'>
+
+    <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:8px;">
+      <input type="file" id="ma-file" accept="application/pdf" />
+      <button type="button" id="ma-load" class="btn">📂 טעינת הסריקה</button>
+      <button type="button" id="ma-send" class="btn" disabled>📤 שליחת הטפסים</button>
+      <span id="ma-counter" style="color:var(--muted); font-size:0.9em;"></span>
+    </div>
+    <p style="font-size:0.82em; color:var(--muted); margin:0 0 8px;">
+      <%= pending %> תלמידים עדיין ללא טופס לשנה זו. תלמיד שכבר יש לו טופס מסומן ב-✓.
+    </p>
+    <div id="ma-status" class="ma-status"></div>
+    <div id="ma-list"></div>
+  </div>
+
+  <%# רשימת ההשלמה. datalist ולא select: 837 תלמידים ברשימה נפתחת אינם שמישים,
+      וכאן מקלידים שתי אותיות והרשימה מצטמצמת. %>
+  <datalist id="ma-students">
+    <% students.forEach(s => { %>
+      <option value="<%= (s.family_name || '') + ' ' + (s.nickname || s.first_name || '') + ' — ' + (s.class_name || '') + ' ' + (s.parallel || '') + (s.has_form ? ' ✓' : '') %>"></option>
+    <% }) %>
+  </datalist>
+
+  <div class="actions" style="margin-top:16px;">
+    <a href="/scans" class="btn secondary">חזרה לטפסים סרוקים</a>
+  </div>
+</div>
+
+<style>
+  .ma-status { font-size:0.9em; margin:6px 0; min-height:1.2em; }
+  .ma-status.ok { color:#2d7a4f; }
+  .ma-status.err { color:#c0392b; font-weight:600; }
+  .ma-row { display:flex; gap:14px; align-items:flex-start; padding:10px 0; border-bottom:1px solid rgba(0,0,0,0.08); }
+  .ma-thumb { flex:1 1 auto; min-width:0; }
+  .ma-canvas { width:100%; max-width:560px; border:1px solid rgba(0,0,0,0.2); border-radius:6px; cursor:zoom-in; display:block; background:#fff; }
+  .ma-side { flex:0 0 280px; }
+  .ma-label { font-size:0.85em; color:var(--muted); margin-bottom:5px; }
+  .ma-warn { color:#c0392b; font-weight:600; }
+  .ma-input { width:100%; font-size:1em; padding:7px; }
+  .ma-input.ma-ok { border:2px solid #2d7a4f; background:#f2faf5; }
+  .ma-input.ma-dupe { border:2px solid #c0392b; background:#fdecea; }
+  @media (max-width: 800px) {
+    .ma-row { flex-direction:column; }
+    .ma-side { flex:1 1 auto; width:100%; }
+  }
+</style>
+
+<script src="/js/vendor/pdf-lib.min.js?v=<%= typeof assetVersion !== 'undefined' ? assetVersion : '' %>"></script>
+<script type="module" src="/js/scan-manual-all.js?v=<%= typeof assetVersion !== 'undefined' ? assetVersion : '' %>"></script>
+
+<%- include('../partials/footer') %>
