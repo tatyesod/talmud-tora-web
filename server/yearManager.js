@@ -45,7 +45,12 @@ function findTargetClass(currentClass) {
     : currentClass.parallel;
 
   // עדיין לא נכנסו -> מכינה א' לפי מקבילה
-  if (currentClass.name && currentClass.name.startsWith("עדיין לא נכנסו")) {
+  // זיהוי לפי class_kind ולא לפי טקסט בשם. נשמרה נפילה לשם עבור
+  // כיתות שטרם סומנו, כדי שההעלאה לא תישבר בשום מצב.
+  const isWaiting = currentClass.class_kind === "waiting" ||
+    (!currentClass.class_kind && currentClass.name &&
+     currentClass.name.startsWith("עדיין לא נכנסו"));
+  if (isWaiting) {
     const target = db
       .prepare("SELECT id FROM classes WHERE name = ? AND parallel = ? AND status = 'פעיל' LIMIT 1")
       .get("מכינה א'", targetParallel);
@@ -129,7 +134,9 @@ function promoteYear() {
       db.prepare("UPDATE students SET class_id = NULL, status = 'ארכיון', archive_type = 'בוגר' WHERE id = ?").run(s.id);
       archived++;
     } else if (result.classId) {
-      const wasNotYetIn = currentClass.name && currentClass.name.startsWith("עדיין לא נכנסו");
+      const wasNotYetIn = currentClass.class_kind === "waiting" ||
+        (!currentClass.class_kind && currentClass.name &&
+         currentClass.name.startsWith("עדיין לא נכנסו"));
       const newStatus = wasNotYetIn ? "פעיל" : s.status;
       db.prepare("UPDATE students SET class_id = ?, status = ? WHERE id = ?").run(
         result.classId, newStatus, s.id

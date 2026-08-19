@@ -367,7 +367,7 @@ router.delete("/staff-roles/:id", (req, res) => {
 router.get("/staffing-map", (req, res) => {
   const classes = db.prepare(`
     SELECT id, name, parallel, branch FROM classes
-    WHERE status = 'פעיל' AND name NOT LIKE 'עדיין לא נכנסו%'
+    WHERE status = 'פעיל' AND COALESCE(class_kind,'regular') <> 'waiting'
     ORDER BY branch, grade_order, name, parallel
   `).all();
 

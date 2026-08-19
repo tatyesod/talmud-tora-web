@@ -580,7 +580,7 @@ router.get("/extensions", (req, res) => {
     FROM classes c
     LEFT JOIN teacher_classes tc ON tc.class_id = c.id AND tc.role IN ('בוקר', 'אחה"צ')
     LEFT JOIN teachers t ON tc.teacher_id = t.id AND t.status = 'פעיל'
-    WHERE c.status = 'פעיל' AND c.name NOT LIKE 'עדיין לא נכנסו%'
+    WHERE c.status = 'פעיל' AND COALESCE(c.class_kind,'regular') <> 'waiting'
     GROUP BY c.id
     ORDER BY c.branch, c.grade_order, c.name, c.parallel
   `).all();
@@ -992,7 +992,7 @@ router.get("/furniture-count", (req, res) => {
     SELECT c.id, c.name, c.parallel, c.branch, c.room_description, COUNT(s.id) AS student_count
     FROM classes c
     LEFT JOIN students s ON s.class_id = c.id AND s.status = 'פעיל'
-    WHERE c.status = 'פעיל' AND c.name NOT LIKE 'עדיין לא נכנסו%'
+    WHERE c.status = 'פעיל' AND COALESCE(c.class_kind,'regular') <> 'waiting'
     GROUP BY c.id
     ORDER BY c.branch
   `).all().map((c) => ({
@@ -1036,7 +1036,7 @@ router.get("/photocopies", (req, res) => {
     FROM classes c
     LEFT JOIN students s ON s.class_id = c.id AND s.status = 'פעיל'
     LEFT JOIN photocopy_extras pe ON pe.class_id = c.id AND pe.school_year = ?
-    WHERE c.status = 'פעיל' AND c.name NOT LIKE 'עדיין לא נכנסו%'
+    WHERE c.status = 'פעיל' AND COALESCE(c.class_kind,'regular') <> 'waiting'
     GROUP BY c.id
     ORDER BY c.branch
   `).all(schoolYear).map((c) => {
@@ -1091,7 +1091,7 @@ router.get("/photocopies/export", async (req, res) => {
     FROM classes c
     LEFT JOIN students s ON s.class_id = c.id AND s.status = 'פעיל'
     LEFT JOIN photocopy_extras pe ON pe.class_id = c.id AND pe.school_year = ?
-    WHERE c.status = 'פעיל' AND c.name NOT LIKE 'עדיין לא נכנסו%'
+    WHERE c.status = 'פעיל' AND COALESCE(c.class_kind,'regular') <> 'waiting'
     GROUP BY c.id
     ORDER BY c.branch
   `).all(schoolYear).map((c) => {

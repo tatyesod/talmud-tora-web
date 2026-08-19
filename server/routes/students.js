@@ -124,7 +124,7 @@ router.get("/students/mismatched-branch", (req, res) => {
     FROM students s
     JOIN classes c ON s.class_id = c.id
     LEFT JOIN families f ON s.family_id = f.id
-    WHERE c.name NOT LIKE 'עדיין לא נכנסו%'
+    WHERE COALESCE(c.class_kind,'regular') <> 'waiting'
       AND s.branch IS NOT NULL AND TRIM(s.branch) != ''
       AND s.branch != c.branch
     ORDER BY s.last_name, s.first_name
@@ -225,7 +225,7 @@ router.get("/students", (req, res) => {
   // כשמציגים הכל, הן כן מוצגות כדי שניתן יהיה להגיע אליהן.
   const classes = db.prepare(
     "SELECT id, name, parallel FROM classes" +
-    (status === "פעיל" ? " WHERE name NOT LIKE 'עדיין לא נכנסו%'" : "") +
+    (status === "פעיל" ? " WHERE COALESCE(class_kind,'regular') <> 'waiting'" : "") +
     " ORDER BY grade_order, name, parallel"
   ).all();
   const cohorts = db.prepare("SELECT id, name FROM cohorts ORDER BY to_date DESC, from_date DESC").all();

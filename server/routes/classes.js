@@ -87,7 +87,7 @@ router.get("/new", (req, res) => {
   res.render("classes/form", { classRow: {}, mode: "new", categories });
 });
 
-const CLASS_FIELDS = ["name", "parallel", "class_number", "transfer_number", "status", "category_id", "branch", "institution_code", "extension"];
+const CLASS_FIELDS = ["name", "parallel", "class_number", "transfer_number", "status", "category_id", "branch", "institution_code", "extension", "class_kind"];
 
 router.post("/", (req, res) => {
   const body = req.body;
@@ -105,7 +105,7 @@ router.get("/study-materials", (req, res) => {
   const { GRADE_ORDER } = require("../yearManager");
   const classes = db.prepare(`
     SELECT id, name, parallel, branch, dropbox_path FROM classes
-    WHERE status = 'פעיל' AND name NOT LIKE 'עדיין לא נכנסו%'
+    WHERE status = 'פעיל' AND COALESCE(class_kind,'regular') <> 'waiting'
   `).all().sort((a, b) => {
     if (a.branch !== b.branch) return (a.branch || "").localeCompare(b.branch || "", "he");
     const gA = gradeIdxOf(a.name), gB = gradeIdxOf(b.name);
@@ -125,7 +125,7 @@ router.get("/study-materials/edit", (req, res) => {
   const { GRADE_ORDER } = require("../yearManager");
   const classes = db.prepare(`
     SELECT id, name, parallel, branch, dropbox_path FROM classes
-    WHERE status = 'פעיל' AND name NOT LIKE 'עדיין לא נכנסו%'
+    WHERE status = 'פעיל' AND COALESCE(class_kind,'regular') <> 'waiting'
   `).all().sort((a, b) => {
     if (a.branch !== b.branch) return (a.branch || "").localeCompare(b.branch || "", "he");
     const gA = gradeIdxOf(a.name), gB = gradeIdxOf(b.name);

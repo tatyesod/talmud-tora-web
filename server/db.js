@@ -303,6 +303,12 @@ const migrations = [
   // מבטיחה שגם שאילתה שתיכתב בעתיד תמיין נכון.
   // 99 = כיתה שאינה בסדר הרגיל (למשל "עדיין לא נכנסו") - יורדת לסוף.
   "ALTER TABLE classes ADD COLUMN grade_order INTEGER DEFAULT 99",
+  // סוג הכיתה. עד היום ההבחנה נעשתה לפי טקסט בשם ("עדיין לא נכנסו%"),
+  // וזו תלות שבירה: שינוי קל בשם - רווח כפול, "טרם נכנסו" - היה שובר
+  // בשקט את העלאת השנה. כאן זה מפורש.
+  //   regular  - כיתת לימוד רגילה
+  //   waiting  - כיתת המתנה: ילדים שנרשמו וטרם התחילו, ועולים למכינה א'
+  "ALTER TABLE classes ADD COLUMN class_kind TEXT DEFAULT 'regular'",
   // מקום תפילה / קהילה של האב. בייבוא מ-Access הייתה רק עמודה אחת,
   // "מקום עבודת האב", והמזכירות הזינו לתוכה גם כוללים וגם בתי כנסת.
   // מכאן זה נפרד: father_workplace = מקום לימוד, father_synagogue = תפילה.
@@ -385,6 +391,11 @@ const migrations = [
     class_name TEXT NOT NULL,
     UNIQUE(book_price_id, class_name)
   )`,
+
+  // סימון חד-פעמי של כיתות ההמתנה הקיימות לפי השם. מכאן והלאה השדה הוא
+  // המקור, והשם משמש לתצוגה בלבד.
+  "UPDATE classes SET class_kind = 'waiting' WHERE name LIKE 'עדיין לא נכנסו%' AND (class_kind IS NULL OR class_kind = 'regular')",
+  "UPDATE classes SET class_kind = 'regular' WHERE class_kind IS NULL",
 ];
 
 for (const sql of migrations) {
