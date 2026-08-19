@@ -20,8 +20,11 @@
       <button type="button" id="ma-send" class="btn" disabled>📤 שליחת הטפסים</button>
       <span id="ma-counter" style="color:var(--muted); font-size:0.9em;"></span>
     </div>
-    <p style="font-size:0.82em; color:var(--muted); margin:0 0 8px;">
-      <%= pending %> תלמידים עדיין ללא טופס לשנה זו. תלמיד שכבר יש לו טופס מסומן ב-✓.
+    <p style="font-size:0.82em; color:var(--muted); margin:0 0 8px; line-height:1.7;">
+      <%= pending %> תלמידים עדיין ללא טופס לשנה זו. תלמיד שכבר יש לו טופס מסומן ב-✓.<br>
+      <strong>הקלד את הטופס הראשון בלבד</strong> — משם המערכת משלימה את השאר
+      לפי סדר ההדפסה של אותה כיתה. שורה שהושלמה אוטומטית מסומנת במסגרת מקווקוות;
+      אם תלמיד לא החזיר, הסדר יזוז ותיקון שורה אחת מסדר את כל מה שאחריה.
     </p>
     <div id="ma-status" class="ma-status"></div>
     <div id="ma-list"></div>
@@ -35,6 +38,9 @@
   <script type="application/json" id="ma-students-data">
     <%- JSON.stringify(students.map(s => ({
       id: s.id,
+      // cls מאפשר השלמה אוטומטית: משויך טופס אחד -> הכיתה ידועה ->
+      // שאר השורות מתמלאות לפי סדר ההדפסה של אותה כיתה
+      cls: (s.class_name || "") + " " + (s.parallel || ""),
       label: (s.family_name || "") + " " + (s.nickname || s.first_name || "") +
              " — " + (s.class_name || "") + " " + (s.parallel || "") +
              (s.has_form ? " ✓" : "")
@@ -67,6 +73,9 @@
   .ma-warn { color:#c0392b; font-weight:600; }
   .ma-input { width:100%; font-size:1em; padding:7px; }
   .ma-input.ma-ok { border:2px solid #2d7a4f; background:#f2faf5; }
+  /* שורה שהושלמה אוטומטית - גוון שונה, כדי שיהיה ברור מה אושר ידנית
+     ומה המערכת הציעה ועדיין כדאי לוודא */
+  .ma-input.ma-auto { border-style:dashed; background:#f7fbf9; }
   .ma-input.ma-dupe { border:2px solid #c0392b; background:#fdecea; }
   @media (max-width: 800px) {
     .ma-row { flex-direction:column; }

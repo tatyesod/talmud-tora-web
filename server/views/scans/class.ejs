@@ -77,6 +77,11 @@
   </script>
 
   <div class="actions" style="margin-top:16px;">
+    <% if (returned > 0) { %>
+      <a href="/scans/class/<%= cls.id %>/export?year=<%= encodeURIComponent(year) %>" class="btn">
+        📥 הורדת כל הכיתה בקובץ אחד (<%= returned %>)
+      </a>
+    <% } %>
     <a href="/scans" class="btn secondary">חזרה לרשימת הכיתות</a>
     <a href="/reports/health-declaration" class="btn secondary">הפקת טפסים להדפסה</a>
   </div>

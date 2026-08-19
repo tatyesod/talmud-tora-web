@@ -40,7 +40,12 @@
           <td style="text-align:center; <%= missing > 0 ? 'color:#c0392b; font-weight:700;' : 'color:#2d7a4f;' %>">
             <%= missing > 0 ? missing : '✓' %>
           </td>
-          <td><a href="/scans/class/<%= c.id %>?year=<%= encodeURIComponent(year) %>" class="btn small secondary">פתיחה</a></td>
+          <td style="white-space:nowrap;">
+            <a href="/scans/class/<%= c.id %>?year=<%= encodeURIComponent(year) %>" class="btn small secondary">פתיחה</a>
+            <% if (c.scanned > 0) { %>
+              <a href="/scans/class/<%= c.id %>/export?year=<%= encodeURIComponent(year) %>" class="btn small secondary" title="הורדת כל הטפסים של הכיתה בקובץ אחד">📥 PDF</a>
+            <% } %>
+          </td>
         </tr>
       <% }) %>
     </tbody>

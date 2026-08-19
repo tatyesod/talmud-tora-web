@@ -136,6 +136,9 @@
         const match = STUDENTS.find((s) => s.label === inp.value);
         pairs[i].studentId = match ? match.id : null;
         inp.classList.toggle("ma-ok", !!match);
+        // ברגע ששויך טופס, הכיתה ידועה - וממלאים את השורות הריקות שאחריו
+        // לפי סדר ההדפסה של אותה כיתה. זו הצעה בלבד; כל שורה ניתנת לתיקון.
+        if (match) fillForward(i, match);
         updateCounter();
       });
       right.appendChild(inp);
@@ -147,6 +150,24 @@
     updateCounter();
     loadBtn.disabled = false;
     setStatus(pairs.length + " טפסים נטענו. הקלד שם משפחה לכל טופס.", "ok");
+  }
+
+  // השלמה קדימה: ממלאת שורות ריקות אחרי שורה ששויכה, לפי סדר ההדפסה
+  // של אותה כיתה. עוצרת ברגע שנגמרו התלמידים בכיתה, ואינה דורסת שורה
+  // שכבר שויכה ידנית.
+  function fillForward(fromIdx, student) {
+    const roster = STUDENTS.filter((s) => s.cls === student.cls);
+    let pos = roster.findIndex((s) => s.id === student.id);
+    if (pos < 0) return;
+    const inputs = listEl.querySelectorAll(".ma-input");
+    for (let j = fromIdx + 1; j < pairs.length; j++) {
+      pos++;
+      if (pos >= roster.length) break;      // נגמרה הכיתה
+      if (pairs[j].studentId) continue;     // שויך ידנית - לא נוגעים
+      pairs[j].studentId = roster[pos].id;
+      inputs[j].value = roster[pos].label;
+      inputs[j].classList.add("ma-ok", "ma-auto");
+    }
   }
 
   async function send() {

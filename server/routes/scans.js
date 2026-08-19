@@ -187,6 +187,57 @@ router.post("/upload", upload.single("file"), (req, res) => {
   res.json({ ok: true, status: replace ? "replaced" : "saved" });
 });
 
+// ============ ייצוא כל הכיתה לקובץ אחד ============
+// מאחד את כל הטפסים הסרוקים של הכיתה ל-PDF אחד, ממוין לפי שם משפחה -
+// כלומר בדיוק הסדר שבו נוח לעבור עליהם או לתייק אותם.
+router.get("/class/:id/export", async (req, res) => {
+  const year = req.query.year || getCurrentYear();
+  const cls = db.prepare("SELECT * FROM classes WHERE id = ?").get(req.params.id);
+  if (!cls) return res.redirect("/scans");
+
+  const rows = db.prepare(`
+    SELECT sf.file_name, COALESCE(f.last_name, s.last_name) AS family_name,
+           s.first_name, s.nickname
+    FROM scanned_forms sf
+    JOIN students s ON s.id = sf.student_id
+    LEFT JOIN families f ON s.family_id = f.id
+    WHERE s.class_id = ? AND sf.year = ? AND sf.form_type = 'health'
+    ORDER BY COALESCE(f.last_name, s.last_name), s.first_name
+  `).all(req.params.id, year);
+
+  if (!rows.length) {
+    return res.status(404).send("אין טפסים סרוקים לכיתה זו בשנה " + year);
+  }
+
+  const { PDFDocument } = require("pdf-lib");
+  const out = await PDFDocument.create();
+  let merged = 0, missing = 0;
+
+  for (const r of rows) {
+    const full = path.join(SCAN_DIR, path.basename(r.file_name));
+    if (!fs.existsSync(full)) { missing++; continue; }
+    try {
+      const src = await PDFDocument.load(fs.readFileSync(full));
+      const pages = await out.copyPages(src, src.getPageIndices());
+      pages.forEach((pg) => out.addPage(pg));
+      merged++;
+    } catch (e) {
+      // קובץ פגום אינו מפיל את כל הייצוא - מדלגים ומדווחים בלוג
+      missing++;
+      console.error("ייצוא סריקות: דילוג על " + r.file_name + " - " + e.message);
+    }
+  }
+  if (!merged) return res.status(500).send("לא ניתן היה לאחד אף טופס");
+  if (missing) console.log(`[סריקות] ייצוא ${cls.name}: אוחדו ${merged}, דולגו ${missing}`);
+
+  const bytes = await out.save();
+  const name = `הצהרות בריאות ${cls.name} ${cls.parallel || ""} ${year}.pdf`.replace(/\s+/g, " ").trim();
+  res.setHeader("Content-Type", "application/pdf");
+  res.setHeader("Content-Disposition",
+    "attachment; filename*=UTF-8''" + encodeURIComponent(name));
+  res.send(Buffer.from(bytes));
+});
+
 // ============ צפייה בטופס ============
 router.get("/file/:id", (req, res) => {
   const f = db.prepare("SELECT file_name FROM scanned_forms WHERE id = ?").get(req.params.id);
