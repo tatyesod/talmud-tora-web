@@ -410,15 +410,10 @@
 .nav-text { font-size: 0.95em; font-weight: 700; }
 .nav-sub { font-size: 0.7em; color: #b9c4cd; }
 
-.nav-card[draggable="true"]:active { cursor: grabbing; }
+
 
 /* מצב סידור - סימון ויזואלי שהכרטיסים ניתנים לגרירה כרגע */
-.nav-actions { display: flex; justify-content: flex-end; margin-bottom: 8px; }
-#arrange-toggle.active { background: rgba(201,151,76,0.35); border-color: #c9974c; color: #fff; }
-.nav-grid.arranging .nav-card {
-  outline: 1px dashed rgba(201,151,76,0.6);
-  outline-offset: -3px;
-}
+
 .nav-card.dragging { opacity: 0.4; transform: scale(0.95); }
 .nav-card.drag-over { border-color: #c9974c !important; box-shadow: 0 0 0 2px #c9974c; transform: scale(1.04); }
 

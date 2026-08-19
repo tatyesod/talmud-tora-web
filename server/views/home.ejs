@@ -141,10 +141,6 @@
 
     <div class="nav-section-divider"></div>
 
-    <div class="nav-actions">
-      <button type="button" id="arrange-toggle" class="btn small secondary">⇅ סידור הלחצנים</button>
-    </div>
-
     <div class="nav-grid" id="nav-grid">
       <% if (showCard("/reports")) { %><a href="/reports" class="nav-card" style="--d:1">
         <div class="nav-icon">
@@ -516,43 +512,7 @@
     const grid = document.getElementById('nav-grid');
     if (!grid) return;
 
-    function saveOrderToServer(order) {
-      fetch('/api/nav-order', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ order: order })
-      }).catch(function () { /* כישלון רשת - הסדר על המסך נשאר, יישמר בגרירה הבאה */ });
-    }
-
-    // הסדר מגיע מהשרת (עמודת users.nav_order) ולכן זהה בכל מחשב שהמשתמש
-    // עובד בו. localStorage נשאר רק כגיבוי חד-פעמי: אם יש שם סדר ישן ואין
-    // עדיין סדר בשרת, מעלים אותו לשרת פעם אחת ומוחקים מקומית.
-    const serverOrder = <%- JSON.stringify(navOrder || '') %>;
-    let saved = serverOrder || null;
-    const legacy = localStorage.getItem('nav-order');
-    if (!saved && legacy) {
-      saved = legacy;
-      saveOrderToServer(JSON.parse(legacy));
-    }
-    if (legacy && serverOrder) localStorage.removeItem('nav-order');
-
-    if (saved) {
-      try {
-        const order = JSON.parse(saved);
-        const cards = [...grid.children];
-        const moved = new Set();
-        order.forEach(href => {
-          const card = cards.find(c => c.getAttribute('href') === href);
-          if (card) { grid.appendChild(card); moved.add(card); }
-        });
-        // כרטיסים חדשים שלא היו בסדר השמור (כמו פיצ'ר שנוסף אחרי ששמרתם
-        // סדר מותאם אישית) - חייבים עדיין להופיע, אז מוסיפים אותם בסוף
-        // באופן מפורש, במקום לסמוך על המיקום המקרי שלהם בדום
-        cards.forEach(card => {
-          if (!moved.has(card)) grid.appendChild(card);
-        });
-      } catch(e) {}
-    }
+    // הסדר המותאם והגרירה הוסרו: הכרטיסים בסדר הקבוע שבתבנית.
     // עכשיו, כשהסדר הסופי ידוע, קובעים לכל כרטיס השהיה לפי מיקומו בפועל.
     // שתי מסגרות המתנה נחוצות: בלעדיהן הדפדפן מצרף את מצב הפתיחה ואת הוספת
     // המחלקה לאותה מסגרת, ההנפשה לא מתחילה כלל, והכרטיסים פשוט "קופצים".
@@ -573,62 +533,6 @@
       }, totalMs);
     }));
 
-    let dragSrc = null;
-
-    // מצב סידור. קודם כל הכרטיסים היו draggable תמיד, והדפדפן ממתין בכל
-    // לחיצה כדי להבחין בין קליק לגרירה - וזה בדיוק ההשהיה שהורגשה בפתיחת
-    // הדפים. במצב רגיל הכרטיסים הם קישורים פשוטים ונפתחים מיד; הגרירה
-    // נדלקת רק כשלוחצים על "סידור".
-    let arrangeMode = false;
-    function setArrange(on) {
-      arrangeMode = on;
-      grid.classList.toggle('arranging', on);
-      grid.querySelectorAll('.nav-card').forEach(c => {
-        if (on) { c.setAttribute('draggable', 'true'); c.style.cursor = 'grab'; }
-        else { c.removeAttribute('draggable'); c.style.cursor = ''; }
-      });
-      const b = document.getElementById('arrange-toggle');
-      if (b) {
-        b.textContent = on ? '✓ סיום סידור' : '⇅ סידור הלחצנים';
-        b.classList.toggle('active', on);
-      }
-    }
-    const toggleBtn = document.getElementById('arrange-toggle');
-    if (toggleBtn) toggleBtn.addEventListener('click', () => setArrange(!arrangeMode));
-
-    grid.querySelectorAll('.nav-card').forEach(card => {
-      // במצב סידור בלבד - ראה setArrange למעלה
-      card.addEventListener('click', e => { if (arrangeMode) e.preventDefault(); });
-
-      card.addEventListener('dragstart', e => {
-        dragSrc = card;
-        e.dataTransfer.effectAllowed = 'move';
-        setTimeout(() => card.classList.add('dragging'), 0);
-      });
-      card.addEventListener('dragend', () => {
-        card.classList.remove('dragging');
-        grid.querySelectorAll('.nav-card').forEach(c => c.classList.remove('drag-over'));
-        const order = [...grid.querySelectorAll('.nav-card[href]')].map(c => c.getAttribute('href'));
-        saveOrderToServer(order);
-      });
-      card.addEventListener('dragover', e => {
-        e.preventDefault();
-        if (card !== dragSrc) {
-          grid.querySelectorAll('.nav-card').forEach(c => c.classList.remove('drag-over'));
-          card.classList.add('drag-over');
-        }
-      });
-      card.addEventListener('drop', e => {
-        e.preventDefault();
-        if (dragSrc && dragSrc !== card) {
-          const allCards = [...grid.children];
-          const srcIdx = allCards.indexOf(dragSrc);
-          const tgtIdx = allCards.indexOf(card);
-          if (srcIdx < tgtIdx) grid.insertBefore(dragSrc, card.nextSibling);
-          else grid.insertBefore(dragSrc, card);
-        }
-      });
-    });
   })();
 
   // ===== מעבר בין טאבים בפאנל הצד (משימות שלי / משותפות) =====
