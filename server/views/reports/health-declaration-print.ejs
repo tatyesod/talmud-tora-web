@@ -62,8 +62,13 @@
     table.fields { width: 100%; border-collapse: collapse; margin-bottom: 8px; font-size: 1em; table-layout: fixed; }
     /* גובה שורה נדיב - ההורים כותבים בין השורות */
     table.fields td { padding: 3px 6px 1px; vertical-align: bottom; line-height: 1.1; height: 19px; }
-    table.fields td.label { color: #555; font-size: 0.88em; white-space: nowrap; width: 22%; text-align: right; padding-inline-end: 6px; }
-    table.fields td.value { border-bottom: 1.5pt solid #333; width: 28%; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    /* התווית נדחקת לכיוון הקו שלה, כדי שלא יישאר מרחק ביניהם */
+    table.fields td.label { color: #444; font-size: 0.86em; white-space: nowrap;
+      text-align: left; padding-inline-end: 4px; padding-inline-start: 2px; }
+    /* הערך מתחיל בדיוק בתחילת הקו, ולא צף באמצעו */
+    table.fields td.value { border-bottom: 1.2pt solid #333; font-weight: 700;
+      text-align: right; padding-inline-start: 4px;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
     .section-title { font-weight: 800; margin: 4px 0 2px; text-decoration: underline; font-size: 1.05em; color: #1d4257; }
 
@@ -100,6 +105,11 @@
 
     @media print {
       .page { padding: 6px 22px; }
+      /* גובה מינימלי לעמוד. בלעדיו הבלוק מסתיים היכן שהתוכן מסתיים,
+         ואז "תחתית העמוד" של קוד הזיהוי היא סוף הטבלה ולא סוף הדף.
+         A4 הוא 297 מ"מ ושוליים 5 מלמעלה ומלמטה, כלומר 287 זמינים -
+         272 משאיר 15 מ"מ ביטחון כדי שלא ייווצר עמוד ריק. */
+      .page { min-height: 272mm; }
     }
 
     /* עמוד 1 - יותר רווח בין השורות, כדי שהתוכן יתפרש על פני אורך העמוד */
@@ -142,9 +152,11 @@
     <div class="school-line">שם התלמוד תורה: <strong>תלמוד תורה החדש (יסוד העולם)</strong> &nbsp; הישוב: <strong>בני ברק</strong></div>
 
     <table class="fields">
+        <%# ה-colgroup גובר על ה-CSS, ולכן שינוי כאן הוא מה שקובע בפועל.
+            עמודת הקו צרה יותר מקודם, כדי שלא יימתח מקצה לקצה. %>
       <colgroup>
-        <col style="width:15%"><col style="width:35%">
-        <col style="width:15%"><col style="width:35%">
+        <col style="width:19%"><col style="width:31%">
+        <col style="width:19%"><col style="width:31%">
       </colgroup>
       <tr>
         <td class="label">פרטי התלמיד:</td>
