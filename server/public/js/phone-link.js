@@ -51,13 +51,29 @@
       return;
     }
 
-    // במחשב - מעתיקים ללוח לצורך תוכנת החיוג של המשרד
+    // במחשב - שתי פעולות יחד, ובכוונה:
+    // 1. העתקה ללוח, שממשיכה לעבוד עם F7+Enter בדיוק כמו עד היום.
+    // 2. ניסיון חיוג ישיר דרך tel:, שאפליקציית 3CX במחשב נרשמת לטפל בו.
+    //    אם היא מותקנת - השיחה יוצאת מיד ואין צורך ב-F7. אם לא - שום דבר
+    //    לא קורה והמספר עדיין בלוח. כלומר אין מה להפסיד.
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(phone)
-        .then(() => showToast("המספר " + phone + " הועתק — כעת לחצו F7 ואז Enter בתוכנת החיוג"))
-        .catch(() => showToast("לא ניתן היה להעתיק אוטומטית — המספר: " + phone));
+        .then(() => showToast("מחייג ל-" + phone + " · אם השיחה לא יצאה — F7 ואז Enter"))
+        .catch(() => showToast("המספר: " + phone));
     } else {
       showToast("המספר: " + phone);
     }
+    // iframe נסתר ולא ניווט ישיר: מעבר לכתובת tel: שאין לה מטפל מוביל
+    // בחלק מהדפדפנים לדף שגיאה, והמזכירה מאבדת את הכרטיס שפתחה.
+    try {
+      var f = document.getElementById("tel-frame");
+      if (!f) {
+        f = document.createElement("iframe");
+        f.id = "tel-frame";
+        f.style.display = "none";
+        document.body.appendChild(f);
+      }
+      f.src = "tel:" + phone.replace(/[^\d+]/g, "");
+    } catch (err) { /* אין 3CX מותקנת - ההעתקה לבדה מספיקה */ }
   });
 })();

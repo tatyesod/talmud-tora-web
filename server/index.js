@@ -507,6 +507,7 @@ app.post("/api/nav-order", express.json(), (req, res) => {
   res.json({ ok: true });
 });
 
+app.use("/phone", require("./routes/phone"));
 app.use("/scans", require("./routes/scans"));
 app.use("/presence", require("./routes/presence"));
 app.use("/users", requireAdmin, require("./routes/users"));
