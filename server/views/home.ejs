@@ -512,6 +512,31 @@
     const grid = document.getElementById('nav-grid');
     if (!grid) return;
 
+      // הסדר נשמר בשרת (users.nav_order) ולכן זהה בכל מחשב שהמשתמש עובד בו
+      function saveOrderToServer(order) {
+        fetch('/api/nav-order', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ order: order })
+        }).catch(function () { /* כישלון רשת - הסדר על המסך נשאר */ });
+      }
+
+      // החלת הסדר השמור לפני חישוב השהיות ההנפשה
+      const savedOrder = <%- JSON.stringify(navOrder || '') %> || null;
+      if (savedOrder) {
+        try {
+          const order = JSON.parse(savedOrder);
+          const cards = [...grid.children];
+          const moved = new Set();
+          order.forEach(href => {
+            const card = cards.find(c => c.getAttribute('href') === href);
+            if (card) { grid.appendChild(card); moved.add(card); }
+          });
+          // כרטיס שנוסף אחרי ששמרתם סדר מותאם - מוסיפים בסוף במפורש
+          cards.forEach(card => { if (!moved.has(card)) grid.appendChild(card); });
+        } catch (e) { /* סדר פגום - מציגים כרגיל */ }
+      }
+
     // הסדר המותאם והגרירה הוסרו: הכרטיסים בסדר הקבוע שבתבנית.
     // עכשיו, כשהסדר הסופי ידוע, קובעים לכל כרטיס השהיה לפי מיקומו בפועל.
     // שתי מסגרות המתנה נחוצות: בלעדיהן הדפדפן מצרף את מצב הפתיחה ואת הוספת
@@ -533,6 +558,46 @@
       }, totalMs);
     }));
 
+
+      // ===== גרירה לסידור מחדש =====
+      // draggable תמידי, בלי כפתור ובלי מצב - כמו שהיה במקור.
+      let dragSrc = null;
+      grid.querySelectorAll('.nav-card').forEach(card => {
+        card.setAttribute('draggable', 'true');
+        card.style.cursor = 'grab';
+
+        card.addEventListener('dragstart', e => {
+          dragSrc = card;
+          card.classList.add('dragging');
+          e.dataTransfer.effectAllowed = 'move';
+        });
+
+        card.addEventListener('dragend', () => {
+          card.classList.remove('dragging');
+          grid.querySelectorAll('.nav-card').forEach(c => c.classList.remove('drag-over'));
+          const order = [...grid.querySelectorAll('.nav-card')].map(c => c.getAttribute('href'));
+          saveOrderToServer(order);
+        });
+
+        card.addEventListener('dragover', e => {
+          e.preventDefault();
+          if (card !== dragSrc) card.classList.add('drag-over');
+        });
+
+        card.addEventListener('dragleave', () => card.classList.remove('drag-over'));
+
+        card.addEventListener('drop', e => {
+          e.preventDefault();
+          card.classList.remove('drag-over');
+          if (dragSrc && dragSrc !== card) {
+            const allCards = [...grid.children];
+            const srcIdx = allCards.indexOf(dragSrc);
+            const tgtIdx = allCards.indexOf(card);
+            if (srcIdx < tgtIdx) grid.insertBefore(dragSrc, card.nextSibling);
+            else grid.insertBefore(dragSrc, card);
+          }
+        });
+      });
   })();
 
   // ===== מעבר בין טאבים בפאנל הצד (משימות שלי / משותפות) =====

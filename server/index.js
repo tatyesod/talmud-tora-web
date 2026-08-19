@@ -108,7 +108,7 @@ app.use((req, res, next) => {
 app.use((req, res, next) => {
   if (req.session.userId) {
     const db = require("./db");
-    const u = db.prepare("SELECT id, username, display_name, full_name, role_title, is_admin, force_password_change, drive_letter, role FROM users WHERE id = ?").get(req.session.userId);
+    const u = db.prepare("SELECT id, username, display_name, full_name, role_title, is_admin, force_password_change, drive_letter, nav_order, role FROM users WHERE id = ?").get(req.session.userId);
     if (u) {
       req.currentUser = u;
       res.locals.user = u.display_name || u.username;
@@ -477,6 +477,7 @@ app.get("/", (req, res) => {
   res.render("home", {
     stats, branchStats, unassignedClassCount, mismatchedBranchCount, monthlyTotal, currentYear, hebrewDateToday, dayName,
     // סדר כרטיסי הניווט של המשתמש, נשמר בשרת ולכן זהה בכל המחשבים שלו
+    navOrder: (req.currentUser && req.currentUser.nav_order) || "",
     myTasks, unreadCount, greeting, fullName, allUsers,
     studentBirthdays, teacherBirthdays, pendingOrders, myOrderUpdates, upcomingEventsCount,
   });
@@ -491,6 +492,21 @@ app.use("/reports", require("./routes/reports"));
 app.use("/year", require("./routes/year"));
 app.use("/tasks", require("./routes/tasks"));
 app.use("/messages", require("./routes/messages"));
+// שמירת סדר כרטיסי דף הבית, לכל משתמש בנפרד. נשמר בשרת ולא בדפדפן, כדי
+// שהסדר יהיה זהה בכל מחשב שהמשתמש עובד בו.
+app.post("/api/nav-order", express.json(), (req, res) => {
+  const order = req.body && req.body.order;
+  // אימות קפדני: מערך של נתיבים פנימיים בלבד. בלעדיו ניתן לדחוף לעמודה
+  // כתובות חיצוניות שיוצגו אחר כך כקישורים בדף הבית.
+  if (!Array.isArray(order) || order.length > 60) return res.status(400).json({ ok: false });
+  const clean = order.filter((h) => typeof h === "string" && h.startsWith("/") && h.length <= 120);
+  // db נטען כאן ולא ברמת הקובץ - כך זה בשאר המסלולים בקובץ הזה
+  const db = require("./db");
+  db.prepare("UPDATE users SET nav_order = ? WHERE id = ?")
+    .run(JSON.stringify(clean), req.currentUser.id);
+  res.json({ ok: true });
+});
+
 app.use("/presence", require("./routes/presence"));
 app.use("/users", requireAdmin, require("./routes/users"));
 app.use("/backups", requireAdmin, require("./routes/backups"));

@@ -415,6 +415,8 @@
 /* מצב סידור - סימון ויזואלי שהכרטיסים ניתנים לגרירה כרגע */
 
 .nav-card.dragging { opacity: 0.4; transform: scale(0.95); }
+.nav-card[draggable="true"]:active { cursor: grabbing; }
+
 .nav-card.drag-over { border-color: #c9974c !important; box-shadow: 0 0 0 2px #c9974c; transform: scale(1.04); }
 
 .home-footer {
