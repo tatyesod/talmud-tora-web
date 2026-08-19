@@ -48,7 +48,9 @@
     .form-qr svg { width: 13mm; height: 13mm; display: block; }
 
     h2.form-title { text-align: center; margin: 6px 0 3px; font-size: 1.5em; text-decoration: underline; }
-    h3.form-subtitle { text-align: center; margin: 0 0 8px; font-size: 0.95em; font-weight: 600; text-decoration: underline; }
+    h3.form-subtitle { text-align: center; margin: 0 0 4px; font-size: 0.95em; font-weight: 600; text-decoration: underline; }
+    /* הנחיה להורים - בולטת אך לא צועקת, ומעל פרטי המוסד */
+    .fill-note { text-align: center; margin: 0 0 8px; font-size: 0.9em; font-weight: 700; color: #1d4257; }
     .school-line { text-align: center; font-size: 0.82em; margin-bottom: 8px; }
 
     table.fields { width: 100%; border-collapse: collapse; margin-bottom: 8px; font-size: 1em; table-layout: fixed; }
@@ -123,6 +125,9 @@
 
     <h2 class="form-title">טופס הצהרת ההורים</h2>
     <h3 class="form-subtitle">על מצב בריאותו של ילדם הלומד בתלמוד תורה</h3>
+    <%# הנחיה להורים. הטופס מודפס עם הפרטים שבמערכת, ולכן ההורים ממלאים
+        רק את מה שחסר או שגוי - וזה גם מה שמנגנון הגילוי מחפש. %>
+    <div class="fill-note">נבקש למלא את כל השדות הריקים ולעדכן פרטים שגויים</div>
     <div class="school-line">שם התלמוד תורה: <strong>תלמוד תורה החדש (יסוד העולם)</strong> &nbsp; הישוב: <strong>בני ברק</strong></div>
 
     <table class="fields">
