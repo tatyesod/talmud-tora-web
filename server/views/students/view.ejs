@@ -6,7 +6,7 @@
     <div class="actions">
     <%# הטופס הסרוק של התלמיד לשנה הנוכחית. נפתח רק אם קיים. %>
     <% if (typeof scannedFormId !== 'undefined' && scannedFormId) { %>
-      <a href="/scans/file/<%= scannedFormId %>" target="_blank" rel="noopener" class="btn secondary">📄 הצהרת בריאות סרוקה</a>
+      <a href="/scans/view/<%= scannedFormId %>?back=<%= encodeURIComponent('/students/' + student.id) %>" class="btn secondary">📄 הצהרת בריאות סרוקה</a>
     <% } %>
       <a href="/students/<%= student.id %>/edit<%= back ? '?back=' + encodeURIComponent(back) : '' %>" class="btn">עריכה</a>
       <a href="/students/<%= student.id %>/print/health" target="_blank" class="btn secondary">🖨️ טופס בריאות</a>

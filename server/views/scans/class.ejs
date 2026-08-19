@@ -58,7 +58,7 @@
           <td style="white-space:nowrap;"><%= s.size_str %></td>
           <td>
             <% if (s.form_id) { %>
-              <a href="/scans/file/<%= s.form_id %>" target="_blank" rel="noopener" class="btn small secondary">צפייה</a>
+              <a href="/scans/view/<%= s.form_id %>?back=<%= encodeURIComponent('/scans/class/' + cls.id + '?year=' + year) %>" class="btn small secondary">צפייה</a>
               <form method="POST" action="/scans/<%= s.form_id %>?_method=DELETE" style="display:inline;"
                     onsubmit="return confirm('למחוק את הטופס הסרוק?');">
                 <button type="submit" class="btn small danger">מחיקה</button>

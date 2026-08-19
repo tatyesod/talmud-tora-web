@@ -378,14 +378,47 @@ router.get("/class/:id/export", async (req, res) => {
 
 // ============ צפייה בטופס ============
 router.get("/file/:id", (req, res) => {
-  const f = db.prepare("SELECT file_name FROM scanned_forms WHERE id = ?").get(req.params.id);
+  const f = db.prepare(`
+    SELECT sf.file_name, sf.year, COALESCE(fa.last_name, s.last_name) AS family_name,
+           s.first_name, s.nickname
+    FROM scanned_forms sf
+    JOIN students s ON s.id = sf.student_id
+    LEFT JOIN families fa ON s.family_id = fa.id
+    WHERE sf.id = ?`).get(req.params.id);
   if (!f) return res.status(404).end();
   // basename: שם הקובץ מגיע מהמסד ולא מהכתובת, ואין דרך לבקש קובץ שרירותי
   const full = path.join(SCAN_DIR, path.basename(f.file_name));
   if (!fs.existsSync(full)) return res.status(404).end();
+
+  // שם משמעותי לקובץ. בלעדיו חלק מהדפדפנים מורידים במקום להציג, וגם אם
+  // המשתמש בוחר לשמור - הקובץ נשמר בשם טכני חסר משמעות.
+  const nice = `הצהרת בריאות ${f.family_name || ""} ${f.nickname || f.first_name || ""} ${f.year}.pdf`
+    .replace(/\s+/g, " ").trim();
   res.setHeader("Content-Type", "application/pdf");
-  res.setHeader("Content-Disposition", "inline");
+  res.setHeader("Content-Disposition",
+    "inline; filename*=UTF-8''" + encodeURIComponent(nice));
   fs.createReadStream(full).pipe(res);
+});
+
+// תצוגה מקדימה עם כפתורי הדפסה והורדה. עדיפה על פתיחת ה-PDF הגולמי:
+// שם התלמיד מופיע למעלה, ואפשר להדפיס בלחיצה במקום לחפש בתפריט הדפדפן.
+router.get("/view/:id", (req, res) => {
+  const f = db.prepare(`
+    SELECT sf.*, COALESCE(fa.last_name, s.last_name) AS family_name,
+           s.first_name, s.nickname, s.id AS student_id,
+           c.name AS class_name, c.parallel
+    FROM scanned_forms sf
+    JOIN students s ON s.id = sf.student_id
+    LEFT JOIN families fa ON s.family_id = fa.id
+    LEFT JOIN classes c ON s.class_id = c.id
+    WHERE sf.id = ?`).get(req.params.id);
+  if (!f) return res.redirect("/scans");
+  res.render("scans/view", {
+    form: f,
+    uploaded_str: f.uploaded_at ? hd.formatGregorian(f.uploaded_at) : "",
+    size_str: f.size_bytes ? fmtSize(f.size_bytes) : "",
+    back: req.query.back || "/scans",
+  });
 });
 
 // טופס לפי תלמיד - הקישור שמופיע בתיק האישי
