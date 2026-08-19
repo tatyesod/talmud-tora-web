@@ -1,13 +1,4 @@
 const express = require("express");
-
-// מיקום שכבה בסדר הגילאים. GRADE_ORDER.indexOf מחזיר -1 לשם שאינו ברשימה
-// (למשל "עדיין לא נכנסו"), ומינוס אחד ממוין לפני אפס - כלומר הכיתה הזו
-// הייתה קופצת לראש כל רשימה. 999 מוריד אותה לסוף, כמו grade_order במסד.
-function gradeIdxOf(name) {
-  const { GRADE_ORDER } = require("../yearManager");
-  const i = GRADE_ORDER.indexOf(String(name || "").trim());
-  return i === -1 ? 999 : i;
-}
 const router = express.Router();
 const db = require("../db");
 const ExcelJS = require("exceljs");
@@ -320,622 +311,6 @@ router.get("/full-student-list/export", async (req, res) => {
   await sendWorkbook(res, "רשימת תלמידים מלא.xlsx", "תלמידים", "רשימת תלמידים מלא", header, data);
 });
 
-// ============ רשימת תלמידים לכיתה (להדפסה) ============
-// עמודות בסדר שהוגדר: משפחה, חיבה, שם האב, לידה עברי, כתובת,
-// טלפון בית, נייד אבא, נייד אמא. כותרת: "רשימת תלמידים כיתה X - שם המלמד Y".
-router.get("/class-roster", (req, res) => {
-  const { GRADE_ORDER } = require("../yearManager");
-  const branch = req.query.branch || "";
-
-  // מספר הכיתות הפעילות בכל סניף, לתפריט הסינון. סניף בלי כיתות פעילות
-  // לא יופיע, ולכן הרשימה מצטמצמת מאליה.
-  const branches = db.prepare(`
-    SELECT branch AS name, COUNT(*) AS n FROM classes
-    WHERE status = 'פעיל' AND branch IS NOT NULL AND branch <> ''
-    GROUP BY branch ORDER BY branch
-  `).all();
-  const totalCount = db.prepare("SELECT COUNT(*) c FROM classes WHERE status = 'פעיל'").get().c;
-
-  const classes = db.prepare(`
-    SELECT c.id, c.name, c.parallel, c.branch,
-           (SELECT GROUP_CONCAT(t.first_name || ' ' || t.last_name, ', ')
-              FROM teacher_classes tc JOIN teachers t ON tc.teacher_id = t.id
-             WHERE tc.class_id = c.id AND (tc.role = 'בוקר' OR tc.role IS NULL)) AS teacher_names
-    FROM classes c WHERE c.status = 'פעיל'
-      ${branch ? "AND c.branch = ?" : ""}
-  `).all(...(branch ? [branch] : [])).sort((a, b) => {
-    const ga = gradeIdxOf(a.name), gb = gradeIdxOf(b.name);
-    if (ga !== gb) return ga - gb;
-    const pa = parseInt(a.parallel, 10), pb = parseInt(b.parallel, 10);
-    if (!isNaN(pa) && !isNaN(pb) && pa !== pb) return pa - pb;
-    return String(a.branch || "").localeCompare(String(b.branch || ""), "he");
-  });
-  res.render("reports/class-roster", { classes, branches, branch, totalCount });
-});
-
-// סדר התלמידים בטבלה.
-// "family" - אלפביתי לפי שם משפחה (ברירת מחדל).
-// "birth"  - לפי תאריך הלידה מהמבוגר לצעיר. birth_date_civil הוא מספר סידורי
-//            עולה, ולכן מיון עולה = מהגדול לקטן. תלמיד בלי תאריך לידה יורד
-//            לסוף הרשימה במקום להיערם בראשה.
-function sortStudents(students, mode) {
-  if (mode === "birth") {
-    students.sort((a, b) => {
-      if (a._birth == null && b._birth == null) return a.family.localeCompare(b.family, "he");
-      if (a._birth == null) return 1;
-      if (b._birth == null) return -1;
-      return a._birth - b._birth || a.family.localeCompare(b.family, "he");
-    });
-  } else {
-    students.sort((a, b) =>
-      a.family.localeCompare(b.family, "he") || a.nickname.localeCompare(b.nickname, "he"));
-  }
-  return students;
-}
-
-// בניית נתוני הרשימות. משותפת לתצוגה המקדימה ולייצוא לאקסל, כדי ששניהם
-// יראו בדיוק אותו דבר ולא ייווצר הפרש ביניהם.
-function buildRosterGroups(req) {
-  const { GRADE_ORDER } = require("../yearManager");
-  let classIds = req.query.class_id || [];
-  if (!Array.isArray(classIds)) classIds = [classIds];
-  classIds = classIds.filter(Boolean);
-  if (classIds.length === 0) return [];
-
-  // שם המלמד שהוקלד ידנית גובר על השיוך במערכת, כדי שאפשר להפיק את הדוח
-  // גם לכיתה שהשיוך שלה עוד לא הוזן.
-  // הקריאה היא לפי מזהה הכיתה (teacher_name_<id>) ולא לפי מקום במערך: הדפדפן
-  // שולח את שדות הטקסט של כל הכיתות אך רק את תיבות הסימון שסומנו, ולכן
-  // התאמה לפי אינדקס נתנה לכיתה שנבחרה את שם המלמד של כיתה אחרת.
-  const manualFor = (cid) => String(req.query["teacher_name_" + cid] || "").trim();
-  const sortMode = req.query.sort === "birth" ? "birth" : "family";
-
-  const classRows = db.prepare(`
-    SELECT id, name, parallel, branch FROM classes
-    WHERE id IN (${classIds.map(() => "?").join(",")})
-  `).all(...classIds);
-
-  const groups = classIds.map((cid) => {
-    const c = classRows.find((x) => String(x.id) === String(cid));
-    if (!c) return null;
-    const assigned = db.prepare(`
-      SELECT t.first_name, t.last_name FROM teacher_classes tc
-      JOIN teachers t ON tc.teacher_id = t.id
-      WHERE tc.class_id = ? AND (tc.role = 'בוקר' OR tc.role IS NULL)
-    `).all(c.id).map((t) => (t.first_name + " " + t.last_name).trim()).join(", ");
-
-    const students = db.prepare(`
-      SELECT s.id, s.first_name, s.nickname, s.last_name, s.birth_date_civil,
-             f.last_name AS family_last_name, f.father_name, f.home_phone,
-             f.father_mobile, f.mother_mobile,
-             f.street, f.house_number, f.apartment, f.city
-      FROM students s LEFT JOIN families f ON s.family_id = f.id
-      WHERE s.class_id = ? AND s.status = 'פעיל'
-    `).all(c.id).map((r) => ({
-      family: r.family_last_name || r.last_name || "",
-      nickname: r.nickname || r.first_name || "",
-      fatherName: r.father_name || "",
-      hebrewBirth: r.birth_date_civil ? hd.serialToHebrewString(r.birth_date_civil) : "",
-      address: [r.street, r.house_number, r.apartment ? "דירה " + r.apartment : "", r.city]
-        .filter(Boolean).join(" "),
-      homePhone: r.home_phone || "",
-      fatherMobile: r.father_mobile || "",
-      motherMobile: r.mother_mobile || "",
-      // נשמר לצורך מיון בלבד, לא מוצג
-      _birth: r.birth_date_civil || null,
-    }));
-
-    sortStudents(students, sortMode);
-
-    return {
-      className: c.name + (c.parallel ? " " + c.parallel : ""),
-      branch: c.branch || "",
-      teacherName: manualFor(cid) || assigned || "",
-      sortLabel: sortMode === "birth" ? "לפי תאריך לידה" : "",
-      students,
-    };
-  }).filter(Boolean);
-
-  groups.sort((a, b) => {
-    const base = (x) => x.className.replace(/\s+\S+$/, "");
-    return gradeIdxOf(base(a)) - gradeIdxOf(base(b)) ||
-           a.className.localeCompare(b.className, "he");
-  });
-
-    return groups;
-}
-
-router.get("/class-roster/view", (req, res) => {
-  const groups = buildRosterGroups(req);
-  if (groups.length === 0) return res.redirect("/reports/class-roster");
-  res.render("reports/class-roster-view", { groups });
-});
-
-router.get("/class-roster/export", async (req, res) => {
-  const groups = buildRosterGroups(req);
-  if (groups.length === 0) return res.redirect("/reports/class-roster");
-
-  const HEADER = ["#", "משפחה", "חיבה", "שם האב", "לידה עברי", "כתובת",
-                  "טלפון בית", "נייד אבא", "נייד אמא"];
-
-  const wb = new ExcelJS.Workbook();
-  wb.creator = "מערכת ניהול תלמוד תורה החדש";
-
-  // שם גיליון באקסל: עד 31 תווים, ובלי : \ / ? * [ ] . שמות כפולים
-  // (אותה שכבה בשני סניפים) מקבלים סיומת מספרית כדי שהייצוא לא ייכשל.
-  const used = new Set();
-  const sheetName = (g) => {
-    let base = (g.className + (g.branch ? " " + g.branch : "")).replace(/[:\\\/\?\*\[\]]/g, "-").slice(0, 31);
-    let name = base, i = 2;
-    while (used.has(name)) { name = base.slice(0, 28) + "(" + i++ + ")"; }
-    used.add(name);
-    return name;
-  };
-
-  for (const g of groups) {
-    const ws = wb.addWorksheet(sheetName(g), { views: [{ rightToLeft: true }] });
-
-    ws.mergeCells(1, 1, 1, HEADER.length);
-    const t = ws.getCell(1, 1);
-    // className כבר מכיל "כיתה" או "מכינה" - הוספת המילה שוב יצרה
-    // "רשימת תלמידים כיתה כיתה ד' 1", וגם שיבשה את שכבות המכינה
-    t.value = "רשימת תלמידים " + g.className + (g.teacherName ? "   שם המלמד: " + g.teacherName : "");
-    t.font = { size: 14, bold: true, color: { argb: "FF2C5F7C" } };
-    t.alignment = { horizontal: "right", vertical: "middle" };
-    ws.getRow(1).height = 24;
-
-    ws.mergeCells(2, 1, 2, HEADER.length);
-    const sub = ws.getCell(2, 1);
-    sub.value = [g.branch, g.students.length + " תלמידים", g.sortLabel,
-                 "הופק: " + hd.serialToHebrewString(hd.todayAccessSerial())].filter(Boolean).join(" · ");
-    sub.font = { size: 9, italic: true, color: { argb: "FF888888" } };
-    sub.alignment = { horizontal: "right" };
-
-    ws.addRow([]);
-    const hr = ws.addRow(HEADER);
-    hr.font = { size: 12, bold: true, color: { argb: "FFFFFFFF" } };
-    hr.height = 20;
-    // שורת הכותרות ממורכזת כולה, בלי קשר ליישור העמודה עצמה
-    hr.eachCell((cell) => {
-      cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF2C5F7C" } };
-      cell.alignment = { horizontal: "center", vertical: "middle" };
-    });
-
-    // מספר סידורי, תאריך עברי ושלושת הטלפונים ממורכזים; הטקסט לימין.
-    // אותו יישור בדיוק כמו בתצוגה להדפסה, כדי ששני הפלטים ייראו זהים.
-    // תאריך הלידה העברי מיושר לימין ככל טקסט; ממורכזים רק המספר הסידורי
-    // ושלושת הטלפונים.
-    const CENTERED = [1, 7, 8, 9];
-    g.students.forEach((st, i) => {
-      const r = ws.addRow([i + 1, st.family, st.nickname, st.fatherName, st.hebrewBirth,
-                           st.address, st.homePhone, st.fatherMobile, st.motherMobile]);
-      // vertical: middle - בלעדיו אקסל מצמיד את הטקסט לתחתית התא, וזה בולט
-      // במיוחד אחרי שהעלינו את גובה השורה ל-22
-      r.alignment = { horizontal: "right", vertical: "middle" };
-      r.font = { size: 12 };
-      r.height = 22;   // שורות מרווחות יותר - ב-17 הן יצאו צפופות מדי
-      CENTERED.forEach((c) => {
-        r.getCell(c).alignment = { horizontal: "center", vertical: "middle" };
-      });
-      // פסים אפור/לבן לקריאות. הצביעה נעשית תא-תא ולא על השורה, אחרת היא
-      // נמשכת גם על עמודות ריקות מימין לטבלה.
-      if (i % 2 === 0) {
-        for (let c = 1; c <= 9; c++) {
-          r.getCell(c).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF0F0F0" } };
-        }
-      }
-      // הטלפונים נשמרים כטקסט: אקסל היה הופך "0501234567" למספר ומוחק את
-      // האפס המוביל, ומספרים עם מקף היה מנסה לפרש כתאריך.
-      [7, 8, 9].forEach((c) => { r.getCell(c).numFmt = "@"; });
-    });
-
-    // גבולות מלאים על כל טווח הנתונים
-    const thin = { style: "thin" };
-    for (let rr = 4; rr <= 4 + g.students.length; rr++) {
-      const row = ws.getRow(rr);
-      for (let cc = 1; cc <= HEADER.length; cc++) {
-        row.getCell(cc).border = { top: thin, bottom: thin, left: thin, right: thin };
-      }
-    }
-      // רוחב לפי התוכן שנמדד על 837 התלמידים הפעילים: הכתובת הארוכה ביותר
-    // היא 32 תווים והחיבה 16, ולכן העמודות הקודמות חתכו טקסט. אקסל חותך
-    // ולא גולש כשהתא השכן מלא, ולכן הרוחב חייב להכיל את התוכן.
-    [4, 13, 16, 16, 18, 36, 17, 13, 13].forEach((w, i) => { ws.getColumn(i + 1).width = w; });
-    ws.pageSetup = { paperSize: 9, orientation: "portrait", fitToPage: true, fitToWidth: 1, fitToHeight: 0 };
-  }
-
-  // שם קובץ בעברית - חובה filename* מקודד, אחרת HTTP נופל על ERR_INVALID_CHAR
-  const fileName = groups.length === 1
-    ? `רשימת תלמידים ${groups[0].className}.xlsx`
-    : "רשימות תלמידים.xlsx";
-  res.setHeader("Content-Disposition",
-    `attachment; filename="class-roster.xlsx"; filename*=UTF-8''${encodeURIComponent(fileName)}`);
-  res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-  await wb.xlsx.write(res);
-  res.end();
-});
-
-// ייצוא "6 בעמוד" - שש טבלאות בגריד 2×3 על גיליון אחד, להדפסה וחיתוך.
-// הפריסה הועתקה ממדידה של קובץ דוגמה שהמשתמש הכין: אותן תשע עמודות ואותו
-// גופן 12 כמו הדוח המלא, בלי הקטנה - רק רוחב עמודות מכווץ למינימום,
-// עמודה 10 ריקה כמפריד בין שני הצדדים, ומרווח של 40 שורות בין הבלוקים.
-router.get("/class-roster/export-cards", async (req, res) => {
-  const groups = buildRosterGroups(req);
-  if (groups.length === 0) return res.redirect("/reports/class-roster");
-
-  const HEADER = ["#", "משפחה", "חיבה", "שם האב", "לידה עברי", "כתובת",
-                  "טלפון בית", "נייד אבא", "נייד אמא"];
-  const COLS = HEADER.length;      // 9
-  const SEP = 1;                   // עמודה ריקה בין שני הצדדים (עמודה 10)
-  const PER_ROW = 2, PER_PAGE = 6;
-  const WIDTHS = [4, 13, 16, 16, 18, 36, 17, 13, 13];   // זהה לדוח המלא
-  const CENTERED = [1, 7, 8, 9];   // מספר סידורי + שלושת הטלפונים
-  const thin = { style: "thin" };
-
-  const wb = new ExcelJS.Workbook();
-  wb.creator = "מערכת ניהול תלמוד תורה החדש";
-
-  for (let p = 0; p < Math.ceil(groups.length / PER_PAGE); p++) {
-    const pageGroups = groups.slice(p * PER_PAGE, (p + 1) * PER_PAGE);
-    const ws = wbSheetName(p);
-
-    // גובה הבלוק נגזר מהטבלה הגדולה בעמוד, כדי ששורה אחת של טבלאות לא
-    // תזלוג לתוך זו שמתחתיה גם בכיתה חריגה בגודלה
-    const maxRows = Math.max(...pageGroups.map((g) => g.students.length), 1);
-    const PITCH = maxRows + 6;
-
-    for (let side = 0; side < PER_ROW; side++) {
-      const base = side * (COLS + SEP);
-      WIDTHS.forEach((w, i) => { ws.getColumn(base + i + 1).width = w; });
-      if (side < PER_ROW - 1) ws.getColumn(base + COLS + 1).width = 2.5;
-    }
-
-    pageGroups.forEach((g, idx) => {
-      const r0 = Math.floor(idx / PER_ROW) * PITCH + 1;
-      const c0 = (idx % PER_ROW) * (COLS + SEP) + 1;
-
-      ws.mergeCells(r0, c0, r0, c0 + COLS - 1);
-      const t = ws.getCell(r0, c0);
-      t.value = "רשימת תלמידים " + g.className +
-                (g.teacherName ? "   שם המלמד: " + g.teacherName : "");
-      t.font = { size: 14, bold: true, color: { argb: "FF2C5F7C" } };
-      t.alignment = { horizontal: "right", vertical: "middle" };
-      ws.getRow(r0).height = 24;
-
-      ws.mergeCells(r0 + 1, c0, r0 + 1, c0 + COLS - 1);
-      const sub = ws.getCell(r0 + 1, c0);
-      sub.value = [g.branch, g.students.length + " תלמידים", g.sortLabel,
-                   "הופק: " + hd.serialToHebrewString(hd.todayAccessSerial())]
-                   .filter(Boolean).join(" · ");
-      sub.font = { size: 9, italic: true, color: { argb: "FF888888" } };
-      sub.alignment = { horizontal: "right" };
-
-      const hRow = r0 + 3;
-      HEADER.forEach((h, i) => {
-        const cell = ws.getCell(hRow, c0 + i);
-        cell.value = h;
-        cell.font = { size: 12, bold: true, color: { argb: "FFFFFFFF" } };
-        cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF2C5F7C" } };
-        cell.alignment = { horizontal: "center", vertical: "middle" };
-        cell.border = { top: thin, bottom: thin, left: thin, right: thin };
-      });
-      ws.getRow(hRow).height = 20;
-
-      g.students.forEach((st, i) => {
-        const rr = hRow + 1 + i;
-        const vals = [i + 1, st.family, st.nickname, st.fatherName, st.hebrewBirth,
-                      st.address, st.homePhone, st.fatherMobile, st.motherMobile];
-        vals.forEach((v, ci) => {
-          const cell = ws.getCell(rr, c0 + ci);
-          cell.value = v;
-          cell.font = { size: 12 };
-          cell.alignment = {
-            horizontal: CENTERED.includes(ci + 1) ? "center" : "right",
-            vertical: "middle",
-          };
-          if (ci + 1 >= 7) cell.numFmt = "@";  // טלפון כטקסט - שומר אפס מוביל
-          cell.border = { top: thin, bottom: thin, left: thin, right: thin };
-          if (i % 2 === 0) {
-            cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF0F0F0" } };
-          }
-        });
-        ws.getRow(rr).height = 22;   // זהה לדוח המלא
-      });
-    });
-
-    ws.pageSetup = {
-      paperSize: 9, orientation: "portrait",
-      fitToPage: true, fitToWidth: 1, fitToHeight: 0, scale: 35,
-      margins: { left: 0.3, right: 0.3, top: 0.4, bottom: 0.4, header: 0.2, footer: 0.2 },
-    };
-  }
-
-  const fileName = "רשימות כיתה - 6 בעמוד.xlsx";
-  res.setHeader("Content-Disposition",
-    `attachment; filename="roster-6up.xlsx"; filename*=UTF-8''${encodeURIComponent(fileName)}`);
-  res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-  await wb.xlsx.write(res);
-  res.end();
-
-  function wbSheetName(i) {
-    return wb.addWorksheet("עמוד " + (i + 1), { views: [{ rightToLeft: true }] });
-  }
-});
-
-// ============ דוח סייעים ============
-// רשימת התלמידים הזכאים לסייע, עם פרטי הסייע ולמי משולם.
-function loadAides(req) {
-  const { branch, aide_type, status } = req.query;
-  let sql = `
-    SELECT s.id, s.first_name, s.nickname, s.last_name, s.status,
-           s.aide_eligible, s.aide_type, s.aide_name, s.aide_mobile,
-           s.aide_id_number, s.aide_payer, s.aide_hours,
-           c.name AS class_name, c.parallel, c.branch,
-           f.last_name AS family_last_name, f.father_mobile, f.mother_mobile
-    FROM students s
-    LEFT JOIN classes c ON s.class_id = c.id
-    LEFT JOIN families f ON s.family_id = f.id
-    WHERE s.aide_eligible = 'כן'
-  `;
-  const params = [];
-  // ברירת המחדל היא תלמידים פעילים; ריק מפורש מציג את כולם
-  const st = status === undefined ? "פעיל" : status;
-  if (st) { sql += " AND s.status = ?"; params.push(st); }
-  if (branch) { sql += " AND c.branch = ?"; params.push(branch); }
-  if (aide_type) { sql += " AND s.aide_type = ?"; params.push(aide_type); }
-  const rows = db.prepare(sql).all(...params);
-
-  const { GRADE_ORDER } = require("../yearManager");
-  rows.sort((a, b) => {
-    const ga = gradeIdxOf(a.class_name), gb = gradeIdxOf(b.class_name);
-    if (ga !== gb) return ga - gb;
-    const pa = parseInt(a.parallel, 10), pb = parseInt(b.parallel, 10);
-    if (!isNaN(pa) && !isNaN(pb) && pa !== pb) return pa - pb;
-    return String(a.last_name || a.family_last_name || "").localeCompare(String(b.last_name || b.family_last_name || ""), "he");
-  });
-
-  return rows.map((r) => ({
-    ...r,
-    familyName: (r.last_name || r.family_last_name || "").trim(),
-    givenName: (r.nickname || r.first_name || "").trim(),
-    studentName: ((r.last_name || r.family_last_name || "") + " " + (r.nickname || r.first_name || "")).trim(),
-    className: r.class_name ? r.class_name + (r.parallel ? " " + r.parallel : "") : "",
-    // שדות חסרים מסומנים, כדי שיהיה ברור מה עוד צריך להשלים
-    missing: [
-      !r.aide_type && "סוג", !r.aide_name && "שם", !r.aide_mobile && "נייד",
-      !r.aide_id_number && 'ת"ז', !r.aide_hours && "שעות", !r.aide_payer && "למי משולם",
-    ].filter(Boolean),
-  }));
-}
-
-router.get("/aides", (req, res) => {
-  const rows = loadAides(req);
-  const branches = db.prepare("SELECT DISTINCT branch FROM classes WHERE branch IS NOT NULL AND branch <> '' ORDER BY branch").all().map(r => r.branch);
-  const statuses = db.prepare("SELECT DISTINCT status FROM students WHERE status IS NOT NULL ORDER BY status").all().map(r => r.status);
-  const counts = {
-    total: rows.length,
-    medical: rows.filter(r => r.aide_type === "רפואי").length,
-    academic: rows.filter(r => r.aide_type === "לימודי").length,
-    incomplete: rows.filter(r => r.missing.length > 0).length,
-  };
-  res.render("reports/aides", {
-    rows, branches, statuses, counts,
-    branch: req.query.branch || "",
-    aide_type: req.query.aide_type || "",
-    status: req.query.status === undefined ? "פעיל" : req.query.status,
-  });
-});
-
-router.get("/aides/export", async (req, res) => {
-  const rows = loadAides(req);
-  const header = ["#", "שם משפחה", "שם פרטי", "כיתה", "סניף", "סוג הסיוע", "שם הסייע",
-                  "נייד הסייע", 'ת"ז הסייע', "כמות שעות", "למי משולם", "חסר"];
-  const data = rows.map((r, i) => [
-    i + 1, r.familyName, r.givenName, r.className, r.branch || "", r.aide_type || "",
-    r.aide_name || "", r.aide_mobile || "", r.aide_id_number || "",
-    r.aide_hours || "", r.aide_payer || "", r.missing.join(", "),
-  ]);
-  await sendWorkbook(res, "דוח סייעים.xlsx", "סייעים", "דוח סייעים", header, data);
-});
-
-// ============ בני דודים באותה כיתה ============
-// שתי משפחות שרשומות אצלן אותו סב - האבות (או האמהות) אחים, והילדים בני
-// דודים. המוסד משתדל לא לשבץ בני דודים באותה כיתה, ולכן זו התראה לבדיקה.
-//
-// ההתאמה היא על טקסט חופשי ולכן אינה ודאית: שני סבים שונים בשם זהה ייראו
-// כקשר, וסב שנרשם בשתי צורות רחוקות לא יזוהה. לכן זו רשימה לבדיקה ולא קביעה.
-
-// נרמול להשוואה בלבד - הערך במסד לא משתנה. התחיליות כבר נוקו במיגרציה,
-// וכאן מנוטרלות גם סופיות הכבוד, שנשמרות בכוונה במסד.
-function normalizeGrandparent(v) {
-  if (!v) return "";
-  let s = String(v).replace(/[\u200e\u200f]/g, "").replace(/["'`\u05f3\u05f4]/g, "");
-  s = s.replace(/\s+/g, " ").trim();
-  s = s.replace(/\s*(זל|זצל|זצוקל|שליטא|תליטא|היד|נרו|עה)\s*$/, "").trim();
-  s = s.replace(/^(הרב|רבי|ר|משפחת|מרת|הגר|הרהג|הגרא|הגרמ)\s+/, "").trim();
-  return s;
-}
-
-function findCousinPairs(branch) {
-  const fams = db.prepare(`
-    SELECT id, last_name, paternal_grandparents, maternal_grandparents FROM families
-  `).all();
-
-  // סב מנורמל -> קבוצת משפחות שרשמו אותו
-  const byGrandparent = new Map();
-  for (const f of fams) {
-    for (const col of ["paternal_grandparents", "maternal_grandparents"]) {
-      const key = normalizeGrandparent(f[col]);
-      if (key.length < 4) continue;   // שם קצר מדי - רועש מדי לשמש כמפתח
-      if (!byGrandparent.has(key)) byGrandparent.set(key, new Set());
-      byGrandparent.get(key).add(f.id);
-    }
-  }
-
-  // קשר בין משפחות + הסב שיצר אותו
-  const related = new Map();
-  for (const [key, ids] of byGrandparent) {
-    if (ids.size < 2) continue;
-    const arr = [...ids];
-    for (const a of arr) for (const b of arr) {
-      if (a === b) continue;
-      const k = a + ":" + b;
-      if (!related.has(k)) related.set(k, new Set());
-      related.get(k).add(key);
-    }
-  }
-
-  let sql = `
-    SELECT s.id, s.first_name, s.nickname, s.last_name, s.family_id,
-           c.id AS class_id, c.name AS class_name, c.parallel, c.branch,
-           f.last_name AS family_last_name
-    FROM students s
-    JOIN classes c ON s.class_id = c.id
-    LEFT JOIN families f ON s.family_id = f.id
-    WHERE s.status = 'פעיל' AND s.family_id IS NOT NULL
-  `;
-  const params = [];
-  if (branch) { sql += " AND c.branch = ?"; params.push(branch); }
-  const students = db.prepare(sql).all(...params);
-
-  const byClass = new Map();
-  for (const s of students) {
-    if (!byClass.has(s.class_id)) byClass.set(s.class_id, []);
-    byClass.get(s.class_id).push(s);
-  }
-
-  const pairs = [];
-  for (const [, list] of byClass) {
-    for (let i = 0; i < list.length; i++) {
-      for (let j = i + 1; j < list.length; j++) {
-        const a = list[i], b = list[j];
-        if (a.family_id === b.family_id) continue;   // אחים, לא בני דודים
-        const via = related.get(a.family_id + ":" + b.family_id);
-        if (!via) continue;
-        const label = (s) => ((s.family_last_name || s.last_name || "") + " " + (s.nickname || s.first_name || "")).trim();
-        pairs.push({
-          className: a.class_name + (a.parallel ? " " + a.parallel : ""),
-          branch: a.branch || "",
-          aId: a.id, aName: label(a),
-          bId: b.id, bName: label(b),
-          via: [...via].join(", "),
-        });
-      }
-    }
-  }
-  pairs.sort((x, y) =>
-    (GRADE_ORDER_SAFE().indexOf(x.className.replace(/\s+\d+$/, "")) -
-     GRADE_ORDER_SAFE().indexOf(y.className.replace(/\s+\d+$/, ""))) ||
-    x.className.localeCompare(y.className, "he") || x.aName.localeCompare(y.aName, "he"));
-  return pairs;
-}
-
-function GRADE_ORDER_SAFE() {
-  try { return require("../yearManager").GRADE_ORDER || []; } catch (e) { return []; }
-}
-
-router.get("/cousins", (req, res) => {
-  const branch = req.query.branch || "";
-  const pairs = findCousinPairs(branch);
-  const branches = db.prepare("SELECT DISTINCT branch FROM classes WHERE branch IS NOT NULL AND branch <> '' ORDER BY branch").all().map(r => r.branch);
-  const noData = db.prepare(`
-    SELECT COUNT(DISTINCT f.id) c FROM families f
-    JOIN students s ON s.family_id = f.id AND s.status = 'פעיל'
-    WHERE (f.paternal_grandparents IS NULL OR f.paternal_grandparents = '')
-      AND (f.maternal_grandparents IS NULL OR f.maternal_grandparents = '')
-  `).get().c;
-  res.render("reports/cousins", { pairs, branches, branch, noData });
-});
-
-// ============ ימי הולדת לפי תאריך עברי ============
-// דוח למלמד: רשימת תלמידי הכיתה לפי תאריך הלידה העברי, מסודרת בסדר שנת
-// הלימודים (תשרי -> אלול), כדי שאפשר יהיה לעקוב אחריה לאורך השנה.
-// שאר הדוחות מציגים תאריך לועזי בלבד.
-
-// מספור החודשים ב-hebrewDate.js הוא 1=ניסן ... 6=אלול, 7=תשרי ... 13=אדר ב'.
-// לצורך מיון לפי סדר השנה מתשרי ואילך מסובבים את המספור.
-function hebrewMonthOrder(month) {
-  return month >= 7 ? month - 7 : month + 6;
-}
-const HEB_MONTH_NAMES = {
-  1: "ניסן", 2: "אייר", 3: "סיון", 4: "תמוז", 5: "אב", 6: "אלול",
-  7: "תשרי", 8: "חשון", 9: "כסלו", 10: "טבת", 11: "שבט", 12: "אדר", 13: "אדר ב'",
-};
-
-function loadBirthdays(req) {
-  let classIds = req.query.class_id || [];
-  if (!Array.isArray(classIds)) classIds = [classIds];
-  classIds = classIds.filter(Boolean);
-  const status = req.query.status || "פעיל";
-
-  let sql = `
-    SELECT s.id, s.first_name, s.nickname, s.last_name, s.birth_date_civil,
-           c.name AS class_name, c.parallel, c.branch, f.last_name AS family_last_name
-    FROM students s
-    LEFT JOIN classes c ON s.class_id = c.id
-    LEFT JOIN families f ON s.family_id = f.id
-    WHERE 1=1
-  `;
-  const params = [];
-  if (status) { sql += " AND s.status = ?"; params.push(status); }
-  if (classIds.length > 0) {
-    sql += ` AND s.class_id IN (${classIds.map(() => "?").join(",")})`;
-    params.push(...classIds);
-  }
-  const rows = db.prepare(sql).all(...params);
-
-  const withDate = [];
-  const missing = [];
-  for (const r of rows) {
-    const name = (r.last_name || r.family_last_name || "") + " " + (r.nickname || r.first_name || "");
-    const base = {
-      familyName: (r.last_name || r.family_last_name || "").trim(),
-      givenName: (r.nickname || r.first_name || "").trim(),
-      name: name.trim(),
-      className: r.class_name ? r.class_name + (r.parallel ? " " + r.parallel : "") : "",
-      branch: r.branch || "",
-    };
-    const parts = hd.serialToHebrewParts(r.birth_date_civil);
-    if (!parts) { missing.push(base); continue; }
-    withDate.push({
-      ...base,
-      hebrew: hd.serialToHebrewString(r.birth_date_civil),
-      hebrewDay: hd.hebrewNumeral(parts.day),
-      hebrewMonth: HEB_MONTH_NAMES[parts.month] || "",
-      gregorian: hd.serialToGregorianString(r.birth_date_civil),
-      _order: hebrewMonthOrder(parts.month) * 100 + parts.day,
-    });
-  }
-  // מיון לפי סדר שנת הלימודים, ובאותו יום לפי שם
-  withDate.sort((a, b) => a._order - b._order || a.name.localeCompare(b.name, "he"));
-  missing.sort((a, b) => a.name.localeCompare(b.name, "he"));
-  return { withDate, missing, status, classIds };
-}
-
-router.get("/birthdays", (req, res) => {
-  const classes = db.prepare("SELECT id, name, parallel, branch FROM classes WHERE status = 'פעיל' ORDER BY branch, name, parallel").all();
-  const statuses = db.prepare("SELECT DISTINCT status FROM students WHERE status IS NOT NULL ORDER BY status").all();
-  res.render("reports/birthdays", { classes, statuses });
-});
-
-router.get("/birthdays/view", (req, res) => {
-  const { withDate, missing } = loadBirthdays(req);
-  const title = [...new Set(withDate.map(r => r.className).filter(Boolean))].join(", ");
-  res.render("reports/birthdays-view", { rows: withDate, missing, title });
-});
-
-router.get("/birthdays/export", async (req, res) => {
-  const { withDate, missing } = loadBirthdays(req);
-  const header = ["#", "שם משפחה", "שם פרטי", "כיתה", "יום", "חודש", "תאריך עברי מלא", "תאריך לועזי"];
-  const data = withDate.map((r, i) => [
-    i + 1, r.familyName, r.givenName, r.className, r.hebrewDay, r.hebrewMonth, r.hebrew, r.gregorian,
-  ]);
-  missing.forEach((r, i) => {
-    data.push([withDate.length + i + 1, r.familyName, r.givenName, r.className, "", "", "חסר תאריך לידה", ""]);
-  });
-  await sendWorkbook(res, "ימי הולדת - תאריך עברי.xlsx", "ימי הולדת", "ימי הולדת לפי תאריך עברי", header, data);
-});
-
 // ============ דוח משפחות - ייצוא לאקסל ============
 router.get("/families-report", (req, res) => {
   const classes = db.prepare("SELECT id, name, parallel, branch FROM classes ORDER BY grade_order, name, parallel").all();
@@ -978,15 +353,7 @@ router.get("/families-report/export", async (req, res) => {
     const eldestClass = eldest?.class_name ? eldest.class_name + (eldest.parallel ? " " + eldest.parallel : "") : "";
     return { r, eldestName, eldestClass };
   });
-  // מיון לפי סדר גילאים ולא אלפביתי, כמו בכל שאר המערכת
-    const { GRADE_ORDER: GO } = require("../yearManager");
-    const gradeIdx = (label) => {
-      const i = GO.indexOf(String(label || "").replace(/\s+\d+$/, ""));
-      return i === -1 ? 999 : i;
-    };
-    enriched.sort((a, b) =>
-      gradeIdx(a.eldestClass) - gradeIdx(b.eldestClass) ||
-      a.eldestClass.localeCompare(b.eldestClass, "he"));
+  enriched.sort((a, b) => a.eldestClass.localeCompare(b.eldestClass, "he"));
   const data = enriched.map(({ r, eldestName, eldestClass }) => [
     r.last_name || "", r.father_name || "", r.mother_name || "",
     r.home_phone || "", r.father_mobile || "", r.mother_mobile || "",
@@ -1133,14 +500,7 @@ router.get("/class-journal/view", (req, res) => {
   const students = db
     .prepare("SELECT s.first_name, s.nickname, s.last_name, f.last_name AS family_last FROM students s LEFT JOIN families f ON s.family_id=f.id WHERE s.class_id = ? AND s.status = 'פעיל' ORDER BY s.last_name, s.first_name")
     .all(class_id)
-    .map(s => ({
-      ...s,
-      // שם משפחה ופרטי בעמודות נפרדות. displayName נשמר לשימושים שצריכים
-      // מחרוזת אחת (למשל חישוב רוחב העמודה).
-      familyName: (s.last_name || s.family_last || "").trim(),
-      givenName: (s.nickname || s.first_name || "").trim(),
-      displayName: (s.last_name || s.family_last || "") + " " + (s.nickname || s.first_name || ""),
-    }));
+    .map(s => ({ ...s, displayName: (s.last_name || s.family_last || "") + " " + (s.nickname || s.first_name || "") }));
   // מלמד - אם נבחר מלמד מפורש (יש בוקר ואחה"צ, ולפעמים גם עוזר) משתמשים בו;
   // אחרת (למשל קישור ישן בלי הבחירה) נופלים חזרה לברירת המחדל הישנה
   const teacher = teacher_id
@@ -1160,15 +520,15 @@ router.get("/extensions-admin", (req, res) => {
   const classes = db.prepare(`
     SELECT id, name, parallel, branch, extension FROM classes
     WHERE status = 'פעיל'
-    ORDER BY branch IS NOT NULL, branch, name, parallel
+    ORDER BY branch IS NOT NULL, branch, grade_order, name, parallel
   `).all();
   const staffRoles = db.prepare(`
     SELECT id, name, branch, extension FROM staff_roles
-    ORDER BY branch IS NOT NULL, branch, name
+    ORDER BY branch IS NOT NULL, branch, grade_order, name
   `).all();
   const miscLocations = db.prepare(`
     SELECT id, name, branch, extension FROM misc_extensions
-    ORDER BY branch IS NOT NULL, branch, name
+    ORDER BY branch IS NOT NULL, branch, grade_order, name
   `).all();
   const branches = db.prepare("SELECT DISTINCT branch FROM classes WHERE branch IS NOT NULL AND branch != '' ORDER BY branch").all().map((r) => r.branch);
   res.render("reports/extensions-admin", { classes, staffRoles, miscLocations, branches });
@@ -1222,7 +582,7 @@ router.get("/extensions", (req, res) => {
     LEFT JOIN teachers t ON tc.teacher_id = t.id AND t.status = 'פעיל'
     WHERE c.status = 'פעיל' AND c.name NOT LIKE 'עדיין לא נכנסו%'
     GROUP BY c.id
-    ORDER BY c.branch, c.name, c.parallel
+    ORDER BY c.branch, c.grade_order, c.name, c.parallel
   `).all();
   const classItems = classRows.map((r) => ({
     kind: "class", className: r.name + (r.parallel ? " " + r.parallel : ""),
@@ -1240,7 +600,7 @@ router.get("/extensions", (req, res) => {
     JOIN staff_roles sr ON sra.staff_role_id = sr.id
     JOIN teachers t ON sra.teacher_id = t.id
     WHERE t.status = 'פעיל' AND sr.extension IS NOT NULL AND sr.extension != ''
-    ORDER BY sr.branch IS NOT NULL, sr.branch, sr.name
+    ORDER BY sr.branch IS NOT NULL, sr.branch, sr.grade_order, sr.name
   `).all();
   // תואר מתאים - "הגב'" לתפקידים נשיים ידועים (מורות/רכזת שילוב), "הרב"
   // לשאר (מנהל, מזכיר וכו')
@@ -1260,7 +620,7 @@ router.get("/extensions", (req, res) => {
   const miscRows = db.prepare(`
     SELECT name, branch, extension FROM misc_extensions
     WHERE extension IS NOT NULL AND extension != ''
-    ORDER BY branch IS NOT NULL, branch, name
+    ORDER BY branch IS NOT NULL, branch, grade_order, name
   `).all();
   const miscItems = miscRows.map((r) => ({
     kind: "misc", className: r.name,
@@ -1356,7 +716,7 @@ router.get("/extensions", (req, res) => {
 
 // ============ ניהול מיקומים נוספים (חדר מלמדים וכד') - לא קשורים למלמד ============
 router.get("/misc-extensions", (req, res) => {
-  const locations = db.prepare("SELECT * FROM misc_extensions ORDER BY branch IS NOT NULL, branch, name").all();
+  const locations = db.prepare("SELECT * FROM misc_extensions ORDER BY branch IS NOT NULL, branch, grade_order, name").all();
   const branches = db.prepare("SELECT DISTINCT branch FROM classes WHERE branch IS NOT NULL AND branch != '' ORDER BY branch").all().map((r) => r.branch);
   res.render("reports/misc-extensions", { locations, branches });
 });
@@ -1468,74 +828,25 @@ router.get("/stay-arrangement/guard/view", (req, res) => {
     ...s,
     className: s.class_name + (s.parallel ? " " + s.parallel : ""),
     address: [s.street, s.house_number, s.apartment ? "דירה " + s.apartment : "", s.city].filter(Boolean).join(" "),
-    // "עד פסח" / "אחרי פסח" ולא "פסח" / "קיץ": ההורים רושמים פעם אחת מתחילת
-    // השנה ועד פסח, ורישום שני מפסח ועד סוף השנה. שמות העמודות במסד
-    // (passover_interested / summer_interested) לא השתנו - רק התצוגה.
-    arrangements: [
-      s.passover_interested === "כן" ? "עד פסח" : "",
-      s.summer_interested === "כן" ? "אחרי פסח" : "",
-    ].filter(Boolean).join(" + "),
+    arrangements: [s.passover_interested === "כן" ? "פסח" : "", s.summer_interested === "כן" ? "קיץ" : ""].filter(Boolean).join(" + "),
   }));
 
-  // הדוח בפריסת לנדסקייפ, כדי שכל שורה תיכנס בשורה אחת בלי גלישה.
-  // שים לב: בלנדסקייפ הגובה הזמין קטן משמעותית מפורטרט (~175 מ"מ מול ~260),
-  // כי הגובה הפיזי של העמוד עצמו קטן יותר.
-  const AVAILABLE_HEIGHT_MM = 175;
-  const AVAILABLE_WIDTH_MM = 271; // 297 פחות שוליים של 13 מ"מ מכל צד
+  const AVAILABLE_HEIGHT_MM = 260;
   const rowsForCalc = students.length + 1;
   let rowHeightMM = Math.min(AVAILABLE_HEIGHT_MM / rowsForCalc, 12);
   rowHeightMM = Math.max(rowHeightMM, 3.5);
-
-  // גודל הגופן נגזר גם מהגובה וגם מהרוחב. בלי המגבלה השנייה, דוח עם מעט
-  // תלמידים היה מקבל גופן גדול שגורם לשורה הארוכה ביותר לגלוש מרוחב העמוד -
-  // בדיוק מה שרצינו למנוע. מודדים את השורה הרחבה ביותר בנתונים בפועל.
-  const widest = students.reduce((max, s) => Math.max(max,
-    (s.family_last_name || "").length + (s.nickname || s.first_name || "").length + 1 +
-    s.className.length + s.arrangements.length + s.address.length +
-    (s.home_phone || "").length + (s.father_mobile || "").length + (s.mother_mobile || "").length
-  ), 60);
-  const COL_PADDING_MM = 7 * 4;      // ריפוד וגבולות של 7 עמודות
-  const MM_PER_CHAR_PER_PT = 0.3528 * 0.52; // רוחב תו עברי ממוצע
-  const widthCapPt = (AVAILABLE_WIDTH_MM - COL_PADDING_MM) / (widest * MM_PER_CHAR_PER_PT);
-  // תקרה 13 כמו בשאר רשימות התלמידים; מתכווץ מתחתיה רק כשהעמוד לא מספיק
-  const bodyFontPt = Math.max(7, Math.min(13, Math.round(rowHeightMM * 1.3), Math.floor(widthCapPt)));
+  const bodyFontPt = Math.max(7, Math.min(16, Math.round(rowHeightMM * 1.3)));
 
   res.render("reports/stay-arrangement-guard", { branch, students, rowHeightMM, bodyFontPt });
 });
 
 router.get("/stay-arrangement/edit", (req, res) => {
-  const { GRADE_ORDER } = require("../yearManager");
-
-  const all = db.prepare(`
+  const classes = db.prepare(`
     SELECT id, name, parallel, branch FROM classes
     WHERE status = 'פעיל' AND name IN (${STAY_ARRANGEMENT_CLASS_NAMES.map(() => "?").join(",")})
+    ORDER BY grade_order, name, parallel
   `).all(...STAY_ARRANGEMENT_CLASS_NAMES);
-
-  // מיון לפי סדר הגילאים (מכינה א' -> מכינה ב' -> כיתה א') ולא אלפביתי,
-  // ובתוך אותה שכבה לפי מספר המקביל. ORDER BY name במסד היה ממיין
-  // "כיתה א'" לפני "מכינה א'", כלומר הפוך מסדר הגילאים.
-  const classes = all.slice().sort((a, b) => {
-    const ga = gradeIdxOf(a.name), gb = gradeIdxOf(b.name);
-    if (ga !== gb) return ga - gb;
-    const pa = parseInt(a.parallel, 10), pb = parseInt(b.parallel, 10);
-    if (!isNaN(pa) && !isNaN(pb) && pa !== pb) return pa - pb;
-    return String(a.parallel || "").localeCompare(String(b.parallel || ""), "he");
-  });
-
-  // רשימת הסניפים נגזרת מהכיתות עצמן ולא מרשימה קשיחה, כדי שסניף חדש
-  // (או סניף שאין בו כיתות רלוונטיות) יופיע או ייעלם מהסינון מאליו.
-  const branches = [...new Set(classes.map(c => c.branch).filter(Boolean))]
-    .sort((a, b) => a.localeCompare(b, "he"));
-
-  // סניף שאינו ברשימה (כתובת ידנית, סניף שנמחק) מתעלמים ממנו ומציגים הכל
-  const branch = branches.includes(req.query.branch) ? req.query.branch : "";
-
-  res.render("reports/stay-arrangement-edit-select", {
-    classes: branch ? classes.filter(c => c.branch === branch) : classes,
-    branches,
-    branch,
-    totalCount: classes.length,
-  });
+  res.render("reports/stay-arrangement-edit-select", { classes });
 });
 
 router.get("/stay-arrangement/edit/:classId", (req, res) => {
@@ -1613,8 +924,7 @@ router.get("/single-page/view", (req, res) => {
     const rowsForCalc = students.length + 1;
     let rowHeightMM = Math.min(AVAILABLE_HEIGHT_MM / rowsForCalc, 14);
     rowHeightMM = Math.max(rowHeightMM, 3.5);
-    // תקרה 13 כמו בשאר רשימות התלמידים
-    const bodyFontPt = Math.max(6.5, Math.min(13, Math.round(rowHeightMM * 1.6)));
+    const bodyFontPt = Math.max(6.5, Math.min(20, Math.round(rowHeightMM * 1.6)));
     return res.render("reports/stay-arrangement", { classRow, students, rowHeightMM, bodyFontPt });
   }
 
@@ -1623,14 +933,7 @@ router.get("/single-page/view", (req, res) => {
   const students = db
     .prepare("SELECT s.first_name, s.nickname, s.last_name, f.last_name AS family_last FROM students s LEFT JOIN families f ON s.family_id=f.id WHERE s.class_id = ? AND s.status = 'פעיל' ORDER BY s.last_name, s.first_name")
     .all(class_id)
-    .map(s => ({
-      ...s,
-      // שם משפחה ופרטי בעמודות נפרדות. displayName נשמר לשימושים שצריכים
-      // מחרוזת אחת (למשל חישוב רוחב העמודה).
-      familyName: (s.last_name || s.family_last || "").trim(),
-      givenName: (s.nickname || s.first_name || "").trim(),
-      displayName: (s.last_name || s.family_last || "") + " " + (s.nickname || s.first_name || ""),
-    }));
+    .map(s => ({ ...s, displayName: (s.last_name || s.family_last || "") + " " + (s.nickname || s.first_name || "") }));
   const teacher = teacher_id
     ? db.prepare("SELECT t.first_name, t.last_name, tc.role FROM teachers t LEFT JOIN teacher_classes tc ON tc.teacher_id = t.id AND tc.class_id = ? WHERE t.id = ?").get(class_id, teacher_id)
     : db.prepare("SELECT t.first_name, t.last_name, tc.role FROM teacher_classes tc JOIN teachers t ON tc.teacher_id=t.id WHERE tc.class_id=? ORDER BY tc.id LIMIT 1").get(class_id);
@@ -1645,33 +948,13 @@ router.get("/health-declaration", (req, res) => {
   res.render("reports/health-declaration", { classes });
 });
 
-// קוד QR לזיהוי הטופס בסריקה. מוטמע כ-SVG בתוך העמוד, ולכן אינו דורש
-// קובץ, בקשת רשת או גישה לאינטרנט בזמן ההדפסה.
-// התוכן: מזהה תלמיד, סוג הטופס, השנה ומספר העמוד - כך שגם אם הסורק יבלבל
-// את סדר הדפים, כל עמוד יודע לאן הוא שייך.
-async function buildFormQrs(students, year) {
-  const QRCode = require("qrcode");
-  const map = {};
-  for (const s of students) {
-    // תוכן הקוד: סוג הטופס, מזהה התלמיד, השנה, ומספר העמוד. גם אם הסורק
-    // יבלבל את סדר הדפים, כל עמוד יודע לאיזה תלמיד ולאיזה עמוד הוא שייך.
-    map[s.id] = {};
-    for (const page of [1, 2]) {
-      map[s.id][page] = await QRCode.toString(`HD|${s.id}|${year}|${page}`, {
-        type: "svg", errorCorrectionLevel: "M", margin: 0, width: 74,
-      });
-    }
-  }
-  return map;
-}
-
-router.get("/health-declaration/view", async (req, res) => {
+router.get("/health-declaration/view", (req, res) => {
   let classIds = req.query.class_id || [];
   if (!Array.isArray(classIds)) classIds = [classIds];
 
   let sql = `
     SELECT s.*, c.name AS class_name, c.parallel AS class_parallel,
-           f.father_name, f.father_id_number, f.father_workplace, f.father_synagogue, f.father_mobile, f.father_work_phone, f.father_email,
+           f.father_name, f.father_id_number, f.father_workplace, f.father_mobile, f.father_work_phone, f.father_email,
            f.mother_name, f.mother_workplace, f.mother_mobile, f.mother_work_phone, f.mother_email,
            f.home_phone, f.street, f.house_number, f.apartment, f.city,
            (SELECT COUNT(*) FROM students s2 WHERE s2.family_id = s.family_id) AS siblings_count
@@ -1699,10 +982,7 @@ router.get("/health-declaration/view", async (req, res) => {
     birth_country: s.birth_country || "ישראל",
   }));
 
-  const { getCurrentYear } = require("../yearManager");
-  const year = getCurrentYear();
-  const qrs = await buildFormQrs(students, year);
-  res.render("reports/health-declaration-print", { qrs, year, students });
+  res.render("reports/health-declaration-print", { students });
 });
 
 // ============ כמות שולחנות וכסאות בכיתה - לפי סניפים ============
@@ -1724,7 +1004,7 @@ router.get("/furniture-count", (req, res) => {
   // מיון לפי גיל התלמידים (מכינה א' -> מכינה ב' -> כיתה א' -> ... -> כיתה
   // ח'), ואז לפי מספר הכיתה - לא אלפביתי
   rows.sort((a, b) => {
-    const gradeA = gradeIdxOf(a.name), gradeB = gradeIdxOf(b.name);
+    const gradeA = GRADE_ORDER.indexOf(a.name), gradeB = GRADE_ORDER.indexOf(b.name);
     if (gradeA !== gradeB) return (gradeA === -1 ? 999 : gradeA) - (gradeB === -1 ? 999 : gradeB);
     return (parseInt(a.parallel, 10) || 0) - (parseInt(b.parallel, 10) || 0);
   });
@@ -1768,7 +1048,7 @@ router.get("/photocopies", (req, res) => {
   });
 
   rows.sort((a, b) => {
-    const gradeA = gradeIdxOf(a.name), gradeB = gradeIdxOf(b.name);
+    const gradeA = GRADE_ORDER.indexOf(a.name), gradeB = GRADE_ORDER.indexOf(b.name);
     if (gradeA !== gradeB) return (gradeA === -1 ? 999 : gradeA) - (gradeB === -1 ? 999 : gradeB);
     return (parseInt(a.parallel, 10) || 0) - (parseInt(b.parallel, 10) || 0);
   });
@@ -1823,7 +1103,7 @@ router.get("/photocopies/export", async (req, res) => {
   });
 
   rows.sort((a, b) => {
-    const gradeA = gradeIdxOf(a.name), gradeB = gradeIdxOf(b.name);
+    const gradeA = GRADE_ORDER.indexOf(a.name), gradeB = GRADE_ORDER.indexOf(b.name);
     if (gradeA !== gradeB) return (gradeA === -1 ? 999 : gradeA) - (gradeB === -1 ? 999 : gradeB);
     return (parseInt(a.parallel, 10) || 0) - (parseInt(b.parallel, 10) || 0);
   });

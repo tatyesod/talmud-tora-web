@@ -8,7 +8,7 @@ function withCriteria(campaign) {
   const classes = db.prepare(`
     SELECT c.id, c.name, c.parallel, c.branch FROM campaign_classes cc
     JOIN classes c ON cc.class_id = c.id WHERE cc.campaign_id = ?
-    ORDER BY c.branch, c.name, c.parallel
+    ORDER BY c.branch, c.grade_order, c.name, c.parallel
   `).all(campaign.id);
   const totalAwards = db.prepare("SELECT COUNT(*) c FROM campaign_awards WHERE campaign_id = ?").get(campaign.id).c;
   return { ...campaign, criteria, classes, totalAwards };
@@ -22,7 +22,7 @@ router.get("/", (req, res) => {
 
 // ============ יצירת מבצע חדש ============
 router.get("/new", (req, res) => {
-  const classes = db.prepare("SELECT id, name, parallel, branch FROM classes WHERE status = 'פעיל' AND name NOT LIKE 'עדיין לא נכנסו%' ORDER BY branch, name, parallel").all();
+  const classes = db.prepare("SELECT id, name, parallel, branch FROM classes WHERE status = 'פעיל' AND name NOT LIKE 'עדיין לא נכנסו%' ORDER BY branch, grade_order, name, parallel").all();
   res.render("campaigns/form", { campaign: { criteria: [{ name: "", points: "" }] }, classes, selectedClassIds: [], mode: "new" });
 });
 
@@ -66,7 +66,7 @@ router.get("/:id/edit", (req, res) => {
   const campaign = db.prepare("SELECT * FROM campaigns WHERE id = ?").get(req.params.id);
   if (!campaign) return res.status(404).render("404");
   const enriched = withCriteria(campaign);
-  const classes = db.prepare("SELECT id, name, parallel, branch FROM classes WHERE status = 'פעיל' AND name NOT LIKE 'עדיין לא נכנסו%' ORDER BY branch, name, parallel").all();
+  const classes = db.prepare("SELECT id, name, parallel, branch FROM classes WHERE status = 'פעיל' AND name NOT LIKE 'עדיין לא נכנסו%' ORDER BY branch, grade_order, name, parallel").all();
   res.render("campaigns/form", {
     campaign: { ...campaign, criteria: enriched.criteria.length ? enriched.criteria : [{ name: "", points: "" }] },
     classes, selectedClassIds: enriched.classes.map((c) => c.id), mode: "edit",
