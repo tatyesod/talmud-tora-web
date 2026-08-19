@@ -1,0 +1,100 @@
+<%- include('../partials/header', {title: 'מפת המעברים'}) %>
+
+<div class="card">
+  <h1>🔀 מפת המעברים — העלאת שנה</h1>
+
+  <p style="color:var(--muted); font-size:0.9em; line-height:1.7;">
+    כאן רואים לאן תעבור כל כיתה בהעלאת השנה, וניתן לשנות מקבילה לפני הביצוע.
+    <strong>ברירת המחדל היא אותה מקבילה</strong> — כיתה א'1 עולה לכיתה ב'1.
+    שינוי כאן חל על ההעלאה הקרובה בלבד, ומתאפס אחריה.
+  </p>
+
+  <% if (saved !== null) { %>
+    <div style="background:#e8f5ec; border:1px solid #2d7a4f; color:#1b5233; border-radius:8px; padding:9px 14px; margin:10px 0;">
+      ✓ נשמר. <%= saved %> כיתות עודכנו.
+    </div>
+  <% } %>
+
+  <div style="display:flex; gap:18px; flex-wrap:wrap; margin:12px 0; font-size:0.93em;">
+    <span>שנה נוכחית: <strong><%= currentYear %></strong></span>
+    <span>כיתות: <strong><%= rows.length %></strong></span>
+    <% const custom = rows.filter(r => r.customTransfer).length; %>
+    <% if (custom) { %><span style="color:#a6740c;">חריגות מוגדרות: <strong><%= custom %></strong></span><% } %>
+    <% const problems = rows.filter(r => !r.targetExists).length; %>
+    <% if (problems) { %><span style="color:#c0392b;">דורשות תשומת לב: <strong><%= problems %></strong></span><% } %>
+  </div>
+
+  <form method="POST" action="/year/transfers">
+    <div class="table-scroll-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>כיתה</th>
+            <th>סניף</th>
+            <th>תלמידים</th>
+            <th>עולה אל</th>
+            <th>מקבילה</th>
+            <th>הערה</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% rows.forEach(r => { %>
+            <tr class="<%= !r.targetExists ? 'tr-warn' : '' %>">
+              <td style="white-space:nowrap;">
+                <strong><%= r.name %> <%= r.parallel || '' %></strong>
+                <% if (r.isWaiting) { %><span class="tag-wait">המתנה</span><% } %>
+              </td>
+              <td><%= r.branch || '—' %></td>
+              <td style="text-align:center;"><%= r.student_count %></td>
+              <td style="white-space:nowrap;">
+                <% if (r.targetName) { %>
+                  <%= r.targetLabel %>
+                <% } else { %>
+                  <span style="color:var(--muted);">—</span>
+                <% } %>
+              </td>
+              <td>
+                <% if (r.targetName) { %>
+                  <input type="hidden" name="class_id" value="<%= r.id %>" />
+                  <%# ריק = ברירת מחדל, כלומר אותה מקבילה %>
+                  <select name="transfer_number" class="tr-select <%= r.customTransfer ? 'tr-custom' : '' %>">
+                    <option value="">— כרגיל (<%= r.parallel || '' %>) —</option>
+                    <% parallels.forEach(p => { %>
+                      <option value="<%= p %>" <%= String(r.transfer_number) === p ? 'selected' : '' %>><%= p %></option>
+                    <% }) %>
+                  </select>
+                <% } else { %>
+                  <span style="color:var(--muted);">—</span>
+                <% } %>
+              </td>
+              <td style="font-size:0.86em; <%= r.targetExists ? 'color:var(--muted);' : 'color:#c0392b; font-weight:600;' %>">
+                <%= r.note %>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="actions" style="margin-top:16px;">
+      <button type="submit" class="btn">💾 שמירת המפה</button>
+      <a href="/year" class="btn secondary">חזרה לניהול שנה</a>
+    </div>
+  </form>
+
+  <p style="color:var(--muted); font-size:0.84em; margin-top:14px; line-height:1.7;">
+    <strong>מה עוד קורה בהעלאת שנה:</strong> נשמרת תמונת מצב מלאה של השנה היוצאת;
+    כיתה ח' עוברת לבוגרים בארכיון; כיתות ההמתנה עולות למכינה א' והתלמידים הופכים
+    לפעילים; תלמידים ללא כיתה משובצים לכיתת המתנה לפי אח פעיל ואם אין — לפי אזור
+    המגורים; ולבסוף ההגדרות כאן מתאפסות.
+  </p>
+</div>
+
+<style>
+  .tag-wait { font-size:0.72em; background:#a6740c; color:#fff; border-radius:4px; padding:1px 6px; margin-inline-start:5px; }
+  .tr-select { font-size:0.92em; padding:4px 6px; min-width:130px; }
+  .tr-select.tr-custom { border:2px solid #a6740c; background:#fffaf0; }
+  tr.tr-warn td { background:#fdecea; }
+</style>
+
+<%- include('../partials/footer') %>

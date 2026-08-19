@@ -57,6 +57,16 @@
       <li>תלמידים ללא שיבוץ לכיתה (אחים קטנים) יישארו ללא שינוי, בסטטוס "לא פעיל"</li>
       <li>השנה הנוכחית במערכת תתקדם בשנה אחת</li>
     </ul>
+  <%# מפת המעברים - נבדקת לפני ההעלאה, ולכן מוצגת מעליה %>
+  <div style="background:#fff8e6; border:1px solid #e0c880; border-radius:8px; padding:12px 16px; margin-bottom:16px;">
+    <strong>לפני העלאת השנה — בדוק את מפת המעברים.</strong>
+    <div style="font-size:0.88em; color:var(--muted); margin:5px 0 9px; line-height:1.6;">
+      איזו כיתה עולה לאן, והאם יש מקבילה חסרה. שם גם משנים חריגות
+      (למשל כיתה א'1 שתעלה לכיתה ב'2).
+    </div>
+    <a href="/year/transfers" class="btn">🔀 מפת המעברים</a>
+  </div>
+
     <form method="POST" action="/year/promote" onsubmit="return confirm('פעולה זו תעדכן את כל הכיתות והסטטוסים של כל בתי הספר. להמשיך?');">
       <button type="submit" class="btn">⬆️ העלאת שנה</button>
     </form>
