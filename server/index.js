@@ -476,6 +476,12 @@ app.get("/", (req, res) => {
 
   res.render("home", {
     stats, branchStats, unassignedClassCount, mismatchedBranchCount, monthlyTotal, currentYear, hebrewDateToday, dayName,
+    // משימות מלוח שנת הלימודים שמועד הביצוע שלהן מתקרב. זו התשובה
+    // ל"מה שולחים מתי" - במקום להיזכר, המערכת מזכירה.
+    yearTasksDue: (() => {
+      try { return require("./routes/year-calendar").dueTasks(); }
+      catch (e) { return []; }   // הלוח עוד ריק או שגיאה - דף הבית לא נופל
+    })(),
     // סדר כרטיסי הניווט של המשתמש, נשמר בשרת ולכן זהה בכל המחשבים שלו
     navOrder: (req.currentUser && req.currentUser.nav_order) || "",
     myTasks, unreadCount, greeting, fullName, allUsers,
@@ -508,6 +514,7 @@ app.post("/api/nav-order", express.json(), (req, res) => {
 });
 
 app.use("/phone", require("./routes/phone"));
+app.use("/year-calendar", require("./routes/year-calendar"));
 app.use("/scans", require("./routes/scans"));
 app.use("/presence", require("./routes/presence"));
 app.use("/users", requireAdmin, require("./routes/users"));

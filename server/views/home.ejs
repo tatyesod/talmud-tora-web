@@ -38,6 +38,7 @@
   </div>
 
   <main class="home-main">
+
     <div class="logo-wrap">
       <div class="logo-glow"></div>
       <img src="/images/logo.png" alt="תלמוד תורה החדש" class="home-logo"
@@ -141,15 +142,32 @@
 
     <div class="nav-section-divider"></div>
 
+    <%# תזכורות מלוח שנת הלימודים. מוצגות רק כשיש משהו מתקרב, כדי שלא
+        יהפכו לרעש שמתעלמים ממנו. %>
+    <% if (typeof yearTasksDue !== 'undefined' && yearTasksDue.length) { %>
+      <div class="yc-alert">
+        <div class="yc-alert-head">🗓️ מתקרב בלוח השנה</div>
+        <% yearTasksDue.slice(0, 4).forEach(t => { %>
+          <div class="yc-alert-item">
+            <strong><%= t.daysUntil === 0 ? 'היום' : 'בעוד ' + t.daysUntil + ' ימים' %></strong>
+            ·
+            <% if (t.link_url) { %><a href="<%= t.link_url %>"><%= t.title %></a>
+            <% } else { %><%= t.title %><% } %>
+            <span class="yc-alert-date"><%= t.hebrewLabel %></span>
+          </div>
+        <% }) %>
+        <a href="/year-calendar" class="yc-alert-more">לוח שנת הלימודים ←</a>
+      </div>
+    <% } %>
+
     <div class="nav-grid" id="nav-grid">
       <%# הצהרת בריאות - קבצים סרוקים שנקלטו %>
-      <%# מכתבי שיבוץ - היה נגיש רק מהתפריט %>
-      <% if (showCard("/letters")) { %><a href="/letters" class="nav-card" style="--d:1">
+      <% if (showCard("/year-calendar")) { %><a href="/year-calendar" class="nav-card" style="--d:1">
         <div class="nav-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>
         </div>
-        <div class="nav-text">מכתבי שיבוץ</div>
-        <div class="nav-sub">הפקה ושליחה להורים</div>
+        <div class="nav-text">לוח שנת הלימודים</div>
+        <div class="nav-sub">מה שולחים ומתי</div>
       </a><% } %>
 
       <%# ניהול שנה - היה נגיש רק מהתפריט ומשורת השנה למעלה %>

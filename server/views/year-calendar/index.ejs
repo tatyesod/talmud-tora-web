@@ -1,0 +1,127 @@
+<%- include('../partials/header', {title: 'לוח שנת הלימודים'}) %>
+
+<div class="card">
+  <h1>🗓️ לוח שנת הלימודים</h1>
+
+  <p style="color:var(--muted); font-size:0.9em; line-height:1.7;">
+    משימות שחוזרות כל שנה בתאריך עברי קבוע — רישום, מכתבים להורים, עדכוני שכר לימוד.
+    <strong>התאריך הלועזי מחושב מחדש בכל שנה</strong>, כי כ"ח חשון נופל בתאריך אחר בכל פעם.
+    מה שמתקרב מופיע גם כתזכורת בדף הבית.
+  </p>
+
+  <div style="display:flex; gap:18px; flex-wrap:wrap; margin:12px 0; font-size:0.93em;">
+    <span>שנה: <strong><%= year %></strong></span>
+    <span>משימות: <strong><%= total %></strong></span>
+    <span style="color:#2d7a4f;">בוצעו: <strong><%= doneCount %></strong></span>
+    <% if (dueCount) { %><span style="color:#c0392b;">מתקרבות: <strong><%= dueCount %></strong></span><% } %>
+  </div>
+
+  <div class="actions" style="margin-bottom:16px;">
+    <a href="/year-calendar/new" class="btn">➕ משימה חדשה</a>
+    <a href="/year" class="btn secondary">ניהול שנה</a>
+  </div>
+
+  <% if (total === 0) { %>
+    <p class="empty-state">
+      עדיין אין משימות בלוח.<br>
+      <small style="color:var(--muted);">
+        למשל: "רישום תלמידים חדשים" בכ"ח חשון, "עדכון שכר לימוד" בא' אב,
+        "שיחת הכנה לכיתות ח'" בתמוז.
+      </small>
+    </p>
+  <% } %>
+
+  <% byMonth.forEach(g => { %>
+    <h3 class="yc-month"><%= g.name %></h3>
+    <% g.items.forEach(t => { %>
+      <div class="yc-row <%= t.done ? 'yc-done' : (t.isDue ? 'yc-due' : '') %>">
+        <div class="yc-date">
+          <div class="yc-heb"><%= t.hebrewLabel %></div>
+          <div class="yc-greg"><%= t.gregorian %></div>
+        </div>
+
+        <div class="yc-body">
+          <div class="yc-title">
+            <% if (t.link_url) { %>
+              <a href="<%= t.link_url %>"><%= t.title %></a>
+            <% } else { %>
+              <%= t.title %>
+            <% } %>
+            <% if (t.scope) { %><span class="yc-scope"><%= t.scope %></span><% } %>
+          </div>
+          <% if (t.notes) { %><div class="yc-notes"><%= t.notes %></div><% } %>
+          <% if (t.done) { %>
+            <div class="yc-status ok">
+              ✓ בוצע <%= t.done_str %><% if (t.done_by) { %> · <%= t.done_by %><% } %>
+              <% if (t.done_note) { %> · <%= t.done_note %><% } %>
+            </div>
+          <% } else if (t.isDue) { %>
+            <div class="yc-status due">
+              <% if (t.daysUntil === 0) { %>היום!<% } else { %>בעוד <%= t.daysUntil %> ימים<% } %>
+            </div>
+          <% } else if (t.isPast) { %>
+            <%# המועד של השנה הנוכחית חלף והמשימה כבר מצביעה לשנה הבאה %>
+            <div class="yc-status past">המועד השנה חלף — טרם סומן כבוצע</div>
+          <% } else { %>
+            <div class="yc-status">בעוד <%= t.daysUntil %> ימים</div>
+          <% } %>
+        </div>
+
+        <div class="yc-actions">
+          <% if (t.done) { %>
+            <form method="POST" action="/year-calendar/<%= t.id %>/done" style="display:inline;">
+              <input type="hidden" name="undo" value="1" />
+              <button type="submit" class="btn small secondary">ביטול סימון</button>
+            </form>
+          <% } else { %>
+            <form method="POST" action="/year-calendar/<%= t.id %>/done" style="display:inline;">
+              <button type="submit" class="btn small">✓ בוצע</button>
+            </form>
+          <% } %>
+          <a href="/year-calendar/<%= t.id %>/edit" class="btn small secondary">עריכה</a>
+        </div>
+      </div>
+    <% }) %>
+  <% }) %>
+
+  <%# הזנה ליומן. חד-כיוונית מהמערכת ליומן, וזה הכיוון הנדרש. %>
+  <div style="margin-top:22px; padding-top:14px; border-top:1px solid rgba(0,0,0,0.12);">
+    <h3 style="margin:0 0 6px;">חיבור ליומן גוגל</h3>
+    <p style="font-size:0.87em; color:var(--muted); line-height:1.7; margin:0 0 8px;">
+      הוסף את הכתובת הזו פעם אחת ביומן גוגל — <strong>הגדרות ← הוספת יומן ← מכתובת URL</strong>.
+      מכאן והלאה גוגל מושך לבד, וכל משימה תופיע ביומן ובטלפון עם תזכורת מראש.
+      העדכון בצד גוגל אינו מיידי — לרוב תוך מספר שעות.
+    </p>
+    <code class="yc-feed" id="yc-feed"><%= (typeof publicBase !== 'undefined' && publicBase) ? publicBase : 'https://talmud-tora-web.onrender.com' %>/year-calendar/feed.ics</code>
+    <button type="button" class="btn small secondary" onclick="
+      navigator.clipboard && navigator.clipboard.writeText(document.getElementById('yc-feed').textContent.trim());
+      this.textContent='הועתק ✓';">העתקה</button>
+  </div>
+</div>
+
+<style>
+  .yc-month { margin:18px 0 6px; font-size:1.05em; color:#1d4257; border-bottom:1px solid rgba(0,0,0,0.1); padding-bottom:3px; }
+  .yc-row { display:flex; gap:12px; align-items:flex-start; padding:9px 0; border-bottom:1px solid rgba(0,0,0,0.06); }
+  .yc-date { flex:0 0 105px; text-align:center; }
+  .yc-heb { font-weight:700; font-size:0.95em; }
+  .yc-greg { font-size:0.78em; color:var(--muted); }
+  .yc-body { flex:1 1 auto; min-width:0; }
+  .yc-title { font-weight:600; }
+  .yc-scope { font-size:0.75em; background:#2c5f7c; color:#fff; border-radius:4px; padding:1px 7px; margin-inline-start:6px; }
+  .yc-notes { font-size:0.85em; color:var(--muted); margin-top:2px; }
+  .yc-status { font-size:0.83em; margin-top:3px; }
+  .yc-status.ok { color:#2d7a4f; }
+  .yc-status.due { color:#c0392b; font-weight:700; }
+  .yc-status.past { color:#a6740c; }
+  .yc-actions { flex:0 0 auto; display:flex; gap:6px; align-items:center; }
+  .yc-row.yc-done { opacity:0.62; }
+  .yc-row.yc-done:hover { opacity:1; }
+  .yc-row.yc-due { background:#fff6f5; }
+  .yc-feed { display:inline-block; background:rgba(0,0,0,0.06); padding:5px 9px; border-radius:5px; font-size:0.82em; direction:ltr; margin-inline-end:8px; }
+  @media (max-width:750px) {
+    .yc-row { flex-direction:column; }
+    .yc-date { flex:none; text-align:right; }
+  }
+</style>
+
+<%- include('../partials/footer') %>

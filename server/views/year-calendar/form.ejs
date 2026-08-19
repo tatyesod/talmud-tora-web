@@ -1,0 +1,81 @@
+<%- include('../partials/header', {title: mode === 'new' ? 'משימה חדשה' : 'עריכת משימה'}) %>
+
+<div class="card">
+  <h1><%= mode === 'new' ? '➕ משימה חדשה' : '✏️ עריכת משימה' %></h1>
+
+  <form method="POST" action="<%= mode === 'new' ? '/year-calendar' : '/year-calendar/' + task.id %>">
+    <div class="form-group">
+      <label>שם המשימה <span style="color:#c0392b;">*</span></label>
+      <input type="text" name="title" value="<%= task.title || '' %>" required
+             placeholder="למשל: רישום תלמידים חדשים" />
+    </div>
+
+    <div class="form-grid">
+      <div class="form-group">
+        <label>חודש עברי</label>
+        <%# הרשימה מסודרת לפי שנת הלימודים - אלול ראשון ולא ניסן %>
+        <select name="hebrew_month">
+          <% months.forEach(m => { %>
+            <option value="<%= m.value %>" <%= String(task.hebrew_month) === String(m.value) ? 'selected' : '' %>><%= m.label %></option>
+          <% }) %>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>יום בחודש</label>
+        <select name="hebrew_day">
+          <% for (let d = 1; d <= 30; d++) { %>
+            <option value="<%= d %>" <%= String(task.hebrew_day) === String(d) ? 'selected' : '' %>><%= d %></option>
+          <% } %>
+        </select>
+        <small style="color:var(--muted);">
+          יום ל' בחודש בן 29 יידחף אוטומטית ליום האחרון.
+        </small>
+      </div>
+
+      <div class="form-group">
+        <label>תזכורת כמה ימים מראש</label>
+        <input type="number" name="remind_days_before" min="0" max="90"
+               value="<%= task.remind_days_before !== undefined && task.remind_days_before !== null ? task.remind_days_before : 14 %>" />
+        <small style="color:var(--muted);">
+          מתי להתחיל להתריע בדף הבית וביומן.
+        </small>
+      </div>
+
+      <div class="form-group">
+        <label>למי זה נוגע</label>
+        <input type="text" name="scope" value="<%= task.scope || '' %>"
+               placeholder="למשל: כיתות ח' בלבד" />
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>קישור לפעולה במערכת</label>
+      <input type="text" name="link_url" value="<%= task.link_url || '' %>"
+             placeholder="/reports/health-declaration" dir="ltr" style="text-align:left;" />
+      <small style="color:var(--muted); display:block; line-height:1.6; margin-top:4px;">
+        אם המשימה מובילה למסך מסוים, הדבק כאן את הנתיב שלו — שם המשימה יהפוך לקישור.
+        למשל <code dir="ltr">/reports/health-declaration</code> להפקת טפסי בריאות,
+        או <code dir="ltr">/books</code> להזמנת ספרים.
+      </small>
+    </div>
+
+    <div class="form-group">
+      <label>הערות</label>
+      <textarea name="notes" rows="3"><%= task.notes || '' %></textarea>
+    </div>
+
+    <div class="actions">
+      <button type="submit" class="btn">💾 שמירה</button>
+      <a href="/year-calendar" class="btn secondary">ביטול</a>
+      <% if (mode === 'edit') { %>
+        <form method="POST" action="/year-calendar/<%= task.id %>/delete" style="display:inline;"
+              onsubmit="return confirm('להסיר את המשימה מהלוח? ההיסטוריה של השנים הקודמות נשמרת.');">
+          <button type="submit" class="btn danger">הסרה מהלוח</button>
+        </form>
+      <% } %>
+    </div>
+  </form>
+</div>
+
+<%- include('../partials/footer') %>

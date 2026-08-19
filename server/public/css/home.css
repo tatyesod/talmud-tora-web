@@ -972,3 +972,22 @@
 .birthday-name:hover { text-decoration: underline; }
 .birthday-sub { color: #8ba3b8; font-size: 0.88em; }
 .birthday-hebrew { color: #b9c4cd; font-size: 0.85em; }
+
+
+/* ===== תזכורות לוח שנת הלימודים ===== */
+/* מוצגות רק כשיש משהו מתקרב, ולכן מותר להן לבלוט */
+.yc-alert {
+  background: rgba(201,151,76,0.14);
+  border: 1px solid rgba(201,151,76,0.55);
+  border-radius: 10px;
+  padding: 10px 15px;
+  margin: 0 auto 14px;
+  max-width: 1100px;
+  font-size: 0.92em;
+  line-height: 1.7;
+}
+.yc-alert-head { font-weight: 700; color: #e0b968; margin-bottom: 4px; }
+.yc-alert-item { color: #e8eef5; }
+.yc-alert-item a { color: #fff; text-decoration: underline; }
+.yc-alert-date { color: #b9c4cd; font-size: 0.85em; margin-inline-start: 6px; }
+.yc-alert-more { display: inline-block; margin-top: 5px; font-size: 0.86em; color: #e0b968; }

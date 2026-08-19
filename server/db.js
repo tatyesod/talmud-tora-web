@@ -309,6 +309,37 @@ const migrations = [
   //   regular  - כיתת לימוד רגילה
   //   waiting  - כיתת המתנה: ילדים שנרשמו וטרם התחילו, ועולים למכינה א'
   "ALTER TABLE classes ADD COLUMN class_kind TEXT DEFAULT 'regular'",
+
+  // ============ לוח שנת הלימודים ============
+  // משימות פנימיות שחוזרות כל שנה בתאריך עברי קבוע - "רישום חדשים בכ"ח
+  // חשון", "עדכון שכר לימוד בתחילת אב". נפרד ממודול האירועים, שהוא
+  // אירועים שההורים יודעים עליהם.
+  //
+  // התאריך נשמר כחודש+יום עברי ולא כתאריך מלא, כי זו בדיוק הנקודה:
+  // כ"ח חשון נופל בתאריך לועזי אחר בכל שנה.
+  `CREATE TABLE IF NOT EXISTS year_tasks (
+     id INTEGER PRIMARY KEY AUTOINCREMENT,
+     title TEXT NOT NULL,
+     notes TEXT,
+     hebrew_month INTEGER NOT NULL,      -- 1=ניסן ... לפי המרה הפנימית
+     hebrew_day INTEGER NOT NULL,
+     remind_days_before INTEGER DEFAULT 14,
+     scope TEXT,                          -- למשל "כיתות ח'" - חופשי
+     link_url TEXT,                       -- קישור ישיר לפעולה במערכת
+     active INTEGER DEFAULT 1,
+     sort_order INTEGER DEFAULT 50,
+     created_at TEXT
+   )`,
+  // ביצוע לכל שנה בנפרד, כדי שהיסטוריה נשמרת ולא נדרסת
+  `CREATE TABLE IF NOT EXISTS year_task_done (
+     id INTEGER PRIMARY KEY AUTOINCREMENT,
+     task_id INTEGER NOT NULL,
+     year_label TEXT NOT NULL,
+     done_at TEXT,
+     done_by_user_id INTEGER,
+     note TEXT
+   )`,
+  "CREATE UNIQUE INDEX IF NOT EXISTS idx_task_done_unique ON year_task_done(task_id, year_label)",
   // מקום תפילה / קהילה של האב. בייבוא מ-Access הייתה רק עמודה אחת,
   // "מקום עבודת האב", והמזכירות הזינו לתוכה גם כוללים וגם בתי כנסת.
   // מכאן זה נפרד: father_workplace = מקום לימוד, father_synagogue = תפילה.
