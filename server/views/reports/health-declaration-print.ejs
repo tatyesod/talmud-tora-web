@@ -6,7 +6,7 @@
   <style>
     @page {
         size: A4;
-        margin: 8mm 12mm;
+        margin: 6mm 11mm;
       }
     * { box-sizing: border-box; }
     body {
@@ -15,7 +15,7 @@
       margin: 0;
       color: #1a1a1a;
       /* נקודות ולא פיקסלים - הטופס נועד לנייר. הבסיס גדל בכ-15%. */
-      font-size: 10pt;
+      font-size: 9pt;
     }
     .page {
       position: relative;   /* עוגן לקוד הזיהוי בפינה */
@@ -44,8 +44,10 @@
     /* קוד הזיהוי: קטן ולא מפריע, אך גדול מספיק כדי להיקרא בסריקה רגילה.
        ממוקם בכותרת - אזור שההורים אינם כותבים בו. */
     /* קוד זיהוי: פינה שמאלית תחתונה, מחוץ לזרימת התוכן */
-    .form-qr { position: absolute; bottom: 3mm; left: 4mm; line-height: 0; opacity: 0.7; }
-    .form-qr svg { width: 13mm; height: 13mm; display: block; }
+    /* בזרימת התוכן ולא במיקום מוחלט: "תחתית העמוד" אינה אמינה כשהתוכן
+       גולש - הקוד נחת באמצע הדף הבא. כאן הוא תמיד אחרי הכל. */
+    .form-qr { line-height: 0; opacity: 0.7; margin-top: 3mm; }
+    .form-qr svg { width: 12mm; height: 12mm; }
 
     h2.form-title { text-align: center; margin: 6px 0 3px; font-size: 1.5em; text-decoration: underline; }
     h3.form-subtitle { text-align: center; margin: 0 0 4px; font-size: 0.95em; font-weight: 600; text-decoration: underline; }
@@ -55,13 +57,16 @@
 
     table.fields { width: 100%; border-collapse: collapse; margin-bottom: 8px; font-size: 1em; table-layout: fixed; }
     /* גובה שורה נדיב - ההורים כותבים בין השורות */
-    table.fields td { padding: 4px 6px 1px; vertical-align: bottom; line-height: 1.2; height: 21px; }
+    table.fields td { padding: 2px 6px 1px; vertical-align: bottom; line-height: 1.15; height: 17px; }
     table.fields td.label { color: #555; font-size: 0.88em; white-space: nowrap; width: 15%; text-align: right; padding-inline-end: 2px; }
     table.fields td.value { border-bottom: 1.5pt solid #333; width: 35%; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-    .section-title { font-weight: 800; margin: 9px 0 4px; text-decoration: underline; font-size: 1.05em; color: #1d4257; }
+    .section-title { font-weight: 800; margin: 6px 0 3px; text-decoration: underline; font-size: 1.05em; color: #1d4257; }
 
-    .declaration { font-size: 0.9em; line-height: 1.45; }
+    .declaration { font-size: 0.88em; line-height: 1.25; }
+    /* פסקאות משפטיות ארוכות - קטנות יותר. הן נועדו לקריאה ולא למילוי,
+       ולכן ההקטנה אינה פוגעת בשימוש. זה מה שמכניס את הטופס לעמוד אחד. */
+    .declaration .legal { font-size: 0.86em; line-height: 1.2; margin-bottom: 3px; color: #333; }
     .declaration .row { margin-bottom: 7px; }
     .declaration .sub-row { margin-right: 22px; }
     .checkbox { display: inline-block; width: 1.2em; }
@@ -75,7 +80,7 @@
     .cb-on::before { transform: rotate(45deg); }
     .cb-on::after  { transform: rotate(-45deg); }
     .free-text { border-bottom: 1.2pt solid #444; padding: 0 5px; font-weight: 600; display: inline-block; min-width: 120px; }
-    .free-line { border-bottom: 1.2pt solid #444; display: block; height: 1.6em; margin: 4px 0; }
+    .free-line { border-bottom: 1.2pt solid #444; display: block; height: 1.3em; margin: 3px 0; }
 
     .sign-row {
       display: flex; justify-content: space-between; margin-top: 14px; font-size: 0.8em;
@@ -97,7 +102,7 @@
     .page-one .form-header { margin-bottom: 10px; padding-bottom: 8px; }
     .page-one .school-line { margin-bottom: 10px; }
     .page-one table.fields { margin-bottom: 8px; }
-    .page-one table.fields td { padding: 2px 6px; line-height: 1.2; }
+    .page-one table.fields td { padding: 1px 6px; line-height: 1.15; }
     .page-one .section-title { margin: 13px 0 6px; }
     .page-one .declaration { line-height: 1.7; }
     .page-one .declaration .row { margin-bottom: 7px; }
@@ -110,9 +115,6 @@
 
   <!-- ===== עמוד 1: פרטים מזהים + הצהרת בריאות מלאה ===== -->
   <div class="page page-one">
-    <%# קוד זיהוי בפינה. position:absolute מוציא אותו מזרימת התוכן,
-        ולכן הוא אינו גוזל שורה ואינו מזיז דבר בעמוד. %>
-    <div class="form-qr"><%- qrs[s.id][1] %></div>
     <div class="form-header">
       <img src="/images/logo-reports.jpg" alt="לוגו" />
       <div class="school-info">
@@ -256,10 +258,10 @@
 
     <div class="section-title">הצהרת חיסונים:</div>
     <div class="declaration">
-      <div class="row">
+      <div class="row legal">
         הריני מאשר/ת כי ידוע לי שבמסגרת שירותי הבריאות לתלמיד יקבל בני חיסון לפי תכנית החיסונים הנקבעת על ידי משרד הבריאות, וכן בדיקות שמיעה וראייה הנקבעות על ידי משרד הבריאות.
       </div>
-      <div class="row">
+      <div class="row legal">
         הריני מאשר/ת מתן חיסונים לבני לפי תכנית זו, אלא אם אודיע בכתב על התנגדותי להנהלת הת"ת. הריני מתחייב/ת להעביר את פנקס החיסונים כשידרש.
       </div>
       <div class="row">
@@ -290,7 +292,9 @@
         <thead><tr><th>תאריך</th><th>שם ההורה</th><th>חתימה</th></tr></thead>
         <tbody><tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr></tbody>
       </table>
-    </div>
+      <%# קוד הזיהוי בסוף הטופס, בזרימת התוכן - לעולם לא יכסה דבר %>
+    <div class="form-qr"><%- qrs[s.id][1] %></div>
+  </div>
   </div>
   <% }) %>
 </body>
