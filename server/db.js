@@ -311,6 +311,22 @@ const migrations = [
   // בלי עמודה כזו אי אפשר להבחין בין "נבדק וסווג כלימוד" לבין "עוד לא
   // נגעו בו" - בשני המקרים הנתונים נראים זהים, והמסך התאפס בכל שמירה.
   "ALTER TABLE families ADD COLUMN father_place_reviewed TEXT",
+  // טפסים סרוקים. file_hash מונע כפילות של אותו קובץ בדיוק, והאילוץ הייחודי
+  // מונע שני טפסים מאותו סוג לאותו תלמיד באותה שנה - שני סוגי כפילות שונים.
+  `CREATE TABLE IF NOT EXISTS scanned_forms (
+     id INTEGER PRIMARY KEY AUTOINCREMENT,
+     student_id INTEGER NOT NULL,
+     form_type TEXT NOT NULL DEFAULT 'health',
+     year TEXT NOT NULL,
+     file_name TEXT NOT NULL,
+     file_hash TEXT,
+     size_bytes INTEGER,
+     page_count INTEGER,
+     uploaded_by_user_id INTEGER,
+     uploaded_at TEXT
+   )`,
+  "CREATE UNIQUE INDEX IF NOT EXISTS idx_scanned_unique ON scanned_forms(student_id, form_type, year)",
+  "CREATE INDEX IF NOT EXISTS idx_scanned_year ON scanned_forms(year, form_type)",
   // סימון "לא לכלול בשליחה להתייעצות תחזוקה". ברירת המחדל 0 = כן נכלל,
   // כך שהמיגרציה לא משנה את ההתנהגות הקיימת לאף משתמש.
   // מסומן פר-משתמש ולא מקודד בקוד לפי שם, כדי שהחלפת תפקיד או שינוי שם

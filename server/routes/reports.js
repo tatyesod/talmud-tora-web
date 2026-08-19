@@ -1645,7 +1645,27 @@ router.get("/health-declaration", (req, res) => {
   res.render("reports/health-declaration", { classes });
 });
 
-router.get("/health-declaration/view", (req, res) => {
+// קוד QR לזיהוי הטופס בסריקה. מוטמע כ-SVG בתוך העמוד, ולכן אינו דורש
+// קובץ, בקשת רשת או גישה לאינטרנט בזמן ההדפסה.
+// התוכן: מזהה תלמיד, סוג הטופס, השנה ומספר העמוד - כך שגם אם הסורק יבלבל
+// את סדר הדפים, כל עמוד יודע לאן הוא שייך.
+async function buildFormQrs(students, year) {
+  const QRCode = require("qrcode");
+  const map = {};
+  for (const s of students) {
+    // תוכן הקוד: סוג הטופס, מזהה התלמיד, השנה, ומספר העמוד. גם אם הסורק
+    // יבלבל את סדר הדפים, כל עמוד יודע לאיזה תלמיד ולאיזה עמוד הוא שייך.
+    map[s.id] = {};
+    for (const page of [1, 2]) {
+      map[s.id][page] = await QRCode.toString(`HD|${s.id}|${year}|${page}`, {
+        type: "svg", errorCorrectionLevel: "M", margin: 0, width: 74,
+      });
+    }
+  }
+  return map;
+}
+
+router.get("/health-declaration/view", async (req, res) => {
   let classIds = req.query.class_id || [];
   if (!Array.isArray(classIds)) classIds = [classIds];
 
@@ -1679,7 +1699,10 @@ router.get("/health-declaration/view", (req, res) => {
     birth_country: s.birth_country || "ישראל",
   }));
 
-  res.render("reports/health-declaration-print", { students });
+  const { getCurrentYear } = require("../yearManager");
+  const year = getCurrentYear();
+  const qrs = await buildFormQrs(students, year);
+  res.render("reports/health-declaration-print", { qrs, year, students });
 });
 
 // ============ כמות שולחנות וכסאות בכיתה - לפי סניפים ============

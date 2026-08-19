@@ -489,7 +489,17 @@ router.get("/students/:id", (req, res) => {
     : [];
   const studentFile = getStudentFile(student.id);
   const teachers = getClassTeachers(student.class_id);
-  res.render("students/view", { student, contacts, siblings, studentFile, teachers, back: req.query.back || "" });
+  // הטופס הסרוק של השנה הנוכחית, אם נקלט
+  const { getCurrentYear } = require("../yearManager");
+  const scannedForm = db.prepare(
+    "SELECT id FROM scanned_forms WHERE student_id = ? AND form_type = 'health' AND year = ?"
+  ).get(student.id, getCurrentYear());
+
+  res.render("students/view", {
+    student, contacts, siblings, studentFile, teachers,
+    scannedFormId: scannedForm ? scannedForm.id : null,
+    back: req.query.back || "",
+  });
 });
 
 // --- עריכה ---

@@ -17,9 +17,13 @@
     "exceljs": "^4.4.0",
     "express": "^4.19.2",
     "express-session": "^1.18.0",
+    "jsqr": "^1.4.0",
     "jszip": "^3.10.1",
     "method-override": "^3.0.0",
     "multer": "^2.2.0",
+    "pdf-lib": "^1.17.1",
+    "pdfjs-dist": "^6.2.108",
+    "qrcode": "^1.5.4",
     "xlsx": "^0.18.5"
   }
 }

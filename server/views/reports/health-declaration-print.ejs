@@ -40,6 +40,11 @@
     .form-header img { height: 52px; }
     .form-header .school-info { text-align: left; font-size: 0.8em; color: #555; line-height: 1.4; }
     .bsd { text-align: right; font-size: 0.8em; color: #888; }
+    /* קוד הזיהוי: קטן ולא מפריע, אך גדול מספיק כדי להיקרא בסריקה רגילה.
+       ממוקם בכותרת - אזור שההורים אינם כותבים בו. */
+    .form-qr { text-align: center; line-height: 0; }
+    .form-qr svg { width: 19mm; height: 19mm; display: block; }
+    .form-qr-label { font-size: 5.5pt; color: #777; line-height: 1.2; margin-top: 1px; white-space: nowrap; }
 
     h2.form-title { text-align: center; margin: 6px 0 3px; font-size: 1.5em; text-decoration: underline; }
     h3.form-subtitle { text-align: center; margin: 0 0 8px; font-size: 0.95em; font-weight: 600; text-decoration: underline; }
@@ -104,6 +109,12 @@
   <div class="page page-one">
     <div class="form-header">
       <img src="/images/logo-reports.jpg" alt="לוגו" />
+      <%# קוד זיהוי לסריקה: מזהה תלמיד, שנה ומספר עמוד. מאפשר לשייך כל
+          עמוד סרוק לתלמיד הנכון בוודאות, בלי זיהוי טקסט ובלי ניחוש. %>
+      <div class="form-qr">
+        <%- qrs[s.id][1] %>
+        <div class="form-qr-label">קוד זיהוי — נא לא לכסות</div>
+      </div>
       <div class="school-info">
         תלמוד תורה החדש (יסוד העולם)<br />
         כתובת: סוקולוב 5, בני ברק<br />
@@ -231,6 +242,12 @@
   <div class="page page-two">
     <div class="form-header">
       <img src="/images/logo-reports.jpg" alt="לוגו" />
+      <%# קוד זיהוי לסריקה: מזהה תלמיד, שנה ומספר עמוד. מאפשר לשייך כל
+          עמוד סרוק לתלמיד הנכון בוודאות, בלי זיהוי טקסט ובלי ניחוש. %>
+      <div class="form-qr">
+        <%- qrs[s.id][2] %>
+        <div class="form-qr-label">קוד זיהוי — נא לא לכסות</div>
+      </div>
       <div class="school-info">
         תלמוד תורה החדש (יסוד העולם)<br />
         כתובת: סוקולוב 5, בני ברק<br />

@@ -4,6 +4,10 @@
   <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:10px;">
     <h1><%= student.first_name %> <%= student.last_name || student.family_last_name %> <span class="badge <%= student.status !== 'פעיל' ? 'archive' : '' %>"><%= student.status || '' %></span></h1>
     <div class="actions">
+    <%# הטופס הסרוק של התלמיד לשנה הנוכחית. נפתח רק אם קיים. %>
+    <% if (typeof scannedFormId !== 'undefined' && scannedFormId) { %>
+      <a href="/scans/file/<%= scannedFormId %>" target="_blank" rel="noopener" class="btn secondary">📄 הצהרת בריאות סרוקה</a>
+    <% } %>
       <a href="/students/<%= student.id %>/edit<%= back ? '?back=' + encodeURIComponent(back) : '' %>" class="btn">עריכה</a>
       <a href="/students/<%= student.id %>/print/health" target="_blank" class="btn secondary">🖨️ טופס בריאות</a>
       <a href="/students/<%= student.id %>/print/emergency" target="_blank" class="btn secondary">🖨️ אנשי קשר לחירום</a>
