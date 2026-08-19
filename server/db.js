@@ -327,6 +327,25 @@ const migrations = [
    )`,
   "CREATE UNIQUE INDEX IF NOT EXISTS idx_scanned_unique ON scanned_forms(student_id, form_type, year)",
   "CREATE INDEX IF NOT EXISTS idx_scanned_year ON scanned_forms(year, form_type)",
+  // ממצאי סריקה: שדות שהודפסו ריקים ונמצא בהם דיו, כלומר ההורים כתבו בהם.
+  // status: pending / applied / dismissed. שומרים גם את חיתוך התמונה של
+  // השדה, כדי שהמזכירה תראה מה נכתב בלי לפתוח את הטופס כולו.
+  `CREATE TABLE IF NOT EXISTS scan_findings (
+     id INTEGER PRIMARY KEY AUTOINCREMENT,
+     form_id INTEGER NOT NULL,
+     student_id INTEGER NOT NULL,
+     field_key TEXT NOT NULL,
+     field_label TEXT,
+     ink_pct REAL,
+     crop_data TEXT,
+     status TEXT NOT NULL DEFAULT 'pending',
+     applied_value TEXT,
+     resolved_by_user_id INTEGER,
+     resolved_at TEXT,
+     created_at TEXT
+   )`,
+  "CREATE INDEX IF NOT EXISTS idx_findings_status ON scan_findings(status)",
+  "CREATE UNIQUE INDEX IF NOT EXISTS idx_findings_unique ON scan_findings(form_id, field_key)",
   // סימון "לא לכלול בשליחה להתייעצות תחזוקה". ברירת המחדל 0 = כן נכלל,
   // כך שהמיגרציה לא משנה את ההתנהגות הקיימת לאף משתמש.
   // מסומן פר-משתמש ולא מקודד בקוד לפי שם, כדי שהחלפת תפקיד או שינוי שם

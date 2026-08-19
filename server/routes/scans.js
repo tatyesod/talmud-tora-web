@@ -109,8 +109,9 @@ router.get("/manual", (req, res) => {
     ORDER BY c.grade_order, c.name, c.parallel, s.last_name, s.first_name
   `).all(year);
 
+  const emptyMap = emptyFieldsFor(students.map((s) => s.id));
   res.render("scans/manual-all", {
-    year, students,
+    year, students, emptyMap,
     pending: students.filter((s) => !s.has_form).length,
   });
 });
@@ -134,6 +135,40 @@ router.get("/class/:id/manual", (req, res) => {
 
   res.render("scans/manual", { cls, year, students });
 });
+
+// אילו שדות היו ריקים במסד, ולכן הודפסו כקו ריק בטופס. זו הרשימה שמולה
+// נבדק הדיו: דיו בשדה שהודפס ריק פירושו שההורים כתבו בו.
+const EMPTY_CHECK = [
+  ["nickname", "students"], ["health_fund", "students"], ["immigration_year", "students"],
+  ["address", "families"], ["home_phone", "families"],
+  ["father_workplace", "families"], ["father_mobile", "families"],
+  ["father_synagogue", "families"], ["mother_workplace", "families"],
+  ["mother_mobile", "families"], ["mother_work_phone", "families"],
+  ["father_email", "families"], ["mother_email", "families"],
+];
+
+function emptyFieldsFor(studentIds) {
+  if (!studentIds.length) return {};
+  const marks = studentIds.map(() => "?").join(",");
+  const rows = db.prepare(`
+    SELECT s.id AS student_id, s.nickname, s.health_fund, s.immigration_year,
+           f.home_phone, f.father_workplace, f.father_mobile, f.father_synagogue,
+           f.mother_workplace, f.mother_mobile, f.mother_work_phone,
+           f.father_email, f.mother_email, f.street
+    FROM students s LEFT JOIN families f ON s.family_id = f.id
+    WHERE s.id IN (${marks})
+  `).all(...studentIds);
+  const out = {};
+  for (const r of rows) {
+    const empty = [];
+    for (const [key] of EMPTY_CHECK) {
+      const val = key === "address" ? r.street : r[key];
+      if (val === null || val === undefined || String(val).trim() === "") empty.push(key);
+    }
+    out[r.student_id] = empty;
+  }
+  return out;
+}
 
 // ============ קליטת טופס של תלמיד אחד ============
 router.post("/upload", upload.single("file"), (req, res) => {
@@ -184,7 +219,105 @@ router.post("/upload", upload.single("file"), (req, res) => {
     try { fs.unlinkSync(path.join(SCAN_DIR, fileName)); } catch (e2) {}
     return res.status(500).json({ ok: false, error: e.message });
   }
-  res.json({ ok: true, status: replace ? "replaced" : "saved" });
+  // ממצאי הדיו שהדפדפן חישב - שדות שהודפסו ריקים ונכתב בהם משהו
+  let findings = [];
+  try { findings = JSON.parse(req.body.findings || "[]"); } catch (e) { findings = []; }
+  if (findings.length) {
+    const formRow = db.prepare(
+      "SELECT id FROM scanned_forms WHERE student_id = ? AND form_type = 'health' AND year = ?"
+    ).get(studentId, year);
+    if (formRow) {
+      const ins = db.prepare(`INSERT OR IGNORE INTO scan_findings
+        (form_id, student_id, field_key, field_label, ink_pct, crop_data, status, created_at)
+        VALUES (?,?,?,?,?,?, 'pending', ?)`);
+      const now2 = new Date().toISOString();
+      for (const f of findings.slice(0, 20)) {
+        if (!f || !f.key) continue;
+        ins.run(formRow.id, studentId, String(f.key), String(f.label || ""),
+                Number(f.ink) || 0, String(f.crop || "").slice(0, 300000), now2);
+      }
+    }
+  }
+
+  res.json({ ok: true, status: replace ? "replaced" : "saved", findings: findings.length });
+});
+
+// ============ עדכוני הורים מהטפסים ============
+// מציג רק את השדות שההורים מילאו, עם תמונת מה שנכתב לצד הערך הקיים.
+// המזכירה אינה פותחת טפסים - היא רואה שדות בודדים ומקלידה מה שכתוב.
+router.get("/updates", (req, res) => {
+  const year = req.query.year || getCurrentYear();
+  const rows = db.prepare(`
+    SELECT fi.*, s.first_name, s.nickname,
+           COALESCE(f.last_name, s.last_name) AS family_name,
+           c.name AS class_name, c.parallel, c.grade_order,
+           s.family_id
+    FROM scan_findings fi
+    JOIN students s ON s.id = fi.student_id
+    LEFT JOIN families f ON s.family_id = f.id
+    LEFT JOIN classes c ON s.class_id = c.id
+    JOIN scanned_forms sf ON sf.id = fi.form_id
+    WHERE fi.status = 'pending' AND sf.year = ?
+    ORDER BY c.grade_order, c.name, c.parallel, COALESCE(f.last_name, s.last_name), fi.field_key
+  `).all(year);
+
+  const counts = db.prepare(`
+    SELECT fi.status, COUNT(*) AS n FROM scan_findings fi
+    JOIN scanned_forms sf ON sf.id = fi.form_id
+    WHERE sf.year = ? GROUP BY fi.status
+  `).all(year);
+  const byStatus = Object.fromEntries(counts.map((c) => [c.status, c.n]));
+
+  res.render("scans/updates", {
+    year, rows,
+    pending: byStatus.pending || 0,
+    applied: byStatus.applied || 0,
+    dismissed: byStatus.dismissed || 0,
+  });
+});
+
+// שמירת ערך שהמזכירה הקלידה. נכתב לכרטיס המשפחה או התלמיד, ומשם הוא
+// מופיע בכל מקום שקורא את השדה - הכרטיס, הדוחות, המדבקות.
+router.post("/updates/:id", (req, res) => {
+  const fi = db.prepare("SELECT * FROM scan_findings WHERE id = ?").get(req.params.id);
+  if (!fi) return res.redirect("/scans/updates");
+  const action = req.body.action;
+  const value = String(req.body.value || "").trim();
+
+  // רשימה לבנה: רק שדות מוכרים, כדי שלא ניתן יהיה לכתוב לעמודה שרירותית
+  const ALLOWED = {
+    nickname: "students", health_fund: "students", immigration_year: "students",
+    home_phone: "families", father_workplace: "families", father_mobile: "families",
+    father_synagogue: "families", mother_workplace: "families", mother_mobile: "families",
+    mother_work_phone: "families", father_email: "families", mother_email: "families",
+  };
+
+  if (action === "apply" && value && ALLOWED[fi.field_key]) {
+    const table = ALLOWED[fi.field_key];
+    db.exec("BEGIN");
+    try {
+      if (table === "students") {
+        db.prepare(`UPDATE students SET ${fi.field_key} = ? WHERE id = ?`).run(value, fi.student_id);
+      } else {
+        const st = db.prepare("SELECT family_id FROM students WHERE id = ?").get(fi.student_id);
+        if (st && st.family_id) {
+          db.prepare(`UPDATE families SET ${fi.field_key} = ? WHERE id = ?`).run(value, st.family_id);
+        }
+      }
+      db.prepare(`UPDATE scan_findings SET status = 'applied', applied_value = ?,
+                  resolved_by_user_id = ?, resolved_at = ? WHERE id = ?`)
+        .run(value, req.currentUser ? req.currentUser.id : null, new Date().toISOString(), fi.id);
+      db.exec("COMMIT");
+    } catch (e) {
+      db.exec("ROLLBACK");
+      console.error("עדכון מטופס נכשל:", e.message);
+    }
+  } else if (action === "dismiss") {
+    db.prepare(`UPDATE scan_findings SET status = 'dismissed',
+                resolved_by_user_id = ?, resolved_at = ? WHERE id = ?`)
+      .run(req.currentUser ? req.currentUser.id : null, new Date().toISOString(), fi.id);
+  }
+  res.redirect("/scans/updates?year=" + encodeURIComponent(req.body.year || getCurrentYear()));
 });
 
 // ============ ייצוא כל הכיתה לקובץ אחד ============

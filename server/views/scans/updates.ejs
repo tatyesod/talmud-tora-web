@@ -1,0 +1,77 @@
+<%- include('../partials/header', {title: 'עדכוני הורים מהטפסים'}) %>
+
+<div class="card">
+  <h1>✍️ עדכוני הורים מהטפסים</h1>
+
+  <p style="color:var(--muted); font-size:0.9em; line-height:1.7;">
+    כאן מופיעים <strong>רק שדות שההורים מילאו בכתב יד</strong> — כלומר שדות
+    שהודפסו ריקים ונמצא בהם דיו. לכל שדה מוצגת תמונת מה שנכתב, לצדו
+    שדה הקלדה. <strong>אין צורך לפתוח את הטופס.</strong>
+    ההקלדה נשמרת לכרטיס המשפחה או התלמיד, ומשם היא מופיעה בכל מקום במערכת.
+  </p>
+
+  <div style="display:flex; gap:20px; flex-wrap:wrap; margin:12px 0; font-size:0.95em;">
+    <span>שנה: <strong><%= year %></strong></span>
+    <span style="color:#c0392b;">ממתינים: <strong><%= pending %></strong></span>
+    <span style="color:#2d7a4f;">עודכנו: <strong><%= applied %></strong></span>
+    <% if (dismissed) { %><span style="color:var(--muted);">נדחו: <strong><%= dismissed %></strong></span><% } %>
+  </div>
+
+  <% if (rows.length === 0) { %>
+    <p class="empty-state">
+      אין עדכונים ממתינים. <br>
+      <small style="color:var(--muted);">
+        עדכונים מופיעים כאן אחרי קליטת סריקות — רק בטפסים שההורים כתבו בהם.
+      </small>
+    </p>
+  <% } else { %>
+    <% let lastStudent = null; %>
+    <% rows.forEach(r => { %>
+      <% const studentLabel = (r.family_name || '') + ' ' + (r.nickname || r.first_name || '');
+         const isNew = studentLabel !== lastStudent; lastStudent = studentLabel; %>
+      <% if (isNew) { %>
+        <h3 class="upd-student">
+          <%= studentLabel %>
+          <span class="upd-class"><%= r.class_name || '' %> <%= r.parallel || '' %></span>
+        </h3>
+      <% } %>
+
+      <form method="POST" action="/scans/updates/<%= r.id %>" class="upd-row">
+        <input type="hidden" name="year" value="<%= year %>" />
+        <div class="upd-label"><%= r.field_label %></div>
+        <%# תמונת מה שנכתב בפועל, מהסריקה עצמה %>
+        <div class="upd-crop">
+          <img src="<%= r.crop_data %>" alt="<%= r.field_label %>" />
+        </div>
+        <input type="text" name="value" class="upd-input" placeholder="הקלד את מה שכתוב…" autocomplete="off" />
+        <button type="submit" name="action" value="apply" class="btn small">✓ עדכן</button>
+        <button type="submit" name="action" value="dismiss" class="btn small secondary"
+                title="לא רלוונטי או לא ניתן לקריאה">דלג</button>
+      </form>
+    <% }) %>
+  <% } %>
+
+  <div class="actions" style="margin-top:18px;">
+    <a href="/scans" class="btn secondary">חזרה להצהרות בריאות</a>
+  </div>
+</div>
+
+<style>
+  .upd-student { margin: 18px 0 6px; font-size: 1.05em; border-bottom: 1px solid rgba(0,0,0,0.1); padding-bottom: 4px; }
+  .upd-class { font-size: 0.8em; color: var(--muted); font-weight: 400; margin-inline-start: 8px; }
+  .upd-row {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    padding: 8px 0; border-bottom: 1px solid rgba(0,0,0,0.06);
+  }
+  .upd-label { flex: 0 0 150px; font-size: 0.9em; color: var(--muted); }
+  /* התמונה בגודל שמאפשר לקרוא כתב יד בלי להגדיל */
+  .upd-crop { flex: 1 1 320px; min-width: 260px; }
+  .upd-crop img { width: 100%; max-width: 460px; display: block; border: 1px solid rgba(0,0,0,0.15); border-radius: 4px; background: #fff; }
+  .upd-input { flex: 1 1 220px; font-size: 1em; padding: 7px; }
+  @media (max-width: 820px) {
+    .upd-row { flex-direction: column; align-items: stretch; }
+    .upd-label { flex: none; }
+  }
+</style>
+
+<%- include('../partials/footer') %>

@@ -47,6 +47,18 @@
     }))).replace(/</g, "\\u003c") %>
   </script>
 
+  <%# השדות שהודפסו ריקים לכל תלמיד. מולם נבדק הדיו: דיו בשדה שהודפס
+      ריק פירושו שההורים כתבו בו. %>
+  <script type="application/json" id="ma-empty-data">
+    <%- JSON.stringify(emptyMap).replace(/</g, "\\u003c") %>
+  </script>
+
+  <%# השדות שהודפסו ריקים לכל תלמיד. מולם נבדק הדיו בסריקה: דיו בשדה
+      שהודפס ריק פירושו שההורים כתבו בו. %>
+  <script type="application/json" id="ma-empty-data">
+    <%- JSON.stringify(emptyMap).replace(/</g, "\\u003c") %>
+  </script>
+
   <datalist id="ma-students">
     <% students.forEach(s => { %>
       <option value="<%= (s.family_name || '') + ' ' + (s.nickname || s.first_name || '') + ' — ' + (s.class_name || '') + ' ' + (s.parallel || '') + (s.has_form ? ' ✓' : '') %>"></option>
@@ -83,6 +95,7 @@
   }
 </style>
 
+<script src="/js/scan-fields.js?v=<%= typeof assetVersion !== 'undefined' ? assetVersion : '' %>"></script>
 <script src="/js/vendor/pdf-lib.min.js?v=<%= typeof assetVersion !== 'undefined' ? assetVersion : '' %>"></script>
 <script type="module" src="/js/scan-manual-all.js?v=<%= typeof assetVersion !== 'undefined' ? assetVersion : '' %>"></script>
 
