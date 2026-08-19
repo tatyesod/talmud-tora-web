@@ -63,7 +63,10 @@ function findByPhone(number) {
 // זהו היעד שמוגדר באפליקציית 3CX. היא פותחת אותו עם מספר המתקשר,
 // והמסך מפנה ישירות לכרטיס המתאים - בלי שהמזכירה מחפשת.
 router.get("/incoming", (req, res) => {
-  const number = req.query.number || req.query.n || "";
+  // כשהפנייה מגיעה דרך סוג הקישור הייחודי, הפרמטר מכיל את הכתובת המלאה -
+  // web+ttcall://0501234567 - ולא רק את המספר. מנקים את הקידומת.
+  const raw = req.query.number || req.query.n || "";
+  const number = String(raw).replace(/^web\+ttcall:\/*/i, "").trim();
   const matches = findByPhone(number);
 
   // התאמה אחת - ישר לכרטיס. זה המקרה הרווח, ואין טעם במסך ביניים.
