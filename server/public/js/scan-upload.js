@@ -71,7 +71,10 @@
 
     const buf = await file.arrayBuffer();
     const pdfjs = await loadPdfJs();
-    const doc = await pdfjs.getDocument({ data: buf.slice(0) }).promise;
+    const doc = await pdfjs.getDocument({ data: buf.slice(0), standardFontDataUrl: "/js/vendor/standard_fonts/",
+      // גרסה 6 של pdfjs מפענחת תמונות דרך WASM. בלי הנתיב הזה סריקה -
+      // שהיא תמונה אחת גדולה - פשוט לא מצוירת, ורואים רק קווים ולוגו.
+      wasmUrl: "/js/vendor/wasm/" }).promise;
     say("נמצאו " + doc.numPages + " עמודים. מזהה קודים…");
 
     // שלב א': זיהוי

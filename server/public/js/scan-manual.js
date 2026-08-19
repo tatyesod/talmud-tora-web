@@ -43,7 +43,10 @@
     srcBytes = await file.arrayBuffer();
     const pdfjs = await import("/js/vendor/pdf.min.mjs");
     pdfjs.GlobalWorkerOptions.workerSrc = "/js/vendor/pdf.worker.min.mjs";
-    const doc = await pdfjs.getDocument({ data: srcBytes.slice(0) }).promise;
+    const doc = await pdfjs.getDocument({ data: srcBytes.slice(0), standardFontDataUrl: "/js/vendor/standard_fonts/",
+      // גרסה 6 של pdfjs מפענחת תמונות דרך WASM. בלי הנתיב הזה סריקה -
+      // שהיא תמונה אחת גדולה - פשוט לא מצוירת, ורואים רק קווים ולוגו.
+      wasmUrl: "/js/vendor/wasm/" }).promise;
 
     // כל שני עמודים = טופס אחד. עמוד אחרון יחיד נחשב טופס בן עמוד אחד.
     pairs = [];
@@ -87,8 +90,32 @@
       const crop = document.createElement("canvas");
       crop.width = canvas.width;
       crop.height = bandH;
-      crop.getContext("2d").drawImage(canvas, 0, y0, canvas.width, bandH,
-                                      0, 0, canvas.width, bandH);
+      const cctx = crop.getContext("2d");
+      cctx.drawImage(canvas, 0, y0, canvas.width, bandH, 0, 0, canvas.width, bandH);
+      // הגברת ניגודיות. סריקות בשחור-לבן יוצאות לעתים דהויות מאוד, ואז
+      // הטקסט קיים אך כמעט בלתי נראה. מתיחה לינארית של הטווח האפור הופכת
+      // אפור-בהיר לשחור ומשאירה את הרקע לבן, בלי לאבד תווים דקים.
+      try {
+        const img = cctx.getImageData(0, 0, crop.width, crop.height);
+        const d = img.data;
+        // מוצאים את הכהה והבהיר בפועל, ומותחים ביניהם
+        let lo = 255, hi = 0;
+        for (let i = 0; i < d.length; i += 4) {
+          const g = (d[i] * 0.299 + d[i + 1] * 0.587 + d[i + 2] * 0.114) | 0;
+          if (g < lo) lo = g;
+          if (g > hi) hi = g;
+        }
+        const range = Math.max(1, hi - lo);
+        if (range < 210) {                 // רק אם באמת דהוי
+          for (let i = 0; i < d.length; i += 4) {
+            for (let k = 0; k < 3; k++) {
+              let v = ((d[i + k] - lo) / range) * 255;
+              d[i + k] = v < 0 ? 0 : v > 255 ? 255 : v;
+            }
+          }
+          cctx.putImageData(img, 0, 0);
+        }
+      } catch (e) { /* דפדפן שחוסם קריאת פיקסלים - התמונה נשארת כפי שהיא */ }
       crop.className = "manual-canvas";
       crop.title = "לחיצה להגדלה";
       crop.addEventListener("click", function () {
