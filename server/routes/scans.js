@@ -145,6 +145,9 @@ const EMPTY_CHECK = [
   ["father_synagogue", "families"], ["mother_workplace", "families"],
   ["mother_mobile", "families"], ["mother_work_phone", "families"],
   ["father_email", "families"], ["mother_email", "families"],
+  // שדות רפואיים וסימון - נבדקים גם הם. אם ריקים במערכת וההורים מילאו,
+  // הם יופיעו במסך העדכונים.
+  ["allergies", "students"], ["medications", "students"], ["walks_alone", "students"],
 ];
 
 function emptyFieldsFor(studentIds) {
@@ -152,6 +155,7 @@ function emptyFieldsFor(studentIds) {
   const marks = studentIds.map(() => "?").join(",");
   const rows = db.prepare(`
     SELECT s.id AS student_id, s.nickname, s.health_fund, s.immigration_year,
+           s.allergies, s.medications, s.walks_alone,
            f.home_phone, f.father_workplace, f.father_mobile, f.father_synagogue,
            f.mother_workplace, f.mother_mobile, f.mother_work_phone,
            f.father_email, f.mother_email, f.street
@@ -287,6 +291,7 @@ router.post("/updates/:id", (req, res) => {
   // רשימה לבנה: רק שדות מוכרים, כדי שלא ניתן יהיה לכתוב לעמודה שרירותית
   const ALLOWED = {
     nickname: "students", health_fund: "students", immigration_year: "students",
+    allergies: "students", medications: "students", walks_alone: "students",
     home_phone: "families", father_workplace: "families", father_mobile: "families",
     father_synagogue: "families", mother_workplace: "families", mother_mobile: "families",
     mother_work_phone: "families", father_email: "families", mother_email: "families",

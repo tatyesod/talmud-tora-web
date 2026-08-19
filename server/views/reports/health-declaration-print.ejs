@@ -5,9 +5,9 @@
   <title>הצהרת בריאות</title>
   <style>
     @page {
-      size: A4;
-      margin: 10mm 14mm;
-    }
+        size: A4;
+        margin: 8mm 12mm;
+      }
     * { box-sizing: border-box; }
     body {
       font-family: "Segoe UI", "Arial Hebrew", Arial, sans-serif;
@@ -15,9 +15,10 @@
       margin: 0;
       color: #1a1a1a;
       /* נקודות ולא פיקסלים - הטופס נועד לנייר. הבסיס גדל בכ-15%. */
-      font-size: 11pt;
+      font-size: 10pt;
     }
     .page {
+      position: relative;   /* עוגן לקוד הזיהוי בפינה */
       max-width: 820px;
       margin: 0 auto;
       padding: 10px 28px;
@@ -42,9 +43,9 @@
     .bsd { text-align: right; font-size: 0.8em; color: #888; }
     /* קוד הזיהוי: קטן ולא מפריע, אך גדול מספיק כדי להיקרא בסריקה רגילה.
        ממוקם בכותרת - אזור שההורים אינם כותבים בו. */
-    .form-qr { text-align: center; line-height: 0; }
-    .form-qr svg { width: 19mm; height: 19mm; display: block; }
-    .form-qr-label { font-size: 5.5pt; color: #777; line-height: 1.2; margin-top: 1px; white-space: nowrap; }
+    /* קוד זיהוי: פינה שמאלית תחתונה, מחוץ לזרימת התוכן */
+    .form-qr { position: absolute; bottom: 3mm; left: 4mm; line-height: 0; opacity: 0.7; }
+    .form-qr svg { width: 13mm; height: 13mm; display: block; }
 
     h2.form-title { text-align: center; margin: 6px 0 3px; font-size: 1.5em; text-decoration: underline; }
     h3.form-subtitle { text-align: center; margin: 0 0 8px; font-size: 0.95em; font-weight: 600; text-decoration: underline; }
@@ -52,17 +53,17 @@
 
     table.fields { width: 100%; border-collapse: collapse; margin-bottom: 8px; font-size: 1em; table-layout: fixed; }
     /* גובה שורה נדיב - ההורים כותבים בין השורות */
-    table.fields td { padding: 6px 6px 2px; vertical-align: bottom; line-height: 1.3; height: 26px; }
+    table.fields td { padding: 4px 6px 1px; vertical-align: bottom; line-height: 1.2; height: 21px; }
     table.fields td.label { color: #555; font-size: 0.88em; white-space: nowrap; width: 15%; text-align: right; padding-inline-end: 2px; }
     table.fields td.value { border-bottom: 1.5pt solid #333; width: 35%; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-    .section-title { font-weight: 800; margin: 13px 0 6px; text-decoration: underline; font-size: 1.05em; color: #1d4257; }
+    .section-title { font-weight: 800; margin: 9px 0 4px; text-decoration: underline; font-size: 1.05em; color: #1d4257; }
 
-    .declaration { font-size: 0.92em; line-height: 1.6; }
+    .declaration { font-size: 0.9em; line-height: 1.45; }
     .declaration .row { margin-bottom: 7px; }
     .declaration .sub-row { margin-right: 22px; }
     .checkbox { display: inline-block; width: 1.2em; }
-    /* ריבוע מצויר ולא התו <span class="cb"></span>: התו מוצג שונה בכל מדפסת ולעתים לא מודפס כלל. */
+    /* ריבוע מצויר ולא תו טקסט: תו תיבה מוצג שונה בכל מדפסת ולעתים כלל לא. */
     .cb { display: inline-block; width: 3.6mm; height: 3.6mm; border: 1.2pt solid #222;
           margin-inline-end: 3px; vertical-align: -0.4mm; position: relative; }
     /* סימון "מסומן" מצויר בקווים ולא בתו, מאותה סיבה: תו ☑ אינו קיים בכל גופן */
@@ -72,7 +73,7 @@
     .cb-on::before { transform: rotate(45deg); }
     .cb-on::after  { transform: rotate(-45deg); }
     .free-text { border-bottom: 1.2pt solid #444; padding: 0 5px; font-weight: 600; display: inline-block; min-width: 120px; }
-    .free-line { border-bottom: 1.2pt solid #444; display: block; height: 1.9em; margin: 5px 0; }
+    .free-line { border-bottom: 1.2pt solid #444; display: block; height: 1.6em; margin: 4px 0; }
 
     .sign-row {
       display: flex; justify-content: space-between; margin-top: 14px; font-size: 0.8em;
@@ -94,7 +95,7 @@
     .page-one .form-header { margin-bottom: 10px; padding-bottom: 8px; }
     .page-one .school-line { margin-bottom: 10px; }
     .page-one table.fields { margin-bottom: 8px; }
-    .page-one table.fields td { padding: 3px 6px; line-height: 1.3; }
+    .page-one table.fields td { padding: 2px 6px; line-height: 1.2; }
     .page-one .section-title { margin: 13px 0 6px; }
     .page-one .declaration { line-height: 1.7; }
     .page-one .declaration .row { margin-bottom: 7px; }
@@ -107,14 +108,11 @@
 
   <!-- ===== עמוד 1: פרטים מזהים + הצהרת בריאות מלאה ===== -->
   <div class="page page-one">
+    <%# קוד זיהוי בפינה. position:absolute מוציא אותו מזרימת התוכן,
+        ולכן הוא אינו גוזל שורה ואינו מזיז דבר בעמוד. %>
+    <div class="form-qr"><%- qrs[s.id][1] %></div>
     <div class="form-header">
       <img src="/images/logo-reports.jpg" alt="לוגו" />
-      <%# קוד זיהוי לסריקה: מזהה תלמיד, שנה ומספר עמוד. מאפשר לשייך כל
-          עמוד סרוק לתלמיד הנכון בוודאות, בלי זיהוי טקסט ובלי ניחוש. %>
-      <div class="form-qr">
-        <%- qrs[s.id][1] %>
-        <div class="form-qr-label">קוד זיהוי — נא לא לכסות</div>
-      </div>
       <div class="school-info">
         תלמוד תורה החדש (יסוד העולם)<br />
         כתובת: סוקולוב 5, בני ברק<br />
@@ -195,7 +193,7 @@
     <div class="section-title">הריני מצהיר/ה כי (סמן את האפשרות הנכונה):</div>
     <div class="declaration">
       <div class="row">
-        <span class="checkbox"><%= s.hasHealthIssue ? '<span class="cb"></span>' : '<span class="cb cb-on"></span>' %></span>
+        <span class="cb<%= s.hasHealthIssue ? '' : ' cb-on' %>"></span>
         לא ידוע לי על מגבלות בריאותיות המונעות מבני להשתתף בפעילויות הנערכות בת"ת ומטעמו.
       </div>
       <div class="row">
@@ -232,29 +230,21 @@
       <div class="row">
         <span class="cb"></span> הריני מאשר/ת מתן מידע רלוונטי לצוות החינוכי ו/או לצוות הבריאות בכל הקשור למצב הבריאות של בני.
       </div>
+      <%# הולך לבדו: שדה בכרטיס התלמיד שלא היה בטופס, ולכן לא התעדכן מעולם.
+          מסומן מראש לפי מה שרשום במערכת, וההורים מתקנים אם השתנה. %>
+      <div class="row" style="margin-top:6px;">
+        <strong>הליכה עצמאית:</strong> בני
+        <span class="cb<%= s.walks_alone === 'כן' ? ' cb-on' : '' %>"></span> הולך לבדו &nbsp;
+        <span class="cb<%= s.walks_alone === 'לא' ? ' cb-on' : '' %>"></span> אינו הולך לבדו — נאסף על ידי:
+        <span class="free-text">&nbsp;</span>
+      </div>
       <div class="row">להלן מידע נוסף לגבי בריאות ילדי שברצוני ליידע את הת"ת על אודותיו:</div>
       <div class="free-line"></div>
       <div class="free-line"></div>
     </div>
-  </div>
 
-  <!-- ===== עמוד 2: הצהרת חיסונים + חתימה + אישור הורים ===== -->
-  <div class="page page-two">
-    <div class="form-header">
-      <img src="/images/logo-reports.jpg" alt="לוגו" />
-      <%# קוד זיהוי לסריקה: מזהה תלמיד, שנה ומספר עמוד. מאפשר לשייך כל
-          עמוד סרוק לתלמיד הנכון בוודאות, בלי זיהוי טקסט ובלי ניחוש. %>
-      <div class="form-qr">
-        <%- qrs[s.id][2] %>
-        <div class="form-qr-label">קוד זיהוי — נא לא לכסות</div>
-      </div>
-      <div class="school-info">
-        תלמוד תורה החדש (יסוד העולם)<br />
-        כתובת: סוקולוב 5, בני ברק<br />
-        טל: 03-6185020 | פקס: 03-6185030
-      </div>
-    </div>
-    <div class="bsd">בס"ד</div>
+    <%# הצהרת החיסונים ואישור ההורים אוחדו לעמוד הראשון: הם תפסו
+        עמוד שלם עבור כמה שורות בלבד. %>
     <div style="text-align:center; font-size:0.88em; color:#555; margin-bottom:8px;">
       המשך טופס הצהרת ההורים — <%= s.first_name %> <%= s.last_name %>
     </div>
