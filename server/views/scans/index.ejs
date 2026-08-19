@@ -1,0 +1,52 @@
+<%- include('../partials/header', {title: 'טפסים סרוקים'}) %>
+
+<div class="card">
+  <h1>📄 טפסים סרוקים — הצהרות בריאות</h1>
+
+  <p style="color:var(--muted); font-size:0.9em; line-height:1.7;">
+    מעלים כאן את הסריקה של כל כיתה. המערכת קוראת את קוד הזיהוי שמודפס על כל
+    עמוד, מפצלת לטופס נפרד לכל תלמיד, ומשייכת אותו אוטומטית.
+    אפשר להעלות כמה סריקות לאותה כיתה — טופס שכבר נקלט לא ייקלט פעמיים.
+  </p>
+
+  <div style="display:flex; gap:20px; flex-wrap:wrap; margin:14px 0; font-size:0.95em;">
+    <span>שנה: <strong><%= year %></strong></span>
+    <span>תלמידים: <strong><%= totalStudents %></strong></span>
+    <span style="color:#2d7a4f;">התקבלו: <strong><%= totalScanned %></strong></span>
+    <span style="color:#c0392b;">חסרים: <strong><%= totalStudents - totalScanned %></strong></span>
+  </div>
+
+  <table>
+    <thead>
+      <tr><th>כיתה</th><th>סניף</th><th>תלמידים</th><th>התקבלו</th><th>חסרים</th><th></th></tr>
+    </thead>
+    <tbody>
+      <% classes.forEach(c => { %>
+        <% const missing = c.student_count - c.scanned; %>
+        <tr>
+          <td><%= c.name %> <%= c.parallel || '' %></td>
+          <td><%= c.branch || '' %></td>
+          <td style="text-align:center;"><%= c.student_count %></td>
+          <td style="text-align:center; color:#2d7a4f; font-weight:700;"><%= c.scanned %></td>
+          <td style="text-align:center; <%= missing > 0 ? 'color:#c0392b; font-weight:700;' : 'color:#2d7a4f;' %>">
+            <%= missing > 0 ? missing : '✓' %>
+          </td>
+          <td><a href="/scans/class/<%= c.id %>?year=<%= encodeURIComponent(year) %>" class="btn small secondary">פתיחה</a></td>
+        </tr>
+      <% }) %>
+    </tbody>
+  </table>
+
+  <div class="actions" style="margin-top:18px;">
+    <form method="POST" action="/scans/purge-old"
+          onsubmit="return confirm('למחוק טפסים משנים קודמות של תלמידים שכבר הגיע עבורם טופס עדכני? הפעולה אינה ניתנת לביטול.');">
+      <button type="submit" class="btn secondary">🗑️ ניקוי טפסים משנים קודמות</button>
+    </form>
+    <small style="display:block; color:var(--muted); margin-top:6px;">
+      נמחקים רק טפסים ישנים של תלמידים שכבר יש להם טופס לשנה הנוכחית —
+      כך אף תלמיד לא נשאר בלי שום טופס.
+    </small>
+  </div>
+</div>
+
+<%- include('../partials/footer') %>

@@ -1,0 +1,91 @@
+<%- include('../partials/header', {title: 'סריקות — ' + cls.name}) %>
+
+<div class="card">
+  <h1>📄 <%= cls.name %> <%= cls.parallel || '' %> — <%= cls.branch || '' %></h1>
+
+  <div style="display:flex; gap:20px; flex-wrap:wrap; margin:10px 0 16px; font-size:0.95em;">
+    <span>שנה: <strong><%= year %></strong></span>
+    <span style="color:#2d7a4f;">התקבלו: <strong><%= returned %></strong></span>
+    <span style="color:#c0392b;">חסרים: <strong><%= students.length - returned %></strong></span>
+  </div>
+
+  <%# תיבת ההעלאה. הפיצול וזיהוי הקודים נעשים בדפדפן; לשרת מגיע כבר
+      טופס נפרד לכל תלמיד. %>
+  <div id="scan-box"
+       data-year="<%= year %>"
+       data-students='<%- JSON.stringify(students.map(s => ({ id: s.id, name: (s.last_name || "") + " " + (s.nickname || s.first_name || "") }))) %>'
+       class="scan-box">
+    <h3 style="margin-top:0;">העלאת סריקה</h3>
+    <p style="font-size:0.88em; color:var(--muted); margin:4px 0 10px;">
+      בחר את קובץ הסריקה של הכיתה (PDF, כל התלמידים יחד).
+      אפשר להעלות כמה פעמים — מי שכבר נקלט לא ייקלט שוב.
+    </p>
+    <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+      <input type="file" id="scan-file" accept="application/pdf" />
+      <button type="button" id="scan-start" class="btn">▶ התחל עיבוד</button>
+    </div>
+    <div class="scan-progress"><div id="scan-bar"></div></div>
+    <div id="scan-log" class="scan-log"></div>
+    <div id="scan-summary" class="scan-summary"></div>
+  </div>
+
+  <h3 style="margin-top:22px;">מצב הכיתה</h3>
+  <table>
+    <thead>
+      <tr><th>#</th><th>שם משפחה</th><th>שם פרטי</th><th>סטטוס</th><th>נקלט</th><th>גודל</th><th></th></tr>
+    </thead>
+    <tbody>
+      <% students.forEach((s, i) => { %>
+        <tr>
+          <td style="text-align:center;"><%= i + 1 %></td>
+          <td><%= s.last_name || '' %></td>
+          <td><%= s.nickname || s.first_name || '' %></td>
+          <td>
+            <% if (s.form_id) { %>
+              <span style="color:#2d7a4f; font-weight:700;">✓ התקבל</span>
+              <% if (s.page_count && s.page_count < 2) { %>
+                <span style="color:#c0392b; font-size:0.85em;"> (עמוד אחד בלבד)</span>
+              <% } %>
+            <% } else { %>
+              <span style="color:#c0392b; font-weight:700;">✗ חסר</span>
+            <% } %>
+          </td>
+          <td style="white-space:nowrap;"><%= s.uploaded_str %></td>
+          <td style="white-space:nowrap;"><%= s.size_str %></td>
+          <td>
+            <% if (s.form_id) { %>
+              <a href="/scans/file/<%= s.form_id %>" target="_blank" rel="noopener" class="btn small secondary">צפייה</a>
+              <form method="POST" action="/scans/<%= s.form_id %>?_method=DELETE" style="display:inline;"
+                    onsubmit="return confirm('למחוק את הטופס הסרוק?');">
+                <button type="submit" class="btn small danger">מחיקה</button>
+              </form>
+            <% } %>
+          </td>
+        </tr>
+      <% }) %>
+    </tbody>
+  </table>
+
+  <div class="actions" style="margin-top:16px;">
+    <a href="/scans" class="btn secondary">חזרה לרשימת הכיתות</a>
+    <a href="/reports/health-declaration" class="btn secondary">הפקת טפסים להדפסה</a>
+  </div>
+</div>
+
+<style>
+  .scan-box { border: 1px solid rgba(0,0,0,0.15); border-radius: 10px; padding: 14px 16px; background: rgba(0,0,0,0.02); }
+  .scan-progress { height: 18px; background: rgba(0,0,0,0.08); border-radius: 9px; margin: 12px 0 8px; overflow: hidden; }
+  #scan-bar { height: 100%; width: 0; background: #2d7a4f; color: #fff; font-size: 0.75em; text-align: center; line-height: 18px; transition: width 0.2s; }
+  .scan-log { max-height: 240px; overflow-y: auto; font-size: 0.86em; line-height: 1.6; }
+  .scan-line.ok { color: #2d7a4f; }
+  .scan-line.err { color: #c0392b; font-weight: 600; }
+  .scan-line.warn { color: #a6740c; }
+  .scan-line.muted { color: var(--muted); }
+  .scan-summary { margin-top: 8px; font-size: 0.95em; }
+</style>
+
+<script src="/js/vendor/jsQR.js?v=<%= typeof assetVersion !== 'undefined' ? assetVersion : '' %>"></script>
+<script src="/js/vendor/pdf-lib.min.js?v=<%= typeof assetVersion !== 'undefined' ? assetVersion : '' %>"></script>
+<script type="module" src="/js/scan-upload.js?v=<%= typeof assetVersion !== 'undefined' ? assetVersion : '' %>"></script>
+
+<%- include('../partials/footer') %>
