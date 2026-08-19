@@ -84,6 +84,32 @@ router.get("/class/:id", (req, res) => {
   });
 });
 
+// ============ שיוך ידני (חד-פעמי לשנה הנוכחית) ============
+// הטפסים של השנה הזו הודפסו לפני שהוספנו את קוד הזיהוי, ולכן אין מה לקרוא
+// מהם אוטומטית. המסך הזה מציג את העמוד הראשון של כל טופס - שעליו מודפס שם
+// התלמיד - ולידו בחירת תלמיד. השיוך מוצע מראש לפי סדר ההדפסה, שהוא לפי
+// שם משפחה, ולכן ברוב המקרים נותר רק לאשר.
+// מיועד להימחק אחרי הסבב הזה, כשכל הטפסים יישאו קוד.
+router.get("/class/:id/manual", (req, res) => {
+  const year = req.query.year || getCurrentYear();
+  const cls = db.prepare("SELECT * FROM classes WHERE id = ?").get(req.params.id);
+  if (!cls) return res.redirect("/scans");
+
+  // אותו סדר בדיוק שבו הטפסים הודפסו
+  const students = db.prepare(`
+    SELECT s.id, s.first_name, s.nickname, s.last_name,
+           COALESCE(f.last_name, s.last_name) AS family_name,
+           (SELECT COUNT(*) FROM scanned_forms sf
+            WHERE sf.student_id = s.id AND sf.year = ? AND sf.form_type = 'health') AS has_form
+    FROM students s
+    LEFT JOIN families f ON s.family_id = f.id
+    WHERE s.class_id = ? AND s.status = 'פעיל'
+    ORDER BY s.last_name, s.first_name
+  `).all(year, req.params.id);
+
+  res.render("scans/manual", { cls, year, students });
+});
+
 // ============ קליטת טופס של תלמיד אחד ============
 router.post("/upload", upload.single("file"), (req, res) => {
   const studentId = parseInt(req.body.student_id, 10);

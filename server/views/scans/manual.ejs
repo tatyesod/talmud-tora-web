@@ -1,0 +1,59 @@
+<%- include('../partials/header', {title: 'שיוך ידני — ' + cls.name}) %>
+
+<div class="card">
+  <h1>🔗 שיוך ידני — <%= cls.name %> <%= cls.parallel || '' %></h1>
+
+  <div style="background:#fff8e6; border:1px solid #e0c880; border-radius:8px; padding:11px 15px; margin-bottom:14px; font-size:0.9em; line-height:1.7;">
+    <strong>מסך חד-פעמי לשנה הנוכחית.</strong>
+    הטפסים של השנה הזו הודפסו לפני שהוספנו את קוד הזיהוי, ולכן אין מה לקרוא מהם
+    אוטומטית. כאן מוצג ראש כל טופס — שעליו מודפס שם התלמיד — והשיוך מוצע מראש
+    לפי סדר ההדפסה. <strong>ברוב השורות נותר רק לאשר.</strong><br>
+    משנה הבאה זה יקרה אוטומטית דרך הקוד, והמסך הזה יוסר.
+  </div>
+
+  <div id="manual-box"
+       data-year="<%= year %>"
+       data-students='<%- JSON.stringify(students.map(s => ({ id: s.id, hasForm: !!s.has_form, name: (s.family_name || "") + " " + (s.nickname || s.first_name || "") }))) %>'>
+    <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:10px;">
+      <input type="file" id="manual-file" accept="application/pdf" />
+      <button type="button" id="manual-load" class="btn">📂 טעינת הסריקה</button>
+      <button type="button" id="manual-send" class="btn" disabled>📤 שליחת הטפסים</button>
+    </div>
+    <div id="manual-status" class="manual-status"></div>
+    <div id="manual-pairs"></div>
+  </div>
+
+  <div class="actions" style="margin-top:16px;">
+    <a href="/scans/class/<%= cls.id %>?year=<%= encodeURIComponent(year) %>" class="btn secondary">חזרה למסך הכיתה</a>
+  </div>
+</div>
+
+<style>
+  .manual-status { font-size:0.9em; margin:8px 0; min-height:1.2em; }
+  .manual-status.ok { color:#2d7a4f; }
+  .manual-status.err { color:#c0392b; font-weight:600; }
+  .manual-row {
+    display:flex; gap:14px; align-items:flex-start; padding:10px 0;
+    border-bottom:1px solid rgba(0,0,0,0.08);
+  }
+  .manual-thumb { flex:1 1 auto; min-width:0; }
+  .manual-canvas {
+    width:100%; max-width:560px; border:1px solid rgba(0,0,0,0.2);
+    border-radius:6px; cursor:zoom-in; display:block; background:#fff;
+  }
+  .manual-side { flex:0 0 260px; }
+  .manual-label { font-size:0.85em; color:var(--muted); margin-bottom:5px; }
+  .manual-warn { color:#c0392b; font-weight:600; }
+  .manual-select { width:100%; font-size:1em; padding:6px; }
+  /* אותו תלמיד בשתי שורות - כמעט תמיד הסחה בסדר בגלל טופס חסר */
+  .manual-select.manual-dupe { border:2px solid #c0392b; background:#fdecea; }
+  @media (max-width: 800px) {
+    .manual-row { flex-direction:column; }
+    .manual-side { flex:1 1 auto; width:100%; }
+  }
+</style>
+
+<script src="/js/vendor/pdf-lib.min.js?v=<%= typeof assetVersion !== 'undefined' ? assetVersion : '' %>"></script>
+<script type="module" src="/js/scan-manual.js?v=<%= typeof assetVersion !== 'undefined' ? assetVersion : '' %>"></script>
+
+<%- include('../partials/footer') %>

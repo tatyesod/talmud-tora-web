@@ -20,6 +20,11 @@
       בחר את קובץ הסריקה של הכיתה (PDF, כל התלמידים יחד).
       אפשר להעלות כמה פעמים — מי שכבר נקלט לא ייקלט שוב.
     </p>
+    <%# מסך חד-פעמי לטפסים שהודפסו לפני הוספת הקוד. יוסר בשנה הבאה. %>
+    <p style="font-size:0.86em; margin:0 0 10px;">
+      טפסים שהודפסו לפני הוספת קוד הזיהוי (כל טפסי השנה הנוכחית) —
+      <a href="/scans/class/<%= cls.id %>/manual?year=<%= encodeURIComponent(year) %>">שיוך ידני</a>
+    </p>
     <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
       <input type="file" id="scan-file" accept="application/pdf" />
       <button type="button" id="scan-start" class="btn">▶ התחל עיבוד</button>
