@@ -9,7 +9,10 @@
   if (!box) return;
 
   const YEAR = box.dataset.year;
-  const STUDENTS = JSON.parse(box.dataset.students || "[]");
+  // הנתונים מגיעים מבלוק JSON ולא ממאפיין: שמות הכיתות מכילים גרש,
+  // שסוגר מאפיין HTML באמצע ושובר את הפענוח.
+  const dataEl = document.getElementById("ma-students-data");
+  const STUDENTS = JSON.parse((dataEl && dataEl.textContent) || "[]");
   const fileInput = document.getElementById("ma-file");
   const loadBtn = document.getElementById("ma-load");
   const sendBtn = document.getElementById("ma-send");

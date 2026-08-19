@@ -13,7 +13,6 @@
       טופס נפרד לכל תלמיד. %>
   <div id="scan-box"
        data-year="<%= year %>"
-       data-students='<%- JSON.stringify(students.map(s => ({ id: s.id, name: (s.last_name || "") + " " + (s.nickname || s.first_name || "") }))) %>'
        class="scan-box">
     <h3 style="margin-top:0;">העלאת סריקה</h3>
     <p style="font-size:0.88em; color:var(--muted); margin:4px 0 10px;">
@@ -70,6 +69,12 @@
       <% }) %>
     </tbody>
   </table>
+
+    <%# הנתונים בבלוק JSON ולא במאפיין: שמות ותוויות עשויים להכיל גרש,
+      שסוגר מאפיין HTML באמצע ושובר את פענוח ה-JSON. %>
+  <script type="application/json" id="scan-students-data">
+    <%- JSON.stringify(students.map(s => ({ id: s.id, name: (s.last_name || "") + " " + (s.nickname || s.first_name || "") }))).replace(/</g, "\\u003c") %>
+  </script>
 
   <div class="actions" style="margin-top:16px;">
     <a href="/scans" class="btn secondary">חזרה לרשימת הכיתות</a>

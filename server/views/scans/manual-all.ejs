@@ -12,13 +12,7 @@
   </div>
 
   <div id="manual-all"
-       data-year="<%= year %>"
-       data-students='<%- JSON.stringify(students.map(s => ({
-         id: s.id,
-         label: (s.family_name || "") + " " + (s.nickname || s.first_name || "") +
-                " — " + (s.class_name || "") + " " + (s.parallel || "") +
-                (s.has_form ? " ✓" : "")
-       }))) %>'>
+       data-year="<%= year %>">
 
     <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:8px;">
       <input type="file" id="ma-file" accept="application/pdf" />
@@ -35,6 +29,18 @@
 
   <%# רשימת ההשלמה. datalist ולא select: 837 תלמידים ברשימה נפתחת אינם שמישים,
       וכאן מקלידים שתי אותיות והרשימה מצטמצמת. %>
+  <%# הנתונים בבלוק JSON ולא במאפיין: שמות הכיתות מכילים גרש (מכינה א')
+      שסוגר מאפיין העטוף בגרשיים, וה-JSON נשבר. json_encode בתוך script
+      בטוח, ובלבד שנחליף רצף סוגר-תג אם יופיע בטקסט. %>
+  <script type="application/json" id="ma-students-data">
+    <%- JSON.stringify(students.map(s => ({
+      id: s.id,
+      label: (s.family_name || "") + " " + (s.nickname || s.first_name || "") +
+             " — " + (s.class_name || "") + " " + (s.parallel || "") +
+             (s.has_form ? " ✓" : "")
+    }))).replace(/</g, "\\u003c") %>
+  </script>
+
   <datalist id="ma-students">
     <% students.forEach(s => { %>
       <option value="<%= (s.family_name || '') + ' ' + (s.nickname || s.first_name || '') + ' — ' + (s.class_name || '') + ' ' + (s.parallel || '') + (s.has_form ? ' ✓' : '') %>"></option>

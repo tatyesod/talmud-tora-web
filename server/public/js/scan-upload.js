@@ -18,7 +18,7 @@
   const summary = document.getElementById("scan-summary");
   const YEAR = box.dataset.year;
   // התלמידים של הכיתה, לשיוך ידני של עמודים בלי קוד
-  const STUDENTS = JSON.parse(box.dataset.students || "[]");
+  const STUDENTS = JSON.parse((document.getElementById("scan-students-data") || {}).textContent || "[]");
 
   let pdfjsLib = null;
 

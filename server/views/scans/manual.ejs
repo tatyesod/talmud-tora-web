@@ -12,8 +12,7 @@
   </div>
 
   <div id="manual-box"
-       data-year="<%= year %>"
-       data-students='<%- JSON.stringify(students.map(s => ({ id: s.id, hasForm: !!s.has_form, name: (s.family_name || "") + " " + (s.nickname || s.first_name || "") }))) %>'>
+       data-year="<%= year %>">
     <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:10px;">
       <input type="file" id="manual-file" accept="application/pdf" />
       <button type="button" id="manual-load" class="btn">📂 טעינת הסריקה</button>
@@ -22,6 +21,12 @@
     <div id="manual-status" class="manual-status"></div>
     <div id="manual-pairs"></div>
   </div>
+
+    <%# הנתונים בבלוק JSON ולא במאפיין: שמות ותוויות עשויים להכיל גרש,
+      שסוגר מאפיין HTML באמצע ושובר את פענוח ה-JSON. %>
+  <script type="application/json" id="manual-students-data">
+    <%- JSON.stringify(students.map(s => ({ id: s.id, hasForm: !!s.has_form, name: (s.family_name || "") + " " + (s.nickname || s.first_name || "") }))).replace(/</g, "\\u003c") %>
+  </script>
 
   <div class="actions" style="margin-top:16px;">
     <a href="/scans/class/<%= cls.id %>?year=<%= encodeURIComponent(year) %>" class="btn secondary">חזרה למסך הכיתה</a>

@@ -9,7 +9,7 @@
   if (!box) return;
 
   const YEAR = box.dataset.year;
-  const STUDENTS = JSON.parse(box.dataset.students || "[]");
+  const STUDENTS = JSON.parse((document.getElementById("manual-students-data") || {}).textContent || "[]");
   const fileInput = document.getElementById("manual-file");
   const loadBtn = document.getElementById("manual-load");
   const pairsEl = document.getElementById("manual-pairs");
