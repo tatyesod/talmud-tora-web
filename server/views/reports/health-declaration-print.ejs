@@ -6,7 +6,7 @@
   <style>
     @page {
         size: A4;
-        margin: 6mm 11mm;
+        margin: 5mm 10mm;
       }
     * { box-sizing: border-box; }
     body {
@@ -46,8 +46,8 @@
     /* קוד זיהוי: פינה שמאלית תחתונה, מחוץ לזרימת התוכן */
     /* בזרימת התוכן ולא במיקום מוחלט: "תחתית העמוד" אינה אמינה כשהתוכן
        גולש - הקוד נחת באמצע הדף הבא. כאן הוא תמיד אחרי הכל. */
-    .form-qr { line-height: 0; opacity: 0.7; margin-top: 3mm; }
-    .form-qr svg { width: 12mm; height: 12mm; }
+    .form-qr { line-height: 0; opacity: 0.7; float: left; margin: 0 0 0 2mm; }
+    .form-qr svg { width: 10mm; height: 10mm; }
 
     h2.form-title { text-align: center; margin: 6px 0 3px; font-size: 1.5em; text-decoration: underline; }
     h3.form-subtitle { text-align: center; margin: 0 0 4px; font-size: 0.95em; font-weight: 600; text-decoration: underline; }
@@ -252,9 +252,6 @@
 
     <%# הצהרת החיסונים ואישור ההורים אוחדו לעמוד הראשון: הם תפסו
         עמוד שלם עבור כמה שורות בלבד. %>
-    <div style="text-align:center; font-size:0.88em; color:#555; margin-bottom:8px;">
-      המשך טופס הצהרת ההורים — <%= s.first_name %> <%= s.last_name %>
-    </div>
 
     <div class="section-title">הצהרת חיסונים:</div>
     <div class="declaration">
@@ -278,6 +275,8 @@
     </div>
 
     <div class="parent-approval">
+        <%# הקוד צף לצד טבלת החתימות ולא בשורה נפרדת מתחתיה %>
+        <div class="form-qr"><%- qrs[s.id][1] %></div>
       <div class="section-title" style="text-align:center;">אישור ההורים</div>
       <div class="declaration" style="font-size:0.85em; margin-top:8px;">
         הריני <span class="free-text" style="min-width:150px;">&nbsp;</span>
@@ -293,7 +292,7 @@
         <tbody><tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr></tbody>
       </table>
       <%# קוד הזיהוי בסוף הטופס, בזרימת התוכן - לעולם לא יכסה דבר %>
-    <div class="form-qr"><%- qrs[s.id][1] %></div>
+    
   </div>
   </div>
   <% }) %>

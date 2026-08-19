@@ -17,7 +17,7 @@
       </div>
     </div>
     <div class="sv-actions">
-      <%# ההדפסה על ה-iframe עצמו, ולא על העמוד - אחרת מודפס גם התפריט %>
+      <%# ההדפסה על תמונות העמודים בלבד, לא על העמוד - אחרת מודפס גם התפריט %>
       <button type="button" class="btn" onclick="printForm()">🖨️ הדפסה</button>
       <a href="/scans/file/<%= form.id %>" download class="btn secondary">📥 הורדה</a>
       <a href="/scans/file/<%= form.id %>" target="_blank" rel="noopener" class="btn secondary">פתיחה בלשונית</a>
@@ -25,36 +25,25 @@
     </div>
   </div>
 
-  <%# הצגת ה-PDF בתוך העמוד. #toolbar=0 מסתיר את סרגל הדפדפן, כי כפתורי
-      הפעולה כבר למעלה ואין צורך בשני סרגלים. %>
-  <iframe id="sv-frame" src="/scans/file/<%= form.id %>#toolbar=0&navpanes=0&view=FitH"
-          title="הטופס הסרוק"></iframe>
-
-  <p style="color:var(--muted); font-size:0.82em; margin-top:8px;">
-    אם התצוגה אינה נטענת — יש דפדפנים שאינם מציגים PDF בתוך עמוד.
-    השתמש ב"פתיחה בלשונית".
-  </p>
+  <%# הטופס מצויר על ידינו ולא על ידי מציג ה-PDF של הדפדפן. הסיבה: כשההגדרה
+      "הורד קבצי PDF במקום לפתוח אותם" פעילה, מסגרת מוטמעת מציגה סמל וכפתור
+      במקום את המסמך. ציור עצמי אינו תלוי בהגדרה הזו. %>
+  <div id="sv-status" class="sv-status">טוען…</div>
+  <div id="sv-render" data-url="/scans/file/<%= form.id %>"></div>
 </div>
 
 <style>
   .sv-head { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; flex-wrap:wrap; margin-bottom:12px; }
   .sv-actions { display:flex; gap:8px; flex-wrap:wrap; }
-  #sv-frame { width:100%; height:78vh; min-height:520px; border:1px solid rgba(0,0,0,0.18); border-radius:8px; background:#fff; }
-  @media (max-width: 700px) { #sv-frame { height:65vh; } }
+  #sv-render { max-height:78vh; overflow-y:auto; background:#f0f0f0; border:1px solid rgba(0,0,0,0.18); border-radius:8px; padding:8px; }
+  .sv-page { width:100%; display:block; margin-bottom:10px; background:#fff; box-shadow:0 1px 4px rgba(0,0,0,0.2); }
+  .sv-page:last-child { margin-bottom:0; }
+  .sv-status { font-size:0.86em; color:var(--muted); margin-bottom:6px; min-height:1.2em; }
+  .sv-status.ok { color:#2d7a4f; }
+  .sv-status.err { color:#c0392b; font-weight:600; }
+  @media (max-width: 700px) { #sv-render { max-height:65vh; } }
 </style>
 
-<script>
-  function printForm() {
-    var f = document.getElementById("sv-frame");
-    try {
-      // הדפסת התוכן של המסגרת בלבד
-      f.contentWindow.focus();
-      f.contentWindow.print();
-    } catch (e) {
-      // דפדפן שחוסם גישה למסגרת - נופלים לפתיחה בלשונית ומשם מדפיסים
-      window.open("/scans/file/<%= form.id %>", "_blank");
-    }
-  }
-</script>
+<script type="module" src="/js/scan-view.js?v=<%= typeof assetVersion !== 'undefined' ? assetVersion : '' %>"></script>
 
 <%- include('../partials/footer') %>
