@@ -37,16 +37,15 @@
   .manual-status { font-size:0.9em; margin:8px 0; min-height:1.2em; }
   .manual-status.ok { color:#2d7a4f; }
   .manual-status.err { color:#c0392b; font-weight:600; }
-  .manual-row {
-    display:flex; gap:14px; align-items:flex-start; padding:10px 0;
-    border-bottom:1px solid rgba(0,0,0,0.08);
-  }
-  .manual-thumb { flex:1 1 auto; min-width:0; }
+  /* הפס צר וארוך - מלוא הרוחב לתמונה, והבחירה מתחתיה */
+  .manual-row { display:block; padding:12px 0; border-bottom:1px solid rgba(0,0,0,0.08); }
+  .manual-thumb { width:100%; }
   .manual-canvas {
-    width:100%; max-width:560px; border:1px solid rgba(0,0,0,0.2);
+    width:100%; border:1px solid rgba(0,0,0,0.2);
     border-radius:6px; cursor:zoom-in; display:block; background:#fff;
   }
-  .manual-side { flex:0 0 260px; }
+  .manual-side { display:flex; align-items:center; gap:10px; margin-top:8px; }
+  .manual-side .manual-label { margin:0; white-space:nowrap; }
   .manual-label { font-size:0.85em; color:var(--muted); margin-bottom:5px; }
   .manual-warn { color:#c0392b; font-weight:600; }
   .manual-select { width:100%; font-size:1em; padding:6px; }

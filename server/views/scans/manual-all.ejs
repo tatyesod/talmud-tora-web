@@ -56,10 +56,13 @@
   .ma-status { font-size:0.9em; margin:6px 0; min-height:1.2em; }
   .ma-status.ok { color:#2d7a4f; }
   .ma-status.err { color:#c0392b; font-weight:600; }
-  .ma-row { display:flex; gap:14px; align-items:flex-start; padding:10px 0; border-bottom:1px solid rgba(0,0,0,0.08); }
-  .ma-thumb { flex:1 1 auto; min-width:0; }
-  .ma-canvas { width:100%; max-width:560px; border:1px solid rgba(0,0,0,0.2); border-radius:6px; cursor:zoom-in; display:block; background:#fff; }
-  .ma-side { flex:0 0 280px; }
+  /* הפס צר וארוך, ולכן הוא מקבל את מלוא הרוחב ושדה ההקלדה יורד מתחתיו.
+     בפריסה של זה-לצד-זה התמונה נדחסה לחצי רוחב ולא ניתן היה לקרוא. */
+  .ma-row { display:block; padding:12px 0; border-bottom:1px solid rgba(0,0,0,0.08); }
+  .ma-thumb { width:100%; }
+  .ma-canvas { width:100%; border:1px solid rgba(0,0,0,0.2); border-radius:6px; cursor:zoom-in; display:block; background:#fff; }
+  .ma-side { display:flex; align-items:center; gap:10px; margin-top:8px; }
+  .ma-side .ma-label { margin:0; white-space:nowrap; }
   .ma-label { font-size:0.85em; color:var(--muted); margin-bottom:5px; }
   .ma-warn { color:#c0392b; font-weight:600; }
   .ma-input { width:100%; font-size:1em; padding:7px; }

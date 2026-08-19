@@ -63,17 +63,24 @@
 
     for (let i = 0; i < pairs.length; i++) {
       const page = await doc.getPage(pairs[i].pages[0] + 1);
-      const vp = page.getViewport({ scale: 1.6 });
+      const vp = page.getViewport({ scale: 3.0 });
       const canvas = document.createElement("canvas");
       canvas.width = vp.width; canvas.height = vp.height;
       await page.render({ canvasContext: canvas.getContext("2d"), viewport: vp }).promise;
 
       // ראש הטופס בלבד - שם התלמיד והכיתה מודפסים שם
+      // חיתוך לפס שבו יושבים שם התלמיד, שם החיבה והכיתה.
+      // הערכים נמדדו על טופס סרוק אמיתי: השם ב-19% מגובה העמוד והכיתה
+      // ב-23%. חיתוך שהתחיל גבוה יותר כלל את כל הכותרת, והכל התכווץ
+      // עד שלא ניתן היה לקרוא; חיתוך שהתחיל נמוך יותר החמיץ את השם עצמו.
+      const TOP = 0.185, BOTTOM = 0.315;
+      const y0 = Math.round(canvas.height * TOP);
+      const bandH = Math.round(canvas.height * (BOTTOM - TOP));
       const crop = document.createElement("canvas");
       crop.width = canvas.width;
-      crop.height = Math.round(canvas.height * 0.34);
-      crop.getContext("2d").drawImage(canvas, 0, 0, canvas.width, crop.height,
-                                      0, 0, canvas.width, crop.height);
+      crop.height = bandH;
+      crop.getContext("2d").drawImage(canvas, 0, y0, canvas.width, bandH,
+                                      0, 0, canvas.width, bandH);
       crop.className = "ma-canvas";
       crop.title = "לחיצה להגדלה";
       crop.addEventListener("click", function () {
