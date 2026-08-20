@@ -84,7 +84,8 @@
               <%- include('_media-box', { r: r, notifyUsers: notifyUsers, isPreview: false }) %>
             </td>
             <td><%= place %></td>
-            <td><%= r.urgency || '' %></td>
+            <%# מחלקה לפי רמה, כדי שהדחיפות תבלוט בהדפסה %>
+            <td class="urg <%= r.urgency === 'דחוף מאוד' ? 'urg-critical' : (r.urgency === 'דחוף' ? 'urg-high' : '') %>"><%= r.urgency || 'רגיל' %></td>
             <td><%= r.reporter_name || '' %></td>
             <td>
               <form method="POST" action="/inventory/maintenance/<%= r.id %>?_method=PUT" style="display:inline-flex; gap:4px; align-items:center;">
@@ -151,6 +152,25 @@
     window.open(gmailUrl, '_blank');
   }
 </script>
+
+<style>
+  td.urg { font-weight: 700; text-align: center; white-space: nowrap; }
+  td.urg-critical { background: #fdecea; color: #a01d0f; }
+  td.urg-high { background: #fff4e5; color: #8a5200; }
+
+  @media print {
+    /* מדפיסים את הטבלה בלבד. התפריט, הסינון והכפתורים גוזלים רוחב
+       ודוחפים את העמודות האחרונות - ובהן הדחיפות - מחוץ לדף. */
+    header, nav, .side-dock-wrap, .actions, .no-print, form.filters { display: none !important; }
+    table thead th:first-child, table tbody td:first-child,
+    table thead th:last-child,  table tbody td:last-child { display: none !important; }
+    /* בלי זה הדפדפן מסיר צבעי רקע והדחיפות יוצאת לבנה על לבן */
+    td.urg { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    table { width: 100%; font-size: 9pt; }
+    tr { break-inside: avoid; page-break-inside: avoid; }
+    thead { display: table-header-group; }
+  }
+</style>
 
 <%- include('../partials/footer') %>
 
