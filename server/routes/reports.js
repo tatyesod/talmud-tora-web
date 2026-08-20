@@ -531,11 +531,11 @@ router.get("/extensions-admin", (req, res) => {
   `).all();
   const staffRoles = db.prepare(`
     SELECT id, name, branch, extension FROM staff_roles
-    ORDER BY branch IS NOT NULL, branch, grade_order, name
+    ORDER BY branch IS NOT NULL, branch, name
   `).all();
   const miscLocations = db.prepare(`
     SELECT id, name, branch, extension FROM misc_extensions
-    ORDER BY branch IS NOT NULL, branch, grade_order, name
+    ORDER BY branch IS NOT NULL, branch, name
   `).all();
   const branches = db.prepare("SELECT DISTINCT branch FROM classes WHERE branch IS NOT NULL AND branch != '' ORDER BY branch").all().map((r) => r.branch);
   res.render("reports/extensions-admin", { classes, staffRoles, miscLocations, branches });
@@ -607,7 +607,7 @@ router.get("/extensions", (req, res) => {
     JOIN staff_roles sr ON sra.staff_role_id = sr.id
     JOIN teachers t ON sra.teacher_id = t.id
     WHERE t.status = 'פעיל' AND sr.extension IS NOT NULL AND sr.extension != ''
-    ORDER BY sr.branch IS NOT NULL, sr.branch, sr.grade_order, sr.name
+    ORDER BY sr.branch IS NOT NULL, sr.branch, sr.name
   `).all();
   // תואר מתאים - "הגב'" לתפקידים נשיים ידועים (מורות/רכזת שילוב), "הרב"
   // לשאר (מנהל, מזכיר וכו')
@@ -627,7 +627,7 @@ router.get("/extensions", (req, res) => {
   const miscRows = db.prepare(`
     SELECT name, branch, extension FROM misc_extensions
     WHERE extension IS NOT NULL AND extension != ''
-    ORDER BY branch IS NOT NULL, branch, grade_order, name
+    ORDER BY branch IS NOT NULL, branch, name
   `).all();
   const miscItems = miscRows.map((r) => ({
     kind: "misc", className: r.name,
@@ -723,7 +723,7 @@ router.get("/extensions", (req, res) => {
 
 // ============ ניהול מיקומים נוספים (חדר מלמדים וכד') - לא קשורים למלמד ============
 router.get("/misc-extensions", (req, res) => {
-  const locations = db.prepare("SELECT * FROM misc_extensions ORDER BY branch IS NOT NULL, branch, grade_order, name").all();
+  const locations = db.prepare("SELECT * FROM misc_extensions ORDER BY branch IS NOT NULL, branch, name").all();
   const branches = db.prepare("SELECT DISTINCT branch FROM classes WHERE branch IS NOT NULL AND branch != '' ORDER BY branch").all().map((r) => r.branch);
   res.render("reports/misc-extensions", { locations, branches });
 });

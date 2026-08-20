@@ -237,7 +237,7 @@ router.get("/report/export", async (req, res) => {
 
 router.get("/new", (req, res) => {
   const chassidut = db.prepare("SELECT id, name FROM chassidut ORDER BY name").all();
-  const staffRoles = db.prepare("SELECT * FROM staff_roles ORDER BY branch IS NOT NULL, branch, grade_order, name").all();
+  const staffRoles = db.prepare("SELECT * FROM staff_roles ORDER BY branch IS NOT NULL, branch, name").all();
   res.render("teachers/form", { teacher: {}, mode: "new", chassidut, staffRoles, selectedStaffRoleIds: [], ...pickLists() });
 });
 
@@ -328,7 +328,7 @@ router.get("/monthly-reports", (req, res) => {
 // ============ מצבת מלמדים - מפת שיבוץ לכל הכיתות ============
 // ============ תפקידי צוות נוספים (לא-הוראה) - ניהול והקצאה ============
 router.get("/staff-roles", (req, res) => {
-  const roles = db.prepare("SELECT * FROM staff_roles ORDER BY branch IS NOT NULL, branch, grade_order, name").all();
+  const roles = db.prepare("SELECT * FROM staff_roles ORDER BY branch IS NOT NULL, branch, name").all();
   const branches = db.prepare("SELECT DISTINCT branch FROM classes WHERE branch IS NOT NULL AND branch != '' ORDER BY branch").all().map((r) => r.branch);
   const rolesWithCounts = roles.map((r) => ({
     ...r,
@@ -629,7 +629,7 @@ router.get("/:id/edit", (req, res) => {
       ORDER BY c.grade_order, c.name, c.parallel
     `)
     .all(req.params.id);
-  const staffRoles = db.prepare("SELECT * FROM staff_roles ORDER BY branch IS NOT NULL, branch, grade_order, name").all();
+  const staffRoles = db.prepare("SELECT * FROM staff_roles ORDER BY branch IS NOT NULL, branch, name").all();
   const selectedStaffRoleIds = db.prepare("SELECT staff_role_id FROM staff_role_assignments WHERE teacher_id = ?").all(req.params.id).map((r) => r.staff_role_id);
   res.render("teachers/form", {
     ...pickLists(),
