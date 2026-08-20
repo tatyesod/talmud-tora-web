@@ -23,10 +23,11 @@
 
       <div class="form-group">
         <label>יום בחודש</label>
+        <%# אותיות עבריות ולא ספרות - כך נכתב תאריך עברי %>
         <select name="hebrew_day">
-          <% for (let d = 1; d <= 30; d++) { %>
-            <option value="<%= d %>" <%= String(task.hebrew_day) === String(d) ? 'selected' : '' %>><%= d %></option>
-          <% } %>
+          <% days.forEach(d => { %>
+            <option value="<%= d.value %>" <%= String(task.hebrew_day) === String(d.value) ? 'selected' : '' %>><%= d.label %></option>
+          <% }) %>
         </select>
         <small style="color:var(--muted);">
           יום ל' בחודש בן 29 יידחף אוטומטית ליום האחרון.
@@ -50,14 +51,30 @@
     </div>
 
     <div class="form-group">
-      <label>קישור לפעולה במערכת</label>
-      <input type="text" name="link_url" value="<%= task.link_url || '' %>"
-             placeholder="/reports/health-declaration" dir="ltr" style="text-align:left;" />
+      <label>לאן זה מוביל במערכת</label>
+      <%# בורר ולא שדה טקסט: אין סיבה שהמשתמש יצטרך לדעת נתיבים טכניים %>
+      <% const known = targets.some(t => t.url === (task.link_url || '')); %>
+      <select name="link_url" id="yc-target" onchange="
+        document.getElementById('yc-custom-wrap').style.display = this.value === '__other__' ? '' : 'none';">
+        <% targets.forEach(t => { %>
+          <option value="<%= t.url %>" <%= (task.link_url || '') === t.url ? 'selected' : '' %>><%= t.label %></option>
+        <% }) %>
+        <option value="__other__" <%= (task.link_url && !known) ? 'selected' : '' %>>אחר — כתובת ידנית</option>
+      </select>
       <small style="color:var(--muted); display:block; line-height:1.6; margin-top:4px;">
-        אם המשימה מובילה למסך מסוים, הדבק כאן את הנתיב שלו — שם המשימה יהפוך לקישור.
-        למשל <code dir="ltr">/reports/health-declaration</code> להפקת טפסי בריאות,
-        או <code dir="ltr">/books</code> להזמנת ספרים.
+        אם המשימה מובילה למסך מסוים, בחר אותו כאן — <strong>שם המשימה בלוח יהפוך
+        לקישור לחיץ</strong>, ותוכל להגיע לפעולה בלחיצה אחת מהתזכורת בדף הבית.
       </small>
+
+      <div id="yc-custom-wrap" style="margin-top:8px; <%= (task.link_url && !known) ? '' : 'display:none;' %>">
+        <label style="font-size:0.9em;">כתובת ידנית</label>
+        <input type="text" name="link_url_custom" value="<%= (task.link_url && !known) ? task.link_url : '' %>"
+               placeholder="/inventory" dir="ltr" style="text-align:left;" />
+        <small style="color:var(--muted); display:block; margin-top:3px;">
+          העתק מסרגל הכתובת של הדפדפן את החלק שאחרי שם האתר — למשל
+          <code dir="ltr">/inventory</code>.
+        </small>
+      </div>
     </div>
 
     <div class="form-group">

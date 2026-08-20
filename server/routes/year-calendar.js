@@ -24,6 +24,13 @@ function schoolIndex(m) {
 }
 
 // רשימה לבורר, בסדר שנת הלימודים
+// ימי החודש באותיות עבריות - א' עד ל', כולל ט"ו וט"ז הנכונים
+function dayOptions() {
+  const out = [];
+  for (let d = 1; d <= 30; d++) out.push({ value: d, label: hd.hebrewNumeral(d) });
+  return out;
+}
+
 function monthOptions(leap) {
   return SCHOOL_ORDER
     .filter((m) => leap || m !== 13)
@@ -101,6 +108,26 @@ function dueTasks() {
   return loadTasks().filter((t) => !t.done && t.isDue);
 }
 
+// יעדים נפוצים למשימות. במקום לבקש מהמשתמש נתיב טכני שהוא אינו יודע
+// מהיכן לקחת, הוא בוחר מרשימה. "אחר" מאפשר הדבקה ידנית.
+const ACTION_TARGETS = [
+  { url: "", label: "— ללא קישור —" },
+  { url: "/reports/health-declaration", label: "הפקת טפסי הצהרת בריאות" },
+  { url: "/scans", label: "הצהרת בריאות — קבצים סרוקים" },
+  { url: "/books", label: "הזמנת ספרי לימוד" },
+  { url: "/tuition", label: "שכר לימוד" },
+  { url: "/students/new", label: "רישום תלמיד חדש" },
+  { url: "/students", label: "רשימת תלמידים" },
+  { url: "/letters", label: "מכתבי שיבוץ" },
+  { url: "/parent-comm", label: "תקשורת הורים" },
+  { url: "/events", label: "אירועים" },
+  { url: "/campaigns", label: "מבצעים כיתתיים" },
+  { url: "/classes", label: "כיתות ומחזורים" },
+  { url: "/reports", label: "דוחות" },
+  { url: "/year", label: "ניהול שנה" },
+  { url: "/year/transfers", label: "מפת המעברים" },
+];
+
 // ============ המסך ============
 router.get("/", (req, res) => {
   const tasks = loadTasks();
@@ -129,7 +156,7 @@ router.get("/new", (req, res) => {
   const leap = hd.isHebrewLeapYear(hd.todayHebrewParts().year);
   res.render("year-calendar/form", {
     task: { remind_days_before: 14, active: 1, sort_order: 50 },
-    months: monthOptions(leap), mode: "new",
+    months: monthOptions(leap), days: dayOptions(), targets: ACTION_TARGETS, mode: "new",
   });
 });
 
@@ -138,9 +165,20 @@ router.get("/:id/edit", (req, res) => {
   if (!task) return res.redirect("/year-calendar");
   const leap = hd.isHebrewLeapYear(hd.todayHebrewParts().year);
   res.render("year-calendar/form", {
-    task, months: monthOptions(leap), mode: "edit",
+    task, months: monthOptions(leap), days: dayOptions(), targets: ACTION_TARGETS, mode: "edit",
   });
 });
+
+// הבורר שולח "__other__" כשנבחרה כתובת ידנית; אז לוקחים את השדה החופשי.
+// בלי זה המחרוזת הזו הייתה נשמרת כקישור והמשימה הייתה מובילה לשום מקום.
+function resolveLink(body) {
+  const sel = String(body.link_url || "").trim();
+  const raw = sel === "__other__" ? String(body.link_url_custom || "").trim() : sel;
+  if (!raw) return "";
+  // רק נתיב פנימי. כתובת חיצונית בשדה הזה היא דלת לא רצויה.
+  if (!raw.startsWith("/")) return "/" + raw.replace(/^https?:\/\/[^/]*/i, "").replace(/^\/+/, "");
+  return raw;
+}
 
 const FIELDS = ["title", "notes", "hebrew_month", "hebrew_day",
                 "remind_days_before", "scope", "link_url", "sort_order"];
@@ -153,7 +191,7 @@ router.post("/", (req, res) => {
     String(b.title || "").trim(), String(b.notes || "").trim(),
     parseInt(b.hebrew_month, 10) || 1, parseInt(b.hebrew_day, 10) || 1,
     parseInt(b.remind_days_before, 10) || 14,
-    String(b.scope || "").trim(), String(b.link_url || "").trim(),
+    String(b.scope || "").trim(), resolveLink(b),
     parseInt(b.sort_order, 10) || 50, new Date().toISOString()
   );
   res.redirect("/year-calendar?saved=1");
@@ -166,7 +204,7 @@ router.post("/:id", (req, res) => {
     String(b.title || "").trim(), String(b.notes || "").trim(),
     parseInt(b.hebrew_month, 10) || 1, parseInt(b.hebrew_day, 10) || 1,
     parseInt(b.remind_days_before, 10) || 14,
-    String(b.scope || "").trim(), String(b.link_url || "").trim(),
+    String(b.scope || "").trim(), resolveLink(b),
     parseInt(b.sort_order, 10) || 50, req.params.id
   );
   res.redirect("/year-calendar?saved=1");
