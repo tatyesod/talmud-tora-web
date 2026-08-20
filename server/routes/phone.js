@@ -27,11 +27,15 @@ function findByExtension(ext) {
   // מספר ארוך אינו שלוחה. הסף נמוך בכוונה: שלוחות הן 2-4 ספרות.
   if (!clean || clean.length > 4) return [];
 
-  const cls = db.prepare(`
+  const all = db.prepare(`
     SELECT c.id, c.name, c.parallel, c.branch, c.extension
     FROM classes c
-    WHERE REPLACE(COALESCE(c.extension,''), ' ', '') = ? AND c.status = 'פעיל'
-  `).all(clean);
+    WHERE c.status = 'פעיל' AND COALESCE(c.extension,'') <> ''
+  `).all();
+  // ההשוואה בצד ה-JS ולא ב-SQL: הקוד מנקה מהמספר הנכנס כל תו שאינו
+  // ספרה, אבל ב-SQL ניקינו רווחים בלבד. שלוחה שנשמרה כ-"203-" או עם
+  // תו כיווניות נסתר לא הייתה מתאימה לעולם.
+  const cls = all.filter((c) => String(c.extension).replace(/\D/g, "") === clean);
   if (!cls.length) return [];
 
   // שעה מקומית בישראל, לא של השרת - Render רץ ב-UTC
