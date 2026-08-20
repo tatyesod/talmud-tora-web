@@ -500,7 +500,14 @@ router.get("/class-journal/view", (req, res) => {
   const students = db
     .prepare("SELECT s.first_name, s.nickname, s.last_name, f.last_name AS family_last FROM students s LEFT JOIN families f ON s.family_id=f.id WHERE s.class_id = ? AND s.status = 'פעיל' ORDER BY s.last_name, s.first_name")
     .all(class_id)
-    .map(s => ({ ...s, displayName: (s.last_name || s.family_last || "") + " " + (s.nickname || s.first_name || "") }));
+    .map(s => ({
+        ...s,
+        // familyName ו-givenName נדרשים לתבנית: היא מציגה שם משפחה ושם פרטי
+        // בשתי עמודות נפרדות. displayName נשמר עבור תבניות אחרות שמשתמשות בו.
+        familyName: s.last_name || s.family_last || "",
+        givenName: s.nickname || s.first_name || "",
+        displayName: (s.last_name || s.family_last || "") + " " + (s.nickname || s.first_name || ""),
+      }));
   // מלמד - אם נבחר מלמד מפורש (יש בוקר ואחה"צ, ולפעמים גם עוזר) משתמשים בו;
   // אחרת (למשל קישור ישן בלי הבחירה) נופלים חזרה לברירת המחדל הישנה
   const teacher = teacher_id
@@ -933,7 +940,14 @@ router.get("/single-page/view", (req, res) => {
   const students = db
     .prepare("SELECT s.first_name, s.nickname, s.last_name, f.last_name AS family_last FROM students s LEFT JOIN families f ON s.family_id=f.id WHERE s.class_id = ? AND s.status = 'פעיל' ORDER BY s.last_name, s.first_name")
     .all(class_id)
-    .map(s => ({ ...s, displayName: (s.last_name || s.family_last || "") + " " + (s.nickname || s.first_name || "") }));
+    .map(s => ({
+        ...s,
+        // familyName ו-givenName נדרשים לתבנית: היא מציגה שם משפחה ושם פרטי
+        // בשתי עמודות נפרדות. displayName נשמר עבור תבניות אחרות שמשתמשות בו.
+        familyName: s.last_name || s.family_last || "",
+        givenName: s.nickname || s.first_name || "",
+        displayName: (s.last_name || s.family_last || "") + " " + (s.nickname || s.first_name || ""),
+      }));
   const teacher = teacher_id
     ? db.prepare("SELECT t.first_name, t.last_name, tc.role FROM teachers t LEFT JOIN teacher_classes tc ON tc.teacher_id = t.id AND tc.class_id = ? WHERE t.id = ?").get(class_id, teacher_id)
     : db.prepare("SELECT t.first_name, t.last_name, tc.role FROM teacher_classes tc JOIN teachers t ON tc.teacher_id=t.id WHERE tc.class_id=? ORDER BY tc.id LIMIT 1").get(class_id);
