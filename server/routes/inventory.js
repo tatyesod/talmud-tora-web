@@ -111,7 +111,17 @@ router.get("/maintenance", (req, res) => {
     ...r,
     created_at_str: r.created_at ? new Date(r.created_at).toLocaleDateString("he-IL") : "",
   }));
-  res.render("inventory/maintenance-list", { requests, status: status || "", branch: branch || "", maintenanceEmail: getMaintenanceEmail() });
+  // notifyUsers - אנשי הצוות שאפשר לשלוח אליהם תמונה להתייעצות.
+  // התבנית _media-box צורכת אותם, והמסלול לא סיפק אותם: המסך נפל
+  // ב-"notifyUsers is not defined".
+  const notifyUsers = db.prepare(`
+    SELECT id, display_name FROM users
+    WHERE COALESCE(exclude_from_consult, 0) = 0 AND COALESCE(role, '') <> 'maintenance'
+    ORDER BY display_name`).all();
+  res.render("inventory/maintenance-list", {
+    requests, status: status || "", branch: branch || "",
+    maintenanceEmail: getMaintenanceEmail(), notifyUsers,
+  });
 });
 
 router.get("/maintenance/print", (req, res) => {
