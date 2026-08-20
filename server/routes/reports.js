@@ -884,7 +884,17 @@ router.get("/stay-arrangement/edit", (req, res) => {
     WHERE status = 'פעיל' AND name IN (${STAY_ARRANGEMENT_CLASS_NAMES.map(() => "?").join(",")})
     ORDER BY grade_order, name, parallel
   `).all(...STAY_ARRANGEMENT_CLASS_NAMES);
-  res.render("reports/stay-arrangement-edit-select", { classes });
+  // התבנית מסננת לפי סניף וזקוקה לשלושה משתנים נוספים. בלעדיהם היא
+  // נופלת ב-'totalCount is not defined' - שדה שנוסף לתבנית ולא למסלול.
+  const branch = String(req.query.branch || "").trim();
+  const branches = [...new Set(classes.map((c) => c.branch).filter(Boolean))].sort();
+  const totalCount = classes.length;
+  // הסינון עצמו: totalCount נשאר המספר הכולל, כדי להבחין בין
+  // "אין כיתות בכלל" לבין "אין כיתות בסניף שנבחר".
+  const shown = branch ? classes.filter((c) => c.branch === branch) : classes;
+  res.render("reports/stay-arrangement-edit-select", {
+    classes: shown, branches, branch, totalCount,
+  });
 });
 
 router.get("/stay-arrangement/edit/:classId", (req, res) => {
