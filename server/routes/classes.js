@@ -158,12 +158,24 @@ router.post("/study-materials/:id", (req, res) => {
 
 // ============ עדכון מהיר של שלוחות לכיתות ============
 router.get("/extensions", (req, res) => {
-  const classes = db.prepare(`
-    SELECT id, name, parallel, branch, extension FROM classes
-    WHERE status = 'פעיל'
-    ORDER BY branch IS NOT NULL, branch, grade_order, name, parallel
-  `).all();
-  res.render("classes/extensions", { classes });
+  // עטוף בטיפול שגיאה: דף לבן עם "Internal Server Error" אינו נותן שום
+  // רמז מה נשבר, והשגיאה כאן תלויה בנתונים ולכן עשויה להופיע רק בייצור.
+  try {
+    const classes = db.prepare(`
+      SELECT id, name, parallel, branch, extension FROM classes
+      WHERE status = 'פעיל'
+      ORDER BY branch IS NOT NULL, branch, grade_order, name, parallel
+    `).all();
+    res.render("classes/extensions", { classes });
+  } catch (e) {
+    console.error("עדכון שלוחות נכשל:", e && e.message, e && e.stack);
+    res.status(500).send(
+      '<div dir="rtl" style="font-family:Arial;padding:24px;line-height:1.8">' +
+      "<h2>לא ניתן לטעון את מסך השלוחות</h2>" +
+      "<p>הסיבה: <code>" + String(e && e.message || e).replace(/</g, "&lt;") + "</code></p>" +
+      '<p><a href="/classes">חזרה לכיתות</a></p></div>'
+    );
+  }
 });
 
 router.post("/extensions", (req, res) => {
