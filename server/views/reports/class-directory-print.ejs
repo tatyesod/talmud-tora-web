@@ -1,20 +1,9 @@
-<%
-  // התאמה אוטומטית לעמוד אחד. קודם הגופן היה קבוע, וכיתה גדולה גלשה לעמוד
-  // שני - בדיוק מה שקרה אחרי שהגופן הועלה ל-13. עכשיו 13 הוא היעד, והגופן
-  // מתכווץ רק כשמספר התלמידים מחייב.
-  // A4 = 297 מ"מ, שוליים 13 כפול 2, כותרת וכיתוב עליון כ-30 -> נשארים כ-215.
-  const DIR_AVAILABLE_MM = 215;
-  const dirRows = students.length + 1;                 // + שורת הכותרת
-  const dirRowMM = Math.min(DIR_AVAILABLE_MM / dirRows, 12);
-  const dirFontPt = Math.max(7, Math.min(13, Math.round(dirRowMM * 1.55)));
-  const dirHeadPt = Math.max(dirFontPt, Math.min(16, Math.round(dirRowMM * 1.9)));
-  const dirPadPx = dirRowMM < 6 ? 1 : (dirRowMM < 8 ? 2 : 4);
-%>
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>
   <meta charset="UTF-8" />
-  <title>אלפון - <%= classFullName %></title>
+  <%# הכותרת מחוץ ללולאה, ולכן נגזרת מהרשימה ולא ממשתנה של כיתה בודדת %>
+  <title>אלפון - <%= directories.length === 1 ? directories[0].classFullName : directories.length + " כיתות" %></title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: "David", "DavidCLM", "Times New Roman", serif; direction: rtl; }
@@ -43,22 +32,47 @@
       border-bottom: 1.5pt solid #2c5f7c; padding-bottom: 8px; margin-bottom: 14px;
     }
 
-    table.dir { width: 97%; margin: 0 auto; border-collapse: collapse; font-size: <%= dirFontPt %>pt; }
-    table.dir th, table.dir td { border: 0.6pt solid #999; padding: <%= dirPadPx %>px 6px; text-align: right; }
-    table.dir th { background: #dde8f0; font-weight: 700; text-align: center; font-size: <%= dirHeadPt %>pt; }
+    table.dir { width: 97%; margin: 0 auto; border-collapse: collapse; }
+    table.dir th, table.dir td { border: 0.6pt solid #999; text-align: right; }
+    table.dir th { background: #dde8f0; font-weight: 700; text-align: center; }
     table.dir td.num { width: 7mm; text-align: center; font-weight: 700; background: #f5f5f5; }
     table.dir td.phone, table.dir th.phone-col { text-align: center; direction: ltr; }
     .dir-title .teacher-phone { font-weight: normal; }
   </style>
 </head>
 <body>
-
+<%# חישוב הפרמטרים לחלוקה לעמודים - נעשה פעם אחת, מחוץ ללולאה %>
 <div class="no-print">
   <button onclick="window.print()">🖨️ שמירה כ-PDF / הדפסה</button>
-  <span><%= classFullName %> — <%= students.length %> תלמידים</span>
+  <span>
+    <% if (directories.length === 1) { %>
+      <%= directories[0].classFullName %> — <%= directories[0].students.length %> תלמידים
+    <% } else { %>
+      <%= directories.length %> כיתות —
+      <%= directories.reduce((n, d) => n + d.students.length, 0) %> תלמידים
+    <% } %>
+  </span>
   <a href="javascript:history.back()">← חזרה</a>
 </div>
 
+<%# עמוד לכל כיתה. כשהופקה כיתה אחת, זו בדיוק התוצאה הקודמת. %>
+<% directories.forEach((dir, dirIdx) => { %>
+  <%
+     const classFullName = dir.classFullName;
+     const teacherNamePart = dir.teacherNamePart;
+     const teacherMobile = dir.teacherMobile;
+     const students = dir.students;
+     // החישוב חייב להיות כאן ולא בראש הקובץ: הגופן נגזר ממספר התלמידים,
+     // ובהפקה מרוכזת לכל כיתה מספר אחר. בראש הקובץ כל הכיתות היו
+     // מקבלות את הגודל של הראשונה.
+     const DIR_AVAILABLE_MM = 215;
+     const dirRows = students.length + 1;
+     const dirRowMM = Math.min(DIR_AVAILABLE_MM / dirRows, 12);
+     const dirFontPt = Math.max(7, Math.min(13, Math.round(dirRowMM * 1.55)));
+     const dirHeadPt = Math.max(dirFontPt, Math.min(16, Math.round(dirRowMM * 1.9)));
+     const dirPadPx = dirRowMM < 6 ? 1 : (dirRowMM < 8 ? 2 : 4);
+  %>
+  <div class="dir-page"<%= dirIdx < directories.length - 1 ? ' style="page-break-after:always"' : '' %>>
 <img src="/images/letterhead.jpg" alt="בלנק תלמוד תורה החדש" class="letter-header-img" />
 <div class="dir-bsd">בס"ד</div>
 
@@ -66,7 +80,14 @@
   <%= classFullName %><% if (teacherNamePart) { %> - <%= teacherNamePart %><% } %><% if (teacherMobile) { %> <span class="teacher-phone"><%= teacherMobile %></span><% } %>
 </div>
 
-<table class="dir">
+<%# הגדלים מוזרקים כאן ולא ב-CSS הגלובלי: הם נגזרים ממספר התלמידים,
+      ובהפקה מרוכזת לכל כיתה מספר אחר. %>
+  <table class="dir" style="font-size:<%= dirFontPt %>pt;">
+  <style>
+    .dir-page:nth-of-type(<%= dirIdx + 1 %>) table.dir th,
+    .dir-page:nth-of-type(<%= dirIdx + 1 %>) table.dir td { padding: <%= dirPadPx %>px 6px; }
+    .dir-page:nth-of-type(<%= dirIdx + 1 %>) table.dir th { font-size: <%= dirHeadPt %>pt; }
+  </style>
   <thead>
     <tr>
       <th style="width:7mm;">#</th>
@@ -88,6 +109,7 @@
     <% }) %>
   </tbody>
 </table>
-
+  </div>
+<% }) %>
 </body>
 </html>

@@ -14,6 +14,9 @@
         <label>כיתה</label>
         <select name="class_id" required data-branch-filter>
           <option value="">בחר כיתה...</option>
+          <%# "כל הכיתות" מכבד את מסנן הסניף: אם נבחר סניף, יופקו כיתותיו
+              בלבד. בלי data-branch, כדי שסקריפט הסינון לא יסתיר אותה. %>
+          <option value="all">— כל הכיתות —</option>
           <% classes.forEach(c => { %>
             <option value="<%= c.id %>" data-branch="<%= c.branch || '' %>"><%= c.name %><%= c.parallel ? ' ' + c.parallel : '' %></option>
           <% }) %>

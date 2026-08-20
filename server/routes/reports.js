@@ -767,42 +767,64 @@ router.get("/class-directory", (req, res) => {
 });
 
 router.get("/class-directory/view", (req, res) => {
-  const { class_id } = req.query;
+  const { class_id, branch } = req.query;
   if (!class_id) return res.redirect("/reports/class-directory");
-  const classRow = db.prepare("SELECT * FROM classes WHERE id = ?").get(class_id);
-  const classFullName = classRow ? classRow.name + (classRow.parallel ? " " + classRow.parallel : "") : "";
 
-  // מלמד בוקר - לכותרת (שם + נייד)
-    // קודם מלמד בוקר, ואם אין - כל מלמד שמשויך לכיתה. הגרסה הקודמת
-    // חיפשה אך ורק תפקיד 'בוקר', ולכן בכיתה שבה המלמד משויך בתפקיד
-    // אחר או בלי תפקיד - לא הופיעו שם ונייד בכותרת האלפון.
-    // נופלים לטלפון בית כשהנייד ריק. במסד רוב המלמדים הוזנו כך:
-    // המספר האישי שלהם יושב בשדה 'טלפון בית', ולכן הכותרת יצאה ריקה.
-  const morningTeacher = db.prepare(`
+  // "כל הכיתות" - מכבד את מסנן הסניף אם נבחר אחד
+  let classIds;
+  if (class_id === "all") {
+    let sql = `SELECT id FROM classes WHERE status = 'פעיל'
+               AND COALESCE(class_kind,'regular') = 'regular'`;
+    const params = [];
+    if (branch) { sql += " AND branch = ?"; params.push(branch); }
+    sql += " ORDER BY grade_order, name, parallel";
+    classIds = db.prepare(sql).all(...params).map((c) => c.id);
+    if (!classIds.length) return res.redirect("/reports/class-directory");
+  } else {
+    classIds = [class_id];
+  }
+
+  // בניית אלפון לכל כיתה. אותה לוגיקה בדיוק כמו לכיתה בודדת, כדי
+  // שהפקה מרוכזת תיראה זהה להפקה אחת-אחת.
+  const directories = classIds.map((cid) => {
+    const classRow = db.prepare("SELECT * FROM classes WHERE id = ?").get(cid);
+    const classFullName = classRow ? classRow.name + (classRow.parallel ? " " + classRow.parallel : "") : "";
+
+    // קודם מלמד בוקר, ואם אין - כל מלמד משויך. נופלים לטלפון בית
+    // כשהנייד ריק, כי רוב המלמדים הוזנו כך.
+    const teacher = db.prepare(`
       SELECT t.first_name, t.last_name,
              COALESCE(NULLIF(t.mobile, ''), t.home_phone) AS mobile
       FROM teacher_classes tc
-    JOIN teachers t ON tc.teacher_id = t.id
+      JOIN teachers t ON tc.teacher_id = t.id
       WHERE tc.class_id = ?
       ORDER BY (tc.role = 'בוקר') DESC,
                (COALESCE(NULLIF(t.mobile,''), t.home_phone) IS NOT NULL) DESC,
                tc.id DESC
-    LIMIT 1
-  `).get(class_id);
-  const teacherNamePart = morningTeacher ? `הרב ${morningTeacher.first_name || ""} ${morningTeacher.last_name || ""}`.trim() : "";
-  const teacherMobile = morningTeacher ? morningTeacher.mobile || "" : "";
+      LIMIT 1
+    `).get(cid);
 
-  // טלפון בבית - אם ריק, נופלים לנייד האם (לא האב)
-  const students = db.prepare(`
-    SELECT s.first_name, f.last_name AS family_last, f.street, f.house_number,
-           COALESCE(NULLIF(f.home_phone, ''), f.mother_mobile) AS phone
-    FROM students s
-    LEFT JOIN families f ON s.family_id = f.id
-    WHERE s.class_id = ? AND s.status = 'פעיל'
-    ORDER BY f.last_name, s.first_name
-  `).all(class_id);
+    const students = db.prepare(`
+      SELECT s.first_name, f.last_name AS family_last, f.street, f.house_number,
+             COALESCE(NULLIF(f.home_phone, ''), f.mother_mobile) AS phone
+      FROM students s
+      LEFT JOIN families f ON s.family_id = f.id
+      WHERE s.class_id = ? AND s.status = 'פעיל'
+      ORDER BY f.last_name, s.first_name
+    `).all(cid).map((s) => ({
+      ...s,
+      address: [s.street, s.house_number].filter(Boolean).join(" "),
+    }));
 
-  res.render("reports/class-directory-print", { classFullName, teacherNamePart, teacherMobile, students });
+    return {
+      classFullName,
+      teacherNamePart: teacher ? `הרב ${teacher.first_name || ""} ${teacher.last_name || ""}`.trim() : "",
+      teacherMobile: teacher ? teacher.mobile || "" : "",
+      students,
+    };
+  }).filter((d) => d.students.length);
+
+  res.render("reports/class-directory-print", { directories });
 });
 
 router.get("/single-page", (req, res) => {
