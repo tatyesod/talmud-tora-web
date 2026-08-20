@@ -36,7 +36,22 @@ function findByExtension(ext) {
   // ספרה, אבל ב-SQL ניקינו רווחים בלבד. שלוחה שנשמרה כ-"203-" או עם
   // תו כיווניות נסתר לא הייתה מתאימה לעולם.
   const cls = all.filter((c) => String(c.extension).replace(/\D/g, "") === clean);
-  if (!cls.length) return [];
+  // שלוחה שאינה של כיתה - למשל המשרד או המנהל. מחפשים גם בטבלת
+  // התפקידים, אחרת שיחה פנימית מהמשרד מוצגת כ"מספר לא מוכר".
+  if (!cls.length) {
+    const roles = db.prepare(`
+      SELECT name, branch, extension FROM staff_roles
+      WHERE COALESCE(extension,'') <> ''
+    `).all().filter((r) => String(r.extension).replace(/\D/g, "") === clean);
+
+    return roles.map((r) => ({
+      kind: "staff",
+      matchedField: "שלוחה " + r.extension,
+      title: r.name || "שלוחה פנימית",
+      subtitle: r.branch || "",
+      url: "/classes/extensions",
+    }));
+  }
 
   // שעה מקומית בישראל, לא של השרת - Render רץ ב-UTC
   const hour = hd.israelHour ? hd.israelHour() : new Date().getHours();
