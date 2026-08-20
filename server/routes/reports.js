@@ -776,12 +776,16 @@ router.get("/class-directory/view", (req, res) => {
     // קודם מלמד בוקר, ואם אין - כל מלמד שמשויך לכיתה. הגרסה הקודמת
     // חיפשה אך ורק תפקיד 'בוקר', ולכן בכיתה שבה המלמד משויך בתפקיד
     // אחר או בלי תפקיד - לא הופיעו שם ונייד בכותרת האלפון.
+    // נופלים לטלפון בית כשהנייד ריק. במסד רוב המלמדים הוזנו כך:
+    // המספר האישי שלהם יושב בשדה 'טלפון בית', ולכן הכותרת יצאה ריקה.
   const morningTeacher = db.prepare(`
-    SELECT t.first_name, t.last_name, t.mobile FROM teacher_classes tc
+      SELECT t.first_name, t.last_name,
+             COALESCE(NULLIF(t.mobile, ''), t.home_phone) AS mobile
+      FROM teacher_classes tc
     JOIN teachers t ON tc.teacher_id = t.id
       WHERE tc.class_id = ?
       ORDER BY (tc.role = 'בוקר') DESC,
-               (t.mobile IS NOT NULL AND t.mobile != '') DESC,
+               (COALESCE(NULLIF(t.mobile,''), t.home_phone) IS NOT NULL) DESC,
                tc.id DESC
     LIMIT 1
   `).get(class_id);
