@@ -3,6 +3,7 @@ const router = express.Router();
 const db = require("../db");
 const hd = require("../hebrewDate");
 const { getCurrentYear } = require("../yearManager");
+const parasha = require("../parasha");
 
 // שמות החודשים לפי המספור הפנימי של hebrewDate. אומת בפועל:
 // המספור מתחיל בניסן (1), ותשרי הוא 7. בשנה מעוברת נוסף חודש 13.
@@ -44,6 +45,33 @@ function taskDates(task) {
   const todayParts = hd.todayHebrewParts();
   const yearNum = todayParts.year;
   const leap = hd.isHebrewLeapYear(yearNum);
+
+  // משימה שקבועה לפי פרשה: התאריך נגזר ממנה ולא מחודש+יום.
+  // הפרשה נופלת בתאריך אחר בכל שנה, ולכן זה מחושב בכל טעינה.
+  if (task.parasha) {
+    const todayAbs0 = hd.todayAbsolute();
+    let abs = parasha.dateForParasha(yearNum, task.parasha);
+    let occursIn = yearNum;
+    if (abs && abs < todayAbs0) {
+      abs = parasha.dateForParasha(yearNum + 1, task.parasha);
+      occursIn = yearNum + 1;
+    }
+    if (!abs) return null;
+    const daysUntil0 = abs - todayAbs0;
+    const remind0 = (task.remind_days_before === null || task.remind_days_before === undefined)
+      ? 14 : task.remind_days_before;
+    return {
+      absolute: abs,
+      serial: hd.absoluteToAccessSerial(abs),
+      hebrewLabel: "שבת פרשת " + task.parasha,
+      gregorian: hd.serialToGregorianString(hd.absoluteToAccessSerial(abs)),
+      daysUntil: daysUntil0,
+      occursIn,
+      isDue: daysUntil0 <= remind0 && daysUntil0 >= 0,
+      isPast: occursIn > yearNum,
+      byParasha: true,
+    };
+  }
 
   // יום שאינו קיים בחודש (ל' בחודש בן 29) - נדחף ליום האחרון
   const maxDay = hd.daysInHebrewMonth(yearNum, task.hebrew_month) || 30;
@@ -93,14 +121,22 @@ function loadTasks() {
     ORDER BY t.hebrew_day, t.sort_order
   `).all(year);
 
-  // מיון לפי סדר שנת הלימודים - אלול ראשון, לא ניסן
-  rows.sort((a, b) => schoolIndex(a.hebrew_month) - schoolIndex(b.hebrew_month) ||
-                      a.hebrew_day - b.hebrew_day);
-  return rows.map((t) => {
+  // מחשבים קודם את התאריכים, ורק אז ממיינים - משימה לפי פרשה נופלת
+  // בחודש שנקבע מהחישוב, ולא בחודש שנשמר בשדה.
+  const withDates = rows.map((t) => {
     const dates = taskDates(t);
     return { ...t, ...(dates || {}), done: !!t.done_at,
              done_str: t.done_at ? hd.formatGregorian(t.done_at) : "" };
   }).filter((t) => t.absolute);
+
+  // החודש בפועל, לצורך הקיבוץ בתצוגה
+  for (const t of withDates) {
+    const parts = hd.serialToHebrewParts(t.serial);
+    t.actualMonth = parts ? parts.month : t.hebrew_month;
+    t.actualDay = parts ? parts.day : t.hebrew_day;
+  }
+  withDates.sort((a, b) => a.absolute - b.absolute);
+  return withDates;
 }
 
 // המשימות שכדאי להתריע עליהן עכשיו - לשימוש דף הבית
@@ -137,8 +173,8 @@ router.get("/", (req, res) => {
   // קיבוץ לפי חודש, בסדר השנה
   const byMonth = [];
   for (const t of tasks) {
-    let g = byMonth.find((x) => x.month === t.hebrew_month);
-    if (!g) { g = { month: t.hebrew_month, name: monthName(t.hebrew_month, leap), items: [] }; byMonth.push(g); }
+    let g = byMonth.find((x) => x.month === t.actualMonth);
+    if (!g) { g = { month: t.actualMonth, name: monthName(t.actualMonth, leap), items: [] }; byMonth.push(g); }
     g.items.push(t);
   }
 
@@ -156,7 +192,8 @@ router.get("/new", (req, res) => {
   const leap = hd.isHebrewLeapYear(hd.todayHebrewParts().year);
   res.render("year-calendar/form", {
     task: { remind_days_before: 14, active: 1, sort_order: 50 },
-    months: monthOptions(leap), days: dayOptions(), targets: ACTION_TARGETS, mode: "new",
+    months: monthOptions(leap), days: dayOptions(),
+    parashot: parasha.parashaOptions(), targets: ACTION_TARGETS, mode: "new",
   });
 });
 
@@ -165,7 +202,8 @@ router.get("/:id/edit", (req, res) => {
   if (!task) return res.redirect("/year-calendar");
   const leap = hd.isHebrewLeapYear(hd.todayHebrewParts().year);
   res.render("year-calendar/form", {
-    task, months: monthOptions(leap), days: dayOptions(), targets: ACTION_TARGETS, mode: "edit",
+    task, months: monthOptions(leap), days: dayOptions(),
+    parashot: parasha.parashaOptions(), targets: ACTION_TARGETS, mode: "edit",
   });
 });
 
@@ -185,27 +223,30 @@ const FIELDS = ["title", "notes", "hebrew_month", "hebrew_day",
 
 router.post("/", (req, res) => {
   const b = req.body;
+  // פרשה ריקה = משימה לפי תאריך. בורר הפרשה שולח מחרוזת ריקה כשלא נבחרה.
+  const par = String(b.parasha || "").trim();
   db.prepare(`INSERT INTO year_tasks
-    (title, notes, hebrew_month, hebrew_day, remind_days_before, scope, link_url, sort_order, active, created_at)
-    VALUES (?,?,?,?,?,?,?,?,1,?)`).run(
+    (title, notes, hebrew_month, hebrew_day, remind_days_before, scope, link_url, sort_order, parasha, active, created_at)
+    VALUES (?,?,?,?,?,?,?,?,?,1,?)`).run(
     String(b.title || "").trim(), String(b.notes || "").trim(),
     parseInt(b.hebrew_month, 10) || 1, parseInt(b.hebrew_day, 10) || 1,
     parseInt(b.remind_days_before, 10) || 14,
     String(b.scope || "").trim(), resolveLink(b),
-    parseInt(b.sort_order, 10) || 50, new Date().toISOString()
+    parseInt(b.sort_order, 10) || 50, par || null, new Date().toISOString()
   );
   res.redirect("/year-calendar?saved=1");
 });
 
 router.post("/:id", (req, res) => {
   const b = req.body;
+  const par2 = String(b.parasha || "").trim();
   db.prepare(`UPDATE year_tasks SET title=?, notes=?, hebrew_month=?, hebrew_day=?,
-    remind_days_before=?, scope=?, link_url=?, sort_order=? WHERE id=?`).run(
+    remind_days_before=?, scope=?, link_url=?, sort_order=?, parasha=? WHERE id=?`).run(
     String(b.title || "").trim(), String(b.notes || "").trim(),
     parseInt(b.hebrew_month, 10) || 1, parseInt(b.hebrew_day, 10) || 1,
     parseInt(b.remind_days_before, 10) || 14,
     String(b.scope || "").trim(), resolveLink(b),
-    parseInt(b.sort_order, 10) || 50, req.params.id
+    parseInt(b.sort_order, 10) || 50, par2 || null, req.params.id
   );
   res.redirect("/year-calendar?saved=1");
 });

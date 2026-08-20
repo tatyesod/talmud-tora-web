@@ -10,8 +10,38 @@
              placeholder="למשל: רישום תלמידים חדשים" />
     </div>
 
-    <div class="form-grid">
+    <%# בורר: תאריך קבוע או פרשת שבוע. הפרשה גוברת כשהיא נבחרה. %>
+    <div class="form-group">
+      <label>מתי המשימה חוזרת</label>
+      <select id="yc-mode" onchange="
+        document.getElementById('yc-by-date').style.display = this.value === 'date' ? '' : 'none';
+        document.getElementById('yc-by-parasha').style.display = this.value === 'parasha' ? '' : 'none';
+        if (this.value === 'date') document.getElementById('yc-parasha').value = '';">
+        <option value="date" <%= task.parasha ? '' : 'selected' %>>בתאריך עברי קבוע</option>
+        <option value="parasha" <%= task.parasha ? 'selected' : '' %>>בשבת פרשת…</option>
+      </select>
+      <small style="color:var(--muted); display:block; line-height:1.6; margin-top:4px;">
+        <strong>תאריך עברי</strong> — למשל רישום חדשים בכ"ח חשון.<br>
+        <strong>פרשת שבוע</strong> — למשל שיחה בשבת פרשת שמות. שני האופנים
+        נופלים בתאריך לועזי אחר בכל שנה, והמערכת מחשבת מחדש.
+      </small>
+    </div>
+
+    <div id="yc-by-parasha" style="<%= task.parasha ? '' : 'display:none;' %>">
       <div class="form-group">
+        <label>פרשה</label>
+        <select name="parasha" id="yc-parasha">
+          <option value="">— בחר פרשה —</option>
+          <% parashot.forEach(pr => { %>
+            <option value="<%= pr %>" <%= task.parasha === pr ? 'selected' : '' %>><%= pr %></option>
+          <% }) %>
+        </select>
+      </div>
+    </div>
+
+    <div id="yc-by-date" style="<%= task.parasha ? 'display:none;' : '' %>">
+      <div class="form-grid">
+<div class="form-group">
         <label>חודש עברי</label>
         <%# הרשימה מסודרת לפי שנת הלימודים - אלול ראשון ולא ניסן %>
         <select name="hebrew_month">
@@ -49,6 +79,35 @@
                placeholder="למשל: כיתות ח' בלבד" />
       </div>
     </div>
+<div class="form-group">
+        <label>יום בחודש</label>
+        <%# אותיות עבריות ולא ספרות - כך נכתב תאריך עברי %>
+        <select name="hebrew_day">
+          <% days.forEach(d => { %>
+            <option value="<%= d.value %>" <%= String(task.hebrew_day) === String(d.value) ? 'selected' : '' %>><%= d.label %></option>
+          <% }) %>
+        </select>
+        <small style="color:var(--muted);">
+          יום ל' בחודש בן 29 יידחף אוטומטית ליום האחרון.
+        </small>
+      </div>
+      </div>
+    </div>
+
+    <div class="form-grid">
+      <div class="form-group">
+        <label>תזכורת כמה ימים מראש</label>
+        <input type="number" name="remind_days_before" min="0" max="90"
+               value="<%= task.remind_days_before !== undefined && task.remind_days_before !== null ? task.remind_days_before : 14 %>" />
+        <small style="color:var(--muted);">מתי להתחיל להתריע בדף הבית וביומן.</small>
+      </div>
+      <div class="form-group">
+        <label>למי זה נוגע</label>
+        <input type="text" name="scope" value="<%= task.scope || '' %>"
+               placeholder="למשל: כיתות ח' בלבד" />
+      </div>
+    </div>
+
 
     <div class="form-group">
       <label>לאן זה מוביל במערכת</label>

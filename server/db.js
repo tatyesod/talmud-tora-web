@@ -339,6 +339,9 @@ const migrations = [
      done_by_user_id INTEGER,
      note TEXT
    )`,
+  // משימות שקבועות לפי פרשת השבוע ולא לפי תאריך. כשהשדה מלא, הוא גובר
+  // על חודש+יום. הפרשה נופלת בתאריך אחר בכל שנה, ולכן החישוב נעשה מחדש.
+  "ALTER TABLE year_tasks ADD COLUMN parasha TEXT",
   "CREATE UNIQUE INDEX IF NOT EXISTS idx_task_done_unique ON year_task_done(task_id, year_label)",
   // מקום תפילה / קהילה של האב. בייבוא מ-Access הייתה רק עמודה אחת,
   // "מקום עבודת האב", והמזכירות הזינו לתוכה גם כוללים וגם בתי כנסת.
