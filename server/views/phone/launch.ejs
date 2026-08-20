@@ -25,6 +25,12 @@
   <div class="num"><%= number %></div>
   <div id="status">פותח את כרטיס המתקשר…</div>
 
+  <div class="hint" id="manual" style="display:none;">
+    ✓ כרטיס המתקשר נפתח בחלון נפרד.<br>
+    אפשר לסגור את הלשונית הזו.
+    <br><button class="btn" onclick="window.close()" style="border:none;cursor:pointer;font-family:inherit;font-size:1em;">סגירת הלשונית</button>
+  </div>
+
   <div class="hint" id="fallback" style="display:none;">
     הדפדפן חסם את פתיחת החלון.<br>
     יש לאשר חלונות קופצים לאתר זה — או ללחוץ כאן:
@@ -42,13 +48,22 @@
       if (w) {
         try { w.focus(); } catch (e) {}
         document.getElementById("status").textContent = "נפתח בחלון נפרד.";
-        // סוגרים את הלשונית הזו: היא שימשה רק כמשגר.
-        // window.close מותר רק על חלון שנפתח בקוד, ולכן ייתכן שייכשל -
-        // ואז נשארת הודעה מובנת במקום לשונית ריקה.
-        setTimeout(function () { try { window.close(); } catch (e) {} }, 400);
+        // ניסיון לסגור את הלשונית המשגרת. הדפדפן מרשה זאת רק לחלון
+        // שנפתח מקוד, וזה נפתח על ידי 3CX - ולכן ברוב המקרים ייכשל,
+        // והלשונית נשארת פתוחה וריקה. לכן אחרי הניסיון מוצג כאן תוכן
+        // מובן עם כפתור סגירה, במקום דף לבן שנראה כתקלה.
+        setTimeout(function () {
+          try { window.close(); } catch (e) {}
+          // אם עדיין כאן - הסגירה נחסמה
+          setTimeout(showManualClose, 300);
+        }, 300);
       } else {
         document.getElementById("status").style.display = "none";
         document.getElementById("fallback").style.display = "block";
+      }
+      function showManualClose() {
+        document.getElementById("status").style.display = "none";
+        document.getElementById("manual").style.display = "block";
       }
     })();
   </script>

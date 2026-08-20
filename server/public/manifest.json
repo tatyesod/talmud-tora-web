@@ -24,13 +24,7 @@
     }
   ],
   "launch_handler": {
-    "client_mode": "navigate-new"
+    "client_mode": "navigate-existing"
   },
-  "scope": "/",
-  "protocol_handlers": [
-    {
-      "protocol": "web+ttcall",
-      "url": "/phone/incoming?number=%s"
-    }
-  ]
+  "scope": "/"
 }
