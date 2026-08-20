@@ -26,6 +26,11 @@
 
     .letter-header-img { width: 100%; height: auto; display: block; margin-bottom: 6px; }
     .dir-bsd { text-align: right; font-size: 0.8em; color: #888; margin-bottom: 10px; }
+    /* עמוד לכל כיתה. המעבר מוגדר כאן ולא כסגנון על האלמנט, כדי שיחול
+       גם בהדפסה. :last-child מבטל אותו באחרון, אחרת נוצר עמוד ריק. */
+    .dir-page { page-break-after: always; break-after: page; }
+    .dir-page:last-of-type { page-break-after: auto; break-after: auto; }
+    @media screen { .dir-page + .dir-page { margin-top: 30px; border-top: 2px dashed #bbb; padding-top: 20px; } }
 
     .dir-title {
       text-align: center; font-weight: 800; font-size: 13pt; color: #2c5f7c;
@@ -33,8 +38,8 @@
     }
 
     table.dir { width: 97%; margin: 0 auto; border-collapse: collapse; }
-    table.dir th, table.dir td { border: 0.6pt solid #999; text-align: right; }
-    table.dir th { background: #dde8f0; font-weight: 700; text-align: center; }
+    table.dir th, table.dir td { border: 0.6pt solid #999; text-align: right; padding: var(--pad, 4px) 6px; }
+    table.dir th { background: #dde8f0; font-weight: 700; text-align: center; font-size: var(--head, 14pt); }
     table.dir td.num { width: 7mm; text-align: center; font-weight: 700; background: #f5f5f5; }
     table.dir td.phone, table.dir th.phone-col { text-align: center; direction: ltr; }
     .dir-title .teacher-phone { font-weight: normal; }
@@ -72,7 +77,7 @@
      const dirHeadPt = Math.max(dirFontPt, Math.min(16, Math.round(dirRowMM * 1.9)));
      const dirPadPx = dirRowMM < 6 ? 1 : (dirRowMM < 8 ? 2 : 4);
   %>
-  <div class="dir-page"<%= dirIdx < directories.length - 1 ? ' style="page-break-after:always"' : '' %>>
+  <div class="dir-page">
 <img src="/images/letterhead.jpg" alt="בלנק תלמוד תורה החדש" class="letter-header-img" />
 <div class="dir-bsd">בס"ד</div>
 
@@ -80,14 +85,10 @@
   <%= classFullName %><% if (teacherNamePart) { %> - <%= teacherNamePart %><% } %><% if (teacherMobile) { %> <span class="teacher-phone"><%= teacherMobile %></span><% } %>
 </div>
 
-<%# הגדלים מוזרקים כאן ולא ב-CSS הגלובלי: הם נגזרים ממספר התלמידים,
-      ובהפקה מרוכזת לכל כיתה מספר אחר. %>
-  <table class="dir" style="font-size:<%= dirFontPt %>pt;">
-  <style>
-    .dir-page:nth-of-type(<%= dirIdx + 1 %>) table.dir th,
-    .dir-page:nth-of-type(<%= dirIdx + 1 %>) table.dir td { padding: <%= dirPadPx %>px 6px; }
-    .dir-page:nth-of-type(<%= dirIdx + 1 %>) table.dir th { font-size: <%= dirHeadPt %>pt; }
-  </style>
+  <%# הגדלים נגזרים ממספר התלמידים ולכן שונים בין כיתות. מוזרקים
+      כמשתני CSS על הטבלה. גרסה קודמת שמה תג <style> בתוך <table> -
+      HTML לא חוקי שהדפדפן מוציא החוצה, וזה שיבש את פריסת העמודים. %>
+    <table class="dir" style="font-size:<%= dirFontPt %>pt; --pad:<%= dirPadPx %>px; --head:<%= dirHeadPt %>pt;">
   <thead>
     <tr>
       <th style="width:7mm;">#</th>

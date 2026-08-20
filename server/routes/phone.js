@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const db = require("../db");
+const hd = require("../hebrewDate");
 
 // נרמול מספר להשוואה: משאירים ספרות בלבד ומתעלמים מקידומת בינלאומית.
 // 3CX מעביר מספר נכנס בפורמטים שונים - 03-6185020, 036185020, +97236185020 -
@@ -12,6 +13,60 @@ function normalize(n) {
 }
 // השוואה על שבע הספרות האחרונות: מכסה הבדלי קידומת ואפס מוביל
 const tail = (n) => normalize(n).slice(-7);
+
+// שיחה משלוחה פנימית. 3CX שולחת מספר קצר - למשל 203 - ולא מספר טלפון.
+// לכיתה יש שדה שלוחה, ולכן אפשר לזהות מאיזה חדר התקשרו.
+//
+// מי המלמד: לפי שעת השיחה. לפני 14:00 מלמד הבוקר, אחריה אחה"צ.
+// שני המלמדים מוצגים תמיד, עם סימון מי הצפוי - כי מלמד הבוקר עשוי
+// להישאר אחרי הצהריים, ואז שם שגוי גרוע מהצגת שניהם.
+const AFTERNOON_FROM_HOUR = 14;
+
+function findByExtension(ext) {
+  const clean = String(ext || "").replace(/\D/g, "");
+  // מספר ארוך אינו שלוחה. הסף נמוך בכוונה: שלוחות הן 2-4 ספרות.
+  if (!clean || clean.length > 4) return [];
+
+  const cls = db.prepare(`
+    SELECT c.id, c.name, c.parallel, c.branch, c.extension
+    FROM classes c
+    WHERE REPLACE(COALESCE(c.extension,''), ' ', '') = ? AND c.status = 'פעיל'
+  `).all(clean);
+  if (!cls.length) return [];
+
+  // שעה מקומית בישראל, לא של השרת - Render רץ ב-UTC
+  const hour = hd.israelHour ? hd.israelHour() : new Date().getHours();
+  const expectedRole = hour >= AFTERNOON_FROM_HOUR ? 'אחה"צ' : "בוקר";
+
+  return cls.map((c) => {
+    const teachers = db.prepare(`
+      SELECT t.first_name, t.last_name, tc.role,
+             COALESCE(NULLIF(t.mobile,''), t.home_phone) AS mobile
+      FROM teacher_classes tc
+      JOIN teachers t ON tc.teacher_id = t.id
+      WHERE tc.class_id = ?
+      ORDER BY (tc.role = ?) DESC, tc.id
+    `).all(c.id, expectedRole).map((t) => ({
+      name: ("הרב " + (t.first_name || "") + " " + (t.last_name || "")).trim(),
+      role: t.role || "",
+      mobile: t.mobile || "",
+      likely: t.role === expectedRole,
+    }));
+
+    const likely = teachers.find((t) => t.likely);
+    return {
+      kind: "class",
+      id: c.id,
+      matchedField: "שלוחה " + c.extension,
+      title: (c.name + " " + (c.parallel || "")).trim(),
+      subtitle: (c.branch ? c.branch + " · " : "") +
+                (likely ? likely.name : (teachers[0] ? teachers[0].name : "אין מלמד משויך")),
+      url: "/classes/" + c.id,
+      teachers,
+      expectedRole,
+    };
+  });
+}
 
 // חיפוש בכל שדות הטלפון במערכת
 function findByPhone(number) {
@@ -67,7 +122,9 @@ router.get("/incoming", (req, res) => {
   // web+ttcall://0501234567 - ולא רק את המספר. מנקים את הקידומת.
   const raw = req.query.number || req.query.n || "";
   const number = String(raw).replace(/^web\+ttcall:\/*/i, "").trim();
-  const matches = findByPhone(number);
+  // שלוחה פנימית קודמת: מספר קצר לעולם אינו טלפון, ולכן אין התנגשות.
+  let matches = findByExtension(number);
+  if (!matches.length) matches = findByPhone(number);
 
   // חלון קומפקטי תמיד, גם בהתאמה יחידה. קודם הפניתי ישירות לכרטיס
   // המלא, וזה השתלט על החלון שעובדים בו באמצע עבודה. עכשיו נפתח חלון
@@ -98,7 +155,9 @@ router.get("/incoming", (req, res) => {
 // לשימוש עתידי אם תוגדר אינטגרציית CRM מלאה ב-3CX, שמצפה ל-JSON.
 router.get("/lookup.json", (req, res) => {
   const number = req.query.number || "";
-  const matches = findByPhone(number);
+  // גם כאן שלוחה קודמת, כדי ששני המסלולים יתנהגו זהה
+  let matches = findByExtension(number);
+  if (!matches.length) matches = findByPhone(number);
   const base = (process.env.PUBLIC_BASE_URL || "").replace(/\/$/, "");
   res.json({
     number,

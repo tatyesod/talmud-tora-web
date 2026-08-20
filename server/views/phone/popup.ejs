@@ -81,6 +81,16 @@
         <div class="hit-name"><%= m.title %></div>
         <% if (m.subtitle) { %><div class="hit-meta"><%= m.subtitle %></div><% } %>
         <div class="hit-field">התאים לפי: <%= m.matchedField %></div>
+        <%# שיחה משלוחה: מוצגים כל המלמדים, והצפוי לפי השעה מסומן %>
+        <% if (m.teachers && m.teachers.length) { %>
+          <div class="students">
+            <% m.teachers.forEach(t => { %>
+              <div<%= t.likely ? '' : ' style="opacity:0.55"' %>>
+                <%= t.likely ? '👉' : '　' %> <%= t.name %><% if (t.role) { %> — <%= t.role %><% } %><% if (t.mobile) { %> · <%= t.mobile %><% } %>
+              </div>
+            <% }) %>
+          </div>
+        <% } %>
         <% if (m.students && m.students.length) { %>
           <div class="students">
             <% m.students.forEach(s => { %>
