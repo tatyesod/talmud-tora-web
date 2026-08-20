@@ -773,11 +773,16 @@ router.get("/class-directory/view", (req, res) => {
   const classFullName = classRow ? classRow.name + (classRow.parallel ? " " + classRow.parallel : "") : "";
 
   // מלמד בוקר - לכותרת (שם + נייד)
+    // קודם מלמד בוקר, ואם אין - כל מלמד שמשויך לכיתה. הגרסה הקודמת
+    // חיפשה אך ורק תפקיד 'בוקר', ולכן בכיתה שבה המלמד משויך בתפקיד
+    // אחר או בלי תפקיד - לא הופיעו שם ונייד בכותרת האלפון.
   const morningTeacher = db.prepare(`
     SELECT t.first_name, t.last_name, t.mobile FROM teacher_classes tc
     JOIN teachers t ON tc.teacher_id = t.id
-    WHERE tc.class_id = ? AND tc.role = 'בוקר'
-    ORDER BY (t.mobile IS NOT NULL AND t.mobile != '') DESC, tc.id DESC
+      WHERE tc.class_id = ?
+      ORDER BY (tc.role = 'בוקר') DESC,
+               (t.mobile IS NOT NULL AND t.mobile != '') DESC,
+               tc.id DESC
     LIMIT 1
   `).get(class_id);
   const teacherNamePart = morningTeacher ? `הרב ${morningTeacher.first_name || ""} ${morningTeacher.last_name || ""}`.trim() : "";
@@ -962,7 +967,24 @@ router.get("/health-declaration", (req, res) => {
   res.render("reports/health-declaration", { classes });
 });
 
-router.get("/health-declaration/view", (req, res) => {
+// קוד QR לכל תלמיד ולכל עמוד. מוטמע כ-SVG, ולכן אינו דורש קובץ או בקשת
+// רשת בזמן ההדפסה. התוכן: סוג הטופס, מזהה התלמיד, השנה ומספר העמוד - כך
+// שכל עמוד סרוק יודע לאיזה תלמיד הוא שייך, גם אם סדר הדפים התבלבל.
+async function buildFormQrs(students, year) {
+  const QRCode = require("qrcode");
+  const map = {};
+  for (const s of students) {
+    map[s.id] = {};
+    for (const page of [1, 2]) {
+      map[s.id][page] = await QRCode.toString(`HD|${s.id}|${year}|${page}`, {
+        type: "svg", errorCorrectionLevel: "M", margin: 0, width: 74,
+      });
+    }
+  }
+  return map;
+}
+
+router.get("/health-declaration/view", async (req, res) => {
   let classIds = req.query.class_id || [];
   if (!Array.isArray(classIds)) classIds = [classIds];
 
@@ -996,7 +1018,11 @@ router.get("/health-declaration/view", (req, res) => {
     birth_country: s.birth_country || "ישראל",
   }));
 
-  res.render("reports/health-declaration-print", { students });
+  // qrs נדרש בתבנית לקוד הזיהוי. בלעדיו כל ההפקה נופלת בשגיאת שרת.
+  const { getCurrentYear } = require("../yearManager");
+  const year = getCurrentYear();
+  const qrs = await buildFormQrs(students, year);
+  res.render("reports/health-declaration-print", { students, qrs, year });
 });
 
 // ============ כמות שולחנות וכסאות בכיתה - לפי סניפים ============
