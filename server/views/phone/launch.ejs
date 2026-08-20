@@ -1,71 +1,35 @@
 <!DOCTYPE html>
-<html lang="he" dir="rtl">
-<head>
-  <meta charset="UTF-8" />
-  <title>שיחה נכנסת…</title>
-  <style>
-    /* דף ביניים. 3CX פותחת אותו כלשונית רגילה, והוא פותח מיד חלון קטן
-       וסוגר את עצמו. window.open עם גודל כן מכובד - בניגוד ל-resizeTo
-       על חלון קיים - ולכן זו הדרך היחידה שאינה תלויה ברישום ווינדוס. */
-    body {
-      font-family: "Segoe UI", Arial, sans-serif; direction: rtl;
-      background: #0d1b2e; color: #e8eef5; text-align: center;
-      padding: 60px 20px; margin: 0;
-    }
-    .num { font-size: 1.6em; font-weight: 700; direction: ltr; margin: 12px 0; }
-    .hint { color: #9fb0c2; font-size: 0.9em; line-height: 1.8; margin-top: 18px; }
-    a.btn {
-      display: inline-block; margin-top: 14px; background: #c9974c; color: #12203a;
-      padding: 9px 22px; border-radius: 7px; text-decoration: none; font-weight: 700;
-    }
-  </style>
+<html lang="he" dir="rtl"><head><meta charset="UTF-8"><title>שיחה</title>
+<%# דף משגר מינימלי בכוונה.
+    3CX בגרסה זו יודעת רק לפתוח כתובת - אין בה אפשרות להריץ תוכנית -
+    ולכן לשונית הביניים היא הכרח. מה שכן בשליטתנו הוא כמה זמן היא
+    נראית: הסקריפט רץ בתוך ה-head, לפני שהדפדפן צייר משהו, וכך
+    ההבזק הלבן נחסך.
+    הרקע כהה כדי שגם אם ייראה משהו - הוא יתמזג ולא יהבהב לבן. %>
+<style>html,body{background:#0d1b2e;margin:0;height:100%}</style>
+<script>
+(function () {
+  var url = <%- JSON.stringify(target) %>;
+  // שם קבוע: שיחה חדשה מחליפה את התוכן בחלון הקיים במקום להצטבר
+  var w = window.open(url, "ttcall",
+    "width=430,height=620,left=40,top=300,menubar=no,toolbar=no,location=no,status=no");
+  if (w) {
+    try { w.focus(); } catch (e) {}
+    // סגירה מיידית. נחסמת ברוב הדפדפנים כי הלשונית לא נפתחה מקוד,
+    // ואז מוצג התוכן שב-body במקום דף לבן.
+    window.close();
+  } else {
+    // חלונות קופצים חסומים - מפנים את הלשונית עצמה ליעד,
+    // כך שלפחות הכרטיס ייפתח.
+    window.location.replace(url);
+  }
+})();
+</script>
 </head>
 <body>
-  <div style="font-size:2.4em;">📞</div>
-  <div class="num"><%= number %></div>
-  <div id="status">פותח את כרטיס המתקשר…</div>
-
-  <div class="hint" id="manual" style="display:none;">
-    ✓ כרטיס המתקשר נפתח בחלון נפרד.<br>
-    אפשר לסגור את הלשונית הזו.
-    <br><button class="btn" onclick="window.close()" style="border:none;cursor:pointer;font-family:inherit;font-size:1em;">סגירת הלשונית</button>
-  </div>
-
-  <div class="hint" id="fallback" style="display:none;">
-    הדפדפן חסם את פתיחת החלון.<br>
-    יש לאשר חלונות קופצים לאתר זה — או ללחוץ כאן:
-    <br><a class="btn" href="<%= target %>">פתיחת הכרטיס</a>
-  </div>
-
-  <script>
-    (function () {
-      var url = <%- JSON.stringify(target) %>;
-      // שם קבוע לחלון: שיחה חדשה מחליפה את התוכן בחלון הקיים במקום
-      // לפתוח עשרים חלונות ביום.
-      var w = window.open(url, "ttcall",
-        "width=430,height=620,left=40,top=300,menubar=no,toolbar=no,location=no,status=no");
-
-      if (w) {
-        try { w.focus(); } catch (e) {}
-        document.getElementById("status").textContent = "נפתח בחלון נפרד.";
-        // ניסיון לסגור את הלשונית המשגרת. הדפדפן מרשה זאת רק לחלון
-        // שנפתח מקוד, וזה נפתח על ידי 3CX - ולכן ברוב המקרים ייכשל,
-        // והלשונית נשארת פתוחה וריקה. לכן אחרי הניסיון מוצג כאן תוכן
-        // מובן עם כפתור סגירה, במקום דף לבן שנראה כתקלה.
-        setTimeout(function () {
-          try { window.close(); } catch (e) {}
-          // אם עדיין כאן - הסגירה נחסמה
-          setTimeout(showManualClose, 300);
-        }, 300);
-      } else {
-        document.getElementById("status").style.display = "none";
-        document.getElementById("fallback").style.display = "block";
-      }
-      function showManualClose() {
-        document.getElementById("status").style.display = "none";
-        document.getElementById("manual").style.display = "block";
-      }
-    })();
-  </script>
-</body>
-</html>
+<div style="font-family:'Segoe UI',Arial,sans-serif;direction:rtl;color:#9fb0c2;
+            text-align:center;padding:40px 20px;font-size:0.9em;line-height:1.9">
+  ✓ כרטיס המתקשר נפתח בחלון נפרד.<br>
+  <span style="opacity:.7">אפשר לסגור את הלשונית הזו.</span>
+</div>
+</body></html>
