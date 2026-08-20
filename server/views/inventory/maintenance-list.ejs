@@ -161,9 +161,15 @@
   @media print {
     /* מדפיסים את הטבלה בלבד. התפריט, הסינון והכפתורים גוזלים רוחב
        ודוחפים את העמודות האחרונות - ובהן הדחיפות - מחוץ לדף. */
-    header, nav, .side-dock-wrap, .actions, .no-print, form.filters { display: none !important; }
-    table thead th:first-child, table tbody td:first-child,
-    table thead th:last-child,  table tbody td:last-child { display: none !important; }
+      /* מסתירים רק את מה שבוודאות אינו הטבלה. כלל גורף כמו .actions
+         מסוכן - הוא עלול לעטוף גם תוכן שצריך להדפיס. */
+      .side-dock-wrap { display: none !important; }
+      /* עמודת הסימון ועמודת הפעולות - אין להן משמעות על נייר */
+      table thead th:first-child, table tbody td:first-child { display: none !important; }
+      table thead th:last-child, table tbody td:last-child { display: none !important; }
+      /* בורר הסטטוס מוחלף בטקסט: הבורר עצמו רחב ודוחף עמודות */
+      table td select { border: none; background: none; appearance: none; padding: 0; }
+      table td form button { display: none !important; }
     /* בלי זה הדפדפן מסיר צבעי רקע והדחיפות יוצאת לבנה על לבן */
     td.urg { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     table { width: 100%; font-size: 9pt; }
