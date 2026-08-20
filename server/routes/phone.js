@@ -69,11 +69,29 @@ router.get("/incoming", (req, res) => {
   const number = String(raw).replace(/^web\+ttcall:\/*/i, "").trim();
   const matches = findByPhone(number);
 
-  // התאמה אחת - ישר לכרטיס. זה המקרה הרווח, ואין טעם במסך ביניים.
-  if (matches.length === 1) return res.redirect(matches[0].url + "?call=" + encodeURIComponent(number));
+  // חלון קומפקטי תמיד, גם בהתאמה יחידה. קודם הפניתי ישירות לכרטיס
+  // המלא, וזה השתלט על החלון שעובדים בו באמצע עבודה. עכשיו נפתח חלון
+  // קטן שמראה מי מתקשר, וממנו נכנסים לכרטיס רק אם צריך.
+  //
+  // לכל התאמה מצורפים גם התלמידים, כי בשיחה מהורה זה המידע שמחפשים.
+  for (const m of matches) {
+    if (m.kind === "family") {
+      m.students = db.prepare(`
+        SELECT s.first_name, s.nickname, s.status, COALESCE(f.last_name, s.last_name) AS last_name,
+               c.name AS class_name, c.parallel
+        FROM students s
+        LEFT JOIN families f ON s.family_id = f.id
+        LEFT JOIN classes c ON s.class_id = c.id
+        WHERE s.family_id = ? AND s.status <> 'ארכיון'
+        ORDER BY s.status <> 'פעיל', c.grade_order, s.first_name`).all(m.id).map((s) => ({
+          name: ((s.last_name || "") + " " + (s.nickname || s.first_name || "")).trim(),
+          cls: s.class_name ? (s.class_name + " " + (s.parallel || "")).trim() : "",
+          inactive: s.status !== "פעיל",
+        }));
+    }
+  }
 
-  // כמה התאמות (למשל אותו טלפון בית לשתי משפחות) או אף אחת - מסך בחירה
-  res.render("phone/incoming", { number, matches });
+  res.render("phone/popup", { number, matches });
 });
 
 // ============ בדיקת JSON ============

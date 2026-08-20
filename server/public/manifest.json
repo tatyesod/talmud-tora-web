@@ -24,7 +24,7 @@
     }
   ],
   "launch_handler": {
-    "client_mode": "navigate-existing"
+    "client_mode": "navigate-new"
   },
   "scope": "/",
   "protocol_handlers": [

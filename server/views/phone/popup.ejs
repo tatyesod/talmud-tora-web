@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>📞 <%= number %></title>
+  <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+  <style>
+    /* חלון שיחה: עצמאי לגמרי, בלי התפריט ובלי מסגרת המערכת. הכוונה
+       שייפתח קטן לצד מה שעובדים עליו ולא יכסה את המסך. */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "Segoe UI", "Arial Hebrew", Arial, sans-serif;
+      direction: rtl; background: #0d1b2e; color: #e8eef5;
+      padding: 12px; font-size: 14px; min-height: 100vh;
+    }
+    .call-head {
+      display: flex; align-items: center; gap: 8px;
+      border-bottom: 1px solid rgba(255,255,255,0.15);
+      padding-bottom: 8px; margin-bottom: 10px;
+    }
+    .call-icon { font-size: 1.4em; }
+    .call-num { font-weight: 700; font-size: 1.15em; direction: ltr; }
+    .call-sub { font-size: 0.78em; color: #9fb0c2; }
+
+    .hit {
+      background: rgba(255,255,255,0.06); border-radius: 8px;
+      padding: 10px 12px; margin-bottom: 8px;
+    }
+    .hit-name { font-weight: 700; font-size: 1.05em; color: #fff; }
+    .hit-meta { font-size: 0.82em; color: #9fb0c2; margin-top: 2px; }
+    .hit-field { font-size: 0.76em; color: #c9974c; margin-top: 2px; }
+    .hit a.open {
+      display: inline-block; margin-top: 7px; background: #c9974c; color: #12203a;
+      padding: 5px 12px; border-radius: 6px; text-decoration: none;
+      font-weight: 700; font-size: 0.88em;
+    }
+    .students { margin-top: 6px; font-size: 0.83em; color: #cfd9e4; line-height: 1.6; }
+    .students a { color: #e8eef5; }
+
+    .unknown {
+      background: rgba(224,168,0,0.15); border: 1px solid rgba(224,168,0,0.5);
+      border-radius: 8px; padding: 11px 13px; line-height: 1.7;
+    }
+    .actions { display: flex; gap: 7px; flex-wrap: wrap; margin-top: 10px; }
+    .actions a, .actions button {
+      background: rgba(255,255,255,0.1); color: #e8eef5; border: 1px solid rgba(255,255,255,0.2);
+      padding: 5px 11px; border-radius: 6px; text-decoration: none; font-size: 0.84em;
+      cursor: pointer; font-family: inherit;
+    }
+    .foot { margin-top: 12px; font-size: 0.75em; color: #7d8ea1; text-align: center; }
+  </style>
+</head>
+<body>
+  <div class="call-head">
+    <span class="call-icon">📞</span>
+    <div>
+      <div class="call-num"><%= number %></div>
+      <div class="call-sub">שיחה נכנסת</div>
+    </div>
+  </div>
+
+  <% if (matches.length === 0) { %>
+    <div class="unknown">
+      <strong>המספר אינו מוכר במערכת.</strong><br>
+      ייתכן שזו משפחה חדשה, או שהמספר שמור בפורמט אחר.
+    </div>
+    <div class="actions">
+      <a href="/families?q=<%= encodeURIComponent(number) %>" target="_blank" rel="noopener">חיפוש במשפחות</a>
+      <a href="/students?q=<%= encodeURIComponent(number) %>" target="_blank" rel="noopener">חיפוש בתלמידים</a>
+      <a href="/families/new" target="_blank" rel="noopener">רישום משפחה</a>
+    </div>
+  <% } else { %>
+    <% matches.forEach(m => { %>
+      <div class="hit">
+        <div class="hit-name"><%= m.title %></div>
+        <% if (m.subtitle) { %><div class="hit-meta"><%= m.subtitle %></div><% } %>
+        <div class="hit-field">התאים לפי: <%= m.matchedField %></div>
+        <% if (m.students && m.students.length) { %>
+          <div class="students">
+            <% m.students.forEach(s => { %>
+              <%# גם תלמידים שאינם פעילים מוצגים, מסומנים - הורה עשוי
+                  להתקשר בדיוק בגללם %>
+              <div<%= s.inactive ? ' style="opacity:0.6"' : '' %>>
+                👦 <%= s.name %><% if (s.cls) { %> — <%= s.cls %><% } %><% if (s.inactive) { %> <span style="font-size:0.85em;">(לא פעיל)</span><% } %>
+              </div>
+            <% }) %>
+          </div>
+        <% } %>
+        <%# נפתח בלשונית נפרדת, כדי שחלון השיחה יישאר קטן וזמין %>
+        <a class="open" href="<%= m.url %>" target="_blank" rel="noopener">פתיחת הכרטיס ←</a>
+      </div>
+    <% }) %>
+  <% } %>
+
+  <div class="actions">
+    <button type="button" onclick="window.close()">סגירת החלון</button>
+  </div>
+
+  <div class="foot">חלון זה נפתח אוטומטית משיחה נכנסת</div>
+
+  <script>
+    // גודל נוח: מספיק לראות מי מתקשר, בלי לכסות את מה שעובדים עליו.
+    // resizeTo פועל רק על חלון שנפתח בקוד או כאפליקציה; אם הדפדפן
+    // חוסם - החלון פשוט נשאר בגודלו, ואין נזק.
+    try { window.resizeTo(420, 560); } catch (e) {}
+    try {
+      // פינה שמאלית תחתונה, מחוץ לאזור העבודה הרגיל
+      window.moveTo(20, Math.max(20, (screen.availHeight || 900) - 600));
+    } catch (e) {}
+  </script>
+</body>
+</html>
