@@ -688,6 +688,38 @@ app.use((req, res) => {
   res.status(404).render("404");
 });
 
+// ============ מטפל שגיאות כללי ============
+// בלעדיו Express מחזיר "Internal Server Error" בלבד - דף לבן בלי שום
+// רמז מה נשבר. כשהשגיאה תלויה בנתונים ומופיעה רק בייצור, זה הופך
+// אבחון של דקה לשעה של ניחושים.
+//
+// חייב להיות מוגדר אחרי כל המסלולים, ועם ארבעה פרמטרים - כך Express
+// מזהה אותו כמטפל שגיאות ולא כמידלוור רגיל.
+app.use(function (err, req, res, next) {
+  console.error("שגיאה בנתיב " + req.method + " " + req.originalUrl + ":");
+  console.error(err && err.stack ? err.stack : err);
+  if (res.headersSent) return next(err);
+
+  const msg = String((err && err.message) || err || "שגיאה לא ידועה");
+  const esc = (t) => String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;");
+  res.status(500).send(
+    '<!DOCTYPE html><html lang="he" dir="rtl"><head><meta charset="UTF-8">' +
+    "<title>שגיאה</title><style>" +
+    'body{font-family:"Segoe UI",Arial,sans-serif;direction:rtl;max-width:760px;' +
+    "margin:40px auto;padding:0 20px;line-height:1.8;color:#1a2733}" +
+    "h2{color:#8a3d1a}code{background:#eee7d8;padding:3px 8px;border-radius:4px;" +
+    "display:inline-block;direction:ltr;text-align:left;font-size:0.92em}" +
+    "a{color:#1d4257}</style></head><body>" +
+    "<h2>אירעה שגיאה</h2>" +
+    "<p>הנתיב: <code>" + esc(req.originalUrl) + "</code></p>" +
+    "<p>הסיבה: <code>" + esc(msg) + "</code></p>" +
+    '<p style="color:#666;font-size:0.9em">אפשר להעתיק את השורה הזו ולשלוח אותה, ' +
+    "היא מצביעה על מקור התקלה.</p>" +
+    '<p><a href="/">חזרה לדף הבית</a></p></body></html>'
+  );
+});
+
+
 app.listen(PORT, () => {
   console.log(`מערכת תלמוד תורה פועלת על http://localhost:${PORT}`);
 
