@@ -125,6 +125,10 @@
             <% const place = r.class_name ? r.class_name + (r.parallel ? ' (' + r.parallel + ')' : '') : (r.location || ''); %>
             <div class="wo-card">
               <div class="wo-head">
+                <%# תגית הדחיפות על הכרטיס עצמו. במסך היא נלמדת מהעמודה שבה
+                    הכרטיס יושב, אבל בהדפסה העמודות מתפרקות ואי אפשר לדעת
+                    מה שייך לאיזו רמה - ולכן היא חייבת להופיע כאן. %>
+                <span class="wo-lvl <%= lvl.cls %>"><%= lvl.icon %> <%= lvl.title %></span>
                 <span class="wo-branch"><%= r.effective_branch || '' %></span>
                 <% if (place) { %><span class="wo-place">📍 <%= place %></span><% } %>
                 <span class="wo-date"><%= r.created_at_str || '' %></span>
@@ -288,6 +292,18 @@
     font-size: 0.88em; opacity: 0.75;
   }
   .wo-hist-desc { flex: 1; }
+
+    /* תגית דחיפות על הכרטיס - בהדפסה זהו המידע היחיד שמעיד על הרמה */
+    .wo-lvl { font-size: 0.78em; font-weight: 800; border-radius: 5px; padding: 2px 8px; white-space: nowrap; }
+    .wo-lvl.lvl-critical { background: #c0392b; color: #fff; }
+    .wo-lvl.lvl-urgent   { background: #d98324; color: #fff; }
+    .wo-lvl.lvl-normal   { background: #2d7a4f; color: #fff; }
+
+    @media print {
+      /* בלי זה הדפדפן מסיר צבעי רקע בהדפסה, והדחיפות נעלמת */
+      .wo-lvl, .wo-col-head { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .wo-card { break-inside: avoid; page-break-inside: avoid; }
+    }
 </style>
 
 <script src="/js/media-capture.js?v=<%= typeof assetVersion !== 'undefined' ? assetVersion : '' %>" defer></script>
