@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <title>שיחה נכנסת…</title>
+  <style>
+    /* דף ביניים. 3CX פותחת אותו כלשונית רגילה, והוא פותח מיד חלון קטן
+       וסוגר את עצמו. window.open עם גודל כן מכובד - בניגוד ל-resizeTo
+       על חלון קיים - ולכן זו הדרך היחידה שאינה תלויה ברישום ווינדוס. */
+    body {
+      font-family: "Segoe UI", Arial, sans-serif; direction: rtl;
+      background: #0d1b2e; color: #e8eef5; text-align: center;
+      padding: 60px 20px; margin: 0;
+    }
+    .num { font-size: 1.6em; font-weight: 700; direction: ltr; margin: 12px 0; }
+    .hint { color: #9fb0c2; font-size: 0.9em; line-height: 1.8; margin-top: 18px; }
+    a.btn {
+      display: inline-block; margin-top: 14px; background: #c9974c; color: #12203a;
+      padding: 9px 22px; border-radius: 7px; text-decoration: none; font-weight: 700;
+    }
+  </style>
+</head>
+<body>
+  <div style="font-size:2.4em;">📞</div>
+  <div class="num"><%= number %></div>
+  <div id="status">פותח את כרטיס המתקשר…</div>
+
+  <div class="hint" id="fallback" style="display:none;">
+    הדפדפן חסם את פתיחת החלון.<br>
+    יש לאשר חלונות קופצים לאתר זה — או ללחוץ כאן:
+    <br><a class="btn" href="<%= target %>">פתיחת הכרטיס</a>
+  </div>
+
+  <script>
+    (function () {
+      var url = <%- JSON.stringify(target) %>;
+      // שם קבוע לחלון: שיחה חדשה מחליפה את התוכן בחלון הקיים במקום
+      // לפתוח עשרים חלונות ביום.
+      var w = window.open(url, "ttcall",
+        "width=430,height=620,left=40,top=300,menubar=no,toolbar=no,location=no,status=no");
+
+      if (w) {
+        try { w.focus(); } catch (e) {}
+        document.getElementById("status").textContent = "נפתח בחלון נפרד.";
+        // סוגרים את הלשונית הזו: היא שימשה רק כמשגר.
+        // window.close מותר רק על חלון שנפתח בקוד, ולכן ייתכן שייכשל -
+        // ואז נשארת הודעה מובנת במקום לשונית ריקה.
+        setTimeout(function () { try { window.close(); } catch (e) {} }, 400);
+      } else {
+        document.getElementById("status").style.display = "none";
+        document.getElementById("fallback").style.display = "block";
+      }
+    })();
+  </script>
+</body>
+</html>
