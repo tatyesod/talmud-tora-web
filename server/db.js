@@ -309,6 +309,22 @@ const migrations = [
   //   waiting  - כיתת המתנה: ילדים שנרשמו וטרם התחילו, ועולים למכינה א'
   "ALTER TABLE classes ADD COLUMN class_kind TEXT DEFAULT 'regular'",
 
+  // שיחות נכנסות. 3CX פונה לכתובת, השורה נרשמת כאן, והאפליקציה
+  // הפתוחה מושכת אותה ומקפיצה התראת מערכת.
+  //
+  // למה כך ולא פתיחת חלון: דפדפן אינו מרשה לאתר לפתוח חלון בלי
+  // לחיצת משתמש. התראה כן מותרת, ומופיעה גם כשהחלון ממוזער.
+  `CREATE TABLE IF NOT EXISTS incoming_calls (
+     id INTEGER PRIMARY KEY AUTOINCREMENT,
+     number TEXT,
+     matched_kind TEXT,
+     matched_title TEXT,
+     matched_subtitle TEXT,
+     target_url TEXT,
+     created_at TEXT
+   )`,
+  "CREATE INDEX IF NOT EXISTS idx_calls_created ON incoming_calls(created_at)",
+
   // ============ לוח שנת הלימודים ============
   // משימות פנימיות שחוזרות כל שנה בתאריך עברי קבוע - "רישום חדשים בכ"ח
   // חשון", "עדכון שכר לימוד בתחילת אב". נפרד ממודול האירועים, שהוא

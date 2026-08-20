@@ -145,6 +145,57 @@ function findByPhone(number) {
 // כלל, רק בדפדפן.
 //
 // window.open עם מידות כן מכובד, בניגוד ל-resizeTo על חלון שכבר נפתח.
+// ============ רישום שיחה נכנסת, בלי לפתוח כלום ============
+// 3CX פונה לכאן. השורה נרשמת, והאפליקציה הפתוחה מושכת אותה ומקפיצה
+// התראת מערכת. אין לשונית, אין הבזק.
+//
+// מחזיר תמונה שקופה זעירה ולא דף: אם 3CX פותחת לשונית בכל זאת,
+// היא תהיה ריקה לחלוטין ותיסגר מיד.
+router.get("/ring", (req, res) => {
+  const raw = req.query.number || req.query.n || "";
+  const number = String(raw).replace(/^(web\+ttcall|ttdial):\/*/i, "").trim();
+
+  if (number) {
+    let matches = findByExtension(number);
+    if (!matches.length) matches = findByPhone(number);
+    const m = matches[0];
+    try {
+      db.prepare(`INSERT INTO incoming_calls
+        (number, matched_kind, matched_title, matched_subtitle, target_url, created_at)
+        VALUES (?,?,?,?,?,?)`).run(
+        number,
+        m ? m.kind || "" : "",
+        m ? m.title || "" : "",
+        m ? m.subtitle || "" : "",
+        m ? m.url || "" : "/phone/incoming?number=" + encodeURIComponent(number),
+        new Date().toISOString()
+      );
+      // שמירה על טבלה קטנה: רק היום האחרון נדרש
+      db.prepare("DELETE FROM incoming_calls WHERE created_at < ?")
+        .run(new Date(Date.now() - 24 * 3600 * 1000).toISOString());
+    } catch (e) {
+      console.error("רישום שיחה נכשל:", e.message);
+    }
+  }
+
+  const px = Buffer.from(
+    "R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7", "base64");
+  res.setHeader("Content-Type", "image/gif");
+  res.setHeader("Cache-Control", "no-store");
+  res.end(px);
+});
+
+// השיחות מהדקה האחרונה - לתשאול מהאפליקציה הפתוחה
+router.get("/recent.json", (req, res) => {
+  const since = req.query.since ||
+    new Date(Date.now() - 60 * 1000).toISOString();
+  const rows = db.prepare(`
+    SELECT id, number, matched_title, matched_subtitle, target_url, created_at
+    FROM incoming_calls WHERE created_at > ? ORDER BY id DESC LIMIT 5
+  `).all(since);
+  res.json({ calls: rows, now: new Date().toISOString() });
+});
+
 router.get("/pop", (req, res) => {
   const raw = req.query.number || req.query.n || "";
   const number = String(raw).replace(/^(web\+ttcall|ttdial):\/*/i, "").trim();

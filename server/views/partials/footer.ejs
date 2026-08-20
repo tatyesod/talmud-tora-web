@@ -2,4 +2,7 @@
 </body>
 <script src="/js/auto-logout.js?v=<%= typeof assetVersion !== 'undefined' ? assetVersion : '' %>"></script>
 <script src="/js/scroll-to-top.js?v=<%= typeof assetVersion !== 'undefined' ? assetVersion : '' %>"></script>
+<%# התראת שיחה נכנסת. נטענת בכל דף ולא רק בדף הבית: שיחה עשויה
+    להגיע בזמן שעובדים על כל מסך שהוא. %>
+<script src="/js/call-notify.js?v=<%= typeof assetVersion !== 'undefined' ? assetVersion : '' %>"></script>
 </html>
