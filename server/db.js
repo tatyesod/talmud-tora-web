@@ -177,7 +177,6 @@ const migrations = [
   "ALTER TABLE maintenance_requests ADD COLUMN urgency TEXT",
   "UPDATE maintenance_requests SET status = 'פתוח' WHERE status IS NULL",
   "ALTER TABLE classes ADD COLUMN extension TEXT",
-  "ALTER TABLE staff_roles ADD COLUMN extension TEXT",
   "ALTER TABLE families ADD COLUMN archived_at TEXT",
   "ALTER TABLE families ADD COLUMN status TEXT DEFAULT 'פעיל'",
   `CREATE TABLE IF NOT EXISTS letter_templates (
@@ -432,11 +431,42 @@ const migrations = [
   "UPDATE classes SET class_kind = 'regular' WHERE class_kind IS NULL",
 ];
 
+// "עמודה כבר קיימת" היא התוצאה הרגילה בהרצה חוזרת ואין להתריע עליה.
+// אבל כל שגיאה אחרת - טעות תחביר, טבלה חסרה - חייבת להישמע: מיגרציה
+// שנכשלת בשקט משאירה את המסד חסר עמודה, וכל מסך שמשתמש בה נופל
+// ב-Internal Server Error בלי שום רמז מאיפה זה מגיע.
+const migrationFailures = [];
 for (const sql of migrations) {
   try {
     db.exec(sql);
   } catch (e) {
-    // עמודה כבר קיימת — מתעלמים מהשגיאה
+    const msg = String(e && e.message || e);
+    if (/duplicate column name|already exists/i.test(msg)) continue;
+    migrationFailures.push({ sql: sql.slice(0, 90).replace(/\s+/g, " "), msg });
+    console.error("מיגרציה נכשלה: " + msg + "\n   " + sql.slice(0, 120).replace(/\s+/g, " "));
+  }
+}
+if (migrationFailures.length) {
+  console.error("=".repeat(60));
+  console.error(migrationFailures.length + " מיגרציות נכשלו. מסכים שתלויים בהן ייפלו.");
+  console.error("=".repeat(60));
+}
+
+// בדיקת שלמות: עמודות שקוד המערכת מסתמך עליהן. אם אחת חסרה, עדיף
+// לדעת בעלייה מאשר לגלות ממסך שנופל.
+const REQUIRED = [
+  ["classes", "grade_order"], ["classes", "class_kind"], ["classes", "extension"],
+  ["classes", "transfer_number"], ["students", "walks_alone"],
+  ["families", "father_synagogue"],
+];
+for (const [table, col] of REQUIRED) {
+  try {
+    const cols = db.prepare(`PRAGMA table_info(${table})`).all().map((c) => c.name);
+    if (!cols.includes(col)) {
+      console.error(`חסרה עמודה: ${table}.${col} — מסכים שמשתמשים בה ייכשלו!`);
+    }
+  } catch (e) {
+    console.error("בדיקת שלמות נכשלה עבור " + table + ": " + e.message);
   }
 }
 
@@ -1121,6 +1151,15 @@ try {
       UNIQUE(name, branch)
     )
   `);
+
+// עמודת השלוחה מתווספת כאן ולא ברשימת המיגרציות הכללית: הרשימה רצה
+// לפני יצירת הטבלה, ולכן המיגרציה נכשלה בכל עלייה. היא נבלעה בשקט
+// כי הלולאה התעלמה מכל שגיאה.
+try {
+  db.exec("ALTER TABLE staff_roles ADD COLUMN extension TEXT");
+} catch (e) {
+  // העמודה כבר קיימת - תקין
+}
   db.exec(`
     CREATE TABLE IF NOT EXISTS staff_role_assignments (
       id INTEGER PRIMARY KEY,
