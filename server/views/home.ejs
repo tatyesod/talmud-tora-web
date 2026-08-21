@@ -142,22 +142,22 @@
 
     <div class="nav-section-divider"></div>
 
-    <%# שיחות אחרונות. מוצגות רק כשיש, ומאפשרות לראות מי התקשר גם
-        אם ההתראה נעלמה או לא הופיעה. %>
+    <%# שיחות אחרונות - פס דק אחד, לא תיבה. הגרסה הקודמת הייתה תיבה
+        מרכזית שדחפה את כל הכרטיסים מטה. %>
     <% if (typeof recentCalls !== 'undefined' && recentCalls.length) { %>
-      <div class="calls-box">
-        <div class="calls-head">📞 שיחות אחרונות</div>
-        <% recentCalls.slice(0, 5).forEach(c => { %>
-          <div class="calls-item">
-            <span class="calls-time"><%= new Date(c.created_at).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' }) %></span>
-            <% if (c.matched_title) { %>
-              <a href="<%= c.target_url %>"><%= c.matched_title %></a><% if (c.matched_subtitle) { %><span class="calls-sub"> · <%= c.matched_subtitle %></span><% } %>
-            <% } else { %>
-              <span class="calls-unknown"><%= c.number %> — אינו מוכר</span>
-            <% } %>
-            <span class="calls-num"><%= c.number %></span>
-          </div>
-        <% }) %>
+      <div class="calls-strip">
+        <span class="calls-label">📞</span>
+        <% const c = recentCalls[0]; %>
+        <span class="calls-time"><%= new Date(c.created_at).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' }) %></span>
+        <% if (c.matched_title) { %>
+          <a href="<%= c.target_url %>"><%= c.matched_title %></a>
+        <% } else { %>
+          <span class="calls-unknown"><%= c.number %></span>
+        <% } %>
+        <% if (recentCalls.length > 1) { %>
+          <span class="calls-more">ועוד <%= recentCalls.length - 1 %></span>
+        <% } %>
+        <a href="/phone/calls" class="calls-all">יומן שיחות ←</a>
       </div>
     <% } %>
 

@@ -136,6 +136,33 @@ function findByPhone(number) {
 // ============ שיחה נכנסת ============
 // זהו היעד שמוגדר באפליקציית 3CX. היא פותחת אותו עם מספר המתקשר,
 // והמסך מפנה ישירות לכרטיס המתאים - בלי שהמזכירה מחפשת.
+// ============ יומן השיחות ============
+// כל השיחות של יום נתון. ברירת המחדל היום, ואפשר לדפדף אחורה.
+router.get("/calls", (req, res) => {
+  const day = String(req.query.day || "").trim();
+  // ברירת מחדל: היום, לפי שעון ישראל ולא שעון השרת
+  const now = new Date();
+  const isoDay = day || new Date(now.getTime() + 3 * 3600 * 1000)
+    .toISOString().slice(0, 10);
+
+  const from = isoDay + "T00:00:00.000Z";
+  const to = isoDay + "T23:59:59.999Z";
+  const calls = db.prepare(`
+    SELECT * FROM incoming_calls
+    WHERE created_at BETWEEN ? AND ? ORDER BY id DESC
+  `).all(from, to);
+
+  const days = db.prepare(`
+    SELECT DISTINCT substr(created_at, 1, 10) AS d, COUNT(*) AS n
+    FROM incoming_calls GROUP BY d ORDER BY d DESC LIMIT 30
+  `).all();
+
+  res.render("phone/calls", {
+    calls, days, isoDay,
+    known: calls.filter((c) => c.matched_title).length,
+  });
+});
+
 // ============ משגר חלון השיחה ============
 // 3CX פותחת כתובת רגילה בדפדפן. הדף הזה פותח מיד חלון קטן בגודל קבוע
 // וסוגר את עצמו.
@@ -206,6 +233,26 @@ router.get("/recent.json", (req, res) => {
 router.get("/pop", (req, res) => {
   const raw = req.query.number || req.query.n || "";
   const number = String(raw).replace(/^(web\+ttcall|ttdial):\/*/i, "").trim();
+
+  // רישום השיחה גם כאן, לא רק ב-/ring. כך החלון הקופץ ממשיך לעבוד
+  // כרגיל, ובמקביל נשמרת היסטוריה שאפשר לחזור אליה - שיחה שפספסת
+  // אינה נעלמת.
+  if (number) {
+    try {
+      let matches = findByExtension(number);
+      if (!matches.length) matches = findByPhone(number);
+      const m = matches[0];
+      db.prepare(`INSERT INTO incoming_calls
+        (number, matched_kind, matched_title, matched_subtitle, target_url, created_at)
+        VALUES (?,?,?,?,?,?)`).run(
+        number, m ? m.kind || "" : "", m ? m.title || "" : "",
+        m ? m.subtitle || "" : "",
+        m ? m.url || "" : "/phone/incoming?number=" + encodeURIComponent(number),
+        new Date().toISOString());
+      db.prepare("DELETE FROM incoming_calls WHERE created_at < ?")
+        .run(new Date(Date.now() - 30 * 24 * 3600 * 1000).toISOString());
+    } catch (e) { console.error("רישום שיחה נכשל:", e.message); }
+  }
   res.render("phone/launch", {
     number,
     target: "/phone/incoming?number=" + encodeURIComponent(number),

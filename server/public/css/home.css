@@ -994,16 +994,19 @@
 
 
 /* ===== שיחות אחרונות ===== */
-.calls-box {
-  background: rgba(45,122,79,0.12);
-  border: 1px solid rgba(45,122,79,0.45);
-  border-radius: 10px; padding: 10px 15px; margin: 0 auto 14px;
-  max-width: 1100px; font-size: 0.9em; line-height: 1.8;
+/* פס דק ולא תיבה: הגרסה הקודמת דחפה את כל הכרטיסים מטה */
+.calls-strip {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  max-width: 1100px; margin: 0 auto 10px;
+  padding: 5px 14px; font-size: 0.84em;
+  background: rgba(45,122,79,0.10);
+  border: 1px solid rgba(45,122,79,0.3);
+  border-radius: 20px;
+  color: #cfd9e4;
 }
-.calls-head { font-weight: 700; color: #7fd0a0; margin-bottom: 4px; }
-.calls-item { color: #e8eef5; display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
-.calls-item a { color: #fff; text-decoration: underline; }
-.calls-time { color: #9fb0c2; font-size: 0.85em; min-width: 42px; }
-.calls-sub { color: #b9c4cd; font-size: 0.9em; }
-.calls-num { color: #7d8ea1; font-size: 0.82em; direction: ltr; margin-inline-start: auto; }
+.calls-label { font-size: 1.05em; }
+.calls-time { color: #9fb0c2; }
+.calls-strip a { color: #fff; text-decoration: underline; }
 .calls-unknown { color: #d8b06a; }
+.calls-more { color: #9fb0c2; font-size: 0.92em; }
+.calls-all { margin-inline-start: auto; color: #7fd0a0 !important; text-decoration: none !important; font-size: 0.95em; }

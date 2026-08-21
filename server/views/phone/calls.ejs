@@ -1,0 +1,78 @@
+<%- include('../partials/header', {title: 'יומן שיחות'}) %>
+
+<div class="card">
+  <h1>📞 יומן שיחות</h1>
+
+  <p style="color:var(--muted); font-size:0.9em; line-height:1.7;">
+    כל השיחות הנכנסות שנרשמו. שיחה שפספסת אינה נעלמת — היא כאן.
+    לחיצה על שם פותחת את הכרטיס.
+  </p>
+
+  <div style="display:flex; gap:18px; flex-wrap:wrap; margin:12px 0; font-size:0.94em;">
+    <span>תאריך: <strong><%= isoDay.split('-').reverse().join('/') %></strong></span>
+    <span>שיחות: <strong><%= calls.length %></strong></span>
+    <span style="color:#2d7a4f;">מזוהות: <strong><%= known %></strong></span>
+    <% if (calls.length - known) { %>
+      <span style="color:#a6740c;">לא מוכרות: <strong><%= calls.length - known %></strong></span>
+    <% } %>
+  </div>
+
+  <%# בורר יום. מוצגים רק ימים שיש בהם שיחות - אין טעם לדפדף בריקים. %>
+  <% if (days.length > 1) { %>
+    <div class="form-group" style="max-width:280px;">
+      <label>יום</label>
+      <select onchange="location.href='/phone/calls?day=' + this.value">
+        <% days.forEach(d => { %>
+          <option value="<%= d.d %>" <%= d.d === isoDay ? 'selected' : '' %>>
+            <%= d.d.split('-').reverse().join('/') %> — <%= d.n %> שיחות
+          </option>
+        <% }) %>
+      </select>
+    </div>
+  <% } %>
+
+  <% if (calls.length === 0) { %>
+    <p class="empty-state">אין שיחות רשומות ביום זה.</p>
+  <% } else { %>
+    <div class="table-scroll-wrap">
+      <table>
+        <thead>
+          <tr><th>שעה</th><th>מי התקשר</th><th>פרטים</th><th>מספר</th><th></th></tr>
+        </thead>
+        <tbody>
+          <% calls.forEach(c => { %>
+            <tr>
+              <td style="white-space:nowrap;">
+                <%= new Date(c.created_at).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' }) %>
+              </td>
+              <td>
+                <% if (c.matched_title) { %>
+                  <strong><%= c.matched_title %></strong>
+                <% } else { %>
+                  <span style="color:#a6740c;">אינו מוכר במערכת</span>
+                <% } %>
+              </td>
+              <td style="color:var(--muted); font-size:0.9em;"><%= c.matched_subtitle || '' %></td>
+              <td style="direction:ltr; text-align:right;"><%= c.number %></td>
+              <td style="width:1%; white-space:nowrap;">
+                <% if (c.target_url) { %>
+                  <a href="<%= c.target_url %>" class="btn small secondary">פתיחה</a>
+                <% } %>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  <% } %>
+
+  <div class="actions" style="margin-top:16px;">
+    <a href="/" class="btn secondary">חזרה לדף הבית</a>
+  </div>
+
+  <p style="color:var(--muted); font-size:0.8em; margin-top:14px;">
+    שיחות נשמרות 30 יום ואז נמחקות אוטומטית.
+  </p>
+</div>
+
+<%- include('../partials/footer') %>
