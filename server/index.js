@@ -478,6 +478,16 @@ app.get("/", (req, res) => {
     stats, branchStats, unassignedClassCount, mismatchedBranchCount, monthlyTotal, currentYear, hebrewDateToday, dayName,
     // משימות מלוח שנת הלימודים שמועד הביצוע שלהן מתקרב. זו התשובה
     // ל"מה שולחים מתי" - במקום להיזכר, המערכת מזכירה.
+    // שיחות אחרונות. התראה שנעלמת אינה מספיקה - שיחה שלא ראית
+    // נעלמת בלי עקבות. הרשימה גם מאפשרת לוודא שהשיחות בכלל נרשמות.
+    recentCalls: (() => {
+      try {
+        return db.prepare(`
+          SELECT id, number, matched_title, matched_subtitle, target_url, created_at
+          FROM incoming_calls ORDER BY id DESC LIMIT 8
+        `).all();
+      } catch (e) { return []; }
+    })(),
     yearTasksDue: (() => {
       try { return require("./routes/year-calendar").dueTasks(); }
       catch (e) { return []; }   // הלוח עוד ריק או שגיאה - דף הבית לא נופל

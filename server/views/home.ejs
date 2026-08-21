@@ -142,6 +142,25 @@
 
     <div class="nav-section-divider"></div>
 
+    <%# שיחות אחרונות. מוצגות רק כשיש, ומאפשרות לראות מי התקשר גם
+        אם ההתראה נעלמה או לא הופיעה. %>
+    <% if (typeof recentCalls !== 'undefined' && recentCalls.length) { %>
+      <div class="calls-box">
+        <div class="calls-head">📞 שיחות אחרונות</div>
+        <% recentCalls.slice(0, 5).forEach(c => { %>
+          <div class="calls-item">
+            <span class="calls-time"><%= new Date(c.created_at).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' }) %></span>
+            <% if (c.matched_title) { %>
+              <a href="<%= c.target_url %>"><%= c.matched_title %></a><% if (c.matched_subtitle) { %><span class="calls-sub"> · <%= c.matched_subtitle %></span><% } %>
+            <% } else { %>
+              <span class="calls-unknown"><%= c.number %> — אינו מוכר</span>
+            <% } %>
+            <span class="calls-num"><%= c.number %></span>
+          </div>
+        <% }) %>
+      </div>
+    <% } %>
+
     <%# תזכורות מלוח שנת הלימודים. מוצגות רק כשיש משהו מתקרב, כדי שלא
         יהפכו לרעש שמתעלמים ממנו. %>
     <% if (typeof yearTasksDue !== 'undefined' && yearTasksDue.length) { %>

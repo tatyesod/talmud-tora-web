@@ -991,3 +991,19 @@
 .yc-alert-item a { color: #fff; text-decoration: underline; }
 .yc-alert-date { color: #b9c4cd; font-size: 0.85em; margin-inline-start: 6px; }
 .yc-alert-more { display: inline-block; margin-top: 5px; font-size: 0.86em; color: #e0b968; }
+
+
+/* ===== שיחות אחרונות ===== */
+.calls-box {
+  background: rgba(45,122,79,0.12);
+  border: 1px solid rgba(45,122,79,0.45);
+  border-radius: 10px; padding: 10px 15px; margin: 0 auto 14px;
+  max-width: 1100px; font-size: 0.9em; line-height: 1.8;
+}
+.calls-head { font-weight: 700; color: #7fd0a0; margin-bottom: 4px; }
+.calls-item { color: #e8eef5; display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+.calls-item a { color: #fff; text-decoration: underline; }
+.calls-time { color: #9fb0c2; font-size: 0.85em; min-width: 42px; }
+.calls-sub { color: #b9c4cd; font-size: 0.9em; }
+.calls-num { color: #7d8ea1; font-size: 0.82em; direction: ltr; margin-inline-start: auto; }
+.calls-unknown { color: #d8b06a; }
