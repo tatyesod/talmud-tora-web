@@ -178,11 +178,18 @@ router.get("/ring", (req, res) => {
     }
   }
 
-  const px = Buffer.from(
-    "R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7", "base64");
-  res.setHeader("Content-Type", "image/gif");
+  // 3CX פותחת לשונית גם כשהתשובה אינה דף - פיקסל שקוף הוצג כמסך
+  // שחור. לכן מוחזר דף זעיר שסוגר את עצמו מיד.
+  res.setHeader("Content-Type", "text/html; charset=utf-8");
   res.setHeader("Cache-Control", "no-store");
-  res.end(px);
+  res.end(
+    '<!DOCTYPE html><html><head><meta charset="UTF-8">' +
+    "<style>html,body{background:#fff;margin:0}</style>" +
+    "<script>window.close();</script></head>" +
+    '<body><div style="font-family:Arial;direction:rtl;text-align:center;' +
+    'padding:30px;color:#666;font-size:14px">✓ השיחה נרשמה — ההתראה תופיע מיד.' +
+    "<br><small>אפשר לסגור את הלשונית.</small></div></body></html>"
+  );
 });
 
 // השיחות מהדקה האחרונה - לתשאול מהאפליקציה הפתוחה
