@@ -200,9 +200,15 @@ router.get("/calls", (req, res) => {
 
   const from = isoDay + "T00:00:00.000Z";
   const to = isoDay + "T23:59:59.999Z";
-  // סינון לפי שלוחה. אם היא מקובצת, מוצגות כל שלוחות הקבוצה יחד -
-  // כך מזכיר שעובר בין סניפים רואה את שתיהן בלי להחליף מסך.
-  const ext = String(req.query.ext || "").replace(/\D/g, "");
+  // סינון לפי שלוחה. ברירת המחדל היא השלוחה של המשתמש המחובר, כדי
+  // שכל אחד יראה את השיחות שלו בלבד - ולא של כל המערכת.
+  // מנהל יכול לראות הכל עם ?all=1.
+  const isAdminUser = req.currentUser && req.currentUser.is_admin;
+  const myExt = req.currentUser && req.currentUser.extension
+    ? String(req.currentUser.extension).replace(/\D/g, "") : "";
+  const showAll = isAdminUser && req.query.all === "1";
+  const ext = showAll ? "" :
+    (String(req.query.ext || "").replace(/\D/g, "") || myExt);
   const group = ext ? groupFor(ext) : [];
   let sql = "SELECT * FROM incoming_calls WHERE created_at BETWEEN ? AND ?";
   const params = [from, to];
@@ -219,7 +225,8 @@ router.get("/calls", (req, res) => {
   `).all();
 
   res.render("phone/calls", {
-    calls, days, isoDay, ext, group,
+    calls, days, isoDay, ext, group, showAll, myExt,
+    isAdminUser: !!isAdminUser,
     known: calls.filter((c) => c.matched_title).length,
   });
 });

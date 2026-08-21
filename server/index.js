@@ -108,7 +108,7 @@ app.use((req, res, next) => {
 app.use((req, res, next) => {
   if (req.session.userId) {
     const db = require("./db");
-    const u = db.prepare("SELECT id, username, display_name, full_name, role_title, is_admin, force_password_change, drive_letter, nav_order, role FROM users WHERE id = ?").get(req.session.userId);
+    const u = db.prepare("SELECT id, username, display_name, full_name, role_title, extension, is_admin, force_password_change, drive_letter, nav_order, role FROM users WHERE id = ?").get(req.session.userId);
     if (u) {
       req.currentUser = u;
       res.locals.user = u.display_name || u.username;
@@ -482,10 +482,28 @@ app.get("/", (req, res) => {
     // נעלמת בלי עקבות. הרשימה גם מאפשרת לוודא שהשיחות בכלל נרשמות.
     recentCalls: (() => {
       try {
+        // רק השיחות של המשתמש. בלי הסינון הזה כל אחד ראה את השיחות
+        // של כולם - כולל שיחות שאינן מיועדות לו.
+        const myExt = req.currentUser && req.currentUser.extension
+          ? String(req.currentUser.extension).replace(/\D/g, "") : "";
+        if (!myExt) return [];   // בלי שלוחה מוגדרת - לא מציגים כלום
+
+        // שלוחות מקובצות: מזכיר שעובר בין סניפים רואה את שתיהן
+        let list = [myExt];
+        try {
+          for (const g of db.prepare("SELECT extensions FROM extension_groups").all()) {
+            const arr = String(g.extensions).split(/[,;\s]+/)
+              .map((x) => x.replace(/\D/g, "")).filter(Boolean);
+            if (arr.includes(myExt)) { list = arr; break; }
+          }
+        } catch (e) { /* אין קיבוצים */ }
+
         return db.prepare(`
-          SELECT id, number, matched_title, matched_subtitle, target_url, created_at
-          FROM incoming_calls ORDER BY id DESC LIMIT 8
-        `).all();
+          SELECT id, number, matched_title, matched_subtitle, target_url, created_at, note
+          FROM incoming_calls
+          WHERE to_extension IN (${list.map(() => "?").join(",")})
+          ORDER BY id DESC LIMIT 8
+        `).all(...list);
       } catch (e) { return []; }
     })(),
     yearTasksDue: (() => {

@@ -3,7 +3,9 @@ const router = express.Router();
 const db = require("../db");
 const { hashPassword } = require("../auth");
 
-const PROFILE_FIELDS = ["display_name", "full_name", "role_title", "phone", "email"];
+// extension - שלוחת הטלפון של המשתמש. קובעת אילו שיחות הוא רואה
+// ביומן ובפס בדף הבית.
+const PROFILE_FIELDS = ["display_name", "full_name", "role_title", "phone", "email", "extension"];
 
 router.get("/profile", (req, res) => {
   const user = db.prepare("SELECT * FROM users WHERE id = ?").get(req.currentUser.id);
@@ -43,9 +45,10 @@ router.post("/", (req, res) => {
   // רק תפקידים מוכרים מתקבלים; כל ערך אחר הופך למשתמש רגיל
   const safeRole = ["maintenance", "pedagogic"].includes(role) ? role : null;
   try {
-    db.prepare(`INSERT INTO users (username, password_hash, display_name, created_at, role, exclude_from_consult)
-      VALUES (?,?,?,?,?,?)`).run(
+    db.prepare(`INSERT INTO users (username, password_hash, display_name, extension, created_at, role, exclude_from_consult)
+      VALUES (?,?,?,?,?,?,?)`).run(
       username.trim(), hashPassword(password), display_name || username.trim(),
+      String(req.body.extension || "").replace(/\D/g, "") || null,
       new Date().toISOString(), safeRole, exclude_from_consult === "on" ? 1 : 0
     );
   } catch (e) {
