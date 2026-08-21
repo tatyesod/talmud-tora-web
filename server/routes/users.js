@@ -73,9 +73,12 @@ router.put("/:id", (req, res) => {
   const roleToSet = (isSelf || (target && target.is_admin)) ? null : safeRole;
   // תחזוקן לא מנהל את הסיסמה שלו, ולכן "חייב לשנות סיסמה" תמיד כבוי אצלו
   const forceFlag = roleToSet === "maintenance" ? 0 : (force_password_change === "on" ? 1 : 0);
-  db.prepare(`UPDATE users SET display_name = ?, force_password_change = ?, role = ?,
+  db.prepare(`UPDATE users SET display_name = ?, extension = ?, force_password_change = ?, role = ?,
     exclude_from_consult = ? WHERE id = ?`).run(
-    display_name, forceFlag, roleToSet, exclude_from_consult === "on" ? 1 : 0, req.params.id
+    // extension - בלעדיה המשתמש לא רואה שום שיחה. חסרה כאן קודם,
+    // ולכן השדה בטופס נשמר כאילו ולא נכתב למסד.
+    display_name, String(req.body.extension || "").replace(/\D/g, "") || null,
+    forceFlag, roleToSet, exclude_from_consult === "on" ? 1 : 0, req.params.id
   );
   if (password && password.trim()) {
     db.prepare("UPDATE users SET password_hash = ? WHERE id = ?").run(hashPassword(password), req.params.id);
