@@ -18,6 +18,14 @@
   </div>
 
   <%# בורר יום. מוצגים רק ימים שיש בהם שיחות - אין טעם לדפדף בריקים. %>
+  <% if (typeof group !== 'undefined' && group.length > 1) { %>
+    <div style="background:#e8f5ec; border:1px solid #2d7a4f; border-radius:8px;
+                padding:8px 14px; margin-bottom:12px; font-size:0.9em;">
+      מוצגות שיחות של שלוחות <strong><%= group.join(", ") %></strong> יחד.
+      <a href="/phone/calls?day=<%= isoDay %>">הצגת כל השיחות</a>
+    </div>
+  <% } %>
+
   <% if (days.length > 1) { %>
     <div class="form-group" style="max-width:280px;">
       <label>יום</label>
@@ -37,7 +45,7 @@
     <div class="table-scroll-wrap">
       <table>
         <thead>
-          <tr><th>שעה</th><th>מי התקשר</th><th>פרטים</th><th>מספר</th><th></th></tr>
+          <tr><th>שעה</th><th>מי התקשר</th><th>תקציר השיחה</th><th>מספר</th><th></th></tr>
         </thead>
         <tbody>
           <% calls.forEach(c => { %>
@@ -52,7 +60,16 @@
                   <span style="color:#a6740c;">אינו מוכר במערכת</span>
                 <% } %>
               </td>
-              <td style="color:var(--muted); font-size:0.9em;"><%= c.matched_subtitle || '' %></td>
+              <%# תקציר נערך במקום, בלי לעבור מסך %>
+              <td>
+                <form method="POST" action="/phone/calls/<%= c.id %>/note" style="display:flex; gap:5px;">
+                  <input type="hidden" name="back" value="/phone/calls?day=<%= isoDay %><%= ext ? '&ext=' + ext : '' %>" />
+                  <input type="text" name="note" value="<%= c.note || '' %>"
+                         placeholder="<%= c.matched_subtitle || 'מה סוכם…' %>"
+                         style="flex:1; font-size:0.88em; padding:3px 6px;" />
+                  <button type="submit" class="btn small secondary" title="שמירה">💾</button>
+                </form>
+              </td>
               <td style="direction:ltr; text-align:right;"><%= c.number %></td>
               <td style="width:1%; white-space:nowrap;">
                 <% if (c.target_url) { %>

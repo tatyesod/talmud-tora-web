@@ -136,8 +136,61 @@ function findByPhone(number) {
 // ============ שיחה נכנסת ============
 // זהו היעד שמוגדר באפליקציית 3CX. היא פותחת אותו עם מספר המתקשר,
 // והמסך מפנה ישירות לכרטיס המתאים - בלי שהמזכירה מחפשת.
+// שמירת תקציר שיחה. נכתב אחרי השיחה ומשמש תזכורת מה סוכם.
+router.post("/calls/:id/note", (req, res) => {
+  const note = String(req.body.note || "").trim().slice(0, 500);
+  db.prepare("UPDATE incoming_calls SET note = ? WHERE id = ?")
+    .run(note || null, req.params.id);
+  // חזרה למקום שממנו נשלח, כדי שלא לקפוץ בין מסכים
+  res.redirect(req.body.back || "/phone/calls");
+});
+
 // ============ יומן השיחות ============
 // כל השיחות של יום נתון. ברירת המחדל היום, ואפשר לדפדף אחורה.
+// ניהול קיבוץ שלוחות
+router.get("/groups", (req, res) => {
+  const groups = db.prepare("SELECT * FROM extension_groups ORDER BY name").all();
+  // כל השלוחות במערכת, לעזרה בהזנה
+  const exts = [
+    ...db.prepare(`SELECT extension, name || ' ' || COALESCE(parallel,'') AS label
+                   FROM classes WHERE COALESCE(extension,'') <> ''`).all(),
+    ...db.prepare(`SELECT extension, name || COALESCE(' · ' || branch, '') AS label
+                   FROM staff_roles WHERE COALESCE(extension,'') <> ''`).all(),
+  ].sort((a, b) => String(a.extension).localeCompare(String(b.extension)));
+  res.render("phone/groups", { groups, exts });
+});
+
+router.post("/groups", (req, res) => {
+  const name = String(req.body.name || "").trim();
+  const extensions = String(req.body.extensions || "").trim();
+  if (name && extensions) {
+    db.prepare(`INSERT INTO extension_groups (name, extensions, created_at)
+                VALUES (?,?,?)`).run(name, extensions, new Date().toISOString());
+  }
+  res.redirect("/phone/groups");
+});
+
+router.post("/groups/:id/delete", (req, res) => {
+  db.prepare("DELETE FROM extension_groups WHERE id = ?").run(req.params.id);
+  res.redirect("/phone/groups");
+});
+
+// שלוחות שמקובצות יחד עם שלוחה נתונה. מזכיר שעובר בין סניפים
+// מקבל את שתי השלוחות שלו, ולכן רואה את השיחות של שתיהן.
+function groupFor(ext) {
+  const clean = String(ext || "").replace(/\D/g, "");
+  if (!clean) return [];
+  try {
+    const groups = db.prepare("SELECT extensions FROM extension_groups").all();
+    for (const g of groups) {
+      const list = String(g.extensions).split(/[,;\s]+/)
+        .map((x) => x.replace(/\D/g, "")).filter(Boolean);
+      if (list.includes(clean)) return list;
+    }
+  } catch (e) { /* הטבלה טרם נוצרה */ }
+  return [clean];
+}
+
 router.get("/calls", (req, res) => {
   const day = String(req.query.day || "").trim();
   // ברירת מחדל: היום, לפי שעון ישראל ולא שעון השרת
@@ -147,10 +200,18 @@ router.get("/calls", (req, res) => {
 
   const from = isoDay + "T00:00:00.000Z";
   const to = isoDay + "T23:59:59.999Z";
-  const calls = db.prepare(`
-    SELECT * FROM incoming_calls
-    WHERE created_at BETWEEN ? AND ? ORDER BY id DESC
-  `).all(from, to);
+  // סינון לפי שלוחה. אם היא מקובצת, מוצגות כל שלוחות הקבוצה יחד -
+  // כך מזכיר שעובר בין סניפים רואה את שתיהן בלי להחליף מסך.
+  const ext = String(req.query.ext || "").replace(/\D/g, "");
+  const group = ext ? groupFor(ext) : [];
+  let sql = "SELECT * FROM incoming_calls WHERE created_at BETWEEN ? AND ?";
+  const params = [from, to];
+  if (group.length) {
+    sql += " AND to_extension IN (" + group.map(() => "?").join(",") + ")";
+    params.push(...group);
+  }
+  sql += " ORDER BY id DESC";
+  const calls = db.prepare(sql).all(...params);
 
   const days = db.prepare(`
     SELECT DISTINCT substr(created_at, 1, 10) AS d, COUNT(*) AS n
@@ -158,7 +219,7 @@ router.get("/calls", (req, res) => {
   `).all();
 
   res.render("phone/calls", {
-    calls, days, isoDay,
+    calls, days, isoDay, ext, group,
     known: calls.filter((c) => c.matched_title).length,
   });
 });
@@ -242,12 +303,16 @@ router.get("/pop", (req, res) => {
       let matches = findByExtension(number);
       if (!matches.length) matches = findByPhone(number);
       const m = matches[0];
+      // to: לאיזו שלוחה הגיעה השיחה. 3CX יכולה לשלוח זאת, ובלעדיה
+      // הקיבוץ בין סניפים לא יעבוד.
+      const toExt = String(req.query.to || req.query.ext || "").replace(/\D/g, "");
       db.prepare(`INSERT INTO incoming_calls
-        (number, matched_kind, matched_title, matched_subtitle, target_url, created_at)
-        VALUES (?,?,?,?,?,?)`).run(
+        (number, matched_kind, matched_title, matched_subtitle, target_url, to_extension, created_at)
+        VALUES (?,?,?,?,?,?,?)`).run(
         number, m ? m.kind || "" : "", m ? m.title || "" : "",
         m ? m.subtitle || "" : "",
         m ? m.url || "" : "/phone/incoming?number=" + encodeURIComponent(number),
+        toExt || null,
         new Date().toISOString());
       db.prepare("DELETE FROM incoming_calls WHERE created_at < ?")
         .run(new Date(Date.now() - 30 * 24 * 3600 * 1000).toISOString());

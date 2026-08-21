@@ -154,6 +154,13 @@
         <% } else { %>
           <span class="calls-unknown"><%= c.number %></span>
         <% } %>
+        <%# תקציר השיחה בתוך אותו פס. שדה שטוח בלי מסגרת כדי שלא
+            יגדיל את הגובה, ונשמר בלחיצת Enter. %>
+        <form method="POST" action="/phone/calls/<%= c.id %>/note" class="calls-note-form">
+          <input type="hidden" name="back" value="/" />
+          <input type="text" name="note" value="<%= c.note || '' %>"
+                 placeholder="תקציר השיחה…" class="calls-note" />
+        </form>
         <% if (recentCalls.length > 1) { %>
           <span class="calls-more">ועוד <%= recentCalls.length - 1 %></span>
         <% } %>

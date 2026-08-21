@@ -309,6 +309,15 @@ const migrations = [
   //   waiting  - כיתת המתנה: ילדים שנרשמו וטרם התחילו, ועולים למכינה א'
   "ALTER TABLE classes ADD COLUMN class_kind TEXT DEFAULT 'regular'",
 
+  // קיבוץ שלוחות: אותו אדם עם שתי שלוחות בשני סניפים. כשמוגדר,
+  // הוא רואה את השיחות של שתיהן יחד.
+  `CREATE TABLE IF NOT EXISTS extension_groups (
+     id INTEGER PRIMARY KEY AUTOINCREMENT,
+     name TEXT NOT NULL,
+     extensions TEXT NOT NULL,
+     created_at TEXT
+   )`,
+
   // שיחות נכנסות. 3CX פונה לכתובת, השורה נרשמת כאן, והאפליקציה
   // הפתוחה מושכת אותה ומקפיצה התראת מערכת.
   //
@@ -324,6 +333,11 @@ const migrations = [
      created_at TEXT
    )`,
   "CREATE INDEX IF NOT EXISTS idx_calls_created ON incoming_calls(created_at)",
+  // תקציר השיחה - נרשם ידנית אחרי השיחה, ומשמש תזכורת מה סוכם.
+  "ALTER TABLE incoming_calls ADD COLUMN note TEXT",
+  // השלוחה שאליה הגיעה השיחה. נדרש כדי שמזכיר שעובר בין סניפים
+  // יראה את שתי השלוחות שלו יחד.
+  "ALTER TABLE incoming_calls ADD COLUMN to_extension TEXT",
 
   // ============ לוח שנת הלימודים ============
   // משימות פנימיות שחוזרות כל שנה בתאריך עברי קבוע - "רישום חדשים בכ"ח

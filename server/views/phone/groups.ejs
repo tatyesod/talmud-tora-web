@@ -1,0 +1,68 @@
+<%- include('../partials/header', {title: 'קיבוץ שלוחות'}) %>
+
+<div class="card">
+  <h1>🔗 קיבוץ שלוחות</h1>
+
+  <p style="color:var(--muted); font-size:0.9em; line-height:1.7;">
+    כשאותו אדם עובד בשתי שלוחות — למשל מזכיר שעובר בין סניפים —
+    אפשר לקבץ אותן. <strong>ביומן השיחות הוא יראה את שתיהן יחד</strong>,
+    ולא יצטרך להחליף מסך כדי לדעת מי התקשר לסניף השני.
+  </p>
+
+  <form method="POST" action="/phone/groups" class="form-grid" style="margin-bottom:18px;">
+    <div class="form-group">
+      <label>שם הקבוצה</label>
+      <input type="text" name="name" required placeholder="למשל: מזכיר סוקולוב ונפחא" />
+    </div>
+    <div class="form-group">
+      <label>שלוחות</label>
+      <input type="text" name="extensions" required placeholder="102, 202" dir="ltr" style="text-align:left;" />
+      <small style="color:var(--muted);">מופרדות בפסיק</small>
+    </div>
+    <div class="form-group" style="align-self:end;">
+      <button type="submit" class="btn">➕ הוספה</button>
+    </div>
+  </form>
+
+  <% if (groups.length) { %>
+    <table>
+      <thead><tr><th>שם</th><th>שלוחות</th><th>קישור ליומן</th><th></th></tr></thead>
+      <tbody>
+        <% groups.forEach(g => { %>
+          <tr>
+            <td><strong><%= g.name %></strong></td>
+            <td dir="ltr" style="text-align:right;"><%= g.extensions %></td>
+            <td>
+              <a href="/phone/calls?ext=<%= String(g.extensions).split(',')[0].trim() %>" class="btn small secondary">פתיחה</a>
+            </td>
+            <td style="width:1%;">
+              <form method="POST" action="/phone/groups/<%= g.id %>/delete"
+                    onsubmit="return confirm('להסיר את הקיבוץ?');">
+                <button type="submit" class="btn small danger">הסרה</button>
+              </form>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  <% } else { %>
+    <p class="empty-state">אין קיבוצים מוגדרים.</p>
+  <% } %>
+
+  <% if (exts.length) { %>
+    <h3 style="margin-top:22px;">השלוחות במערכת</h3>
+    <div style="display:flex; flex-wrap:wrap; gap:6px; font-size:0.84em;">
+      <% exts.forEach(e => { %>
+        <span style="background:rgba(0,0,0,0.06); border-radius:5px; padding:2px 8px;">
+          <strong dir="ltr"><%= e.extension %></strong> <%= e.label %>
+        </span>
+      <% }) %>
+    </div>
+  <% } %>
+
+  <div class="actions" style="margin-top:18px;">
+    <a href="/phone/calls" class="btn secondary">יומן שיחות</a>
+  </div>
+</div>
+
+<%- include('../partials/footer') %>

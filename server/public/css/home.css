@@ -1009,4 +1009,14 @@
 .calls-strip a { color: #fff; text-decoration: underline; }
 .calls-unknown { color: #d8b06a; }
 .calls-more { color: #9fb0c2; font-size: 0.92em; }
+/* שדה התקציר: שטוח ובלי מסגרת, כדי שלא יגדיל את גובה הפס */
+.calls-note-form { flex: 1 1 200px; min-width: 120px; display: flex; }
+.calls-note {
+  width: 100%; background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.14); border-radius: 12px;
+  color: #e8eef5; font-family: inherit; font-size: 0.95em;
+  padding: 2px 10px; outline: none;
+}
+.calls-note::placeholder { color: #7d8ea1; }
+.calls-note:focus { background: rgba(255,255,255,0.13); border-color: rgba(201,151,76,0.6); }
 .calls-all { margin-inline-start: auto; color: #7fd0a0 !important; text-decoration: none !important; font-size: 0.95em; }
