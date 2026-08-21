@@ -29,7 +29,8 @@ router.post("/profile", (req, res) => {
 });
 
 router.get("/", (req, res) => {
-  const users = db.prepare("SELECT id, username, display_name, force_password_change, created_at, role FROM users ORDER BY id").all();
+  // extension ברשימה, כדי לראות בבת אחת מי מוגדר ומי לא
+  const users = db.prepare("SELECT id, username, display_name, extension, force_password_change, created_at, role FROM users ORDER BY id").all();
   res.render("users/list", { deleteError: req.query.deleteError === "1", users });
 });
 
@@ -58,7 +59,9 @@ router.post("/", (req, res) => {
 });
 
 router.get("/:id/edit", (req, res) => {
-  const user = db.prepare("SELECT id, username, display_name, force_password_change, role, exclude_from_consult FROM users WHERE id = ?").get(req.params.id);
+  // extension נדרשת כדי שהטופס יציג את הערך השמור. בלעדיה הוא
+  // נראה ריק בכל פתיחה, גם כשהערך קיים במסד.
+  const user = db.prepare("SELECT id, username, display_name, extension, force_password_change, role, exclude_from_consult FROM users WHERE id = ?").get(req.params.id);
   if (!user) return res.status(404).render("404");
   res.render("users/form", { mode: "edit", editUser: user });
 });
