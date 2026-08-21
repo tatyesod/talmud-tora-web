@@ -42,7 +42,7 @@ router.get("/emails", (req, res) => {
 router.get("/requests", (req, res) => {
   const { status } = req.query;
   let sql = `
-    SELECT pr.*, f.last_name AS family_last_name, s.first_name, s.last_name
+    SELECT pr.*, COALESCE(NULLIF(s.last_name,''), f.last_name) AS family_last_name, s.first_name, s.last_name
     FROM parent_requests pr
     LEFT JOIN families f ON pr.family_id = f.id
     LEFT JOIN students s ON pr.student_id = s.id
@@ -76,7 +76,7 @@ router.post("/requests", (req, res) => {
 
 router.get("/requests/:id", (req, res) => {
   const request = db.prepare(`
-    SELECT pr.*, f.last_name AS family_last_name, f.father_email, f.mother_email
+    SELECT pr.*, COALESCE(NULLIF(s.last_name,''), f.last_name) AS family_last_name, f.father_email, f.mother_email
     FROM parent_requests pr LEFT JOIN families f ON pr.family_id = f.id
     WHERE pr.id = ?
   `).get(req.params.id);

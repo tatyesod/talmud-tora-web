@@ -349,7 +349,7 @@ router.get("/incoming", (req, res) => {
   for (const m of matches) {
     if (m.kind === "family") {
       m.students = db.prepare(`
-        SELECT s.first_name, s.nickname, s.status, COALESCE(f.last_name, s.last_name) AS last_name,
+        SELECT s.first_name, s.nickname, s.status, COALESCE(NULLIF(s.last_name,''), f.last_name) AS last_name,
                c.name AS class_name, c.parallel
         FROM students s
         LEFT JOIN families f ON s.family_id = f.id

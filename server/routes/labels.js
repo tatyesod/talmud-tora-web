@@ -36,7 +36,7 @@ function fetchLabelItems(content_type, class_id) {
 
   } else if (content_type === "students") {
     let sql = `
-      SELECT s.first_name, s.last_name, c.name AS class_name, c.parallel, f.last_name AS family_last
+      SELECT s.first_name, s.last_name, c.name AS class_name, c.parallel, COALESCE(NULLIF(s.last_name,''), f.last_name) AS family_last
       FROM students s
       LEFT JOIN classes c ON s.class_id = c.id
       LEFT JOIN families f ON s.family_id = f.id
@@ -54,7 +54,7 @@ function fetchLabelItems(content_type, class_id) {
 
   } else if (content_type === "students_nickname") {
     let sql = `
-      SELECT s.first_name, s.nickname, s.last_name, c.name AS class_name, c.parallel, f.last_name AS family_last
+      SELECT s.first_name, s.nickname, s.last_name, c.name AS class_name, c.parallel, COALESCE(NULLIF(s.last_name,''), f.last_name) AS family_last
       FROM students s
       LEFT JOIN classes c ON s.class_id = c.id
       LEFT JOIN families f ON s.family_id = f.id

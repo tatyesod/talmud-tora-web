@@ -201,7 +201,7 @@ router.get("/class", (req, res) => {
   ).all(year, cls.name);
 
   const students = db.prepare(`
-    SELECT s.id, s.first_name, s.last_name, s.family_id, f.last_name AS family_last,
+    SELECT s.id, s.first_name, s.last_name, s.family_id, COALESCE(NULLIF(s.last_name,''), f.last_name) AS family_last,
            f.father_name, f.street, f.house_number, f.city
     FROM students s LEFT JOIN families f ON s.family_id=f.id
     WHERE s.class_id=? AND s.status='פעיל' ORDER BY s.last_name, s.first_name
@@ -292,7 +292,7 @@ router.get("/report/class", async (req, res) => {
   const display = cls.name + (cls.parallel ? " " + cls.parallel : "");
   const catalog = db.prepare("SELECT * FROM book_catalog WHERE year_label=? AND class_name=? ORDER BY sort_order, id").all(year, cls.name);
   const students = db.prepare(`
-    SELECT s.id, s.first_name, s.last_name, f.last_name AS family_last
+    SELECT s.id, s.first_name, s.last_name, COALESCE(NULLIF(s.last_name,''), f.last_name) AS family_last
     FROM students s LEFT JOIN families f ON s.family_id=f.id
     WHERE s.class_id=? AND s.status='פעיל' ORDER BY s.last_name, s.first_name
   `).all(class_id);
@@ -685,7 +685,7 @@ router.get("/renewals", (req, res) => {
   const classes = db.prepare("SELECT id, name, parallel FROM classes ORDER BY grade_order, name, parallel").all();
   let students = [];
   if (class_id) {
-    students = db.prepare("SELECT s.id, s.first_name, s.last_name, f.last_name AS family_last FROM students s LEFT JOIN families f ON s.family_id=f.id WHERE s.class_id=? AND s.status='פעיל' ORDER BY s.last_name, s.first_name").all(class_id);
+    students = db.prepare("SELECT s.id, s.first_name, s.last_name, COALESCE(NULLIF(s.last_name,''), f.last_name) AS family_last FROM students s LEFT JOIN families f ON s.family_id=f.id WHERE s.class_id=? AND s.status='פעיל' ORDER BY s.last_name, s.first_name").all(class_id);
   }
   const prices = db.prepare("SELECT * FROM book_prices ORDER BY item_name").all();
   const extras = class_id ? db.prepare(`SELECT e.*, s.first_name, s.last_name FROM book_order_extras e JOIN students s ON e.student_id=s.id WHERE e.year_label=? AND s.class_id=? ORDER BY s.last_name, e.item_name`).all(activeYear, class_id) : [];

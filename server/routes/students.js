@@ -34,7 +34,7 @@ function withDates(student) {
 
 const STUDENT_SELECT = `
   SELECT s.*, c.name AS class_name, c.parallel AS class_parallel, COALESCE(c.branch, s.branch) AS branch, c.institution_code, co.name AS cohort_name,
-         f.last_name AS family_last_name, f.father_name, f.mother_name, f.sector,
+         COALESCE(NULLIF(s.last_name,''), f.last_name) AS family_last_name, f.father_name, f.mother_name, f.sector,
          f.home_phone, f.father_mobile, f.mother_mobile,
          f.street, f.house_number, f.apartment, f.city
   FROM students s
@@ -120,7 +120,7 @@ router.get("/students/mismatched-branch", (req, res) => {
   const students = db.prepare(`
     SELECT s.id, s.first_name, s.last_name, s.branch AS student_branch,
            c.name AS class_name, c.parallel AS class_parallel, c.branch AS class_branch,
-           f.last_name AS family_last_name
+           COALESCE(NULLIF(s.last_name,''), f.last_name) AS family_last_name
     FROM students s
     JOIN classes c ON s.class_id = c.id
     LEFT JOIN families f ON s.family_id = f.id
@@ -142,7 +142,7 @@ router.get("/students/duplicates", (req, res) => {
   const groups = dupIds.map((idNumber) => {
     const students = db.prepare(`
       SELECT s.id, s.first_name, s.last_name, s.status, c.name AS class_name, c.parallel AS class_parallel,
-             f.last_name AS family_last_name
+             COALESCE(NULLIF(s.last_name,''), f.last_name) AS family_last_name
       FROM students s
       LEFT JOIN classes c ON s.class_id = c.id
       LEFT JOIN families f ON s.family_id = f.id
@@ -253,7 +253,7 @@ router.get("/students/bulk-archive-type", (req, res) => {
   const { cohort_id } = req.query;
   let sql = `
     SELECT s.id, s.first_name, s.nickname, s.last_name, s.archive_type,
-           f.last_name AS family_last_name, co.name AS cohort_name, co.id AS cohort_id
+           COALESCE(NULLIF(s.last_name,''), f.last_name) AS family_last_name, co.name AS cohort_name, co.id AS cohort_id
     FROM students s
     LEFT JOIN families f ON s.family_id = f.id
     LEFT JOIN cohorts co ON s.cohort_id = co.id
@@ -347,7 +347,7 @@ router.post("/students", (req, res) => {
   // כדי שלא ניצור רשומות מיותרות אם מתברר שזו כפילות.
   if (body.id_number && body.id_number.trim()) {
     const dup = db.prepare(`
-      SELECT s.id, s.first_name, s.last_name, f.last_name AS family_last_name
+      SELECT s.id, s.first_name, s.last_name, COALESCE(NULLIF(s.last_name,''), f.last_name) AS family_last_name
       FROM students s LEFT JOIN families f ON s.family_id = f.id
       WHERE s.id_number = ?
     `).get(body.id_number.trim());
@@ -535,7 +535,7 @@ router.put("/students/:id", (req, res) => {
 
   if (body.id_number && body.id_number.trim()) {
     const dup = db.prepare(`
-      SELECT s.id, s.first_name, s.last_name, f.last_name AS family_last_name
+      SELECT s.id, s.first_name, s.last_name, COALESCE(NULLIF(s.last_name,''), f.last_name) AS family_last_name
       FROM students s LEFT JOIN families f ON s.family_id = f.id
       WHERE s.id_number = ? AND s.id != ?
     `).get(body.id_number.trim(), req.params.id);

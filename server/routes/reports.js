@@ -498,7 +498,7 @@ router.get("/class-journal/view", (req, res) => {
   if (!Array.isArray(pages)) pages = [pages];
   const classRow = db.prepare("SELECT * FROM classes WHERE id = ?").get(class_id);
   const students = db
-    .prepare("SELECT s.first_name, s.nickname, s.last_name, f.last_name AS family_last FROM students s LEFT JOIN families f ON s.family_id=f.id WHERE s.class_id = ? AND s.status = 'פעיל' ORDER BY s.last_name, s.first_name")
+    .prepare("SELECT s.first_name, s.nickname, s.last_name, COALESCE(NULLIF(s.last_name,''), f.last_name) AS family_last FROM students s LEFT JOIN families f ON s.family_id=f.id WHERE s.class_id = ? AND s.status = 'פעיל' ORDER BY s.last_name, s.first_name")
     .all(class_id)
     .map(s => ({
         ...s,
@@ -805,7 +805,7 @@ router.get("/class-directory/view", (req, res) => {
     `).get(cid);
 
     const students = db.prepare(`
-      SELECT s.first_name, f.last_name AS family_last, f.street, f.house_number,
+      SELECT s.first_name, COALESCE(NULLIF(s.last_name,''), f.last_name) AS family_last, f.street, f.house_number,
              COALESCE(NULLIF(f.home_phone, ''), f.mother_mobile) AS phone
       FROM students s
       LEFT JOIN families f ON s.family_id = f.id
@@ -851,7 +851,7 @@ router.get("/stay-arrangement/guard/view", (req, res) => {
   if (!branch) return res.redirect("/reports/stay-arrangement/guard");
   const students = db.prepare(`
     SELECT s.first_name, s.nickname, c.name AS class_name, c.parallel,
-      f.last_name AS family_last_name, f.home_phone, f.father_mobile, f.mother_mobile,
+      COALESCE(NULLIF(s.last_name,''), f.last_name) AS family_last_name, f.home_phone, f.father_mobile, f.mother_mobile,
       f.street, f.house_number, f.apartment, f.city,
       sa.passover_interested, sa.summer_interested
     FROM students s
@@ -900,7 +900,7 @@ router.get("/stay-arrangement/edit", (req, res) => {
 router.get("/stay-arrangement/edit/:classId", (req, res) => {
   const classRow = db.prepare("SELECT * FROM classes WHERE id = ?").get(req.params.classId);
   const students = db.prepare(`
-    SELECT s.id, s.first_name, s.nickname, f.last_name AS family_last_name,
+    SELECT s.id, s.first_name, s.nickname, COALESCE(NULLIF(s.last_name,''), f.last_name) AS family_last_name,
       sa.passover_interested, sa.passover_amount, sa.summer_interested, sa.summer_amount
     FROM students s
     LEFT JOIN families f ON s.family_id = f.id
@@ -953,7 +953,7 @@ router.get("/single-page/view", (req, res) => {
     const classRow = db.prepare("SELECT * FROM classes WHERE id = ?").get(class_id);
     const students = db.prepare(`
       SELECT s.first_name, s.nickname,
-        f.last_name AS family_last_name, f.home_phone, f.father_mobile, f.mother_mobile,
+        COALESCE(NULLIF(s.last_name,''), f.last_name) AS family_last_name, f.home_phone, f.father_mobile, f.mother_mobile,
         f.street, f.house_number, f.apartment, f.city,
         sa.passover_interested, sa.passover_amount, sa.summer_interested, sa.summer_amount
       FROM students s
@@ -979,7 +979,7 @@ router.get("/single-page/view", (req, res) => {
   const pages = [page || "7col"];
   const classRow = db.prepare("SELECT * FROM classes WHERE id = ?").get(class_id);
   const students = db
-    .prepare("SELECT s.first_name, s.nickname, s.last_name, f.last_name AS family_last FROM students s LEFT JOIN families f ON s.family_id=f.id WHERE s.class_id = ? AND s.status = 'פעיל' ORDER BY s.last_name, s.first_name")
+    .prepare("SELECT s.first_name, s.nickname, s.last_name, COALESCE(NULLIF(s.last_name,''), f.last_name) AS family_last FROM students s LEFT JOIN families f ON s.family_id=f.id WHERE s.class_id = ? AND s.status = 'פעיל' ORDER BY s.last_name, s.first_name")
     .all(class_id)
     .map(s => ({
         ...s,

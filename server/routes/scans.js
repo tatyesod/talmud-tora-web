@@ -64,14 +64,14 @@ router.get("/class/:id", (req, res) => {
 
   const students = db.prepare(`
     SELECT s.id, s.first_name, s.nickname,
-           COALESCE(f.last_name, s.last_name) AS last_name,
+           COALESCE(NULLIF(s.last_name,''), f.last_name) AS last_name,
            sf.id AS form_id, sf.file_name, sf.size_bytes, sf.uploaded_at, sf.page_count
     FROM students s
     LEFT JOIN families f ON s.family_id = f.id
     LEFT JOIN scanned_forms sf
       ON sf.student_id = s.id AND sf.year = ? AND sf.form_type = 'health'
     WHERE s.class_id = ? AND s.status = 'פעיל'
-    ORDER BY COALESCE(f.last_name, s.last_name), s.first_name
+    ORDER BY COALESCE(NULLIF(s.last_name,''), f.last_name), s.first_name
   `).all(year, req.params.id).map((s) => ({
     ...s,
     uploaded_str: s.uploaded_at ? hd.formatGregorian(s.uploaded_at) : "",
@@ -98,7 +98,7 @@ router.get("/manual", (req, res) => {
   const year = req.query.year || getCurrentYear();
   const students = db.prepare(`
     SELECT s.id, s.first_name, s.nickname, s.last_name,
-           COALESCE(f.last_name, s.last_name) AS family_name,
+           COALESCE(NULLIF(s.last_name,''), f.last_name) AS family_name,
            c.name AS class_name, c.parallel, c.branch, c.grade_order,
            (SELECT COUNT(*) FROM scanned_forms sf
             WHERE sf.student_id = s.id AND sf.year = ? AND sf.form_type = 'health') AS has_form
@@ -124,7 +124,7 @@ router.get("/class/:id/manual", (req, res) => {
   // אותו סדר בדיוק שבו הטפסים הודפסו
   const students = db.prepare(`
     SELECT s.id, s.first_name, s.nickname, s.last_name,
-           COALESCE(f.last_name, s.last_name) AS family_name,
+           COALESCE(NULLIF(s.last_name,''), f.last_name) AS family_name,
            (SELECT COUNT(*) FROM scanned_forms sf
             WHERE sf.student_id = s.id AND sf.year = ? AND sf.form_type = 'health') AS has_form
     FROM students s
@@ -253,7 +253,7 @@ router.get("/updates", (req, res) => {
   const year = req.query.year || getCurrentYear();
   const rows = db.prepare(`
     SELECT fi.*, s.first_name, s.nickname,
-           COALESCE(f.last_name, s.last_name) AS family_name,
+           COALESCE(NULLIF(s.last_name,''), f.last_name) AS family_name,
            c.name AS class_name, c.parallel, c.grade_order,
            s.family_id
     FROM scan_findings fi
@@ -262,7 +262,7 @@ router.get("/updates", (req, res) => {
     LEFT JOIN classes c ON s.class_id = c.id
     JOIN scanned_forms sf ON sf.id = fi.form_id
     WHERE fi.status = 'pending' AND sf.year = ?
-    ORDER BY c.grade_order, c.name, c.parallel, COALESCE(f.last_name, s.last_name), fi.field_key
+    ORDER BY c.grade_order, c.name, c.parallel, COALESCE(NULLIF(s.last_name,''), f.last_name), fi.field_key
   `).all(year);
 
   const counts = db.prepare(`
@@ -334,13 +334,13 @@ router.get("/class/:id/export", async (req, res) => {
   if (!cls) return res.redirect("/scans");
 
   const rows = db.prepare(`
-    SELECT sf.file_name, COALESCE(f.last_name, s.last_name) AS family_name,
+    SELECT sf.file_name, COALESCE(NULLIF(s.last_name,''), f.last_name) AS family_name,
            s.first_name, s.nickname
     FROM scanned_forms sf
     JOIN students s ON s.id = sf.student_id
     LEFT JOIN families f ON s.family_id = f.id
     WHERE s.class_id = ? AND sf.year = ? AND sf.form_type = 'health'
-    ORDER BY COALESCE(f.last_name, s.last_name), s.first_name
+    ORDER BY COALESCE(NULLIF(s.last_name,''), f.last_name), s.first_name
   `).all(req.params.id, year);
 
   if (!rows.length) {
@@ -379,7 +379,7 @@ router.get("/class/:id/export", async (req, res) => {
 // ============ צפייה בטופס ============
 router.get("/file/:id", (req, res) => {
   const f = db.prepare(`
-    SELECT sf.file_name, sf.year, COALESCE(fa.last_name, s.last_name) AS family_name,
+    SELECT sf.file_name, sf.year, COALESCE(NULLIF(s.last_name,''), fa.last_name) AS family_name,
            s.first_name, s.nickname
     FROM scanned_forms sf
     JOIN students s ON s.id = sf.student_id
@@ -404,7 +404,7 @@ router.get("/file/:id", (req, res) => {
 // שם התלמיד מופיע למעלה, ואפשר להדפיס בלחיצה במקום לחפש בתפריט הדפדפן.
 router.get("/view/:id", (req, res) => {
   const f = db.prepare(`
-    SELECT sf.*, COALESCE(fa.last_name, s.last_name) AS family_name,
+    SELECT sf.*, COALESCE(NULLIF(s.last_name,''), fa.last_name) AS family_name,
            s.first_name, s.nickname, s.id AS student_id,
            c.name AS class_name, c.parallel
     FROM scanned_forms sf
