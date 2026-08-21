@@ -213,7 +213,9 @@ router.get("/calls", (req, res) => {
   let sql = "SELECT * FROM incoming_calls WHERE created_at BETWEEN ? AND ?";
   const params = [from, to];
   if (group.length) {
-    sql += " AND to_extension IN (" + group.map(() => "?").join(",") + ")";
+    // גם שיחות ישנות שאין בהן שיוך - אחרת היומן נראה ריק בטעות
+    sql += " AND (to_extension IN (" + group.map(() => "?").join(",") +
+           ") OR COALESCE(to_extension,'') = '')";
     params.push(...group);
   }
   sql += " ORDER BY id DESC";

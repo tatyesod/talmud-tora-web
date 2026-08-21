@@ -498,10 +498,14 @@ app.get("/", (req, res) => {
           }
         } catch (e) { /* אין קיבוצים */ }
 
+        // שיחות ישנות נרשמו לפני שהוספנו את to_extension, ולכן השדה
+        // בהן ריק. מוצגות גם הן - עדיף להציג שיחה שאולי אינה שלי
+        // מאשר פס ריק שנראה כתקלה. שיחות חדשות משויכות כרגיל.
         return db.prepare(`
           SELECT id, number, matched_title, matched_subtitle, target_url, created_at, note
           FROM incoming_calls
           WHERE to_extension IN (${list.map(() => "?").join(",")})
+             OR COALESCE(to_extension,'') = ''
           ORDER BY id DESC LIMIT 8
         `).all(...list);
       } catch (e) { return []; }

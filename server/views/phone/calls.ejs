@@ -18,6 +18,23 @@
   </div>
 
   <%# בורר יום. מוצגים רק ימים שיש בהם שיחות - אין טעם לדפדף בריקים. %>
+  <%# אבחון: כשהפס בדף הבית ריק, כאן רואים למה. מוצג רק כשיש בעיה. %>
+  <% if (!myExt) { %>
+    <div style="background:#fff8e6; border:1px solid #e0c880; border-radius:8px;
+                padding:10px 15px; margin-bottom:12px; font-size:0.9em; line-height:1.7;">
+      <strong>לא מוגדרת לך שלוחה.</strong> לכן לא יוצגו שיחות בדף הבית.<br>
+      להגדרה: משתמשים ← עריכת המשתמש ← שדה "שלוחת טלפון".
+      <strong>אחרי השמירה צריך להתנתק ולהתחבר מחדש</strong> — השלוחה נטענת בהתחברות.
+    </div>
+  <% } else if (calls.length === 0 && !showAll) { %>
+    <div style="background:#fff8e6; border:1px solid #e0c880; border-radius:8px;
+                padding:10px 15px; margin-bottom:12px; font-size:0.9em; line-height:1.7;">
+      השלוחה שלך היא <strong><%= myExt %></strong>, ואין שיחות שהגיעו אליה ביום זה.<br>
+      ודא שבכתובת ב-3CX מופיע <code dir="ltr">&amp;to=<%= myExt %></code> בסופה.
+      <a href="/phone/calls?all=1&day=<%= isoDay %>">הצגת כל השיחות</a>
+    </div>
+  <% } %>
+
   <% if (typeof group !== 'undefined' && group.length > 1) { %>
     <div style="background:#e8f5ec; border:1px solid #2d7a4f; border-radius:8px;
                 padding:8px 14px; margin-bottom:12px; font-size:0.9em;">
